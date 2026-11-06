@@ -315,10 +315,11 @@ function stampPermanentDamage(key,u,v,ru,rv){
  ctx.restore();
  schoolDamageTextures[key].needsUpdate=true;
 }
-function carveSchool(x,y,z,r,strength=1){
+function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),r,strength);
- // Retain the diagnostic impact atlas for benchmark compatibility; no shader masks the geometry.
- schoolReconstruction?.impact({x,y,z,radius:r,strength});
+ // The reconstructed school determines damage from meteor type, velocity and
+ // exact 3D impact position, independent of whole-floor visibility cutoffs.
+ schoolReconstruction?.impact({x,y,z,radius:r,strength,type,speed});
  const range=schoolBounds.getSize(new THREE.Vector3());
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,r/range.x,r/range.y);
 }
@@ -1536,7 +1537,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?impactProfile(meteor.s
   if(lost>0)score=Math.max(0,score-30);
  }else if(architecturalReady){
   const r=profile.radius;
-  carveSchool(targetX,targetY,hitZ,r,profile.strength);
+  carveSchool(targetX,targetY,hitZ,r,profile.strength,meteor?.kind||'stone',meteor?.vel?.length?.()||0);
   if(voxelReady){
    lost=architecture.impact(new THREE.Vector3(targetX,targetY,hitZ),r,
      (pos,type)=>debrisPiece(pos,type===2?'glass':type===3?'roof':type===4?'stone':'brick'));

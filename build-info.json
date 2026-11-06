@@ -1,7 +1,7 @@
 {
-  "build": "5.2-factory-atrium-01",
-  "version": "5.2.0",
-  "gameplay_base": "5.1.1",
-  "scope": "Reconstructed Tech Freire five-story shell with double-height industrial atrium, independent collapsing slabs and masonry, stabilized depth-separated parallax, foreground dragon layering",
+  "build": "5.2-dynamic-meteor-01",
+  "version": "5.2.1",
+  "gameplay_base": "5.2-factory-atrium-01",
+  "scope": "Meteor-specific localized school destruction, damage propagation via actual structural supports; recognizable double-height front factory atrium",
   "new_gameplay_features": true
 }

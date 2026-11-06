@@ -1,3 +1,4 @@
+import {meteorImpactEnergy,componentImpact} from '../simulation/school-impact-response.js';
 // Dragon Defense v5.2: game-optimized Tech Freire factory-school.
 // Based on the source FBX's calibrated exterior dimensions. The double-height
 // front lobby is a deliberately prominent interpretation of the user's real
@@ -15,27 +16,28 @@ export function createDestructibleSchool(THREE,scene,bounds){
   new THREE.MeshStandardMaterial({color:0x536b74,roughness:.35,metalness:.12,transparent:true,opacity:.73,depthWrite:false}), // glass
   new THREE.MeshStandardMaterial({color:0x353a3b,roughness:.53,metalness:.38}), // steel
   new THREE.MeshStandardMaterial({color:0xc4a66d,roughness:.72,emissive:0x60411c,emissiveIntensity:.18}), // interior
-  new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95}) // masonry backer
+  new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95}), // masonry backer
+  new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96}) // industrial dark roof
  ];
  const MAX=1200;
  const unitBox=new THREE.BoxGeometry(1,1,1);
  const batches=materials.map((material,i)=>{
   const mesh=new THREE.InstancedMesh(unitBox,material,MAX);
-  mesh.name='TECH-FREIRE-REBUILT-'+['BRICK','CONCRETE','GLAZING','STEEL','INTERIOR','BACKER'][i];
+  mesh.name='TECH-FREIRE-REBUILT-'+['BRICK','CONCRETE','GLAZING','STEEL','INTERIOR','BACKER','ROOF'][i];
   mesh.frustumCulled=false;
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   scene.add(mesh);return mesh;
  });
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const blank=new THREE.Matrix4().makeScale(0,0,0);
- let runningTime=0,collapsing=false;
+ let runningTime=0,collapsing=false,supportClock=0,impactSerial=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
-   protectedZone,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+   protectedZone,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
  }
  const wall=(x,y,z,w,h,d,kind=0,zone='facade',strength=1)=>piece(kind,x,y,z,w,h,d,{zone,strength});
- const slab=(x,y,z,w,d)=>piece(1,x,y,z,w,.23,d,{zone:'floor',strength:1.1});
+ const slab=(x,y,z,w,d,kind=1)=>piece(kind,x,y,z,w,.23,d,{zone:'floor',strength:1.1});
  const pier=(x,y,z,w,h,d)=>piece(0,x,y,z,w,h,d,{zone:'pier',strength:2.15});
  const beam=(x,y,z,w,h,d)=>piece(3,x,y,z,w,h,d,{zone:'beam',strength:2.3});
  // Full five-story exterior proportions, but NO floor across the front atrium
@@ -89,7 +91,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   for(let col=0;col<sections;col++)for(let row=0;row<rows;row++){
    const x=min.x+(col+.5)*width/sections;
    const z=back+(row+.5)*(start-back)/rows;
-   slab(x,y,z,width/sections-.07,(start-back)/rows-.07);
+   slab(x,y,z,width/sections-.07,(start-back)/rows-.07,level===5?6:1);
   }
  }
  // High industrial steel columns and deep beams frame the front double-height
@@ -110,6 +112,21 @@ export function createDestructibleSchool(THREE,scene,bounds){
   piece(3,min.x+.9+(bay+.5)*(width-1.8)/14,levels[1]+.31,
    atriumBack+.23,.07,.65,.10,{zone:'atrium-rail',strength:.8});
  }
+ // Interpreted factory-style load-bearing grid BEHIND the double-height hall.
+ // Individual rear columns support slabs without blocking the recognizable
+ // two-storey front void; losing a column can propagate a local slab failure.
+ const rearSpans=atriumBack-back;
+ const columnRows=[atriumBack-rearSpans*.16,atriumBack-rearSpans*.52,back+rearSpans*.10];
+ for(let level=0;level<5;level++){
+  const y=(levels[level]+levels[level+1])/2,sh=levels[level+1]-levels[level];
+  for(const z of columnRows){
+   for(const frac of [.18,.50,.82]){
+    const x=min.x+width*frac;
+    piece(3,x,y,z,.43,sh,.43,{zone:'column',strength:3.1});
+   }
+   beam(centerX,levels[level+1]-.23,z,width*.82,.26,.38);
+  }
+ }
  // Interior construction: shallow back classrooms, corridor walls, floor
  // furniture silhouettes. No invented detailed real-world floor plan.
  for(let level=1;level<5;level++){
@@ -122,6 +139,14 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
   // Repeating corridor soffits and classroom sightlines visible after impact.
   beam(centerX,y0+h*.85,back+depth*.42,width-3,.21,.31);
+ }
+ // Distinct industrial roof equipment; avoid a flat white slab silhouette.
+ // Each vent/housing is independently detachable at high damage.
+ for(const x of [min.x+4,centerX,min.x+width-4]){
+  for(const z of [front-7,front-21,back+12]){
+   piece(3,x,levels[5]+.51,z,1.7,.86,1.8,{zone:'roof-hvac',strength:1.1});
+   piece(6,x,levels[5]+1.02,z,1.95,.18,2.1,{zone:'roof-hvac',strength:.7});
+  }
  }
  // Double-height front factory hall: tall clerestory window mullions, exposed
  // trusses, hanging lamps and raised door frame, with the void left EMPTY.
@@ -152,45 +177,100 @@ export function createDestructibleSchool(THREE,scene,bounds){
   p.vz=1.5+Math.abs(a)*(violent?5:2.7);
   p.vr=(a+b)*(violent?3.5:1.7);return true;
  }
- function impact({x,y,z,radius=3.8,strength=1}){
+ function impact({x,y,z,radius=3.8,strength=1,type='stone',speed=0}){
   if(collapsing)return 0;
-  // Gameplay projectiles can hit at the street/front interaction plane (z~11),
-  // while the FBX facade is at z~0. Project that strike onto the real shell
-  // without opening fictitious damage behind the school.
-  z=Math.min(front,Math.max(back,z));
-  let removed=0;
+  const rawZ=z,frontHit=rawZ>=front-1.5;
+  const strike=meteorImpactEnergy({type,radius,strength,speed});
+  // Preserve 3D location, except for an actual strike beyond the front face:
+  // game projectile collisions arrive at Broad Street z, so clamp to the facade.
+  z=Math.max(back,Math.min(front,rawZ));
+  lastImpact={x,y,z};impactSerial++;
+  let detached=0;
   for(const p of pieces){
-   if(p.falling||p.resting||p.protectedZone)continue;
-   // Affected facade/roof/interior modules are localized in 3D.
-   const dx=Math.max(0,Math.abs(x-p.x)-p.w*.5),
-         dy=Math.max(0,Math.abs(y-p.y)-p.h*.5),
-         dz=Math.max(0,Math.abs(z-p.z)-p.d*.5);
+   if(p.falling||p.resting||p.removed)continue;
+   const dx=Math.max(0,Math.abs(x-p.x)-p.w*.5);
+   const dy=Math.max(0,Math.abs(y-p.y)-p.h*.5);
+   const dz=Math.max(0,Math.abs(z-p.z)-p.d*.5);
    const distance=Math.hypot(dx,dy,dz);
-   const threshold=radius*(p.zone==='glass'?1.34:p.zone==='floor'?.69:1);
-   if(distance>threshold)continue;
-   const resistance=(p.zone==='pier'||p.zone==='beam')?1.22:1;
-   const chance=Math.max(.20,Math.min(1.0,(1-distance/Math.max(.1,threshold))*
-       strength/resistance+ (p.zone==='glass'?.48:.20)));
-   const test=(Math.sin(p.x*13.12+p.y*3.31+p.z*2.31+runningTime*4.1)+1)/2;
-   if(test>chance)continue;
-   if(detach(p,x+y+z,Math.random()*.22,true))removed++;
+   const lateralDistance=Math.hypot(dx,dy);
+   const frontDepth=frontHit?Math.max(0,front-p.z-p.d*.5):0;
+   // No global floor visibility cutoff. Local energy weakens only parts near
+   // the actual impact, with metal piercing farther into internal structure.
+   const impulse=componentImpact({distance,radius:strike.radius,energy:strike.energy,
+     penetration:strike.penetration,shock:strike.shock,fracture:strike.fracture,
+     zone:p.zone,structuralStrength:p.strength,frontDepth,lateralDistance});
+   if(impulse<=0)continue;
+   const jitter=.88+.24*(.5+.5*Math.sin(p.x*5.37+p.y*3.31+p.z*1.21+impactSerial*13.1));
+   p.integrity=Math.max(0,p.integrity-impulse*jitter*.64);
+   if(p.integrity<=0){
+    const delay=Math.min(.27,.04+distance*.016);
+    if(detach(p,x+y+z+impactSerial,delay,strike.energy>1.1))detached++;
+   }
   }
-  return removed;
+  return detached;
+ }
+ // Support is computed locally from nearby surviving beams and columns. A
+ // localized support failure can make an adjacent slab sag/fall, but a single
+ // impact cannot delete an arbitrary complete floor.
+ const structural=pieces.filter(p=>['pier','beam','column','atrium-column'].includes(p.zone));
+ // This connectivity is determined by the immutable initial structure, so
+ // cache it instead of allocating thousands of arrays every simulation tick.
+ const supportLinks=new Map();
+ for(const p of pieces){
+  if(p.homeY<=min.y+1.05)continue;
+  supportLinks.set(p,structural.filter(q=>q!==p&&
+   Math.abs(q.homeX-p.homeX)<Math.max(2.7,p.w*.55+1.4)&&
+   Math.abs(q.homeZ-p.homeZ)<Math.max(3.2,p.d*.55+1.6)&&
+   q.homeY<=p.homeY+1&&q.homeY>=p.homeY-height/5-1.7));
+ }
+ function propagateSupportFailure(dt){
+  for(const p of pieces){
+   if(p.falling||p.resting||p.removed)continue;
+   if(p.homeY<=min.y+1.05)continue; // foundation remains grounded
+   if(!['floor','beam','pier','column','atrium-column','partition','spandrel','glass','facade','rear','side','side-spandrel'].includes(p.zone))continue;
+   const nearby=supportLinks.get(p)||[];
+   if(!nearby.length)continue;
+   let healthy=0,failed=0;
+   for(const q of nearby){
+    if(q.falling||q.resting||q.integrity<.16)failed++;
+    else healthy+=q.integrity;
+   }
+   const fraction=healthy/(healthy+failed+1e-4);
+   // Complete loss of structural capacity at zero health is modeled as
+   // accelerating load fatigue, not a timed top-down sequence. Existing
+   // localized damage and surviving supports still determine which pieces fall.
+   if(collapsing){
+    const proximity=Math.max(0,1-Math.hypot(p.homeX-lastImpact.x,p.homeZ-lastImpact.z)/Math.max(1,width));
+    p.integrity-=dt*(.25+.22*proximity)*(p.protectedZone?.52:1);
+    if(p.integrity<=0){detach(p,p.homeX+p.homeY+impactSerial,.02+Math.random()*.15,true);continue;}
+   }
+   const vulnerable=p.zone==='floor'?.43:p.zone==='atrium-column'?.18:.31;
+   if(fraction>=vulnerable)continue;
+   const load=(vulnerable-fraction)/Math.max(.1,vulnerable);
+   p.integrity-=dt*(.3+load*1.5)*(p.protectedZone?.25:1);
+   if(p.integrity<=0)detach(p,p.x*2.7+p.z+impactSerial,.05+Math.random()*.13,true);
+  }
  }
  function collapse(){
   if(collapsing)return;
   collapsing=true;
-  for(const p of pieces){
-   if(p.falling||p.resting)continue;
-   // Upper storeys shed first; lower frame remains visible until the end.
-   const story=Math.max(0,Math.min(4,Math.floor((p.homeY-min.y)/Math.max(1,height)*5)));
-   const seq=(4-story)*.43+Math.random()*.45+(p.protectedZone?.9:0);
-   detach(p,p.homeX+p.homeY,seq,true);
+  // Terminal failure is NOT a top-down sequenced animation. Break supports
+  // closest to the final impact first, then allow structural load propagation
+  // to decide which adjacent slabs, rooms and facade bays fall next.
+  const columns=structural.filter(p=>!p.falling&&!p.resting&&
+    (p.zone==='pier'||p.zone==='column'||p.zone==='atrium-column'));
+  columns.sort((a,b)=>
+   Math.hypot(a.x-lastImpact.x,a.y-lastImpact.y,a.z-lastImpact.z)-
+   Math.hypot(b.x-lastImpact.x,b.y-lastImpact.y,b.z-lastImpact.z));
+  for(const p of columns.slice(0,Math.max(5,Math.ceil(columns.length*.22)))){
+   p.integrity=0;detach(p,lastImpact.x+lastImpact.z,.02+Math.random()*.2,true);
   }
  }
  function update(dt){
   if(dt<=0)return;
   runningTime+=dt;
+  supportClock+=dt;
+  if(supportClock>=.18){propagateSupportFailure(supportClock);supportClock=0;}
   let changed=false;
   for(const p of pieces){
    if(!p.falling||p.resting||p.removed)continue;
@@ -219,19 +299,21 @@ export function createDestructibleSchool(THREE,scene,bounds){
    batches[p.kind].setMatrixAt(index,matrix);
   }
   batches.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;
-   mesh.computeBoundingSphere()});
+   // Frustum culling is disabled; recomputing a bounds sphere here is wasteful.
+   });
  }
  function reset(){
-  collapsing=false;runningTime=0;
+  collapsing=false;runningTime=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
-     falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
   }
   flush();
  }
  function stats(){return {parts:pieces.length,drawBatches:materials.length,
    detached:pieces.filter(p=>p.falling).length,falling:pieces.filter(p=>p.falling&&!p.resting).length,
-   rubble:pieces.filter(p=>p.resting).length,doubleHeightAtrium:true,
+   rubble:pieces.filter(p=>p.resting).length,damaged:pieces.filter(p=>p.integrity<.999).length,
+   lastImpact,structuralMembers:structural.length,doubleHeightAtrium:true,
    atriumY:[levels[0],levels[2]],atriumFrontZ:front,atriumBackZ:atriumBack,
    fullFiveStoryShell:true,collapsing}}
  reset();
