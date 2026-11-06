@@ -30,7 +30,7 @@ try {
   });
   const snap = () => page.evaluate(() => window.__DD_QA.snap());
   await page.goto(new URL('?qa=1', base).href);
-  await page.waitForFunction(() => window.__DD_FRAME_SIGNAL?.rendered >= 2 &&
+  await page.waitForFunction(() => window.__DD_QA?.snap().frameTimes.frames >= 2 &&
     window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
   report.startup = await snap();
   assert.equal(report.startup.version, expected.version);

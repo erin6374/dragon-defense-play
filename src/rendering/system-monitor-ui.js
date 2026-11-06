@@ -20,7 +20,8 @@ export function setupSystemMonitorUI(){
   ctx.fillStyle='#8ac4e7';ctx.fillText('RAM',47,15);ctx.fillStyle='#ba91f1';ctx.fillText('GPU*',89,15);
  };
  let lastSystem={};
- const onLocalServer=location.hostname==='127.0.0.1'||location.hostname==='localhost';
+ const onLocalServer=(location.hostname==='127.0.0.1'||location.hostname==='localhost') &&
+  new URLSearchParams(location.search).get('qa')!=='1';
  // Only our Python launcher supports these diagnostic endpoints. A stale browser
  // tab must not hammer a dead localhost port every two seconds indefinitely.
  let endpointsAvailable=false, endpointsChecked=false, stopped=false;
