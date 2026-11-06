@@ -1954,7 +1954,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const model=new THREE.Group();
    if(actualSchoolOverlay.visible)model.add(actualSchoolOverlay.clone());
    for(const batch of schoolReconstruction.group)if(batch.visible&&batch.count)model.add(batch.clone());
-   return captureSchoolViews(renderer,[['damage',model]],['front','right-side']);
+   return captureSchoolViews(renderer,[['damage',model]],['front','corner','right-side']);
   }),
   // QA-only deterministic motion advance for offline video testing.
   // Runs the real simulation, not a synthetic animation or a second renderer.

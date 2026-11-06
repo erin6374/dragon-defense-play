@@ -3,7 +3,7 @@ import {meteorImpactEnergy,componentImpact} from '../simulation/school-impact-re
 // Based on the source FBX's calibrated exterior dimensions. The double-height
 // front lobby is a deliberately prominent interpretation of the user's real
 // factory interior; classroom partitions beyond it are illustrative, not BIM.
-// Pieces share five instanced draw batches and detach into permanent rubble.
+// Pieces share instanced draw batches and detach into permanent rubble.
 export function createDestructibleSchool(THREE,scene,bounds){
  const min=bounds.min,max=bounds.max,centerX=(min.x+max.x)/2;
  const depth=max.z-min.z,height=max.y-min.y,width=max.x-min.x;
@@ -275,7 +275,14 @@ export function createDestructibleSchool(THREE,scene,bounds){
  function dimensions(p){
   const glass=p.profile==='glass';
   if(glass)scale.set(Math.min(p.w,.48),Math.min(p.h,.38),Math.min(p.d,.30));
-  else if(p.resting)scale.set(Math.min(p.w,2.2),Math.min(p.h,.64),Math.min(p.d,2.1));
+  else if(p.resting){
+   // Vary fracture size using the original location so the debris is stable.
+   const variation=.5+.5*Math.sin(p.homeX*7.3+p.homeY*4.1+p.homeZ*2.9);
+   const structural=p.profile==='structure';
+   const cap=structural?.42+.49*variation:.18+.41*variation;
+   const span=(structural?1.0:.65)+1.2*variation;
+   scale.set(Math.min(p.w,span),Math.min(p.h,cap),Math.min(p.d,span*.9));
+  }
   else scale.set(p.w,p.h,p.d);
  }
  function update(dt){

@@ -2,7 +2,7 @@
 
 Open **Actions → Dragon Defense browser QA → Run workflow** for an on-demand run. Pull requests run the same suite. A push to `main` runs it before the Pages deployment, then checks that Pages serves the release files. Download **dragon-defense-browser-qa** from the run summary. GitHub retains it for 30 days, including failure diagnostics.
 
-The artifact contains startup and gameplay PNGs, camera pans, both school side elevations, and matched front and side views before impact, after a localized impact, and after total collapse. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
+The artifact contains startup and gameplay PNGs, camera pans, both school side elevations, and matched front, corner, and side views before impact, after a localized impact, and after total collapse. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
 
 ## v5.2.2 source fidelity
 
