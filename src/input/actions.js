@@ -1,0 +1,4 @@
+// Engine-neutral actions; later map gamepad, arcade encoders and touch to the same names.
+export const ACTIONS=Object.freeze({LEFT:'moveLeft',RIGHT:'moveRight',UP:'moveUp',DOWN:'moveDown',FIRE:'fire',GAS:'releaseGas',PAUSE:'pause',DEBUG:'debug'});
+export const KEY_BINDINGS=Object.freeze({KeyA:ACTIONS.LEFT,ArrowLeft:ACTIONS.LEFT,KeyD:ACTIONS.RIGHT,ArrowRight:ACTIONS.RIGHT,KeyW:ACTIONS.UP,ArrowUp:ACTIONS.UP,KeyS:ACTIONS.DOWN,ArrowDown:ACTIONS.DOWN,Space:ACTIONS.FIRE,KeyF:ACTIONS.GAS,KeyP:ACTIONS.PAUSE,F3:ACTIONS.DEBUG});
+export function createInputState(){const pressed=new Set();return {pressed, keyDown(code){const a=KEY_BINDINGS[code];if(a)pressed.add(a);return a;},keyUp(code){const a=KEY_BINDINGS[code];if(a)pressed.delete(a);return a;},isDown(a){return pressed.has(a);},clear(){pressed.clear()}};}

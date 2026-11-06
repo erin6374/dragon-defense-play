@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tech Freire — FBX Model Inspector</title><style>body{margin:0;background:#101522;color:white;font:14px system-ui}#ui{position:fixed;top:12px;left:12px;max-width:430px;padding:16px;background:#121d30e8;border:1px solid #536a84;border-radius:12px}input[type=file]{display:block;margin:10px 0;max-width:100%}button{padding:8px;margin:4px;background:#345879;color:white;border:0;border-radius:5px;cursor:pointer}#details{white-space:pre-wrap;font:12px monospace}canvas{display:block}</style><script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script></head><body><div id="ui"><b>TECH FREIRE · ORIGINAL FBX INSPECTOR</b><p>Separate architectural inspection tool. Game geometry remains a placeholder until scale, orientation and voxel conversion are verified.</p><label for="fbxfile"><b>Load an FBX from your computer</b></label><input id="fbxfile" type="file" accept=".fbx,application/octet-stream"><button id="default">Load bundled Tech Freire FBX</button><p><label for="orientation">Model orientation</label> <select id="orientation"><option value="negx">Rotate -90° X (default)</option><option value="posx">Rotate +90° X</option><option value="none">Original FBX orientation</option><option value="posz">Rotate +90° Z</option><option value="negz">Rotate -90° Z</option></select></p><div id="status">Ready to load an FBX.</div><p><button id="reset">Reset view</button><button id="wire">Toggle wireframe</button><button id="axes">Toggle axes</button></p><div id="details"></div><small>Drag to orbit · wheel to zoom · right-drag to pan</small><p><a href="./index.html" style="color:#8dd8ff">Back to arcade game</a></p></div><script type="module">
+import * as THREE from 'three';import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x172337);const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.01,100000);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);document.body.prepend(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x64718a,2));const light=new THREE.DirectionalLight(0xffffff,2.5);light.position.set(1,3,2);scene.add(light);const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;const axes=new THREE.AxesHelper(10);axes.visible=false;scene.add(axes);let model,homePosition,homeTarget;const status=document.getElementById('status'),details=document.getElementById('details');
+
+const loader=new FBXLoader();
+let loadToken=0, currentUrl=null;
+function clearModel(){
+ if(!model)return;
+ scene.remove(model);
+ model.traverse(o=>{if(o.isMesh){o.geometry?.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(!m)return;for(const key of ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','alphaMap'])m[key]?.dispose?.();m.dispose?.()})}});
+ model=null;
+}
+function fitView(){
+ if(!model)return;
+ const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+ if(!Number.isFinite(size.length())||size.length()<.0001)return;
+ const max=Math.max(size.x,size.y,size.z);
+ camera.near=Math.max(.001,max/10000);camera.far=max*100;
+ camera.position.copy(center).add(new THREE.Vector3(max*1.5,max*.9,max*1.5));
+ camera.lookAt(center);camera.updateProjectionMatrix();controls.target.copy(center);
+ controls.minDistance=max*.02;controls.maxDistance=max*20;
+ homePosition=camera.position.clone();homeTarget=center.clone();
+ axes.position.copy(center);axes.scale.setScalar(max/10);
+ details.textContent=details.textContent.replace(/Bounds \(FBX units\):[^\\n]*/,`Bounds (display units): ${size.toArray().map(v=>v.toFixed(3)).join(' × ')}`);
+}
+function orientModel(){
+ if(!model)return;
+ model.rotation.set(0,0,0);
+ const choice=document.getElementById('orientation').value;
+ if(choice==='negx')model.rotation.x=-Math.PI/2;
+ if(choice==='posx')model.rotation.x=Math.PI/2;
+ if(choice==='posz')model.rotation.z=Math.PI/2;
+ if(choice==='negz')model.rotation.z=-Math.PI/2;
+ model.updateMatrixWorld(true);fitView();
+}
+document.getElementById('orientation').addEventListener('change',orientModel);
+function loadFBX(url,label,isLocal=false){
+ const token=++loadToken;
+ if(currentUrl){URL.revokeObjectURL(currentUrl);currentUrl=null}
+ if(isLocal)currentUrl=url;
+ status.textContent='Loading '+label+'…';details.textContent='';
+ loader.load(url,obj=>{
+  if(token!==loadToken){obj.traverse(o=>{if(o.isMesh)o.geometry?.dispose()});return}
+  clearModel();model=obj;scene.add(model);
+  let meshes=0,vertices=0;
+  model.traverse(o=>{if(o.isMesh){meshes++;vertices+=o.geometry.attributes.position?.count||0;
+    const mats=Array.isArray(o.material)?o.material:[o.material];
+    mats.forEach(m=>{if(m)m.side=THREE.DoubleSide});
+  }});
+  const box=new THREE.Box3().setFromObject(model);
+  const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+  if(!Number.isFinite(size.length())||size.length()<.0001){status.textContent='Loaded, but model bounds are invalid';return}
+  const max=Math.max(size.x,size.y,size.z);
+  camera.near=Math.max(.001,max/10000);camera.far=max*100;
+  camera.position.copy(center).add(new THREE.Vector3(max*1.5,max*.9,max*1.5));
+  camera.lookAt(center);camera.updateProjectionMatrix();controls.target.copy(center);
+  controls.minDistance=max*.02;controls.maxDistance=max*20;
+  homePosition=camera.position.clone();homeTarget=center.clone();
+  axes.position.copy(center);axes.scale.setScalar(max/10);
+  orientModel();status.textContent='Loaded: '+label;
+  details.textContent=`Meshes: ${meshes.toLocaleString()}\\nVertices: ${vertices.toLocaleString()}\\nBounds (FBX units): ${size.toArray().map(v=>v.toFixed(3)).join(' × ')}\\nCenter: ${center.toArray().map(v=>v.toFixed(3)).join(', ')}\\nSource: ${isLocal?'Local file':'Bundled model'}\\nNote: units and axes must be validated against RVT.`;
+ },ev=>{if(token!==loadToken)return;status.textContent=ev.total?`Loading ${label}: ${Math.round(ev.loaded/ev.total*100)}%`:`Loading ${label}: ${(ev.loaded/1048576).toFixed(1)} MB`;},
+ err=>{if(token!==loadToken)return;status.textContent='FBX load failed: '+(err?.message||String(err));console.error(err)});
+}
+document.getElementById('fbxfile').addEventListener('change',e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ if(!file.name.toLowerCase().endsWith('.fbx')){status.textContent='Please choose an .fbx file';return}
+ loadFBX(URL.createObjectURL(file),file.name,true);
+});
+document.getElementById('default').onclick=()=>loadFBX('./assets/tech-freire-original.fbx','Bundled Tech Freire FBX');
+loadFBX('./assets/tech-freire-original.fbx','Bundled Tech Freire FBX');
+document.getElementById('reset').onclick=()=>{if(homePosition){camera.position.copy(homePosition);controls.target.copy(homeTarget)}};document.getElementById('wire').onclick=()=>model?.traverse(o=>{if(o.isMesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.wireframe=!m.wireframe)});document.getElementById('axes').onclick=()=>axes.visible=!axes.visible;addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
+</script></body></html>

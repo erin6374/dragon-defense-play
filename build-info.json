@@ -1,0 +1,7 @@
+{
+  "build": "5.1-motion-qa-01",
+  "version": "5.1.1",
+  "gameplay_base": "5.0-campaign-preview-29",
+  "scope": "Motion QA simulation stepping and automated video test infrastructure; ordinary gameplay visual/render settings unchanged",
+  "new_gameplay_features": false
+}
