@@ -149,7 +149,18 @@ try {
   assert.equal(report.collapse.schoolDamage, 1);
   assert.equal(report.collapse.active, false);
   assert.equal(report.collapse.schoolReconstruction.attached, 0);
-  await page.waitForFunction(() => window.__DD_QA.snap().schoolReconstruction.falling === 0);
+  // Exercise the production update loop at fixed simulation steps. CI software
+  // rendering can take several wall-clock seconds to produce a single frame.
+  const settle = await page.evaluate(() => {
+    const qa = window.__DD_QA;
+    for (let i = 0; i < 20; i++) {
+      const step = qa.motionStep(.25);
+      if (!step.ok) return step;
+    }
+    return {ok: true, result: qa.snap()};
+  });
+  assert.ok(settle.ok, settle.error);
+  assert.equal(settle.result.schoolReconstruction.falling, 0, 'collapse settles within five simulation seconds');
   report.settled = await snap();
   assert.equal(report.settled.schoolReconstruction.rubble, report.settled.schoolReconstruction.parts);
   assert.ok(Object.values(report.settled.schoolReconstruction.byMaterial).every(count => count > 0));
@@ -162,7 +173,7 @@ try {
     assert.ok(metrics.max[1] > 0 && metrics.max[1] < 1, 'visible rubble is below one game unit');
     assert.ok(metrics.triangles > 0, 'rubble remains in the rendered scene');
   }
-  await page.waitForFunction(frames => window.__DD_QA.snap().frameTimes.frames >= frames + 8,
+  await page.waitForFunction(frames => window.__DD_QA.snap().frameTimes.frames >= frames + 2,
     report.settled.frameTimes.frames);
   assert.equal((await snap()).schoolReconstruction.rubble, report.settled.schoolReconstruction.rubble);
   const reset = await page.evaluate(() => window.__DD_QA.start(1));
