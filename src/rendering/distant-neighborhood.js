@@ -15,10 +15,10 @@ function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;
 const rand=seeded(1221237);
 export function createDistantNeighborhood({THREE:THREEArg=THREE,scene,root}){
  const tiers=[
-  {name:'park-camac',min:-68,max:-34,offset:.11},
-  {name:'camac-11th',min:-170,max:-68,offset:.21},
-  {name:'11th-9th',min:-240,max:-170,offset:.30},
-  {name:'9th-8th',min:-316,max:-240,offset:.40}
+  {name:'park-camac',min:-68,max:-34,offset:.30},
+  {name:'camac-11th',min:-170,max:-68,offset:.49},
+  {name:'11th-9th',min:-240,max:-170,offset:.68},
+  {name:'9th-8th',min:-316,max:-240,offset:.80}
  ];
  const cube=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
  const materials={

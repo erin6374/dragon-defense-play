@@ -59,12 +59,15 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  restore(){city.restore();for(const b of buildings)b.roofBreached=false},setAtmosphere(phase,darkness){city.setAtmosphere(darkness)},setDistantHealth(health){longRange.setHealth(health)},
  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;nearStatic.visible=midStatic.visible=farStatic.visible=on;longRange.setVisible(on);},
  setParallax(scrollX,follow=0){
-  nearStatic.position.x=scrollX*0.04;nearStatic.position.y=-follow*0.003;
-  midStatic.position.x=scrollX*0.10;midStatic.position.y=-follow*0.008;
-  farStatic.position.x=scrollX*0.18;farStatic.position.y=-follow*0.014;
-  city.groups.backNear.position.x=scrollX*0.08;city.groups.backNear.position.y=-follow*0.006;
-  city.groups.backMid.position.x=scrollX*0.16;city.groups.backMid.position.y=-follow*0.010;
-  city.groups.backFar.position.x=scrollX*0.24;city.groups.backFar.position.y=-follow*0.016;
+  // Parallax factors are WORLD offsets that counter camera movement.
+  // 0 = stays with the playable street; 1 = fixed on screen in the distance.
+  // Keep crosswalks/road locked to actual building/traffic coordinates.
+  nearStatic.position.x=0;nearStatic.position.y=0;
+  midStatic.position.x=scrollX*0.18;midStatic.position.y=-follow*0.008;
+  farStatic.position.x=scrollX*0.34;farStatic.position.y=-follow*0.014;
+  city.groups.backNear.position.x=scrollX*0.22;city.groups.backNear.position.y=-follow*0.006;
+  city.groups.backMid.position.x=scrollX*0.45;city.groups.backMid.position.y=-follow*0.010;
+  city.groups.backFar.position.x=scrollX*0.68;city.groups.backFar.position.y=-follow*0.016;
   longRange.setParallax(scrollX,follow);
  },setRubbleVisible:city.setRubbleVisible,setParticlesEnabled:city.setParticlesEnabled
  };

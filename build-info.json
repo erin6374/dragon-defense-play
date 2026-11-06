@@ -1,7 +1,7 @@
 {
-  "build": "5.1-motion-qa-01",
-  "version": "5.1.1",
-  "gameplay_base": "5.0-campaign-preview-29",
-  "scope": "Motion QA simulation stepping and automated video test infrastructure; ordinary gameplay visual/render settings unchanged",
-  "new_gameplay_features": false
+  "build": "5.2-factory-atrium-01",
+  "version": "5.2.0",
+  "gameplay_base": "5.1.1",
+  "scope": "Reconstructed Tech Freire five-story shell with double-height industrial atrium, independent collapsing slabs and masonry, stabilized depth-separated parallax, foreground dragon layering",
+  "new_gameplay_features": true
 }

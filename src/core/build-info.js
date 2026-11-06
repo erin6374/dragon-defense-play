@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.1.1';
-export const BUILD_ID='5.1-motion-qa-01';
+export const GAME_VERSION='5.2.0';
+export const BUILD_ID='5.2-factory-atrium-01';
