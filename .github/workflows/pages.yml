@@ -15,7 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  qa:
+    uses: ./.github/workflows/browser-qa.yml
   deploy:
+    needs: qa
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -41,3 +44,18 @@ jobs:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify the published build
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for attempt in {1..18}; do
+            if curl -fsS "${PAGE_URL%/}/build-info.json?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-build.json &&
+              cmp -s build-info.json /tmp/live-build.json &&
+              curl -fsS "${PAGE_URL%/}/" -o /tmp/live-game.html &&
+              cmp -s index.html /tmp/live-game.html; then
+              cat /tmp/live-build.json
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1

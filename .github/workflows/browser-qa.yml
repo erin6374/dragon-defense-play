@@ -1,0 +1,30 @@
+name: Dragon Defense browser QA
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
+      - run: node "$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - name: Run browser QA
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 &
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
+          node qa/browser.mjs
+      - name: Retain screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragon-defense-browser-qa
+          path: qa-output/
+          retention-days: 30

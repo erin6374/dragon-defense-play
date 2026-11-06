@@ -18,6 +18,7 @@ import {createProfiler} from './rendering/profiler.js';
 import {InstancedParticlePool} from './rendering/instanced-particles.js';
 import {AdaptiveQuality} from './rendering/adaptive-quality.js';
 import {AdaptiveFramebuffer} from './rendering/frame-governor.js';
+import {snapshotSchoolMesh,captureSchoolComparison} from './rendering/school-comparison.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {ArchitecturalVoxels} from './architectural-voxels.js';
 import {createCinematicSky,addStreetSurfaceDetail} from './rendering/cinematic-environment.js';
@@ -383,6 +384,8 @@ function setRowhouseSourceVisible(role,on){
  referenceFacades.setExternalFacade(houseName,model.visible);
  return model.visible;
 }
+const schoolQA=new URLSearchParams(location.search).get('qa')==='1';
+let sourceComparison=null;
 function loadActualSchoolOverlay(){
  const loader=new FBXLoader();
  loader.load('./assets/tech-freire-original.fbx',fbx=>{
@@ -398,6 +401,19 @@ function loadActualSchoolOverlay(){
     meshRoles.set(mesh,role);
     if(role)roleMeshCounts[role]++;else roleMeshCounts.excluded++;
    });
+   if(schoolQA){
+    const original=new THREE.Group(),school=new THREE.Group();
+    for(const group of [original,school]){
+     group.scale.setScalar(placement.scale);
+     group.position.set(placement.translation.x,placement.translation.y,placement.translation.z);
+    }
+    fbx.traverse(mesh=>{
+     if(!mesh.isMesh)return;
+     original.add(snapshotSchoolMesh(mesh));
+     if(meshRoles.get(mesh)==='school')school.add(snapshotSchoolMesh(mesh));
+    });
+    sourceComparison={original,school};
+   }
    const buildRole=role=>{
     const result=batchStaticBim(fbx,{exteriorOnly:false,maxVerticesPerBatch:240000,maxMeshesPerBatch:320,
       meshFilter:mesh=>meshRoles.get(mesh)===role});
@@ -1957,7 +1973,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  const snap=()=>({version:GAME_VERSION,build:BUILD_ID,active,paused,wave,score,hp,
   dragon:{x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,lives:dragonLives},
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
-  camera:{x:camera.position.x,scroll:cameraScrollX},
+  camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,foregroundOffset:foregroundRoofs.position.x},
   schoolReconstruction:schoolReconstruction?.stats()||null,
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
   renderVisibility:{schoolEnabled:performanceLab.isEnabled('schoolModel'),schoolVisible:Boolean(architecturalModel?.visible || actualSchoolOverlay?.visible || (!architecturalReady&&Object.values(meshes).some(m=>m.visible))),actualSchoolOverlayReady,fbxRowhouses:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},schoolModelCalibration:actualSchoolOverlayStats?.calibration||null,skylineEnabled:performanceLab.isEnabled('skyline'),skylineVisible:skylineBackdrop.group.visible,backgroundEnabled:performanceLab.isEnabled('backgroundBuildings'),particlesEnabled:performanceLab.isEnabled('particles'),fireEnabled:performanceLab.isEnabled('fires'),renderFPSCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadows:renderer.shadowMap.enabled},
@@ -1970,6 +1986,12 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  schoolComparison:()=>run('schoolComparison',()=>{
+   if(!sourceComparison)throw Error('Source FBX comparison is not ready');
+   const gameSchool=new THREE.Group();
+   for(const mesh of [...schoolReconstruction.group,...schoolSignGroup.children])gameSchool.add(snapshotSchoolMesh(mesh));
+   return captureSchoolComparison(renderer,sourceComparison.original,sourceComparison.school,gameSchool);
+  }),
   // QA-only deterministic motion advance for offline video testing.
   // Runs the real simulation, not a synthetic animation or a second renderer.
   // A separate RAF step is still required to draw the resulting state.
