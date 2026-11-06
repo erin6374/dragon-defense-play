@@ -5,7 +5,7 @@ on:
   workflow_call:
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -15,8 +15,10 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
-      - run: node "$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - run: google-chrome --version
       - name: Run browser QA
+        env:
+          QA_BROWSER_CHANNEL: chrome
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 &
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
