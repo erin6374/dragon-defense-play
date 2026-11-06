@@ -14,7 +14,7 @@ function surface(mesh){
  if(/brick|exterior.*cmu/.test(name))return 'brick';
  if(/cornice|lintel|sill|parapet/.test(name))return 'stone';
  if(/roof|membrane|^mass_93_mass_93_971579$/.test(name))return 'roof';
- if(/^mass_/.test(name))return 'brick';
+ if(/^(?:exterior_)?mass_/.test(name))return 'brick';
  return 'interior';
 }
 function reverseTriangleWinding(geometry) {

@@ -29,11 +29,14 @@ export function fitSchoolFromFacade(source=SCHOOL_SOURCE,target=SCHOOL_TARGET){
 // wall, roof, or door categories. The broad reference volumes Mass 5 and 90
 // are excluded because they overlap the actual detail geometry.
 const exteriorSourceObjects=/^Mass_(?:2_Mass_2_323677|3_Mass_3_323978|4_Mass_4_324226|93_Mass_93_971579)$|_(?:577139|971789|1545270|1545272|1545274)$/;
+// These exported masonry returns occupy the gaps between the side party-wall
+// bays. Keep their exact FBX geometry, including the adjoining openings.
+const sideMasonry=/_(319636|319768|319855|319942|320026|320638|320784|320869|321343|322923|323025|323346|356207|361315|361796|361964|362038|363387|363517|449495|450412|496180|496314|496450|496592)$/;
 export function architecturalMeshEligible(mesh,box){
  const tag=((mesh.name||'')+' '+(mesh.parent?.name||'')).toLowerCase();
  const needed=/wall|floor|slab|roof|window|glaz|panel|curtain|mullion|frame|column|beam|door|stair|railing|cornice|parapet|foundation|glass|ramp|storefront|handrail|rail|structural|lintel|baluster|baseboard|trim|sill|top_rail/.test(tag);
  const nuisance=/desk|chair|furniture|table|locker|outlet|lighting|fixture|sink|toilet|plumbing|sprinkler|diffuser|duct|terminal|receptacle|equipment|casework|cabinet|_led_|student_|mass_5|floorcolumn|exterior_mass/.test(tag);
- if((!needed||nuisance)&&!exteriorSourceObjects.test(mesh.name||''))return false;
+ if((!needed||nuisance)&&!exteriorSourceObjects.test(mesh.name||'')&&!sideMasonry.test(mesh.name||''))return false;
  if(box.min.y < -18||box.max.y > 90)return false;
  if(box.min.z < -148||box.max.z > 53)return false;
  return true;

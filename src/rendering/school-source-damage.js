@@ -33,6 +33,7 @@ export function createSchoolSourceDamage() {
   texture.needsUpdate=true;
  };
  const patch=material=>{
+  const glass=material.name==='school-glass';
   material.onBeforeCompile=shader=>{
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
@@ -51,11 +52,11 @@ export function createSchoolSourceDamage() {
     if(all(greaterThanEqual(damageUv,vec3(0.0)))&&all(lessThanEqual(damageUv,vec3(1.0)))){
      damage=texture(schoolDamageMap,damageUv).r;
     }
-    if(damage>.53)discard;`);
+    if(damage>${glass?'.24':'.53'})discard;`);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d';
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass;
  };
  return {stamp,patch,strikes:()=>strikes,reset:()=>{
   pixels.fill(0);

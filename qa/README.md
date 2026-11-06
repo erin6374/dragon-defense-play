@@ -2,7 +2,7 @@
 
 Open **Actions → Dragon Defense browser QA → Run workflow** for an on-demand run. Pull requests run the same suite. A push to `main` runs it before the Pages deployment, then checks that Pages serves the release files. Download **dragon-defense-browser-qa** from the run summary. GitHub retains it for 30 days, including failure diagnostics.
 
-The artifact contains startup and gameplay PNGs, left and right camera pans, and a school impact. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
+The artifact contains startup and gameplay PNGs, camera pans, both school side elevations, and matched front and side views before impact, after a localized impact, and after total collapse. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
 
 ## v5.2.2 source fidelity
 
@@ -14,3 +14,9 @@ The three matched views each reported 592,298 triangles for the source school an
 - The staged meteor goes through the production collision and impact routines. The suite also verifies the collapse handoff and restart. Frame timings are from headless software WebGL. Use them to detect stalls and compare controlled runs. Hardware and mobile frame rates require device testing.
 
 Rollback point: [v5.2.1](https://github.com/erin6374/dragon-defense-play/tree/rollback/v5.2.1).
+
+## v5.2.3 school repair and collapse
+
+The side checks probe the restored exterior masonry at four locations and verify that the rear stair opening stays clear. The staged iron meteor must change a limited area of the front render and detach glass and façade pieces while the main structure remains standing. The total-loss check waits for all parts to settle, verifies that the front and side silhouettes have no standing shell, checks that the rubble stays below one game unit and persists, then restarts the game.
+
+Rollback point for this release is [v5.2.2](https://github.com/erin6374/dragon-defense-play/tree/rollback/v5.2.2).

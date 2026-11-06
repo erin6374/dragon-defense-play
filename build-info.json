@@ -1,7 +1,7 @@
 {
-  "build": "5.2-source-school-01",
-  "version": "5.2.2",
-  "gameplay_base": "5.2.1",
-  "scope": "Original Tech Freire FBX school geometry with localized meteor damage and retained structural collapse",
-  "new_gameplay_features": true
+  "build": "5.2-school-repair-01",
+  "version": "5.2.3",
+  "gameplay_base": "5.2.2",
+  "scope": "Source school exterior repair and material-specific damage through total collapse",
+  "new_gameplay_features": false
 }

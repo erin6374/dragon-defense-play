@@ -45,7 +45,7 @@ try {
     await writeFile('qa-output/school-' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
   }
 
-  for (const view of ['front', 'corner', 'roof']) {
+  for (const view of ['front', 'corner', 'roof', 'left-side', 'right-side']) {
     const source = views.result.find(result => result.name === view + '-source-school').metrics;
     const game = views.result.find(result => result.name === view + '-game').metrics;
     assert.equal(game.triangles, source.triangles, view + ' source triangle count');
@@ -57,6 +57,20 @@ try {
     }
   }
   assert.equal(report.startup.sourceSchool.visible, true);
+  const exterior = await page.evaluate(() => window.__DD_QA.schoolExterior());
+  assert.ok(exterior.ok, exterior.error);
+  report.exterior = exterior.result;
+  assert.deepEqual(report.exterior.slice(0, 4), Array(4).fill('school-brick'), 'outer masonry at former side gaps');
+  assert.equal(report.exterior[4], null, 'rear stair opening remains clear');
+  const damageViews = async label => {
+    const capture = await page.evaluate(() => window.__DD_QA.schoolDamageView());
+    assert.ok(capture.ok, capture.error);
+    report[label] = capture.result.map(({name, metrics}) => ({name, metrics}));
+    for (const {name, png} of capture.result) {
+      await writeFile('qa-output/school-' + label + '-' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
+    }
+    return capture.result;
+  };
   await page.locator('#graphics').selectOption('mobile');
   await page.locator('#start').click();
   await page.waitForFunction(() => window.__DD_QA.snap().active);
@@ -92,6 +106,7 @@ try {
 
   await page.evaluate(() => window.__DD_QA.move(0, 12));
   await page.waitForFunction(() => window.__DD_QA.snap().camera.scroll === 0);
+  const intact = await damageViews('intact');
   const staged = await page.evaluate(() => window.__DD_QA.stageSchoolMeteor());
   assert.ok(staged.ok, staged.error);
   await page.waitForFunction(() => window.__DD_QA.snap().sourceSchool.strikes === 1);
@@ -101,11 +116,53 @@ try {
   assert.ok(report.impact.schoolReconstruction.detached > 0);
   assert.equal(report.impact.sourceSchool.visible, true);
   await shot('05-school-impact');
+  const partial = await damageViews('partial');
+  const visualChange = await page.evaluate(async ([before, after]) => {
+    const canv = document.createElement('canvas');
+    const ctx = canv.getContext('2d', {willReadFrequently: true});
+    const decode = async png => {
+      const img = new Image();
+      img.src = png;
+      await img.decode();
+      canv.width = img.width;
+      canv.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      return ctx.getImageData(0, 0, img.width, img.height).data;
+    };
+    const a = await decode(before), b = await decode(after);
+    let changed = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      if (Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2]) > 30) changed++;
+    }
+    return changed / (a.length / 4);
+  }, [intact[0].png, partial[0].png]);
+  report.partialChangedFraction = visualChange;
+  assert.ok(visualChange > .0003 && visualChange < .15, 'impact changes a localized visible area');
+  assert.ok(report.impact.schoolReconstruction.attached > report.impact.schoolReconstruction.detached);
+  assert.ok(report.impact.schoolReconstruction.byMaterial.glass > 0);
+  assert.ok(report.impact.schoolReconstruction.byMaterial.facade > 0);
   const collapse = await page.evaluate(() => window.__DD_QA.hitSchool(100));
   assert.ok(collapse.ok, collapse.error);
   report.collapse = collapse.result;
   assert.equal(report.collapse.sourceSchool.visible, false);
   assert.equal(report.collapse.schoolReconstruction.collapsing, true);
+  assert.equal(report.collapse.schoolDamage, 1);
+  assert.equal(report.collapse.active, false);
+  assert.equal(report.collapse.schoolReconstruction.attached, 0);
+  await page.waitForFunction(() => window.__DD_QA.snap().schoolReconstruction.falling === 0);
+  report.settled = await snap();
+  assert.equal(report.settled.schoolReconstruction.rubble, report.settled.schoolReconstruction.parts);
+  assert.ok(Object.values(report.settled.schoolReconstruction.byMaterial).every(count => count > 0));
+  const rubble = await damageViews('total-collapse');
+  for (const [index, {metrics}] of rubble.entries()) {
+    assert.ok(intact[index].metrics.upperPixels > 100, 'intact silhouette visible');
+    assert.equal(metrics.upperPixels, 0, 'no standing silhouette above mid-building');
+    assert.ok(metrics.max[1] > 0 && metrics.max[1] < 1, 'visible rubble is below one game unit');
+    assert.ok(metrics.triangles > 0, 'rubble remains in the rendered scene');
+  }
+  await page.waitForFunction(frames => window.__DD_QA.snap().frameTimes.frames >= frames + 8,
+    report.settled.frameTimes.frames);
+  assert.equal((await snap()).schoolReconstruction.rubble, report.settled.schoolReconstruction.rubble);
   const reset = await page.evaluate(() => window.__DD_QA.start(1));
   assert.ok(reset.ok, reset.error);
   assert.deepEqual(reset.result.sourceSchool, {visible: true, strikes: 0});

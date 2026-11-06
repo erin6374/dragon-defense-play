@@ -21,16 +21,27 @@ export function createDestructibleSchool(THREE,scene,bounds){
  ];
  const MAX=1200;
  const unitBox=new THREE.BoxGeometry(1,1,1);
+ // A broken pane becomes thin, irregular shards with its own motion.
+ const shards=new THREE.BufferGeometry();
+ shards.setAttribute('position',new THREE.Float32BufferAttribute([
+  -.48,-.36,0, -.12,-.48,0, -.28,.38,0,
+  -.06,-.16,.08, .34,-.32,.08, .09,.47,.08,
+  .22,.05,-.05, .48,.15,-.05, .35,.39,-.05,
+ ],3));
+ shards.computeVertexNormals();
+ const shardMaterial=materials[2].clone();
+ shardMaterial.side=THREE.DoubleSide;
+ const shardBatch=materials.push(shardMaterial)-1;
  const batches=materials.map((material,i)=>{
-  const mesh=new THREE.InstancedMesh(unitBox,material,MAX);
-  mesh.name='TECH-FREIRE-REBUILT-'+['BRICK','CONCRETE','GLAZING','STEEL','INTERIOR','BACKER','ROOF'][i];
+  const mesh=new THREE.InstancedMesh(i===shardBatch?shards:unitBox,material,MAX);
+  mesh.name='TECH-FREIRE-REBUILT-'+['BRICK','CONCRETE','GLAZING','STEEL','INTERIOR','BACKER','ROOF','SHARDS'][i];
   mesh.frustumCulled=false;
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   scene.add(mesh);return mesh;
  });
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
- const blank=new THREE.Matrix4().makeScale(0,0,0);
- let runningTime=0,collapsing=false,supportClock=0,impactSerial=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
+ const rotation=new THREE.Euler();
+ let collapsing=false,supportClock=0,impactSerial=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
@@ -175,7 +186,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
   const b=Math.cos(seed*13.21+p.z*.83-p.x*2.17);
   p.vx=a*(violent?7:3);p.vy=1.3+Math.abs(b)*(violent?7:3.5);
   p.vz=1.5+Math.abs(a)*(violent?5:2.7);
-  p.vr=(a+b)*(violent?3.5:1.7);return true;
+  const glass=p.kind===2,frame=structural.has(p)||p.zone==='floor';
+  p.profile=glass?'glass':frame?'structure':'facade';
+  const impulse=glass?1.35:frame?.45:1;
+  p.vx*=impulse;p.vz*=impulse;
+  p.vy*=glass?1.15:frame?.25:.65;
+  p.vr=(a+b)*(glass?5:frame?1.3:3);
+  return true;
  }
  function impact({x,y,z,radius=3.8,strength=1,type='stone',speed=0}){
   if(collapsing)return 0;
@@ -212,13 +229,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
  // Support is computed locally from nearby surviving beams and columns. A
  // localized support failure can make an adjacent slab sag/fall, but a single
  // impact cannot delete an arbitrary complete floor.
- const structural=pieces.filter(p=>['pier','beam','column','atrium-column'].includes(p.zone));
+ const structural=new Set(pieces.filter(p=>['pier','beam','column','atrium-column'].includes(p.zone)));
  // This connectivity is determined by the immutable initial structure, so
  // cache it instead of allocating thousands of arrays every simulation tick.
  const supportLinks=new Map();
  for(const p of pieces){
   if(p.homeY<=min.y+1.05)continue;
-  supportLinks.set(p,structural.filter(q=>q!==p&&
+  supportLinks.set(p,[...structural].filter(q=>q!==p&&
    Math.abs(q.homeX-p.homeX)<Math.max(2.7,p.w*.55+1.4)&&
    Math.abs(q.homeZ-p.homeZ)<Math.max(3.2,p.d*.55+1.6)&&
    q.homeY<=p.homeY+1&&q.homeY>=p.homeY-height/5-1.7));
@@ -236,14 +253,6 @@ export function createDestructibleSchool(THREE,scene,bounds){
     else healthy+=q.integrity;
    }
    const fraction=healthy/(healthy+failed+1e-4);
-   // Complete loss of structural capacity at zero health is modeled as
-   // accelerating load fatigue, not a timed top-down sequence. Existing
-   // localized damage and surviving supports still determine which pieces fall.
-   if(collapsing){
-    const proximity=Math.max(0,1-Math.hypot(p.homeX-lastImpact.x,p.homeZ-lastImpact.z)/Math.max(1,width));
-    p.integrity-=dt*(.25+.22*proximity)*(p.protectedZone?.52:1);
-    if(p.integrity<=0){detach(p,p.homeX+p.homeY+impactSerial,.02+Math.random()*.15,true);continue;}
-   }
    const vulnerable=p.zone==='floor'?.43:p.zone==='atrium-column'?.18:.31;
    if(fraction>=vulnerable)continue;
    const load=(vulnerable-fraction)/Math.max(.1,vulnerable);
@@ -254,23 +263,25 @@ export function createDestructibleSchool(THREE,scene,bounds){
  function collapse(){
   if(collapsing)return;
   collapsing=true;
-  // Terminal failure is NOT a top-down sequenced animation. Break supports
-  // closest to the final impact first, then allow structural load propagation
-  // to decide which adjacent slabs, rooms and facade bays fall next.
-  const columns=structural.filter(p=>!p.falling&&!p.resting&&
-    (p.zone==='pier'||p.zone==='column'||p.zone==='atrium-column'));
-  columns.sort((a,b)=>
-   Math.hypot(a.x-lastImpact.x,a.y-lastImpact.y,a.z-lastImpact.z)-
-   Math.hypot(b.x-lastImpact.x,b.y-lastImpact.y,b.z-lastImpact.z));
-  for(const p of columns.slice(0,Math.max(5,Math.ceil(columns.length*.22)))){
-   p.integrity=0;detach(p,lastImpact.x+lastImpact.z,.02+Math.random()*.2,true);
+  // Stagger the loss of all remaining support, including trim and rooftop units.
+  for(const p of pieces){
+   p.integrity=0;
+   const delay=.08+.48*Math.min(1,Math.abs(p.homeX-lastImpact.x)/width)+
+    .20*THREE.MathUtils.clamp((p.homeY-min.y)/height,0,1);
+   detach(p,p.homeX+p.homeY+impactSerial,delay,false);
   }
+  flush();
+ }
+ function dimensions(p){
+  const glass=p.profile==='glass';
+  if(glass)scale.set(Math.min(p.w,.48),Math.min(p.h,.38),Math.min(p.d,.30));
+  else if(p.resting)scale.set(Math.min(p.w,2.2),Math.min(p.h,.64),Math.min(p.d,2.1));
+  else scale.set(p.w,p.h,p.d);
  }
  function update(dt){
   if(dt<=0)return;
-  runningTime+=dt;
   supportClock+=dt;
-  if(supportClock>=.18){propagateSupportFailure(supportClock);supportClock=0;}
+  if(!collapsing&&supportClock>=.18){propagateSupportFailure(supportClock);supportClock=0;}
   let changed=false;
   for(const p of pieces){
    if(!p.falling||p.resting||p.removed)continue;
@@ -279,10 +290,15 @@ export function createDestructibleSchool(THREE,scene,bounds){
    changed=true;
    p.vy-=17*dt;p.vx*=Math.exp(-.6*dt);p.vz*=Math.exp(-.6*dt);
    p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.rot+=p.vr*dt;
-   const floor=min.y+p.h*.5;
+   dimensions(p);
+   const floor=min.y+scale.y*.5;
    if(p.y<=floor){
     p.y=floor;p.vy*= -.18;p.vx*=.35;p.vz*=.35;p.vr*=.4;
-    if(Math.abs(p.vy)<1.5)p.resting=true;
+    if(Math.abs(p.vy)<1.5){
+     p.resting=true;
+     dimensions(p);
+     p.y=min.y+scale.y*.5;
+    }
    }
   }
   if(changed)flush();
@@ -292,31 +308,37 @@ export function createDestructibleSchool(THREE,scene,bounds){
   const counts=new Array(materials.length).fill(0);
   for(const p of pieces){
    if(p.removed||(detachedOnly&&!p.falling))continue;
-   const index=counts[p.kind]++;
+   const kind=p.profile==='glass'?shardBatch:p.kind;
+   const index=counts[kind]++;
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
-   position.set(p.x,p.y,p.z);quat.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,p.rot);
-   scale.set(p.w,p.h,p.d);
+   position.set(p.x,p.y,p.z);
+   const tumble=p.resting?0:p.rot;
+   rotation.set(tumble,p.rot,tumble*.63);
+   quat.setFromEuler(rotation);
+   dimensions(p);
    matrix.compose(position,quat,scale);
-   batches[p.kind].setMatrixAt(index,matrix);
+   batches[kind].setMatrixAt(index,matrix);
   }
   batches.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;
    // Frustum culling is disabled; recomputing a bounds sphere here is wasteful.
    });
  }
  function reset(){
-  collapsing=false;runningTime=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
+  collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
-     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,profile:null});
   }
   flush();
  }
  function stats(){return {parts:pieces.length,drawBatches:materials.length,
    detached:pieces.filter(p=>p.falling).length,falling:pieces.filter(p=>p.falling&&!p.resting).length,
    rubble:pieces.filter(p=>p.resting).length,damaged:pieces.filter(p=>p.integrity<.999).length,
-   lastImpact,structuralMembers:structural.length,doubleHeightAtrium:true,
+   lastImpact,structuralMembers:structural.size,doubleHeightAtrium:true,
    atriumY:[levels[0],levels[2]],atriumFrontZ:front,atriumBackZ:atriumBack,
-   fullFiveStoryShell:true,collapsing}}
+   attached:pieces.filter(p=>!p.falling).length,
+   byMaterial:Object.fromEntries(['glass','structure','facade'].map(profile=>[profile,pieces.filter(p=>p.profile===profile).length])),
+   fullFiveStoryShell:!collapsing,collapsing}}
  reset();
  return {group:batches,impact,collapse,update,reset,stats,
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
