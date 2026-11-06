@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dragon Defense | Visual QA</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#101827;color:#edf3fc}
+*{box-sizing:border-box}body{margin:0;line-height:1.5}header,main,footer{max-width:1250px;margin:auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #334155}
+a{color:#93c5fd}h1{margin:0;font-size:clamp(1.5rem,3vw,2.3rem)}h2{font-size:1.2rem;margin:28px 0 12px}
+small,.muted{color:#a9bbd3}.pill{background:#20324b;padding:5px 11px;border-radius:20px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:18px}
+.stat,.panel{background:#19263a;border:1px solid #34455c;border-radius:12px;padding:15px}
+.stat strong{display:block;font-size:1.35rem;overflow-wrap:anywhere}
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+figure{margin:0;background:#19263a;border:1px solid #34455c;border-radius:10px;overflow:hidden}
+figure img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#0b111c;display:block;cursor:zoom-in}
+figcaption{padding:9px 12px;font-size:.9rem;overflow-wrap:anywhere}
+button{border:1px solid #7c9cc3;border-radius:8px;background:#243d5b;color:white;padding:8px 12px;cursor:pointer}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto;font-size:.8rem}
+#lightbox{border:0;background:#0b111c;color:white;max-width:98vw;max-height:98vh;padding:10px}
+#lightbox img{display:block;max-width:95vw;max-height:88vh;object-fit:contain}
+</style>
+</head>
+<body>
+<header><div><h1>Dragon Defense · Visual QA</h1><small>Automated Playwright screenshots and diagnostics from the latest deployed build</small></div>
+<nav><a href="../">Play game</a> · <a href="https://github.com/erin6374/dragon-defense-play/actions">GitHub Actions</a> · <a href="report.json">Raw report</a></nav></header>
+<main>
+<p id="status" role="status" class="pill">Loading QA results…</p>
+<section class="summary" id="summary"></section>
+<h2>School source vs. in-game model</h2><div class="gallery" id="comparison"></div>
+<h2>Damage progression</h2><div class="gallery" id="damage"></div>
+<h2>Gameplay and camera movement</h2><div class="gallery" id="gameplay"></div>
+<h2>Diagnostics</h2><div class="panel"><details><summary>Performance, test results, browser warnings and errors</summary><pre id="diagnostics"></pre></details></div>
+<p class="muted">Images and metrics are generated in headless Chrome with software WebGL. They do not prove visual fidelity on real hardware. A passing automated test does not replace human review.</p>
+</main><footer class="muted">Latest successful QA associated with the published game release. Failed QA blocks deployment; failed-run artifacts remain available in GitHub Actions.</footer>
+<dialog id="lightbox"><button id="close" aria-label="Close image">Close</button><img id="large" alt=""></dialog>
+<script>
+const $=id=>document.getElementById(id);
+const sections={comparison:$('comparison'),damage:$('damage'),gameplay:$('gameplay')};
+const comparisonViews=['front','corner','roof','left-side','right-side'];
+const damageViews=['front','corner','right-side'];
+function stat(label,value){const el=document.createElement('div');el.className='stat';const title=document.createElement('small');title.textContent=label;const data=document.createElement('strong');data.textContent=value??'n/a';el.append(title,data);$('summary').append(el)}
+function image(section,name,title){const figure=document.createElement('figure'),img=document.createElement('img'),caption=document.createElement('figcaption');
+img.src=name+'.png';img.alt=title;img.loading='lazy';img.onerror=()=>{figure.remove()};img.onclick=()=>{$('large').src=img.src;$('large').alt=title;$('lightbox').showModal()};
+caption.textContent=title;figure.append(img,caption);sections[section].append(figure)}
+async function init(){
+try{
+const response=await fetch('report.json',{cache:'no-store'});if(!response.ok)throw Error('QA report not published ('+response.status+')');
+const r=await response.json();$('status').textContent='Published QA: '+(r.failure?'failed':'completed')+' · '+(r.expected?.version||'unknown version');
+stat('Game version',r.expected?.version);stat('Build',r.expected?.build);stat('Browser',r.browser);stat('Browser errors',r.errors?.length??0);
+stat('Frame rate (headless)',r.performance?.live?.fps==null?'n/a':Number(r.performance.live.fps).toFixed(1)+' FPS');
+stat('School damage after impact',r.impact?.schoolDamage==null?'n/a':Math.round(r.impact.schoolDamage*100)+'%');
+stat('Partial image difference',r.partialChangedFraction==null?'n/a':(r.partialChangedFraction*100).toFixed(2)+'%');
+stat('Settled rubble parts',r.settled?.schoolReconstruction?.rubble);
+for(const view of comparisonViews)for(const [suffix,label] of [['source-school','FBX source'],['game','Game model']])image('comparison','school-'+view+'-'+suffix,view+' · '+label);
+for(const phase of ['intact','partial','total-collapse'])for(const view of damageViews)image('damage','school-'+phase+'-'+view+'-damage',phase+' · '+view);
+for(const [name,label] of [['01-startup','Startup'],['02-playing','Playing'],['03-pan-right','Pan right'],['04-pan-left','Pan left'],['05-school-impact','Meteor impact']])image('gameplay',name,label);
+$('diagnostics').textContent=JSON.stringify({failure:r.failure,errors:r.errors,warnings:r.warnings,performance:r.performance,exterior:r.exterior,impact:r.impact,collapse:r.collapse,settled:r.settled},null,2);
+}catch(e){$('status').textContent='QA data unavailable: '+e.message+' — inspect the latest GitHub Actions run.'}
+}
+$('close').onclick=()=>$('lightbox').close();init();
+</script>
+</body></html>
