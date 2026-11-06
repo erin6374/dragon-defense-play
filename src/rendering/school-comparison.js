@@ -15,23 +15,24 @@ export function captureSchoolComparison(renderer, source, sourceSchool, gameScho
  key.position.set(2,4,3);
  scene.add(key);
  const camera=new THREE.OrthographicCamera();
- const target=new THREE.Vector3(0,11,-24);
+ const target=new THREE.Vector3(0,13,-26);
  const canvas=renderer.domElement;
  const aspect=canvas.width/canvas.height;
  const results=[];
+ const models=[['original-fbx',source],['source-school',sourceSchool],['game',gameSchool]]
+  .map(([label,model])=>({label,model,bounds:new THREE.Box3().setFromObject(model,true)}));
  for(const [view,eye,height] of [
-  ['front',[0,11,110],39],
+  ['front',[0,13,110],47],
   ['corner',[80,57,89],75],
-  ['roof',[0,120,-23.9],72],
+  ['roof',[0,120,-25.9],82],
  ]){
   Object.assign(camera,{left:-height*aspect/2,right:height*aspect/2,
    top:height/2,bottom:-height/2,near:.1,far:400});
   camera.position.fromArray(eye);
   camera.lookAt(target);
   camera.updateProjectionMatrix();
-  for(const [label,model] of [['original-fbx',source],['source-school',sourceSchool],['game',gameSchool]]){
+  for(const {label,model,bounds} of models){
    scene.add(model);
-   const bounds=new THREE.Box3().setFromObject(model);
    renderer.render(scene,camera);
    results.push({name:view+'-'+label,png:canvas.toDataURL('image/png'),
     metrics:{min:bounds.min.toArray(),max:bounds.max.toArray(),

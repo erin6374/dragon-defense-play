@@ -45,11 +45,24 @@ try {
     await writeFile('qa-output/school-' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
   }
 
+  for (const view of ['front', 'corner', 'roof']) {
+    const source = views.result.find(result => result.name === view + '-source-school').metrics;
+    const game = views.result.find(result => result.name === view + '-game').metrics;
+    assert.equal(game.triangles, source.triangles, view + ' source triangle count');
+    assert.ok(game.drawCalls > 0 && game.drawCalls < source.drawCalls / 10, view + ' draw batching');
+    for (const edge of ['min', 'max']) {
+      for (let axis = 0; axis < 3; axis++) {
+        assert.ok(Math.abs(game[edge][axis] - source[edge][axis]) < .001, view + ' source bounds');
+      }
+    }
+  }
+  assert.equal(report.startup.sourceSchool.visible, true);
   await page.locator('#graphics').selectOption('mobile');
   await page.locator('#start').click();
   await page.waitForFunction(() => window.__DD_QA.snap().active);
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
+  report.browser = browser.version();
   const before = await snap();
   await page.keyboard.down('KeyD');
   try {
@@ -79,12 +92,24 @@ try {
 
   await page.evaluate(() => window.__DD_QA.move(0, 12));
   await page.waitForFunction(() => window.__DD_QA.snap().camera.scroll === 0);
-  const impact = await page.evaluate(() => window.__DD_QA.impactProfileAt(0, 11, .35, 3.4, 'iron'));
-  assert.ok(impact.ok, impact.error);
-  report.impact = impact.result;
-  assert.ok(impact.result.schoolDamage > 0);
-  assert.ok(impact.result.schoolReconstruction.damaged > 0);
+  const staged = await page.evaluate(() => window.__DD_QA.stageSchoolMeteor());
+  assert.ok(staged.ok, staged.error);
+  await page.waitForFunction(() => window.__DD_QA.snap().sourceSchool.strikes === 1);
+  report.impact = await snap();
+  assert.ok(report.impact.schoolDamage > 0);
+  assert.ok(report.impact.schoolReconstruction.damaged > 0);
+  assert.ok(report.impact.schoolReconstruction.detached > 0);
+  assert.equal(report.impact.sourceSchool.visible, true);
   await shot('05-school-impact');
+  const collapse = await page.evaluate(() => window.__DD_QA.hitSchool(100));
+  assert.ok(collapse.ok, collapse.error);
+  report.collapse = collapse.result;
+  assert.equal(report.collapse.sourceSchool.visible, false);
+  assert.equal(report.collapse.schoolReconstruction.collapsing, true);
+  const reset = await page.evaluate(() => window.__DD_QA.start(1));
+  assert.ok(reset.ok, reset.error);
+  assert.deepEqual(reset.result.sourceSchool, {visible: true, strikes: 0});
+  assert.equal(reset.result.schoolReconstruction.damaged, 0);
   assert.deepEqual(report.errors, []);
 } catch (error) {
   report.failure = String(error.stack ?? error);

@@ -18,6 +18,8 @@ import {createProfiler} from './rendering/profiler.js';
 import {InstancedParticlePool} from './rendering/instanced-particles.js';
 import {AdaptiveQuality} from './rendering/adaptive-quality.js';
 import {AdaptiveFramebuffer} from './rendering/frame-governor.js';
+import {batchSchoolSource} from './rendering/school-source-batch.js';
+import {createSchoolSourceDamage} from './rendering/school-source-damage.js';
 import {snapshotSchoolMesh,captureSchoolComparison} from './rendering/school-comparison.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {ArchitecturalVoxels} from './architectural-voxels.js';
@@ -111,27 +113,6 @@ function installNeighborhoodWindows(){
 const schoolWindowLights=[];
 const schoolGlazingMaterials=[];
 const schoolSignGroup=new THREE.Group();scene.add(schoolSignGroup);
-function installSchoolWindowLights(){
- schoolGlazingMaterials.length=0;
- const source=actualSchoolOverlay;
- if(!source)return;
- let glazingMeshes=0;
- source.traverse(obj=>{
-  if(!obj.isMesh)return;
-  const tag=((obj.name||'')+' '+(Array.isArray(obj.material)?obj.material.map(m=>m?.name||'').join(' '):obj.material?.name||'')).toLowerCase();
-  if(!/glazing|glass|curtain|window/.test(tag))return;
-  glazingMeshes++;
-  const materials=Array.isArray(obj.material)?obj.material:[obj.material];
-  const copies=materials.map(mat=>{
-   if(!mat||!('emissive' in mat))return mat;
-   const clone=mat.clone();clone.emissive.setHex(0xffd6a2);clone.emissiveIntensity=0;
-   schoolGlazingMaterials.push(clone);
-   return clone;
-  });
-  obj.material=Array.isArray(obj.material)?copies:copies[0];
- });
- console.info('School FBX glazing meshes (attached, no floating cards):',glazingMeshes);
-}
 let lightningCooldown=5;
 function updateNight(dt){
  const targetPhase=dayPhase(wave);let phaseDelta=targetPhase-displayedPhase;if(phaseDelta<-.5)phaseDelta+=1;if(phaseDelta>.5)phaseDelta-=1;
@@ -252,22 +233,24 @@ function updateSchoolFragments(){
  }
  schoolFragments.count=n;schoolFragments.instanceMatrix.needsUpdate=true;
 }
+function syncSchoolVisibility(){
+ const visible=performanceLab.isEnabled('schoolModel');
+ const useSource=Boolean(actualSchoolOverlayReady&&schoolDamage<.995);
+ if(actualSchoolOverlay)actualSchoolOverlay.visible=visible&&useSource;
+ if(architecturalModel)architecturalModel.visible=false;
+ schoolReconstruction?.setDetachedOnly(useSource);
+ schoolReconstruction?.setVisible(visible);
+ schoolSignGroup.visible=visible&&!actualSchoolOverlayReady&&schoolDamage<.75;
+}
 function syncStructuralDamage(){
  if(schoolDamage>=1)neighborhood.city.forceDamage(neighborhood.school,1);
- const visible=performanceLab.isEnabled('schoolModel');
- // Never use the source FBX height-cutoff shader as a demolition simulation.
- // Segment meshes detach physically; they are not switched off floor-by-floor.
- if(actualSchoolOverlay)actualSchoolOverlay.visible=false;
- if(architecturalModel)architecturalModel.visible=false;
- if(schoolReconstruction){
-  schoolReconstruction.setVisible(visible);
-  if(schoolDamage>=.995)schoolReconstruction.collapse();
- }
- schoolSignGroup.visible=visible&&schoolDamage<.75;
+ if(schoolDamage>=.995)schoolReconstruction?.collapse();
+ syncSchoolVisibility();
 }
 
 // Permanent, pixel-cost-bounded damage masks. Unlike the old 48-slot FIFO uniform
 // list, past impact holes never disappear when additional meteors hit the school.
+const sourceDamage=createSchoolSourceDamage();
 const SCHOOL_MASK_SIZE=384;
 const schoolDamagePlanes={front:document.createElement('canvas'),side:document.createElement('canvas')};
 for(const cv of Object.values(schoolDamagePlanes)){
@@ -280,6 +263,7 @@ for(const tex of Object.values(schoolDamageTextures)){
  tex.colorSpace=THREE.NoColorSpace;tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.generateMipmaps=false;
 }
 function resetSchoolDamageMasks(){
+ sourceDamage.reset();
  for(const [key,cv] of Object.entries(schoolDamagePlanes)){
   const c=cv.getContext('2d');c.globalCompositeOperation='source-over';
   c.fillStyle='#ffffff';c.fillRect(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE);
@@ -321,57 +305,9 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  // The reconstructed school determines damage from meteor type, velocity and
  // exact 3D impact position, independent of whole-floor visibility cutoffs.
  schoolReconstruction?.impact({x,y,z,radius:r,strength,type,speed});
+ sourceDamage.stamp(x,y,z,r);
  const range=schoolBounds.getSize(new THREE.Vector3());
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,r/range.x,r/range.y);
-}
-function applyArchitecturalDamageShader(root){
- root.traverse(mesh=>{
-  if(!mesh.isMesh)return;
-  const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
-  for(const mat of materials){
-   if(!mat||!mat.isMaterial||mat.userData?.schoolDamagePatched)continue;
-   mat.userData.schoolDamagePatched=true;
-   const original=mat.onBeforeCompile;
-   mat.onBeforeCompile=function(shader,renderer){
-    if(original)original.call(this,shader,renderer);
-    const size=new THREE.Vector3();schoolBounds.getSize(size);
-    shader.uniforms.uCollapseLevel={value:schoolBounds.max.y};
-    shader.uniforms.uDamageFront={value:schoolDamageTextures.front};
-    shader.uniforms.uDamageSide={value:schoolDamageTextures.side};
-    shader.uniforms.uDamageRangeFront={value:new THREE.Vector4(schoolBounds.min.x,schoolBounds.min.y,size.x||1,size.y||1)};
-    shader.uniforms.uDamageRangeSide={value:new THREE.Vector4(schoolBounds.min.z,schoolBounds.min.y,size.z||1,size.y||1)};
-    mat.userData.levelUniform=shader.uniforms.uCollapseLevel;
-    const declarations=`varying vec3 vDamageWorld; varying vec3 vDamageNormal;
-     uniform float uCollapseLevel;
-     uniform sampler2D uDamageFront;uniform sampler2D uDamageSide;
-     uniform vec4 uDamageRangeFront; uniform vec4 uDamageRangeSide;`;
-    shader.vertexShader=declarations+'\n'+shader.vertexShader;
-    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',
-     '#include <begin_vertex>\n vDamageNormal=normalize(mat3(modelMatrix)*normal);');
-    shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',
-     '#include <worldpos_vertex>\n vDamageWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    shader.fragmentShader=declarations+'\n'+shader.fragmentShader;
-    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',
-     `#include <clipping_planes_fragment>
-      if(vDamageWorld.y>uCollapseLevel)discard;
-      vec2 damageUv;
-      float mark;
-      if(abs(vDamageNormal.x)>abs(vDamageNormal.z)){
-       damageUv=(vDamageWorld.zy-uDamageRangeSide.xy)/uDamageRangeSide.zw;
-       mark=texture2D(uDamageSide,clamp(damageUv,0.0,1.0)).r;
-      }else{
-       damageUv=(vDamageWorld.xy-uDamageRangeFront.xy)/uDamageRangeFront.zw;
-       mark=texture2D(uDamageFront,clamp(damageUv,0.0,1.0)).r;
-      }
-      if(mark<.12)discard;
-      float scorch=1.0-smoothstep(.18,.97,mark);`);
-    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
-     `#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.67*scorch;`);
-   };
-   mat.customProgramCacheKey=()=> 'architectural-permanent-mask-v2';
-   mat.needsUpdate=true;
-  }
- });
 }
 function setRowhouseSourceVisible(role,on){
  const houseName=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';
@@ -401,17 +337,15 @@ function loadActualSchoolOverlay(){
     meshRoles.set(mesh,role);
     if(role)roleMeshCounts[role]++;else roleMeshCounts.excluded++;
    });
+   const school=new THREE.Group();
+   school.scale.setScalar(placement.scale);
+   school.position.set(placement.translation.x,placement.translation.y,placement.translation.z);
+   fbx.traverse(mesh=>{if(mesh.isMesh&&meshRoles.get(mesh)==='school')school.add(snapshotSchoolMesh(mesh));});
    if(schoolQA){
-    const original=new THREE.Group(),school=new THREE.Group();
-    for(const group of [original,school]){
-     group.scale.setScalar(placement.scale);
-     group.position.set(placement.translation.x,placement.translation.y,placement.translation.z);
-    }
-    fbx.traverse(mesh=>{
-     if(!mesh.isMesh)return;
-     original.add(snapshotSchoolMesh(mesh));
-     if(meshRoles.get(mesh)==='school')school.add(snapshotSchoolMesh(mesh));
-    });
+    const original=new THREE.Group();
+    original.scale.copy(school.scale);
+    original.position.copy(school.position);
+    fbx.traverse(mesh=>{if(mesh.isMesh)original.add(snapshotSchoolMesh(mesh));});
     sourceComparison={original,school};
    }
    const buildRole=role=>{
@@ -440,16 +374,27 @@ function loadActualSchoolOverlay(){
    };
    // School first: the central five-storey façade is never based on the
    // combined three-building bounding box.
-   const central=buildRole('school');
-   if(!central.model)throw new Error('Central school geometry not found in source');
-   applyArchitecturalDamageShader(central.model);
+   if(!school.children.length)throw new Error('Central school geometry not found in source');
+   const central=batchSchoolSource(school,material=>{
+    sourceDamage.patch(material);
+    if(material.name==='school-glass'&&material.emissive){
+     material.emissive.setHex(0xffd6a2);
+     material.emissiveIntensity=0;
+     schoolGlazingMaterials.push(material);
+    }
+   });
+   central.model.name='ACTUAL-TECH-FREIRE-SCHOOL';
+   scene.add(central.model);
+   const box=new THREE.Box3().setFromObject(central.model,true);
+   const size=box.getSize(new THREE.Vector3());
    actualSchoolOverlay=central.model;actualSchoolOverlayReady=true;
-   actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.stats.batches,
-    processed:central.stats.processed,failed:central.stats.failed,visibleBounds:central.stats.modelBounds,
+   actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.batches,
+    inputTriangles:central.inputTriangles,
+    visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:size.toArray()},
     calibration:{...placement,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
     axisCorrectionDeg:-90,originUpAxis:'Z+',worldUpAxis:'Y+',
-    fitPolicy:'central school only; one uniform source scale; flanking FBX masses independently rendered'};
+    fitPolicy:'central school source meshes, uniformly scaled; flanking masses handled separately'};
    // Independent FBX masses preserve the source's original left/right location.
    // Do not hide the generated rowhouse unless the matching batch succeeds.
    for(const role of ['leftRowhouse','rightRowhouse']){
@@ -473,10 +418,7 @@ function loadActualSchoolOverlay(){
    actualSchoolOverlayStats.sourcePartition=roleMeshCounts;
    actualSchoolOverlayStats.rowhouses=actualRowhouseStats;
    setMode(viewMode);
-   schoolSignGroup.visible=true;
    syncStructuralDamage();
-   installSchoolWindowLights();
-   status.textContent='RECONSTRUCTED TECH FREIRE · TWO-STORY FACTORY ATRIUM · FBX REFERENCE '+central.stats.batches+' BATCHES';
    console.info('Tech Freire three-building source partition',actualSchoolOverlayStats);
   }catch(err){status.textContent='FBX CONVERSION FAILED · PROCEDURAL FALLBACK';console.warn('Three-building FBX conversion failed',err);}
  },undefined,err=>{status.textContent='FBX SOURCE FAILED TO LOAD · PROCEDURAL FALLBACK';console.warn('Tech Freire FBX loading failed',err)});
@@ -489,23 +431,29 @@ function setMode(mode){
  viewMode=mode;
  const showSchool=performanceLab.isEnabled('schoolModel');
  const useActual=actualSchoolOverlayReady&&actualSchoolOverlay;
- if(architecturalModel)architecturalModel.visible=false; // school handled by physical reconstruction
- if(actualSchoolOverlay)actualSchoolOverlay.visible=false; // source FBX retained for reference only
- schoolReconstruction?.setVisible(showSchool);
+ syncSchoolVisibility();
  for(const role of ['leftRowhouse','rightRowhouse'])if(actualRowhouseOverlays[role])setRowhouseSourceVisible(role,showSchool);
  architecture.group.visible=false;
  for(const m of Object.values(meshes))m.visible=!architecturalReady&&schoolDamage<1&&showSchool&&!useActual;
  modeButton.textContent=mode==='real'?'ARCADE COLORS':'PHOTO COLORS';
  modeButton.disabled=!architecturalReady;
- if(architecturalModel)architecturalModel.traverse(o=>{if(!o.isMesh)return;
-  for(const m of (Array.isArray(o.material)?o.material:[o.material])){
-   if(!m?.color)continue;
-   if(!m.userData.originalColor)m.userData.originalColor=m.color.clone();
-   m.color.copy(m.userData.originalColor);
-   if(mode==='arcade'){const hsl={h:0,s:0,l:0};m.color.getHSL(hsl);m.color.setHSL(Math.round(hsl.h*12)/12,Math.min(1,hsl.s*1.25),Math.round(hsl.l*7)/7);}
-  }
- });
- status.textContent=architecturalReady?'STRUCTURAL SCHOOL · '+(mode==='real'?'CINEMATIC MATERIALS':'ARCADE PALETTE')+' · DESTRUCTIBLE':'Loading architectural FBX…';
+ if(actualSchoolOverlay){
+  const adjusted=new Set();
+  actualSchoolOverlay.traverse(mesh=>{
+   if(!mesh.isMesh)return;
+   for(const mat of [mesh.material].flat()){
+    if(!mat.color||adjusted.has(mat))continue;
+    adjusted.add(mat);
+    mat.color.setHex(mat.userData.photoColor);
+    if(mode==='arcade'){
+     const hsl=mat.color.getHSL({});
+     mat.color.setHSL(Math.round(hsl.h*12)/12,Math.min(1,hsl.s*1.25),Math.round(hsl.l*7)/7);
+    }
+   }
+  });
+ }
+ status.textContent=(actualSchoolOverlayReady?'TECH FREIRE · SOURCE FBX':'TECH FREIRE · RECONSTRUCTED SCHOOL')+
+  ' · '+(mode==='real'?'PHOTO COLORS':'ARCADE COLORS');
 }
 modeButton.onclick=()=>setMode(viewMode==='real'?'arcade':'real');
 architecturalModel=neighborhood.schoolGroup;architecturalReady=true;
@@ -1746,9 +1694,7 @@ function applyDiagnosticSystem(key,on){
  if(key==='traffic')for(const c of parkedCars)c.root.visible=on&&!c.destroyed;
  if(key==='schoolModel'){
   const useActual=actualSchoolOverlayReady&&actualSchoolOverlay;
-  if(architecturalModel)architecturalModel.visible=false;
-  if(actualSchoolOverlay)actualSchoolOverlay.visible=false;
-  schoolReconstruction?.setVisible(on);
+  syncSchoolVisibility();
   if(!architecturalReady)for(const m of Object.values(meshes))m.visible=on&&schoolDamage<1&&!useActual;
  }
  if(key==='traffic')for(const c of cars)c.root.visible=on;
@@ -1798,7 +1744,7 @@ document.getElementById('graphics')?.addEventListener('change',e=>{visualPreset=
 document.getElementById('settings-btn').onclick=()=>{active=false;document.getElementById('overlay').style.display='grid';showSettings();};
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start').onclick=safelyStart;document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));schoolSignGroup.visible=schoolDamage<.75;syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused)return;elapsed+=dt;if(updateChapterSettlement(dt))return;if(schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
+function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused)return;elapsed+=dt;if(updateChapterSettlement(dt))return;if(schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
  if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateDragonWind(dt);updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
@@ -1975,6 +1921,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
   camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,foregroundOffset:foregroundRoofs.position.x},
   schoolReconstruction:schoolReconstruction?.stats()||null,
+  sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes()},
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
   renderVisibility:{schoolEnabled:performanceLab.isEnabled('schoolModel'),schoolVisible:Boolean(architecturalModel?.visible || actualSchoolOverlay?.visible || (!architecturalReady&&Object.values(meshes).some(m=>m.visible))),actualSchoolOverlayReady,fbxRowhouses:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},schoolModelCalibration:actualSchoolOverlayStats?.calibration||null,skylineEnabled:performanceLab.isEnabled('skyline'),skylineVisible:skylineBackdrop.group.visible,backgroundEnabled:performanceLab.isEnabled('backgroundBuildings'),particlesEnabled:performanceLab.isEnabled('particles'),fireEnabled:performanceLab.isEnabled('fires'),renderFPSCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadows:renderer.shadowMap.enabled},
   atmosphere:{phase:displayedPhase,darkness:displayedDarkness},structure:neighborhood.city.stats(),
@@ -1988,8 +1935,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
   schoolComparison:()=>run('schoolComparison',()=>{
    if(!sourceComparison)throw Error('Source FBX comparison is not ready');
-   const gameSchool=new THREE.Group();
-   for(const mesh of [...schoolReconstruction.group,...schoolSignGroup.children])gameSchool.add(snapshotSchoolMesh(mesh));
+   const gameSchool=actualSchoolOverlay.clone();
+   gameSchool.visible=true;
    return captureSchoolComparison(renderer,sourceComparison.original,sourceComparison.school,gameSchool);
   }),
   // QA-only deterministic motion advance for offline video testing.
@@ -2044,6 +1991,15 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    if(mode==='background'){ignite(43,6,-39.75);for(let n=0;n<60&&!cars.some(c=>c.fireTruck);n++)spawnCar();const c=cars.find(c=>c.fireTruck);if(!c)throw Error('No engine');c.root.position.set(53,-.36,17);c.dir=1;c.laneZ=17;c.hostile=false;c.life=200;}
    if(mode==='meteors'){for(const [i,kind] of ['stone','iron','molten','flaming'].entries()){spawnMeteor();const m=meteors.at(-1);m.kind=kind;m.burning=kind==='molten'||kind==='flaming';m.mesh.material=kind==='molten'?moltenMaterial:rockMaterialVariants[i];m.mesh.position.set(-24+i*16,30,12);m.vel.set(0,0,0);}}
    return snap();}),
+  stageSchoolMeteor:()=>run('stageSchoolMeteor',()=>{
+   spawnMeteor();
+   const meteor=meteors.at(-1);
+   meteor.kind='iron';meteor.burning=false;meteor.size=3.4;
+   meteor.target.set(0,11,.35);
+   meteor.mesh.position.copy(meteor.target).add(new THREE.Vector3(0,2.8,0));
+   meteor.vel.set(0,-22,0);
+   return snap();
+  }),
   impactProfileAt:(x,y,z,size,kind)=>run('impactProfileAt',()=>{damage(x,z,y,{size,kind});cinematicFX.burst(new THREE.Vector3(x,y,z),size);return snap()}),
   spawnBoss:()=>run('spawnBoss',()=>{spawnFinalBoss();return snap()}),
   stageBossForVisualQA:()=>run('stageBossForVisualQA',()=>{
@@ -2062,7 +2018,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   hitSchool:(amount=25)=>run('hitSchool',()=>{hp=Math.max(0,hp-Math.max(0,amount));schoolDamage=(100-hp)/100;neighborhood.city.forceDamage(neighborhood.school,schoolDamage);syncStructuralDamage();updateHud();return snap()}),
   actualSchoolGeometry:()=>run('actualSchoolGeometry',()=>({loaded:actualSchoolOverlayReady,details:actualSchoolOverlayStats,bounds:actualSchoolOverlay?(()=>{const b=new THREE.Box3().setFromObject(actualSchoolOverlay),v=b.getSize(new THREE.Vector3());return {min:b.min.toArray(),max:b.max.toArray(),size:v.toArray()};})():null,showingOldShell:architecturalModel?.children.filter(o=>o.name==='physical-components'&&o.visible).length||0,sourceFacadeCalibration:actualSchoolOverlayStats?.calibration||null,independentSourceRowhouses:actualRowhouseStats,schoolGlassCards:schoolWindowLights.length,attachedGlazingMaterials:schoolGlazingMaterials.length,decorativeSchoolFacade:referenceFacades.snapshots().some(e=>e.building==='tech-freire-school')})),
   inspectThreeBuildingSource:()=>run('inspectThreeBuildingSource',()=>({central:actualSchoolOverlayStats,flanking:actualRowhouseStats,activeSourceGroups:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},duplicateGenerated:{left:!!neighborhood.buildings.find(b=>b.name==='united-fund-cream')?.hideIntactGeometry,right:!!neighborhood.buildings.find(b=>b.name==='north-brownstone')?.hideIntactGeometry}})),
-  focusActualSchool:()=>run('focusActualSchool',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;setMode('real');performanceLab.set('schoolModel',true);dragon.position.set(0,12,15);return {description:'Actual simplified exterior FBX overlay aligned with production school footprint',overlayReady:actualSchoolOverlayReady,overlayStats:actualSchoolOverlayStats,snapshot:snap()};}),
+  focusActualSchool:()=>run('focusActualSchool',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;setMode('real');performanceLab.set('schoolModel',true);dragon.position.set(0,12,15);return {description:'Original school meshes aligned with the production school footprint',overlayReady:actualSchoolOverlayReady,overlayStats:actualSchoolOverlayStats,snapshot:snap()};}),
   actualSchoolImpact:()=>run('actualSchoolImpact',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;setMode('real');performanceLab.set('schoolModel',true);damage(0,.45,11,{size:2.9,kind:'flaming'});return {description:'Production school impact against the real-model-aligned school scene',overlayReady:actualSchoolOverlayReady,overlayStats:actualSchoolOverlayStats,snapshot:snap()};}),
   sceneMetrics:()=>run('sceneMetrics',snap),
   screenshotMark:(label)=>run('screenshotMark',()=>({label,time:elapsed,frame:sessionStats.frames})),

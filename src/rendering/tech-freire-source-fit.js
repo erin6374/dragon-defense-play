@@ -5,7 +5,7 @@
 export const SCHOOL_SOURCE={
   frontPlaneZ:44.63,roofY:74.6,groundY:0,
   facadeMinX:-26.86,facadeMaxX:43.81,
-  keepMinX:-30.5,keepMaxX:47.0,keepMinZ:-112,keepMaxZ:52,
+  keepMinX:-30.5,keepMaxX:47.0,keepMinZ:-112,keepMaxZ:52.4,
   originalBounds:{min:[-44.859,-15.323,-145.998],max:[78.850,89.288,52.392]},
   reference:'Original FBX measured façade; side masses are independent rowhouses'
 };
@@ -25,11 +25,15 @@ export function fitSchoolFromFacade(source=SCHOOL_SOURCE,target=SCHOOL_TARGET){
   roofHeight:target.aboveGroundRoofHeight,maxSourceDepth:(source.frontPlaneZ-source.keepMinZ)*unitScale,
   aspect:(source.facadeMaxX-source.facadeMinX)/(source.roofY-source.groundY),isUniform:true};
 }
+// These visible source objects use Revit mass/fixture names rather than
+// wall, roof, or door categories. The broad reference volumes Mass 5 and 90
+// are excluded because they overlap the actual detail geometry.
+const exteriorSourceObjects=/^Mass_(?:2_Mass_2_323677|3_Mass_3_323978|4_Mass_4_324226|93_Mass_93_971579)$|_(?:577139|971789|1545270|1545272|1545274)$/;
 export function architecturalMeshEligible(mesh,box){
  const tag=((mesh.name||'')+' '+(mesh.parent?.name||'')).toLowerCase();
  const needed=/wall|floor|slab|roof|window|glaz|panel|curtain|mullion|frame|column|beam|door|stair|railing|cornice|parapet|foundation|glass|ramp|storefront|handrail|rail|structural|lintel|baluster|baseboard|trim|sill|top_rail/.test(tag);
  const nuisance=/desk|chair|furniture|table|locker|outlet|lighting|fixture|sink|toilet|plumbing|sprinkler|diffuser|duct|terminal|receptacle|equipment|casework|cabinet|_led_|student_|mass_5|floorcolumn|exterior_mass/.test(tag);
- if(!needed||nuisance)return false;
+ if((!needed||nuisance)&&!exteriorSourceObjects.test(mesh.name||''))return false;
  if(box.min.y < -18||box.max.y > 90)return false;
  if(box.min.z < -148||box.max.z > 53)return false;
  return true;

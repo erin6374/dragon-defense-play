@@ -287,10 +287,11 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
   if(changed)flush();
  }
+ let detachedOnly=false;
  function flush(){
   const counts=new Array(materials.length).fill(0);
   for(const p of pieces){
-   if(p.removed)continue;
+   if(p.removed||(detachedOnly&&!p.falling))continue;
    const index=counts[p.kind]++;
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
    position.set(p.x,p.y,p.z);quat.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,p.rot);
@@ -318,6 +319,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    fullFiveStoryShell:true,collapsing}}
  reset();
  return {group:batches,impact,collapse,update,reset,stats,
+  setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
   setVisible:(visible)=>batches.forEach(m=>m.visible=visible),
   setNight:(darkness)=>{materials[4].emissiveIntensity=.18+.8*darkness}};
 }

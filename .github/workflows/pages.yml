@@ -51,8 +51,10 @@ jobs:
           for attempt in {1..18}; do
             if curl -fsS "${PAGE_URL%/}/build-info.json?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-build.json &&
               cmp -s build-info.json /tmp/live-build.json &&
-              curl -fsS "${PAGE_URL%/}/" -o /tmp/live-game.html &&
-              cmp -s index.html /tmp/live-game.html; then
+              curl -fsS "${PAGE_URL%/}/?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-game.html &&
+              cmp -s index.html /tmp/live-game.html &&
+              curl -fsS "${PAGE_URL%/}/src/game.js?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-game.js &&
+              cmp -s src/game.js /tmp/live-game.js; then
               cat /tmp/live-build.json
               exit 0
             fi

@@ -1,7 +1,7 @@
 {
-  "build": "5.2-dynamic-meteor-01",
-  "version": "5.2.1",
-  "gameplay_base": "5.2-factory-atrium-01",
-  "scope": "Meteor-specific localized school destruction, damage propagation via actual structural supports; recognizable double-height front factory atrium",
+  "build": "5.2-source-school-01",
+  "version": "5.2.2",
+  "gameplay_base": "5.2.1",
+  "scope": "Original Tech Freire FBX school geometry with localized meteor damage and retained structural collapse",
   "new_gameplay_features": true
 }
