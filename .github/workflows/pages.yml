@@ -35,6 +35,24 @@ jobs:
           b=json.load(open('build-info.json'))
           print('Deploying Dragon Defense',b.get('version'),b.get('build'))
           PY
+      - name: Download tested browser QA results
+        uses: actions/download-artifact@v4
+        with:
+          name: dragon-defense-browser-qa
+          path: qa/dashboard
+      - name: Verify dashboard artifacts
+        run: |
+          test -f qa/dashboard/index.html
+          test -f qa/dashboard/report.json
+          python3 - <<'PY'
+          import json
+          build=json.load(open('build-info.json'))
+          report=json.load(open('qa/dashboard/report.json'))
+          assert report['expected']['version']==build['version'], 'QA/game version mismatch'
+          assert report['expected']['build']==build['build'], 'QA/game build mismatch'
+          assert not report.get('failure'), 'QA report recorded failure'
+          assert not report.get('errors'), 'QA report recorded browser errors'
+          PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload game site
@@ -54,7 +72,9 @@ jobs:
               curl -fsS "${PAGE_URL%/}/?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-game.html &&
               cmp -s index.html /tmp/live-game.html &&
               curl -fsS "${PAGE_URL%/}/src/game.js?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-game.js &&
-              cmp -s src/game.js /tmp/live-game.js; then
+              cmp -s src/game.js /tmp/live-game.js &&
+              curl -fsS "${PAGE_URL%/}/qa/dashboard/report.json?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-qa.json &&
+              cmp -s qa/dashboard/report.json /tmp/live-qa.json; then
               cat /tmp/live-build.json
               exit 0
             fi
