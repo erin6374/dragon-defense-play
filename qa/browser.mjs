@@ -257,6 +257,15 @@ try {
   await shot('06-north-broad-dusk');
   await page.locator('canvas').first().screenshot({path:'qa-output/06-dusk-scene.png'});
   report.skylineCamera=await skylineShot('06-skyline-intact');
+  const intactEmission=await page.evaluate(()=>window.__DD_QA.sampleSkylineEmissive());
+  assert.ok(intactEmission.ok,intactEmission.error);
+  assert.equal(intactEmission.result.collapse,0,'intact skyline tower has no structural collapse');
+  const intactValues=intactEmission.result.samples.map(s=>s.emissive);
+  assert.ok(intactValues.every(Number.isFinite),'intact skyline emission is finite');
+  assert.ok(intactValues[0]>0,'dusk skyline has nonzero emissive windows');
+  assert.ok(Math.max(...intactValues)-Math.min(...intactValues)<1e-10,
+   'intact tower emissive windows stay steady across animation times');
+  report.intactSkylineEmission=intactEmission.result;
   const towerImpact = await page.evaluate(() => window.__DD_QA.stageSkylineStrike());
   assert.ok(towerImpact.ok, towerImpact.error);
   assert.equal(towerImpact.result.landmark, 'comcast-technology');
@@ -274,6 +283,14 @@ try {
   const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
   assert.ok(skylineCollapse.ok,skylineCollapse.error);
   assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
+  const damagedEmission=await page.evaluate(()=>window.__DD_QA.sampleSkylineEmissive());
+  assert.ok(damagedEmission.ok,damagedEmission.error);
+  assert.ok(damagedEmission.result.collapse>0,'damaged skyline tower has structural collapse');
+  const damagedValues=damagedEmission.result.samples.map(s=>s.emissive);
+  assert.ok(damagedValues.every(Number.isFinite),'damaged skyline emission stays finite');
+  assert.ok(Math.max(...damagedValues)-Math.min(...damagedValues)>.002,
+   'damaged tower retains irregular electrical flicker');
+  report.damagedSkylineEmission=damagedEmission.result;
   assert.equal(skylineCollapse.result.ruinVisible,true,'skyscraper rubble remains rendered');
   assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
   assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
