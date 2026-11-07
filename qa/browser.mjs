@@ -247,6 +247,28 @@ try {
   report.landmarkImpact = towerImpact.result;
   await shot('06-landmark-strike');
   await skylineShot('06-skyline-strike');
+  // A series of background meteor hits must be able to damage the distant
+  // city independently; foreground school/neighborhood health is unaffected.
+  const impactCascade=await page.evaluate(()=>{
+    const qa=window.__DD_QA, hpBefore=qa.snap().hp;
+    let hit;
+    for(let i=0;i<5;i++){
+      hit=qa.stageSkylineStrike();
+      if(!hit.ok)return hit;
+    }
+    const state=qa.skylineFallState();
+    if(!state.ok)return state;
+    return {ok:true,result:{hits:6,strikeDamage:hit.result.afterDamage,
+      fallActive:state.result.fallActive,ruinVisible:state.result.ruinVisible,
+      hpBefore,hpAfter:qa.snap().hp}};
+  });
+  assert.ok(impactCascade.ok,impactCascade.error);
+  assert.ok(impactCascade.result.strikeDamage>=.40,'repeated skyline hits accumulate independent tower damage');
+  assert.equal(impactCascade.result.fallActive,true,'repeated skyline hits start tower breakup');
+  assert.equal(impactCascade.result.ruinVisible,true,'repeated skyline hits reveal persistent debris');
+  assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');
+  report.skylineImpactCascade=impactCascade.result;
+  await skylineShot('06-skyline-impact-cascade');
   const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
   assert.ok(skylineCollapse.ok,skylineCollapse.error);
   assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
