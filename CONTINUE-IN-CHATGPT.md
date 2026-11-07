@@ -212,3 +212,17 @@ The user exhausted the prior Work session and requested continuing development h
 This pass expanded automated coverage rather than stacking unverified effects: after staging skyline collapse and simulating additional seconds, the browser QA now confirms the short-lived flash disappears while scorch, persistent smoke, and rubble remain visible. It also checks finite, bounded smoke drift in skyline world coordinates and produces an extra real rendered image (`06-skyline-smoke-aftermath.png`) separate from the earlier rubble frame. Source changes only expose a read-only QA smoke-position field; no gameplay or visual behavior changed. Commits through `2733545` recorded in the changelog. Subsequent commits add a second QA-only close camera capture (`06-skyline-close-aftermath.png`) because screenshot review of #138 found foreground residential blocks still obscuring the skyline's lower rubble. The closer camera's actual generated pixels still require visual inspection.
 
 **Verification pending** on the most recent PR head. The new smoke drift assertion expects displacement >0.001 and <4 between the staged frames; if QA fails, inspect the actual report and simulation-time behavior before modifying production code. Do not claim an FPS gain or visual acceptance based solely on software-rendered QA. Keep production main at v5.2.3, preserve separate Building Explorer, and do not merge or deploy. Check for scheduled-session concurrency before further pushes.
+
+## User-requested Dragon wind v5.3.1 preview (November 7)
+
+User explicitly requested the dragon's wind breath nudge ground vehicles and pedestrians according to weight, move small amounts of street debris using particles, blow/disperse smoke, and package a new preview ZIP here.
+
+On the development branch:
+- `src/simulation/ground-wind.js` supplies pure cone, intensity and relative vehicle-size rules.
+- `src/game.js` integrates limited nudge for bikes, cars, large vehicles and pedestrians; projected wind reaches ground beneath an airborne dragon. Each gust has a fixed, per-target movement cap. Two preallocated instanced dust/litter particle batches appear at ground level, without gameplay-damaging forces.
+- `src/rendering/cinematic-effects.js` bends/thins nearby school-fire smoke, and existing vehicle/explosion smoke puffs move and disperse under wind.
+- Browser QA now checks pure force rules and live movement/particle/smoke behavior via temporary QA-only targets. New `PREVIEW_v5.3.1_README.txt` describes Windows launch and playtesting.
+- Build identity bumped to v5.3.1 / `5.3-wind-ground-01`. CI workflow includes a new successful-run upload artifact `DragonDefense_v5.3.1_Windows_Preview`, staging full playable files excluding repository/dev/QA intermediates.
+- Previous baseline head `7da3abe` passed browser QA #148. **Newest wind build verification is pending.** Check most recent PR head CI; investigate any failed assertion or package upload, then download and share exact artifact ZIP if successful. Do not assert that local Windows hardware has been tested.
+- Production main remains v5.2.3, draft PR #2 unmerged; Building Explorer untouched. Check competing hourly development work before editing.
+
