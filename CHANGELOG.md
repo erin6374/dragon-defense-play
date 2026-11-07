@@ -1,5 +1,12 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — baked atmospheric depth variation
+
+- Farther residential blocks now blend their existing instanced facade colors slightly toward a muted atmospheric palette; deterministic parcel-level tonal variation reduces repeated identical fronts.
+- Reuses the existing building geometry, materials, and draw batches. No additional draw calls or per-frame work are introduced by this change.
+- This is an artistic distance cue, not a claim of surveyed parcel colors or geographic accuracy. Browser visual QA and hardware performance remain to be reviewed for this change.
+
+
 ## Continuation — vehicle lighting and distant impact alignment
 
 - Continued the existing `feature/north-broad-graphics` branch and draft PR #2, rather than repeating its world-space neighborhood and camera changes. Main remains at `edc3337`; its Pages workflow succeeded. No production rollout is included here.
