@@ -13,12 +13,14 @@ function makeFacade(seed,style='glass'){
  const grad=c.createLinearGradient(0,0,256,1024);grad.addColorStop(0,palette[2]);grad.addColorStop(.3,palette[0]);grad.addColorStop(.9,palette[1]);grad.addColorStop(1,'#1e303d');c.fillStyle=grad;c.fillRect(0,0,256,1024);
  e.fillStyle='#000';e.fillRect(0,0,256,1024);
  const cols=style==='civic'?7:11,rows=style==='civic'?30:56,dx=256/cols,dy=1024/rows;
+ const curtain=style==='glass'||style==='comcast'||style==='liberty';
  for(let row=0;row<rows;row++){
   for(let col=0;col<cols;col++){
-   const x=col*dx+dx*.18,y=row*dy+dy*.16,w=dx*.62,h=dy*.61;
+   const inset=curtain?.035:.18;
+   const x=col*dx+dx*inset,y=row*dy+dy*(curtain?.045:.16),w=dx*(1-2*inset),h=dy*(curtain?.88:.61);
    const isLit=rnd()>.79+(row%11===0?.09:0);
    c.fillStyle='rgba(8,23,36,.52)';c.fillRect(x-1,y-1,w+2,h+2);
-   c.globalAlpha=.20+rnd()*.57;
+   c.globalAlpha=curtain?.10+rnd()*.16:.20+rnd()*.57;
    c.fillStyle=rnd()>.31?palette[0]:palette[2];c.fillRect(x,y,w,h);
    c.globalAlpha=1;
    c.fillStyle='rgba(195,232,247,.23)';c.fillRect(x+1,y+1,Math.max(1,w*.15),h*.85);
@@ -26,6 +28,17 @@ function makeFacade(seed,style='glass'){
    if(isLit){e.fillStyle=rnd()>.45?'#ffcf8d':'#ffebbb';e.fillRect(x+.7,y+1,w-1.4,h-2);}
   }
   c.fillStyle='rgba(11,27,37,.33)';c.fillRect(0,(row+1)*dy-1.7,256,1.7);
+ }
+ if(curtain){
+  // Broad reflected sky bands unify the glazing; narrow mullions retain scale.
+  // Baked once into the existing atlas, with no extra draw calls or textures.
+  const reflection=c.createLinearGradient(0,0,256,0);
+  reflection.addColorStop(0,'rgba(185,211,224,.04)');
+  reflection.addColorStop(.28,'rgba(185,211,224,.24)');
+  reflection.addColorStop(.46,'rgba(185,211,224,.06)');
+  reflection.addColorStop(.73,'rgba(18,40,57,.18)');
+  reflection.addColorStop(1,'rgba(185,211,224,.11)');
+  c.fillStyle=reflection;c.fillRect(0,0,256,1024);
  }
  c.fillStyle=style==='civic'?'rgba(229,220,199,.25)':'rgba(211,232,243,.17)';
  for(let x=0;x<256;x+=style==='civic'?42:23)c.fillRect(x,0,2.3,1024);
