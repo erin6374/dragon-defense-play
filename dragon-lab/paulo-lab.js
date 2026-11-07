@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createBreathPreview } from './breath-effects.js';
 const host=document.querySelector('#viewport');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#101a27');
 scene.fog=new THREE.Fog('#101a27',28,65);
@@ -75,6 +76,7 @@ for(const side of [-1,1]){
  part(head,cone,mat.bronze,[.2,.34,side*.39],[.08,.38,.08],[0,0,-.35]);
  ell(head,mat.mouth,[1.05,-.06,side*.23],[.085,.045,.07]);
 }
+const breathPreview=createBreathPreview(head);
 const tail=[];let previous=torso;
 for(let i=0;i<7;i++){
  const seg=pivot(previous,i===0?[-1.78,.04,0]:[-.61,0,0]);marker(seg);
@@ -243,6 +245,7 @@ function applyPose(t){
   knee.rotation.z=state==='land'?.28:airborne?-.25:0;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
+ breathPreview.update(state,t);
 }
 function animate(){
  requestAnimationFrame(animate);
@@ -262,5 +265,6 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),
  wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
  headAngle:head.rotation.z,chestHeight:chest.scale.y,
+ breath:breathPreview.snapshot(),
  visible:renderer.domElement.width>0&&renderer.domElement.height>0,
  drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles};}};
