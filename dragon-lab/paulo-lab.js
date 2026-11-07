@@ -42,6 +42,23 @@ ell(torso,mat.armor,[0,0,0],[2.1,.85,.78]);
 ell(torso,mat.red,[.45,-.52,0],[1.25,.38,.57]);
 ell(torso,mat.plates,[.65,.42,0],[1.05,.54,.7]);
 for(let i=0;i<12;i++)spike(torso,-1.7+i*.32,.65+Math.sin(i/12*Math.PI)*.25,0,.21+i*.008);
+// Repeated overlapping dorsal armor plates share a single instanced draw call.
+// Their silhouettes and varied sizes are readable from the game camera.
+const plateGeo=new THREE.ConeGeometry(.12,.34,5);
+const plateBatch=new THREE.InstancedMesh(plateGeo,mat.plates,66);
+const plateDummy=new THREE.Object3D();
+let plateIndex=0;
+for(let row=0;row<6;row++)for(let col=0;col<11;col++){
+ const x=-1.58+col*.29;
+ const angle=-.78+row*.31;
+ plateDummy.position.set(x,.72*Math.cos(angle)+.08,.72*Math.sin(angle));
+ plateDummy.rotation.set(angle,0,-.34);
+ const size=.7+.25*Math.sin(col*.6+row);
+ plateDummy.scale.set(size,.7+size*.4,size);
+ plateDummy.updateMatrix();plateBatch.setMatrixAt(plateIndex++,plateDummy.matrix);
+}
+plateBatch.instanceMatrix.needsUpdate=true;
+torso.add(plateBatch);
 const chest=pivot(torso,[1.12,.16,0]);marker(chest);
 ell(chest,mat.armor,[.25,.06,0],[.8,.82,.69]);
 const neck=pivot(chest,[.74,.47,0]);marker(neck);
@@ -211,6 +228,7 @@ function animate(){
 function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
 new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
+ armorPlateCount:plateIndex,
  membranePanels:membranePanels.length,
  membraneVertices:membranePanels.reduce((n,m)=>n+m.geometry.attributes.position.count,0),
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
