@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — freeze fully settled skyline rubble (November 7)
+
+- Confirmed `feature/north-broad-graphics` was identical to previous handoff `90194fc`; browser QA **run #101 passed**, verifying the earlier intact-skyline flicker change.
+- The skyline `update()` path kept advancing `fallElapsed` and recalculating rotations, matrices and ground support heights for every facade slab **indefinitely after landing**. This is avoidable per-frame CPU work when several distant towers have collapsed.
+- Each tower now tracks `fallSettled`, set only after all three slabs have completed rotation and reached their supported ground heights. Once settled, subsequent frames skip the slab transform loop. `fallActive` remains true to preserve the semantic "collapse occurred" state; restart clears both flags and restores the initial slab poses. No materials, physics trajectories or geometry were changed.
+- Added browser regression that advances the already-settled skyline by another two simulated seconds and asserts `fallElapsed` and slab heights remain unchanged. Gameplay source commit `20f8757`, regression commit `f1be956`. **Fresh QA must pass for this change to be verified.** This is a source-level optimization only; no measured CPU time, hardware FPS, GPU gains or screenshot fidelity claims. No production main, Building Explorer, merge, deployment or packaging changes.
+
+
 ## Continuation — skip intact skyline electrical flicker work (November 7)
 
 - Before editing, confirmed branch was identical to `7e2805d` and GitHub browser QA run #96 had **passed**, verifying the previous touch-aiming regression. No competing commits were present.
