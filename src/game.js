@@ -2145,10 +2145,24 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     gustId++;gustTime=.85;windCooldown=4;windActive=true;
     gustOrigin.set(0,24,20);gustDirection.set(1,0,0);
     updateDragonWind(.08);
+    // Real smoke-puff simulation, isolated from any ongoing background events.
+    const existingPuffs=skyBursts.splice(0);
+    const testSmoke={m:{position:new THREE.Vector3(12,24,20),
+     scale:new THREE.Vector3(1,1,1),material:{opacity:.58}},
+     smoke:true,life:2,initialLife:2};
+    skyBursts.push(testSmoke);
+    let smokeResult;
+    try{
+     updateSkyBursts(.08);
+     smokeResult={x:testSmoke.m.position.x,opacity:testSmoke.m.material.opacity};
+    }finally{
+     skyBursts.length=0;skyBursts.push(...existingPuffs);
+    }
     return {bikeX:bike.root.position.x,busX:bus.root.position.x,
      personX:pedestrian.g.position.x,dustInstances:windDustPool.mesh.count,
      litterInstances:windLitterPool.mesh.count,
-     smokeWindStrength:cinematicFX.stats().windStrength};
+     smokeWindStrength:cinematicFX.stats().windStrength,
+     puffX:smokeResult.x,puffOpacity:smokeResult.opacity};
    }finally{
     cars.splice(cars.indexOf(bike),1);cars.splice(cars.indexOf(bus),1);
     crowd.splice(crowd.indexOf(pedestrian),1);
