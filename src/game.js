@@ -1972,6 +1972,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
    if(!t)throw Error('Expected landmark missing');
    return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
+    strikeDamage:t.strikeDamage,collapse:t.collapse,towerScaleY:t.group.scale.y,
+    impactVisible:t.impactSprite.visible,smokeVisible:t.smokeSprite.visible,
+    scorchVisible:t.scorchSprite.visible,
     slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
   advanceSkylineFall:(seconds=4)=>run('advanceSkylineFall',()=>{
