@@ -334,6 +334,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   group.worldToLocal(tower.smokeOrigin);
   tower.smokeSprite.position.copy(tower.smokeOrigin);
   tower.scorchSprite.position.set(tower.impactLocal.x,tower.impactLocal.y,tower.def.depth/2+.62);
+  // A new meteor burst must begin at its initial radius, even if the
+  // previous burst was partway through fading or had fully expanded.
+  impact.scale.setScalar(5);
   tower.impactAge=1.15;
   tower.impactEnergy=1;
   // This is deliberately a small distant damage contribution: foreground
