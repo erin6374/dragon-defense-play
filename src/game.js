@@ -1983,10 +1983,11 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    if(index<0)throw Error('Expected landmark missing');
    const t=skylineBackdrop.towers[index],before=t.strikeDamage;
    const hit=skylineBackdrop.strikeNearest(t.group.position.x);
+   const smokeVisibleImmediately=t.smokeSprite.visible;
    skylineBackdrop.setDamage(skylineDamage);
    skylineBackdrop.update(elapsed,displayedDarkness,1/60);
    return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
-    afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
+    smokeVisibleImmediately,afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
@@ -1994,11 +1995,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
   }),
   stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
-   // Validate that ground debris remains outside the animated tower hierarchy.
-   skylineBackdrop.setDamage(1);
+   // Capture the smoke's world position on both sides of the same synchronous
+   // collapse event. No animation step occurs between these snapshots, so
+   // any displacement would mean smoke inherited the tower transform.
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
    if(!t)throw Error('Expected landmark missing');
+   const smokeWorldBefore=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
+   skylineBackdrop.setDamage(1);
+   const smokeWorldAfter=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
    return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
+    smokeWorldBefore,smokeWorldAfter,
     rubbleDetached:t.ruin.parent===skylineBackdrop.group,
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
