@@ -244,6 +244,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    slab.userData.fallStartY=d.h*(.39+j*.15);
    slab.userData.fallDelay=j*.21;
    slab.userData.groundY=slab.scale.y*.5+.02;
+   // The rubble group is hidden until collapse; position slabs at the actual
+   // fracture release height before their first visible frame. Otherwise they
+   // teleport from the ground to the sky when update() runs.
+   slab.position.y=slab.userData.fallStartY;
    ruin.add(slab);slabs.push(slab);
   }
   const impactSprite=new THREE.Sprite(impactMaterial.clone());
@@ -403,6 +407,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.groundY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
