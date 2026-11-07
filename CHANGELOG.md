@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — skip intact skyline electrical flicker work (November 7)
+
+- Before editing, confirmed branch was identical to `7e2805d` and GitHub browser QA run #96 had **passed**, verifying the previous touch-aiming regression. No competing commits were present.
+- In `src/rendering/philadelphia-geometry-skyline.js`, the per-frame skyline update evaluated a `Math.sin` and `Math.pow` flicker pulse for **every tower**, even though an intact tower has `collapse=0` and therefore cannot visually flicker. The update now skips the pulse calculation for intact towers, retaining the exact original formula for damaged towers. Nine skyline landmarks exist in the current geometry configuration; this reduces unnecessary work on intact frames, but **no CPU time, GPU time, hardware FPS or power savings have been measured**.
+- Added a reversible, QA-only emissive sampling probe and browser assertions that intact dusk-window emission stays steady while a damaged tower retains varying electrical flicker. The probe restores the live animation time and does not advance fall physics.
+- Source optimization commit `9851093`, QA probe `239aa25`, regression assertions `000543c`. **Await full browser QA for the latest PR head**; source review alone is not verification. No main, Building Explorer, merge, deployment or package changes.
+
+
 ## Continuation — single-pass pointer aiming and touch regression (November 7)
 
 - Confirmed GitHub browser QA run #90 passed for the prior lighting optimization; the development branch had not advanced beyond `5c82a5b` before these edits.
