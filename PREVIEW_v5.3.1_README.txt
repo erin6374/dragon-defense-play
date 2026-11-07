@@ -42,3 +42,9 @@ REPORT PLAYTEST FEEDBACK
 Please note: what level you played, which target you blew at, whether
 wind pushed it too far/not far enough, apparent smoke and debris, and any
 FPS drops or console errors (F12).
+
+PAULO v5.4 ANIMATION LAB (SEPARATE PREVIEW)
+After launching the normal preview, open this address in another tab:
+  http://127.0.0.1:8769/dragon-lab/
+This is an original articulated 3D dragon blockout with 12 animation
+studies and anatomy camera views. It is NOT integrated into gameplay.
