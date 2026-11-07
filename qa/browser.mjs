@@ -325,6 +325,21 @@ try {
   assert.equal(afterCascadeRestart.result.scorchVisible,false,'restart clears facade scorch');
   report.skylineAfterCascadeRestart=afterCascadeRestart.result;
   await skylineShot('06-skyline-after-restart');
+  // Long sessions previously let the westbound skyline helicopter leave its
+  // patrol because JavaScript's % returns negative remainders after ~5 min.
+  const heliPatrol=await page.evaluate(()=>window.__DD_QA.sampleDistantHelicopters());
+  assert.ok(heliPatrol.ok,heliPatrol.error);
+  assert.deepEqual(heliPatrol.result.map(s=>s.seconds),[0,300,600,1200]);
+  for(const sample of heliPatrol.result){
+   assert.equal(sample.helicopters.length,3,'all distant helicopters remain present');
+   for(const h of sample.helicopters){
+    const baseX=-82+h.index*55;
+    assert.ok(Number.isFinite(h.x)&&Number.isFinite(h.y),'helicopter position stays finite');
+    assert.ok(h.x>=baseX-82-1e-6&&h.x<=baseX+88+1e-6,
+     'distant helicopter '+h.index+' remains within its 170-unit patrol at '+sample.seconds+' seconds');
+   }
+  }
+  report.distantHelicopterPatrol=heliPatrol.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
