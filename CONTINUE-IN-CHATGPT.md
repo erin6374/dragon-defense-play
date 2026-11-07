@@ -226,3 +226,9 @@ On the development branch:
 - Previous baseline head `7da3abe` passed browser QA #148. **Newest wind build verification is pending.** Check most recent PR head CI; investigate any failed assertion or package upload, then download and share exact artifact ZIP if successful. Do not assert that local Windows hardware has been tested.
 - Production main remains v5.2.3, draft PR #2 unmerged; Building Explorer untouched. Check competing hourly development work before editing.
 
+
+## v5.3.1 Windows preview QA verification and warning cleanup (November 7)
+
+Browser QA run #166 **passed** the user's requested wind effects. The actual report showed no browser errors and one benign Three.js warning for an ignored `roughness` property on the new `MeshBasicMaterial` ground-litter batch. Ground interaction probe recorded pedestrian movement 12.13662, bike 12.11385 and bus 12.00740025 from start X=12; 38 dust and 13 scrap instances; street smoke puff shifted 12→12.5813 and opacity reduced below original. GitHub Actions successfully uploaded `DragonDefense_v5.3.1_Windows_Preview` (110 playable files, launcher and source/FBX/vendor files verified locally). A copy was downloaded to a working container but may not persist into later conversations.
+
+The ignored material property was removed in commit `c4c2ee5`, and QA was strengthened to fail if any browser warnings occur in commit `b107f07`. Changelog updated. **These final cleanup commits require fresh QA and new packaged artifact.** Use the latest successful run's `DragonDefense_v5.3.1_Windows_Preview` artifact for the user's requested ZIP; never claim the previous run includes the cleanup commit. Keep PR #2 draft and production main unchanged.
