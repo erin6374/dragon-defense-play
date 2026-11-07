@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — six-strike meteor flash contact regression
+
+- Previous branch head `092efaad` passed browser QA run #130, verifying the skyline-space impact flash correction.
+- Strengthened the existing six-hit browser scenario to check **the actual visible flash position against the reported pre-collapse contact on every hit**, including late strikes that change the tower's transform. The previous suite checked initial flash position and a separate synchronous collapse but did not compare the flash with the contact on all six successive hits.
+- Each hit also asserts that the flash stays attached to the stable skyline group, remains visible, and reports finite coordinates. This is a **QA-only change**, not a gameplay or performance optimization.
+- The expanded regression is pending its own browser QA result. No production merge/deployment or Building Explorer changes.
+
+
 ## Continuation — stable meteor impact flash during skyline collapse
 
 - Fixed a visual anchoring inconsistency: the short-lived skyline meteor impact flash was still parented to the damaged tower, so an impact that triggered structural collapse could cause the visible flash to shrink or move with the facade. The explosion's reported contact point and persistent smoke were already world-space anchored.
