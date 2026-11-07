@@ -82,11 +82,41 @@ function bone(parent,start,end,radius,material){
  const diff=b.clone().sub(a),mesh=part(parent,new THREE.CylinderGeometry(radius*.8,radius,diff.length(),7),material,a.clone().add(b).multiplyScalar(.5).toArray());
  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh;
 }
-function membrane(parent,verts){
- const geometry=new THREE.BufferGeometry(),flat=[];
- for(const v of verts)flat.push(...v);
- geometry.setAttribute('position',new THREE.Float32BufferAttribute(flat,3));
- geometry.computeVertexNormals();return part(parent,geometry,mat.membrane);
+// Curved, tessellated membrane fan. Unlike the original three-vertex wedge,
+// the leading and trailing edges are scalloped and the fabric billows in 3D.
+// Geometry is generated once per wing panel, not during animation.
+const membranePanels=[];
+function membrane(parent,verts,side){
+ const root=new THREE.Vector3(...verts[0]);
+ const left=new THREE.Vector3(...verts[1]).sub(root);
+ const right=new THREE.Vector3(...verts[2]).sub(root);
+ const positions=[],uvs=[],indices=[];
+ const segments=12,radial=6;
+ for(let j=0;j<=radial;j++){
+  const v=j/radial;
+  for(let i=0;i<=segments;i++){
+   const u=i/segments;
+   // Curved outer margin dips between the finger tips, with a taut root.
+   const scallop=Math.sin(Math.PI*u)*.17;
+   const reach=v*(1-scallop*v);
+   const p=root.clone().addScaledVector(left,reach*(1-u))
+    .addScaledVector(right,reach*u);
+   p.y+=side*Math.sin(Math.PI*u)*Math.sin(Math.PI*v)*.17;
+   positions.push(p.x,p.y,p.z);
+   uvs.push(u,v);
+   if(i<segments&&j<radial){
+    const a=j*(segments+1)+i,b=a+segments+1;
+    indices.push(a,b,a+1,b,b+1,a+1);
+   }
+  }
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ geometry.setIndex(indices);geometry.computeVertexNormals();
+ const mesh=part(parent,geometry,mat.membrane);
+ membranePanels.push(mesh);
+ return mesh;
 }
 const wings=[];
 for(const side of [-1,1]){
@@ -100,9 +130,9 @@ for(const side of [-1,1]){
  for(let i=0;i<fingerEnds.length;i++){
   bone(wrist,base,fingerEnds[i],.055,mat.bronze);
   const prev=i===0?rear:fingerEnds[i-1],next=fingerEnds[i];
-  membrane(wrist,[base,prev,next]);
+  membrane(wrist,[base,prev,next],side);
  }
- membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-2.6,-.12,side*.35]]);
+ membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-2.6,-.12,side*.35]],side);
  wings.push({shoulder,elbow,wrist,side});
 }
 const descriptions={
@@ -181,6 +211,8 @@ function animate(){
 function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
 new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
+ membranePanels:membranePanels.length,
+ membraneVertices:membranePanels.reduce((n,m)=>n+m.geometry.attributes.position.count,0),
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
  snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),
  wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
