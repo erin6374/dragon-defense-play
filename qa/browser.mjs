@@ -563,6 +563,16 @@ try {
     assert.ok(fire.jawAngle<-.2,'fire animation opens the jaw');
     const wind=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('wind');return window.__PAULO_LAB_QA.snapshot();});
     assert.ok(wind.jawAngle<-.2,'wind breath opens the jaw');
+    const inhale=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('inhale');return window.__PAULO_LAB_QA.snapshot();});
+    assert.ok(inhale.chestHeight>initial.chestHeight+.1,
+      'wind inhale visibly expands the dragon chest');
+    assert.notDeepEqual(wind.wingFold,fire.wingFold,
+      'wind bracing and fire wing-fold animations are distinct');
+    const bank=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('bank');return window.__PAULO_LAB_QA.snapshot();});
+    assert.ok(Math.abs(bank.wingAngles[0])!==Math.abs(bank.wingAngles[1]),
+      'bank pose is asymmetric across the two wings');
+    assert.ok(Number.isFinite(bank.drawCalls)&&bank.drawCalls>0,
+      'dragon lab reports actual renderer draw calls');
     await lab.screenshot({path:'qa-output/08-paulo-dragon-lab.png'});
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
