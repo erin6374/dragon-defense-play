@@ -556,7 +556,7 @@ try {
     const response=await lab.goto(labUrl,{waitUntil:'commit',timeout:30000});
     assert.equal(response.status(),200,'standalone dragon design lab responds');
     await lab.waitForFunction(()=>!!window.__PAULO_LAB_QA?.snapshot,
-      {timeout:90000,polling:500});
+      null,{timeout:90000,polling:500});
     const initial=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
     assert.ok(initial.visible,'lab renderer is visible');
     assert.ok(initial.wingAngles.length===2,'dragon has two articulated wing assemblies');
