@@ -11,6 +11,18 @@ const STREET_AXIS=[
  {name:'N 9th St',z:-265},{name:'N 8th St',z:-296}
 ];
 const facades=[0x9a5c4a,0x6d423b,0xb7afa1,0xcac1b1,0x8a9192,0x8a674e,0xc0a38c,0x7d5350,0xbabcc0];
+// Depth cueing is baked into existing instanced facade colors; it does not
+// introduce extra meshes, materials or per-frame work. Keep the nearer blocks
+// saturated so the playable neighborhood remains the visual focus.
+const distanceHaze=new THREE.Color(0x9daab4);
+function atmosphericFacade(hex,tier,row,lot){
+ const c=new THREE.Color(hex);
+ const haze=Math.min(.34,Math.max(0,tier)*.073);
+ c.lerp(distanceHaze,haze);
+ // Slight deterministic tonal variation avoids identical distant houses.
+ const variation=1+(((row*13+lot*7)%9)-4)*.012;
+ return c.multiplyScalar(variation);
+}
 function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};}
 const rand=seeded(1221237);
 export function createDistantNeighborhood({root}){
@@ -74,7 +86,7 @@ export function createDistantNeighborhood({root}){
    if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
    const color=facades[(ix*3+row*5)%facades.length];
    const home={x,y:h/2,z,w,h,d,stories,tier,damage:0,row,ix};buildingDefs.push(home);
-   add(tier,'main',x,h/2,z,w,h,d,color);
+   add(tier,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
    add(tier,'roof',x,h+.12,z,w+.18,.24,d+.18);
    if(!modern)add(tier,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
    else add(tier,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
