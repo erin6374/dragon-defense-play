@@ -14,9 +14,9 @@ export function createBreathPreview(head) {
       speed: .85
     },
     wind: {
-      geometry: new THREE.TorusGeometry(1, .055, 5, 16),
+      geometry: new THREE.TorusGeometry(1, .028, 5, 16),
       material: new THREE.MeshBasicMaterial({
-        color: 0xb6e9ff, transparent: true, opacity: .57,
+        color: 0x8ed8ff, transparent: true, opacity: .32,
         blending: THREE.AdditiveBlending, depthWrite: false
       }),
       speed: .9
@@ -48,18 +48,22 @@ export function createBreathPreview(head) {
     active = kind;
     if (!kind) return;
     const mesh = meshes[kind];
-    for (let i = 0; i < count; i++) {
-      const progress = (t * styles[kind].speed + i / count) % 1;
-      const spread = (kind === 'wind' ? .14 : kind === 'gas' ? .46 : .28) * progress;
+    // Widely spaced rings read as air pulses rather than one opaque cone.
+    // The underlying pool remains preallocated for all three breath types.
+    const visibleCount = kind === 'wind' ? 9 : count;
+    mesh.count = visibleCount;
+    for (let i = 0; i < visibleCount; i++) {
+      const progress = (t * styles[kind].speed + i / visibleCount) % 1;
+      const spread = (kind === 'wind' ? .07 : kind === 'gas' ? .46 : .28) * progress;
       dummy.position.set(
         1.35 + 4.0 * progress,
-        -.17 + (kind === 'gas' ? -.85 * progress * progress : Math.sin(i * 1.9 + t * 4) * .17 * progress),
+        -.17 + (kind === 'gas' ? -.85 * progress * progress : Math.sin(i * 1.9 + t * 4) * (kind === 'wind' ? .055 : .17) * progress),
         Math.sin(i * 2.4 + t * 2) * spread
       );
       dummy.rotation.set(0, kind === 'wind' ? Math.PI / 2 : 0,
         kind === 'fire' ? -Math.PI / 2 : 0);
       const size = kind === 'wind'
-        ? .22 + 1.1 * progress
+        ? .19 + .8 * progress
         : kind === 'gas'
           ? .15 + .65 * progress
           : .22 + .42 * (1 - progress);
@@ -71,8 +75,8 @@ export function createBreathPreview(head) {
   }
 
   function snapshot() {
-    return { active, poolSize: count, visibleEmitters:
-      Object.values(meshes).filter(mesh => mesh.visible).length };
+    return { active, poolSize: count, drawnInstances: active ? meshes[active].count : 0,
+      visibleEmitters: Object.values(meshes).filter(mesh => mesh.visible).length };
   }
   return { update, snapshot };
 }
