@@ -5,7 +5,7 @@ import {createCinematicEffects} from './rendering/cinematic-effects.js';
 import {impactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
 import {updatePedestrianPose} from './simulation/pedestrian-motion.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
-import {buildRoadVehicle,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
+import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
@@ -69,8 +69,9 @@ for(const id of ['game-build','hud-version','start-build']){
 }
 const visualBank=createVisualMaterials(THREE);
 const scene=new THREE.Scene();
-const chapterStaging=createChapterStaging(scene);scene.background=new THREE.Color(0xa9c8e0);scene.fog=new THREE.FogExp2(0xacc9dc,.00255);
-const camera=new THREE.OrthographicCamera(-32,32,18,-18,.1,650),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
+const chapterStaging=createChapterStaging(scene);scene.background=new THREE.Color(0xa9c8e0);scene.fog=new THREE.FogExp2(0xacc9dc,.00175);
+const streetView={x:19,y:23,z:112,targetY:19,targetZ:-6,fov:35};
+const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,650),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
 scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:120});scene.add(sun);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
@@ -117,7 +118,7 @@ let lightningCooldown=5;
 function updateNight(dt){
  const targetPhase=dayPhase(wave);let phaseDelta=targetPhase-displayedPhase;if(phaseDelta<-.5)phaseDelta+=1;if(phaseDelta>.5)phaseDelta-=1;
  const blend=1-Math.exp(-dt*.45);displayedPhase=(displayedPhase+phaseDelta*blend+1)%1;displayedDarkness+=(dayDarkness(wave)-displayedDarkness)*blend;
- const darkness=displayedDarkness;schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.22+darkness*.04;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00255+darkness*.0004;cinematicSky.setPhase(displayedPhase,darkness,dt);neighborhood.setAtmosphere(displayedPhase,darkness);
+ const darkness=displayedDarkness;schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.15+darkness*.06;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00175+darkness*.00035;cinematicSky.setPhase(displayedPhase,darkness,dt);neighborhood.setAtmosphere(displayedPhase,darkness);
  // Distant buildings receive a stronger atmospheric veil than the playable street.
  const hazeColor=new THREE.Color(0x67778b).lerp(new THREE.Color(0x26344a),darkness);
  // Architectural texture preserves facade detail while distance haze stays subtle.
@@ -127,8 +128,9 @@ function updateNight(dt){
  sunDisc.visible=false;moonDisc.visible=false;starGroup.visible=false;clouds.visible=false; // Atmospheric sky shader replaces geometric clouds.
  for(const lamp of lamps)lamp.intensity=darkness*(lamp.color.getHex()===0xb4c7ff?1.35:3.0);
  for(const glow of streetGlows)glow.material.opacity=darkness*.58;
+ for(const car of cars)setRoadVehicleNight(car.root,darkness,!car.burning&&!car.destroyed);
  for(const w of nightWindows){const lightAllowed=(!w.surface||w.surface.alive)&&w.enabled&&!w.broken;const opacity=lightAllowed?Math.max(0,(darkness-.3)*.62):0;w.mesh.material.opacity=opacity;w.mesh.visible=opacity>.001;}
- for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.35)*.32);
+ for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission;
 
  sun.intensity=2.20-darkness*1.25;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(new THREE.Color(0xffc59a),Math.min(1,sunset)).lerp(new THREE.Color(0x8faad9),darkness);
  if(ambience){ambience.intensity=1.18-darkness*.12;ambience.color.setHex(0xe9f2ff).lerp(new THREE.Color(0xb5c5dd),darkness)}
@@ -377,9 +379,12 @@ function loadActualSchoolOverlay(){
    if(!school.children.length)throw new Error('Central school geometry not found in source');
    const central=batchSchoolSource(school,material=>{
     sourceDamage.patch(material);
-    if(material.name==='school-glass'&&material.emissive){
+    if(['school-glass','school-interior'].includes(material.name)&&material.emissive){
      material.emissive.setHex(0xffd6a2);
      material.emissiveIntensity=0;
+     // Illuminate the retained interior surfaces behind the glazing. Keep the
+     // glass itself subdued so the facade does not become a flat glowing panel.
+     material.userData.nightEmission=material.name==='school-interior'?.55:.07;
      schoolGlazingMaterials.push(material);
     }
    });
@@ -510,28 +515,17 @@ for(const sign of [-1,1]){
 }
 dragon.scale.set(1.14,1.14,1.14);
 dragon.scale.setScalar(1.20);
+let dragonLeavingRoof=false;
 function perchDragon(rest=false){
+ dragonLeavingRoof=false;
  facing=1;turnTime=0;gasPose=0;dragonGroundImpact=false;recoveryLift=0;windActive=false;gustTime=0;
- dragon.position.set(0,schoolBounds.max.y+1.25,schoolBounds.max.z-2.6);
+ dragon.position.set(0,schoolBounds.max.y+2.2,schoolBounds.max.z-2.6);
  dragon.rotation.x=rest?0.03:0;dragon.rotation.y=rest?0.16:0.08;dragon.rotation.z=rest?-0.08:-0.03;
  for(const wing of wings)wing.pivot.rotation.z=rest?wing.sign*.34:wing.sign*.18;
  if(dragonStun<=0)invulnerable=Math.max(invulnerable,.55);
 }
 
 const dragonVisuals=enhanceDragon(THREE,dragon,wings);
-// Explicit 2.5D foreground character: transparent pass after opaque world geometry.
-// Preserve self-material colors but prevent accidental building facade occlusion.
-dragon.traverse(obj=>{
- if(!obj.isMesh)return;
- obj.renderOrder=800;
- const original=Array.isArray(obj.material)?obj.material:[obj.material];
- const ordered=original.map(mat=>{
-  if(!mat?.isMaterial)return mat;
-  const front=mat.clone();front.depthTest=false;front.depthWrite=false;front.transparent=true;
-  front.side=THREE.DoubleSide;return front;
- });
- obj.material=Array.isArray(obj.material)?ordered:ordered[0];
-});
 dragon.position.set(0,2,15);
 // Synthesized, license-free arcade audio. Initialized on first user gesture.
 let audio=null,muted=false;
@@ -594,30 +588,15 @@ const moonDisc=new THREE.Mesh(new THREE.SphereGeometry(2.2,18,12),new THREE.Mesh
 // near-camera sky meshes instead of hiding them and reusing GPU resources.
 const starGroup=new THREE.Group();celestial.add(starGroup);
 const clouds=new THREE.Group();celestial.add(clouds);
-// v4.7: The retired box-tower skyline, its geometry, hidden duplicate objects,
-// and photographic matte paintings have been removed entirely. The city is built
-// from original 3D architectural silhouettes + textured/emissive facades.
-const skyline=new THREE.Group();skyline.name='Philadelphia-skyline · distant ~1–2mi stylized';staticGroup.add(skyline);
-// The original towers sat at z=0 next to Tech Freire, producing foreground-scale contrast.
-// Move the ENTIRE city far behind the rowhouses. An ortho camera does not shrink distant
-// objects: explicit x/y scaling and atmospheric depth cueing are required.
-// The distant skyline must not loom above the school's five-story silhouette.
-skyline.position.set(0,9,-172);skyline.scale.set(.62,.28,.62);
-const skylineTowers=[],skylineFires=[];let skylineDamage=0;
-// A translucent height-dependent atmospheric veil occupies the depth gap,
-// without repainting the actual foreground building materials.
-const skylineBackdrop=createPhiladelphiaSkyline(skyline);
-// Align the center of the *actual 3D landmark group* with the school and main street.
-// The translucent haze veil isn't included in the centering calculation.
-const skylineLandmarkBounds=new THREE.Box3().setFromObject(skylineBackdrop.group);
-const skylineLandmarkCenter=skylineLandmarkBounds.getCenter(new THREE.Vector3()).x;
-if(Number.isFinite(skylineLandmarkCenter))skylineBackdrop.group.position.x-=skylineLandmarkCenter/skyline.scale.x;
-// The camera sees the street from X=25 toward X=0. Moving the city back 160
-// world units without compensating for this diagonal view displaced it far right.
-const skylineAnchor=skylineCameraRayX({cameraX:25,cameraZ:81,targetX:0,targetZ:-12,skylineZ:skyline.position.z});
-skyline.position.x=skylineAnchor;
-window.__DD_SKYLINE_ALIGNMENT={method:'orthographic-camera-ray',landmarkCenterBefore:skylineLandmarkCenter,
- compensation:-skylineLandmarkCenter/skyline.scale.x,worldAnchorX:skylineAnchor};
+const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.add(skyline);
+ // Keep the distant towers behind the neighborhood and let perspective set their apparent scale.
+ skyline.position.set(0,-15,-349);skyline.scale.set(1.72,1.03,1.15);
+ const skylineFires=[];let skylineDamage=0;
+ const skylineBackdrop=createPhiladelphiaSkyline(skyline);
+ const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
+ skylineBackdrop.group.position.x-=landmarkCenter/skyline.scale.x;
+ const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
+ skyline.position.x=skylineAnchor;
 const skylineAirUniforms={opacity:{value:.26},day:{value:1}};
 const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(330,140),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,47,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
@@ -677,9 +656,7 @@ function updateSkylineDamage(dt){
 // Restrained, camera-relative silhouette framing, inspired by layered depth in Hollow Knight.
 // Keep the center and dragon flight corridor unobstructed; avoid large floating roof blocks.
 // The prior opaque "foreground rooftop" silhouettes were suspended in front
-// of Broad Street rather than belonging to a modeled building. Retain an empty
-// group for camera/parallax compatibility, but do not render fictional rooftops.
-const foregroundRoofs=new THREE.Group();foregroundRoofs.name='unused-foreground-roof-layer';
+
 // Four-lane traffic; red lights hold civilian vehicles, responders bypass signals.
 let trafficLightRed=false;
 const trafficSignals=[];const trafficGreen=new THREE.MeshBasicMaterial({color:0x22ed62}),trafficRed=new THREE.MeshBasicMaterial({color:0xf34135}),trafficOff=new THREE.MeshBasicMaterial({color:0x222a30});
@@ -720,7 +697,7 @@ function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck
  const built=buildRoadVehicle(THREE,root,{style:bodyStyle,length,bodyHex,bike,scooter,bus,truck,garbage,van,police,ambulance,emergency,fireTruck,ladder,taxi});
  beacon=built.beacon;
   for(const pivot of root.userData.frontSteer||[])batchVehicleVisuals(THREE,pivot);
-  const baked=batchVehicleVisuals(THREE,root,{exclude:[beacon,...(root.userData.brakes||[])]});
+  const baked=batchVehicleVisuals(THREE,root,{exclude:[beacon,root.userData.headlightBeam,...(root.userData.brakes||[])]});
   vehiclePoolStats.originalMeshes+=baked.sourceMeshes;
   vehiclePoolStats.bakedBatches+=baked.batches;
   vehiclePoolStats.drawCallsSaved+=baked.drawCallsSaved;
@@ -1074,9 +1051,13 @@ function updateDistantMeteors(dt){
   distantStreaks.push({sprite,life:5.2,v:16+Math.random()*14+waveProgress*5,impact:Math.random()<(.58+waveProgress*.25),waveProgress});
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;s.sprite.position.x+=dt*s.v*.18;s.sprite.position.y-=dt*s.v;
-  if(s.sprite.position.y<14&&s.impact){const pos=s.sprite.position;
-   cinematicSkyExplosion(pos.x*.75,-9+Math.max(8,pos.y)*.52,-155);
-   if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(pos.x*.78+(Math.random()-.5)*11,-5+Math.max(7,pos.y)*.48,-155);
+  if(s.sprite.position.y<36&&s.impact){const pos=s.sprite.position;
+   // Strikes snap to an actual distant landmark facade (and apply limited
+   // cosmetic tower damage), rather than exploding in the empty skyline.
+   skyline.updateWorldMatrix(true,false);
+   const impact=skylineBackdrop.strikeNearest(pos.x)||skyline.localToWorld(pos.clone());
+   cinematicSkyExplosion(impact.x,impact.y,impact.z);
+   if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(impact.x+(Math.random()-.5)*11,impact.y+2,impact.z);
    s.impact=false;s.life=0;
   }
   if(s.life<=0){skyline.remove(s.sprite);distantStreaks.splice(i,1);}
@@ -1096,7 +1077,7 @@ function updateSkyBursts(dt){for(let i=skyBursts.length-1;i>=0;i--){const b=skyB
   b.m.position.x+=(b.m.position.x-dragon.position.x>=0?1:-1)*strength;
   b.m.position.z+=(b.m.position.z-dragon.position.z>=0?1:-1)*strength*.4;
  }
- b.m.scale.multiplyScalar(1+dt*.18);b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58;}else{b.m.scale.setScalar(1+(1-b.life/.8)*5);b.m.material.opacity=Math.max(0,b.life/.8)*.75;}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
+ b.m.scale.multiplyScalar(1+dt*.18);b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58;}else{b.m.scale.setScalar(1+(1-b.life/.8)*5);b.m.material.opacity=Math.max(0,b.life/.8)*.75;}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
 function addCrater(x,z,radius=3){
  const mesh=new THREE.Mesh(new THREE.RingGeometry(radius*.55,radius,20),new THREE.MeshBasicMaterial({color:0x23180e,side:THREE.DoubleSide,depthWrite:false}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.11,z);scene.add(mesh);
@@ -1681,9 +1662,9 @@ let toastTimer=0;function message(t){document.getElementById('toast').textConten
  stormTimer=0;remaining=wave>=15?0:waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:.7;if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
 function reset(){schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
- for(const b of skyBursts){scene.remove(b.m);if(!b.m.isSprite)b.m.geometry?.dispose();b.m.material.dispose()}skyBursts.length=0;for(const m of distantStreaks)skyline.remove(m.sprite);distantStreaks.length=0;dangerZones.length=0;
+ for(const b of skyBursts){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose()}skyBursts.length=0;for(const m of distantStreaks)skyline.remove(m.sprite);distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windVisual.visible=false;chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
- if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;foregroundRoofs.position.x=0;if(neighborhood.setParallax)neighborhood.setParallax(0,0);if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
 function gameOver(){if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{document.getElementById('overlay').style.display='grid';showSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
@@ -1749,7 +1730,10 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
  dragonMeteorTimer-=dt;if(wave>3&&wave<15&&dragonMeteorTimer<=0){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
- cooldown=Math.max(0,cooldown-dt);const move=dragonStun>0?0:Number(input.isDown(ACTIONS.RIGHT))-Number(input.isDown(ACTIONS.LEFT));const rise=dragonStun>0?0:Number(input.isDown(ACTIONS.UP))-Number(input.isDown(ACTIONS.DOWN));dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-91,91);
+ cooldown=Math.max(0,cooldown-dt);const move=dragonStun>0?0:Number(input.isDown(ACTIONS.RIGHT))-Number(input.isDown(ACTIONS.LEFT));const rise=dragonStun>0?0:Number(input.isDown(ACTIONS.UP))-Number(input.isDown(ACTIONS.DOWN));
+if(move||rise||dragonStun>0)dragonLeavingRoof=true;
+if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
+dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-91,91);
 if(move&&move!==facing){facing=move;turnTime=.22;}turnTime=Math.max(0,turnTime-dt);
 dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));dragon.rotation.z=dragonStun>0?Math.sin(elapsed*35)*.14:turnTime>0?Math.sin((.22-turnTime)*28)*.28:Math.sin(elapsed*4)*.035;dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*16*dt,dragonStun>0?1.3:1.7,44);dragon.children.forEach((part,i)=>{if(i<3)part.rotation.z=Math.sin(elapsed*6+i)*.04;});dragon.rotation.y=Math.sin(elapsed*2)*.09;
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
@@ -1880,18 +1864,26 @@ function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagn
  previousRenderAt=present;const dt=clock.getDelta();if(dt>.25&&active&&!paused){quality.sample(Math.min(dt,.2));}hostMetricTime+=dt;hostMetricFrames++;quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
  sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const step=fixedStep.advance(dt,update);const simMs=performance.now()-simStart;
  const w=innerWidth,h=innerHeight;
- if(w!==lastW||h!==lastH){renderer.setSize(w,h,false);renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';const aspect=w/h,viewHeight=56;camera.left=-viewHeight*aspect/2;camera.right=viewHeight*aspect/2;camera.top=viewHeight/2;camera.bottom=-viewHeight/2;camera.updateProjectionMatrix();lastW=w;lastH=h;}
- const jitter=shake>0?(Math.random()-.5)*shake:0;shake=Math.max(0,shake-Math.min(dt,.1));const follow=Math.max(0,dragon.position.y-16)*.58;
- const desiredScroll=THREE.MathUtils.clamp(dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-38,38),-29,29);
- cameraScrollX=desiredScroll; // Exact camera-to-layer sync: no trailing parallax drift after stopping/reversing.
- // Distant skyline travels more slowly than the street; rooftop silhouettes sweep faster.
- skylineBackdrop.update(elapsed,displayedDarkness);
- // 0.94 moves only six percent as fast as the street ON SCREEN (camera offset is 1.0).
-skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.94);
- celestial.position.x=cameraScrollX*.03;
- foregroundRoofs.position.x=-cameraScrollX*.035;foregroundRoofs.position.y=-follow*.018;
- if(neighborhood.setParallax)neighborhood.setParallax(cameraScrollX,follow);
- camera.position.set(25+cameraScrollX+jitter,21+follow,81);camera.lookAt(cameraScrollX,12.8+follow,-12);const targetZoom=wave===15?.66:.78;const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*1.8));if(Math.abs(nextZoom-camera.zoom)>0.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
+ const resized=w!==lastW||h!==lastH;
+ if(resized){
+  renderer.setSize(w,h,false);
+  renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';
+  camera.aspect=w/h;
+  lastW=w;lastH=h;
+ }
+ const jitter=shake>0?(Math.random()-.5)*shake:0;
+ shake=Math.max(0,shake-Math.min(dt,.1));
+ const follow=Math.max(0,dragon.position.y-25)*.62;
+ const deadZone=35*Math.min(1,camera.aspect/(16/9));
+ cameraScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone);
+ skylineBackdrop.update(elapsed,displayedDarkness,dt);
+ skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
+ neighborhood.foreground.position.x=-cameraScrollX*.035;
+ camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
+ camera.lookAt(cameraScrollX,streetView.targetY+follow,streetView.targetZ);
+ const targetZoom=wave===15?.86:1;
+ const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*1.8));
+ if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
  const renderStartUTC=Date.now();const renderStart=performance.now();cinematicFX.flush();renderer.render(scene,camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
@@ -1919,12 +1911,13 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  const snap=()=>({version:GAME_VERSION,build:BUILD_ID,active,paused,wave,score,hp,
   dragon:{x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,lives:dragonLives},
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
-  camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,foregroundOffset:foregroundRoofs.position.x},
+  camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
   schoolReconstruction:schoolReconstruction?.stats()||null,
   sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes()},
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
   renderVisibility:{schoolEnabled:performanceLab.isEnabled('schoolModel'),schoolVisible:Boolean(architecturalModel?.visible || actualSchoolOverlay?.visible || (!architecturalReady&&Object.values(meshes).some(m=>m.visible))),actualSchoolOverlayReady,fbxRowhouses:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},schoolModelCalibration:actualSchoolOverlayStats?.calibration||null,skylineEnabled:performanceLab.isEnabled('skyline'),skylineVisible:skylineBackdrop.group.visible,backgroundEnabled:performanceLab.isEnabled('backgroundBuildings'),particlesEnabled:performanceLab.isEnabled('particles'),fireEnabled:performanceLab.isEnabled('fires'),renderFPSCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadows:renderer.shadowMap.enabled},
   atmosphere:{phase:displayedPhase,darkness:displayedDarkness},structure:neighborhood.city.stats(),
+  vehicleLighting:cars.filter(c=>c.root.userData.headlightBeam).map(c=>({visible:c.root.userData.headlightBeam.visible,strength:c.root.userData.headlightBeam.material.uniforms.strength.value,emissive:c.root.userData.headlightMaterial.emissiveIntensity})),
   neighborhood:{damaged:neighborhood.targetBuildings.filter(b=>b.damage>.001).length,damageSum:+neighborhood.targetBuildings.reduce((sum,b)=>sum+b.damage,0).toFixed(3),targets:neighborhood.targetBuildings.filter(b=>!b.background).slice(0,12).map(b=>({name:b.name,x:b.x,y:Math.min(b.h-2,7),front:b.front,w:b.w,damage:+b.damage.toFixed(3)}))},
   schoolDamage:+schoolDamage.toFixed(3),scene:{meshes:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderScale:adaptiveResolution},
   lighting:{explosionSlots:explosionLightPool.lights.length,activeExplosions:explosionLightPool.activeCount,helicopterSlots:helicopterLightPool.lights.length,activeHelicopters:helicopterLightPool.activeCount},
@@ -1932,7 +1925,72 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   meteors:meteors.slice(0,40).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
+ // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
+ // camera, coordinates and renderer remain unchanged after the next RAF.
+ const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  captureSkyline:()=>run('captureSkyline',()=>{
+   const centerX=skyline.position.x;
+   qaSkylineCamera.position.set(centerX,62,skyline.position.z+165);
+   qaSkylineCamera.lookAt(centerX,39,skyline.position.z);
+   qaSkylineCamera.updateProjectionMatrix();
+   renderer.render(scene,qaSkylineCamera);
+   return {png:renderer.domElement.toDataURL('image/png'),
+    camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
+    skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
+  }),
+  stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
+   const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
+   if(index<0)throw Error('Expected landmark missing');
+   const t=skylineBackdrop.towers[index],before=t.strikeDamage;
+   const hit=skylineBackdrop.strikeNearest(t.group.position.x);
+   skylineBackdrop.setDamage(skylineDamage);
+   skylineBackdrop.update(elapsed,displayedDarkness,1/60);
+   return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
+    afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
+    flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
+    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
+  }),
+  stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
+   // Validate that ground debris remains outside the animated tower hierarchy.
+   skylineBackdrop.setDamage(1);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
+    rubbleDetached:t.ruin.parent===skylineBackdrop.group,
+    rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
+    fallActive:t.fallActive,fallElapsed:t.fallElapsed,
+    towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
+    slabReleaseY:t.slabs.map(s=>s.userData.fallStartY),
+    slabGroundY:t.slabs.map(s=>s.userData.groundY),
+    slabMaterialGroups:t.slabs.map(s=>s.geometry.groups.length),
+    slabFaceMaterialCounts:t.slabs.map(s=>s.material.length),
+    slabIndexCounts:t.slabs.map(s=>s.geometry.groups.reduce((sum,g)=>sum+g.count,0))};
+  }),
+  skylineFallState:()=>run('skylineFallState',()=>{
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
+    slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  advanceSkylineFall:(seconds=4)=>run('advanceSkylineFall',()=>{
+   if(!Number.isFinite(seconds)||seconds<0||seconds>6)throw Error('Invalid skyline QA step');
+   const frames=Math.ceil(seconds*20);
+   for(let i=0;i<frames;i++)skylineBackdrop.update(elapsed+i*.05,displayedDarkness,.05);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   return {fallElapsed:t.fallElapsed,slabY:t.slabs.map(s=>s.position.y),
+    groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
+   for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
+   const car=cars.find(c=>c.root.userData.headlightBeam);
+   if(!car)throw new Error('No road vehicle available');
+   car.root.position.set(0,-.36,20);car.root.rotation.y=0;car.speed=0;car.desiredSpeed=0;
+   setRoadVehicleNight(car.root,0);const day=car.root.userData.headlightBeam.visible;
+   setRoadVehicleNight(car.root,.85);
+   return {dayVisible:day,nightVisible:car.root.userData.headlightBeam.visible,strength:car.root.userData.headlightBeam.material.uniforms.strength.value};
+  }),
   schoolComparison:()=>run('schoolComparison',()=>{
    if(!sourceComparison)throw Error('Source FBX comparison is not ready');
    const gameSchool=actualSchoolOverlay.clone();

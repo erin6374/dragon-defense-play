@@ -58,12 +58,31 @@ export function buildRoadVehicle(T,root,o){
  if(o.ladder||o.bus||o.garbage)for(const z of [-.9,.9])wheel(-L*.31+.98,z,.5);
  block(root,chrome,L/2+.07,.57,0,.14,.16,1.8);block(root,chrome,-L/2-.07,.57,0,.14,.16,1.8);
  for(let i=0;i<5;i++)block(root,black,L/2+.09,.78+i*.055,0,.035,.025,.74);
- const head=mat(0xffffd6,.08,.12);head.emissive.setHex(0xffedb4);head.emissiveIntensity=.65;
+ const head=mat(0xffffd6,.08,.12);head.emissive.setHex(0xffedb4);head.emissiveIntensity=.15;
+ // A feathered road pool follows the chassis without adding dynamic lights.
+ const beamMaterial=new T.ShaderMaterial({transparent:true,depthWrite:false,
+  blending:T.AdditiveBlending,uniforms:{strength:{value:0}},
+  vertexShader:'varying vec2 beamUV;void main(){beamUV=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`varying vec2 beamUV;uniform float strength;
+   void main(){float reach=beamUV.x;float lateral=abs(beamUV.y-.5);
+    float width=mix(.14,.48,reach);float edge=1.-smoothstep(width*.35,width,lateral);
+    float fade=smoothstep(0.,.06,reach)*pow(1.-reach,1.6);
+    gl_FragColor=vec4(1.,.86,.61,edge*fade*strength);}`});
+ const beam=new T.Mesh(new T.PlaneGeometry(9,3.8),beamMaterial);
+ beam.name='vehicle-headlight-road-pool';beam.rotation.x=-Math.PI/2;
+ beam.position.set(L/2+4.5,.045,0);beam.visible=false;root.add(beam);
+ root.userData.headlightBeam=beam;root.userData.headlightMaterial=head;
  for(const z of [-.65,.65]){block(root,head,L/2+.08,.88,z,.06,.19,.35);brakes.push(block(root,tailDim,-L/2-.09,.88,z,.06,.18,.31))}
  if(o.taxi)block(root,mat(0xfff2b4),-.4,top+.12,0,.55,.18,.4);
  let beacon=null;if(o.emergency)beacon=block(root,mat(0x287eff),L/2-1.1,top+.13,0,.7,.17,.8);
  root.userData.frontSteer=frontSteer;root.userData.brakes=brakes;root.userData.tailDim=tailDim;root.userData.tailBright=tailBright;
  return {beacon,brakes,tailDim,tailBright};
+}
+export function setRoadVehicleNight(root,darkness,moving=true){
+ const strength=Math.max(0,Math.min(1,(darkness-.18)/.62));
+ const beam=root.userData.headlightBeam;
+ if(beam){beam.visible=moving&&strength>.001;beam.material.uniforms.strength.value=strength*.24;}
+ if(root.userData.headlightMaterial)root.userData.headlightMaterial.emissiveIntensity=.15+strength*1.8;
 }
 export function buildHelicopter(T,root,variant=0){
  const {mat,block,oval,rod,part}=kit(T),fire=variant===2,heavy=variant>0,color=mat(fire?0xb83525:heavy?0xe6e5dc:0x294f70,.30,.37),glass=mat(0x254450,.52,.14),metal=mat(0x5d6268,.65,.35),dark=mat(0x22292e,.2,.62),white=mat(0xe9e6d8);

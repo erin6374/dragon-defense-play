@@ -1,14 +1,46 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
+import {Script} from 'node:vm';
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
+const launchHtml = await readFile('index.html', 'utf8');
+const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
+// Fast fail for malformed inline startup scripts, before expensive WebGL QA.
+// A stray literal \\n between JavaScript statements previously reached the
+// end of a multi-minute browser run before its SyntaxError was reported.
+for(const [index, script] of Array.from(launchHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)).entries()){
+ const attrs=script[1];
+ if(/\bsrc\s*=|\btype\s*=\s*["'](?:importmap|application\/json)/i.test(attrs))continue;
+ if(!script[2].trim())continue;
+ try { new Script(script[2],{filename:'index.html:inline-script-'+index}); }
+ catch(error){throw new Error('Inline startup script has invalid JavaScript: '+error.message,{cause:error});}
+}
+// Guard against the common Windows file:// launch failure and stale startup
+// guidance. Browser QA still uses HTTP to exercise actual module loading.
+assert.match(launchHtml, /"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
+assert.ok(!launchHtml.includes('Check the browser console (F12), internet access to cdn.jsdelivr.net'),
+  'startup message must not point to an obsolete external CDN');
+assert.ok(launchHtml.includes("location.protocol==='file:'"),
+  'startup message must explain direct-file CORS failures');
+assert.ok(launchCmd.includes('python') && launchCmd.includes('8769') && launchCmd.includes('http.server'),
+  'Windows preview launcher must start the expected HTTP server');
 const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
 const shot = name => page.screenshot({path: 'qa-output/' + name + '.png'});
+// Capture the geometry-based skyline unobstructed by playable foreground or HUD.
+// These are actual renderer pixels, not synthetic screenshots.
+const skylineShot = async name => {
+  const capture = await page.evaluate(() => window.__DD_QA.captureSkyline());
+  assert.ok(capture.ok, capture.error);
+  const png = capture.result.png;
+  assert.ok(png.startsWith('data:image/png;base64,'), 'Skyline capture is a rendered PNG');
+  await writeFile('qa-output/' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
+  return capture.result.camera;
+};
 try {
   for (let attempt = 0; attempt < 30; attempt++) {
     if (await fetch(new URL('build-info.json', base)).then(r => r.ok).catch(() => false)) break;
@@ -16,6 +48,7 @@ try {
   }
   browser = await chromium.launch({
     channel: process.env.QA_BROWSER_CHANNEL,
+    executablePath: process.env.QA_BROWSER_EXECUTABLE,
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   });
   page = await browser.newPage({viewport: {width: 1024, height: 576}, serviceWorkers: 'block'});
@@ -74,8 +107,11 @@ try {
   await page.locator('#graphics').selectOption('mobile');
   await page.locator('#start').click();
   await page.waitForFunction(() => window.__DD_QA.snap().active);
+  await page.locator('#cinematic-skip').click();
+  await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
+  await page.locator('canvas').first().screenshot({path:'qa-output/02-playing-scene.png'});
   report.browser = browser.version();
   const before = await snap();
   await page.keyboard.down('KeyD');
@@ -84,6 +120,7 @@ try {
   } finally {
     await page.keyboard.up('KeyD');
   }
+  await page.waitForFunction(() => window.__DD_QA.snap().dragon.z > 12);
   await page.evaluate(() => window.__DD_QA.move(57, 12));
   await page.waitForFunction(() => window.__DD_QA.snap().camera.scroll > 15);
   const right = await snap();
@@ -93,8 +130,10 @@ try {
   const left = await snap();
   await shot('04-pan-left');
   for (const {camera} of [right, left]) {
-    assert.ok(Math.abs(camera.skylineOffset - camera.scroll * .94) < .01);
+    assert.ok(Math.abs(camera.skylineOffset - camera.scroll * .62) < .01);
+    assert.equal(camera.perspective, true);
     assert.ok(Math.abs(camera.foregroundOffset + camera.scroll * .035) < .01);
+    assert.deepEqual(camera.streetOrigins, before.camera.streetOrigins, 'street and neighborhood stay anchored during pans');
   }
   report.movement = {before: before.dragon, right: right.camera, left: left.camera};
   await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 15, left.frameTimes.frames);
@@ -180,6 +219,102 @@ try {
   assert.ok(reset.ok, reset.error);
   assert.deepEqual(reset.result.sourceSchool, {visible: true, strikes: 0});
   assert.equal(reset.result.schoolReconstruction.damaged, 0);
+  const dusk = await page.evaluate(() => {
+    const qa = window.__DD_QA;
+    qa.start(4);
+    qa.cinematicStage('quiet');
+    qa.move(-29, 34);
+    return qa.qaSettleAtmosphere();
+  });
+  assert.ok(dusk.ok, dusk.error);
+  const duskFrames = (await snap()).frameTimes.frames;
+  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames > n, duskFrames);
+  report.dusk = dusk.result;
+  await shot('06-north-broad-dusk');
+  await page.locator('canvas').first().screenshot({path:'qa-output/06-dusk-scene.png'});
+  report.skylineCamera=await skylineShot('06-skyline-intact');
+  const towerImpact = await page.evaluate(() => window.__DD_QA.stageSkylineStrike());
+  assert.ok(towerImpact.ok, towerImpact.error);
+  assert.equal(towerImpact.result.landmark, 'comcast-technology');
+  assert.ok(towerImpact.result.afterDamage > towerImpact.result.beforeDamage, 'individual tower strike adds visual damage');
+  assert.equal(towerImpact.result.flashVisible, true, 'landmark impact flash is displayed');
+  assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
+  assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
+  assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
+  assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
+  assert.ok(towerImpact.result.scorchOpacity>0,'facade damage mark has positive opacity');
+  assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
+  report.landmarkImpact = towerImpact.result;
+  await shot('06-landmark-strike');
+  await skylineShot('06-skyline-strike');
+  const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
+  assert.ok(skylineCollapse.ok,skylineCollapse.error);
+  assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
+  assert.equal(skylineCollapse.result.ruinVisible,true,'skyscraper rubble remains rendered');
+  assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
+  assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
+  assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
+  assert.deepEqual(skylineCollapse.result.slabMaterialGroups,[2,2,2],'one opaque side group and one textured front group per slab');
+  assert.deepEqual(skylineCollapse.result.slabFaceMaterialCounts,[2,2,2],'facade fragment material array uses two finishes');
+  assert.deepEqual(skylineCollapse.result.slabIndexCounts,[36,36,36],'optimized geometry retains all six faces');
+  assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
+  assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
+  for(let i=0;i<skylineCollapse.result.slabY.length;i++){
+   assert.ok(Math.abs(skylineCollapse.result.slabY[i]-skylineCollapse.result.slabReleaseY[i])<.001,
+    'facade section begins at its release height, not at the ground');
+   assert.ok(skylineCollapse.result.slabY[i]>skylineCollapse.result.slabGroundY[i],
+    'facade section has a positive falling distance');
+  }
+  await skylineShot('06-skyline-release');
+  const falling=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(.45));
+  assert.ok(falling.ok,falling.error);
+  assert.ok(falling.result.slabY.some((v,i)=>v>falling.result.groundY[i]+.01),'facade sections visibly pass through a falling state');
+  await skylineShot('06-skyline-falling');
+  const settledSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
+  assert.ok(settledSkyline.ok,settledSkyline.error);
+  for(let i=0;i<settledSkyline.result.slabY.length;i++)
+   assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
+  report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result};
+  await skylineShot('06-skyline-rubble');
+  await shot('06-landmark-collapse');
+  await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
+  const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  assert.ok(skylineReset.ok,skylineReset.error);
+  assert.equal(skylineReset.result.fallActive,false,'restart resets skyline falling state');
+  assert.equal(skylineReset.result.ruinVisible,false,'restart hides skyline rubble');
+  report.skylineReset=skylineReset.result;
+  // A series of background meteor hits must be able to damage the distant
+  // city independently; foreground school/neighborhood health is unaffected.
+  const impactCascade=await page.evaluate(()=>{
+    const qa=window.__DD_QA, hpBefore=qa.snap().hp;
+    let hit;
+    for(let i=0;i<6;i++){
+      hit=qa.stageSkylineStrike();
+      if(!hit.ok)return hit;
+    }
+    const state=qa.skylineFallState();
+    if(!state.ok)return state;
+    return {ok:true,result:{hits:6,strikeDamage:hit.result.afterDamage,
+      fallActive:state.result.fallActive,ruinVisible:state.result.ruinVisible,
+      hpBefore,hpAfter:qa.snap().hp}};
+  });
+  assert.ok(impactCascade.ok,impactCascade.error);
+  assert.ok(impactCascade.result.strikeDamage>=.40,'repeated skyline hits accumulate independent tower damage');
+  assert.equal(impactCascade.result.fallActive,true,'repeated skyline hits start tower breakup');
+  assert.equal(impactCascade.result.ruinVisible,true,'repeated skyline hits reveal persistent debris');
+  assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');
+  report.skylineImpactCascade=impactCascade.result;
+  await skylineShot('06-skyline-impact-cascade');
+  const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
+  assert.ok(traffic.ok,traffic.error);
+  assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
+  assert.equal(traffic.result.nightVisible,true,'headlight road pool lights at night');
+  assert.ok(traffic.result.strength>0&&traffic.result.strength<=.24);
+  report.vehicleLighting=traffic.result;
+  const nightFrame=(await snap()).frameTimes.frames;
+  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>n,nightFrame);
+  await shot('07-vehicle-lighting');
+  await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
 } catch (error) {
   report.failure = String(error.stack ?? error);
