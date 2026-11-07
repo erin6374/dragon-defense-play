@@ -1936,6 +1936,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
   }),
+  stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
+   // Validate that ground debris remains outside the animated tower hierarchy.
+   skylineBackdrop.setDamage(1);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
+    rubbleDetached:t.ruin.parent===skylineBackdrop.group,
+    rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
+    towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y)};
+  }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
    const car=cars.find(c=>c.root.userData.headlightBeam);
