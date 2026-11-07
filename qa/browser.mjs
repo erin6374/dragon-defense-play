@@ -599,6 +599,29 @@ try {
     assert.equal(bank.breath.visibleEmitters,0,'flight banking hides attack emitters');
     assert.ok(Number.isFinite(bank.drawCalls)&&bank.drawCalls>0,
       'dragon lab reports actual renderer draw calls');
+    // Pausing must freeze pose time even when the browser pumps animation frames.
+    const frozen=await lab.evaluate(()=>{
+      document.querySelector('#play-toggle').click();
+      return window.__PAULO_LAB_QA.snapshot();
+    });
+    assert.equal(frozen.paused,true,'pause button freezes dragon timeline');
+    await lab.waitForTimeout(140);
+    const still=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(still.time,frozen.time,'paused timeline does not advance');
+    const stepped=await lab.evaluate(()=>{
+      document.querySelector('#step-frame').click();
+      return window.__PAULO_LAB_QA.snapshot();
+    });
+    assert.ok(Math.abs(stepped.time-frozen.time-1/60)<.0001,
+      'frame stepping advances exactly one 60Hz animation frame');
+    const scrubbed=await lab.evaluate(()=>{
+      const slider=document.querySelector('#timeline');
+      slider.value='1.25';slider.dispatchEvent(new Event('input',{bubbles:true}));
+      return window.__PAULO_LAB_QA.snapshot();
+    });
+    assert.equal(scrubbed.paused,true,'scrubbing keeps preview paused');
+    assert.ok(Math.abs(scrubbed.time-1.25)<.0001,
+      'scrubber sets deterministic pose time');
     await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('wind'));
     await lab.screenshot({path:'qa-output/08-paulo-dragon-lab.png'});
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
