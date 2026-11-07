@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — skyline aftermath restart regression (November 7)
+
+- Extended the existing read-only skyline QA state snapshot to expose strike damage, collapse fraction, height scale, and the visibility of meteor flash, smoke, and scorch effects.
+- After the six-hit distant meteor cascade, browser QA now starts a new level and asserts that accumulated damage, falling rubble, impact flash, smoke, and scorch have all reset. Captures a dedicated `06-skyline-after-restart.png` renderer screenshot.
+- No gameplay, rendering or production behavior was changed; this closes a missing automated check for the newly added cumulative disaster effect.
+- Commits `8c8b7ac` and `7a8b004`. Full browser QA for this addition **pending**; no hardware FPS or visual-fidelity claim.
+
+
 ## Continuation — distant disaster independent of foreground health
 
 - Cumulative distant meteor impacts now contribute **0.07** local structural damage per strike (capped at **0.90**) to their targeted skyline landmark, rather than **0.018** capped at **0.28**. Repeated impacts can therefore trigger facade breakup and persistent rubble even if the school and neighborhood are unharmed.
