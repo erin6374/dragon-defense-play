@@ -189,3 +189,11 @@ The branch was at `ff7d7ea`, with GitHub browser QA run #124 **passed**. There w
 Reparented the existing flash sprite to stable skyline space (`src/rendering/philadelphia-geometry-skyline.js`) and retained the pre-collapse local facade contact as `tower.impactLocal` for subsequent strikes. The `src/game.js` QA probes now separately report local-facade-derived impact locations and actual stable flash position. The browser suite verifies initial flash/contact coincidence and no flash movement across a synchronous tower shrink (`qa/browser.mjs`). Changelog records the exact change. No new visual assets or per-frame meshes.
 
 **Verification pending:** check latest PR-head browser QA, inspect failures before any new change, and make no measured hardware-FPS or cinematic-quality claims. This does not touch main v5.2.3, deployment, or the separate Building Explorer. Scheduled tasks may advance the branch; re-check PR head before writing.
+
+## Scheduled continuation — repeated-hit flash/contact QA (November 7)
+
+At start, draft PR #2 was at `092efaad`, matching the preceding handoff, and browser QA run #130 had **passed**. No concurrent changes or active QA were found. The prior stable-space impact-flash code is browser-verified.
+
+This pass changed only `qa/browser.mjs` (commit `857813a`) to check all six successive skyline meteor strikes, not just the first, for finite visible flash positions, stable skyline parenting and exact coincidence with each strike's reported pre-collapse world contact. The existing cascade already verifies that a late hit actually moves the facade; this closes the gap between the visual flash and returned explosion location on those late hits. Changelog commit `ec06180` documents the QA-only change.
+
+**Next action:** check the latest PR-head browser QA. If it fails, inspect the specific failing assertion and logs before further edits. The expanded test is **not verified** until that run passes. No gameplay source changes, hardware measurements, main merge/deploy, or Building Explorer edits. Recheck branch head before writing because other sessions may advance it.
