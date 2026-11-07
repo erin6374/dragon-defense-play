@@ -56,3 +56,15 @@ Latest correction: collapsing tower bodies now stay above ground; full local QA 
 
 Latest: upright textured facade fragments with rotated-box ground support; full local QA passed. Evidence: facade-panels-falling.png and facade-panels-report.json. Hardware performance and cinematic realism remain unverified.
 
+
+## Latest chat continuation — Windows launch reliability and skyline batching (November 7)
+
+The user successfully reached the local preview at `http://127.0.0.1:8769/` after previously opening `index.html` via `file://` and seeing CORS errors.
+
+- `PLAY-PREVIEW.cmd` now selects the installed Python 3, detects an already occupied port, starts the server from its own folder and opens the browser after HTTP responds. The Windows-specific batch behavior has not yet been tested interactively on the user's PC; do not claim otherwise.
+- The `index.html` boot error now correctly distinguishes `file://` CORS issues and local HTTP/server/vendor-file failures. Three.js is bundled under `vendor/three`; the old message suggesting a CDN was inaccurate.
+- Browser QA has a static regression check for the launch instructions/import map.
+- The existing 3D collapse slab faces were reindexed to combine five side-material faces into one group and retain one textured facade group. The geometry still includes 36 box indices, with two material groups instead of six. This can reduce draw submissions when rubble is visible, but hardware FPS is not verified. Browser QA checks groups, materials and index counts.
+- New browser QA is running for these latest changes. Verify workflow state and artifacts for the current PR head, not an old commit.
+- This session did not merge or deploy; production main remains v5.2.3. Do not alter the separate Building Explorer.
+
