@@ -131,9 +131,31 @@ function membrane(parent,verts,side){
  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
  geometry.setIndex(indices);geometry.computeVertexNormals();
+ // Keep the rest pose in a typed array; deformation is a bounded update
+ // of existing vertex buffers, never a per-frame mesh allocation.
+ geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
  const mesh=part(parent,geometry,mat.membrane);
- membranePanels.push(mesh);
+ membranePanels.push({mesh,rest:Float32Array.from(positions),side});
  return mesh;
+}
+// Lightweight procedural skinning preview: billow the membrane interior,
+ // while pinning the leading root and the outer finger boundaries.
+ // The final GLB will use bone weights and blend shapes instead.
+function deformMembranes(t,intensity){
+ for(const panel of membranePanels){
+  const attr=panel.mesh.geometry.attributes.position,base=panel.rest;
+  for(let j=0;j<7;j++){
+   const v=j/6;
+   for(let i=0;i<13;i++){
+    const u=i/12,idx=j*13+i,off=idx*3;
+    const envelope=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);
+    const flutter=Math.sin(t*7-u*3.2-v*4.1)*.095*intensity;
+    attr.array[off+1]=base[off+1]+envelope*(.13*intensity+flutter);
+   }
+  }
+  attr.needsUpdate=true;
+  // Normals are refreshed at a reduced cadence by the caller.
+ }
 }
 const wings=[];
 for(const side of [-1,1]){
@@ -218,6 +240,7 @@ function applyPose(t){
   hip.rotation.z=airborne?(fore?-.22:.35):0;
   knee.rotation.z=state==='land'?.28:airborne?-.25:0;
  });
+ deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
 }
 function animate(){
  requestAnimationFrame(animate);
@@ -230,7 +253,9 @@ new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  armorPlateCount:plateIndex,
  membranePanels:membranePanels.length,
- membraneVertices:membranePanels.reduce((n,m)=>n+m.geometry.attributes.position.count,0),
+ membraneVertices:membranePanels.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0),
+ membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*6*13+3*6+1],
+ current:p.mesh.geometry.attributes.position.array[3*6*13+3*6+1]};},
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
  snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),
  wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
