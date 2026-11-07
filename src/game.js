@@ -1048,11 +1048,11 @@ function updateDistantMeteors(dt){
   distantStreaks.push({sprite,life:5.2,v:16+Math.random()*14+waveProgress*5,impact:Math.random()<(.58+waveProgress*.25),waveProgress});
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;s.sprite.position.x+=dt*s.v*.18;s.sprite.position.y-=dt*s.v;
-  if(s.sprite.position.y<14&&s.impact){const pos=s.sprite.position;
-   // Streaks live under the translated/scaled skyline, while bursts live in scene.
-   // Transform once so a strike blooms at its actual visible point of impact.
+  if(s.sprite.position.y<36&&s.impact){const pos=s.sprite.position;
+   // Strikes snap to an actual distant landmark facade (and apply limited
+   // cosmetic tower damage), rather than exploding in the empty skyline.
    skyline.updateWorldMatrix(true,false);
-   const impact=skyline.localToWorld(pos.clone());
+   const impact=skylineBackdrop.strikeNearest(pos.x)||skyline.localToWorld(pos.clone());
    cinematicSkyExplosion(impact.x,impact.y,impact.z);
    if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(impact.x+(Math.random()-.5)*11,impact.y+2,impact.z);
    s.impact=false;s.life=0;
@@ -1873,7 +1873,7 @@ function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagn
  const follow=Math.max(0,dragon.position.y-25)*.62;
  const deadZone=35*Math.min(1,camera.aspect/(16/9));
  cameraScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone);
- skylineBackdrop.update(elapsed,displayedDarkness);
+ skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
