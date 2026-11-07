@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## Consolidated release directive and Paulo reference framing (November 7)
+
+- User requested that the **finished new Paulo dragon trigger a combined Dragon Defense release** incorporating the recent graphics, wind, destruction, and gameplay improvements. Added `RELEASE-PLAN-v5.4.md` with an explicit integration audit, regression gates, Windows/Android delivery targets, rollback criteria, and distinctions among source QA, browser QA, actual GPU/device verification, and release status. **This does not authorize an immediate merge or deployment.**
+- Inspected actual successful browser QA run `42424075239` screenshots: the front reference cropped both wing tips, and the camera labeled “orthographic” was actually perspective.
+- `dragon-lab/paulo-lab.js` now selects a **real orthographic camera** for front/side/top/rear views and fits the full source-dragon bounds with a generous margin, while the regular three-quarter view keeps its perspective camera and mouse orbit. Scroll zoom works in both camera modes. Reference framing is recalculated only on view selection and resize, not each animation frame.
+- QA records normalized projected bounds and asserts that the complete model stays inside all four reference frames. Added top/rear screenshots alongside the front/side screenshots. Clarified the viewer's labels and interaction instructions.
+- The prior run `42424075239` passed the earlier code; **the new camera/framing commits remain unverified until a fresh current-head browser run succeeds**. No changes to existing playable dragon, production `main`, or separate Building Explorer.
+
+
 ## Paulo v5.4 two-way bank reference (November 7)
 
 - The original bank state only expressed one direction despite the design specification requiring left and right turns. Added a direction selector to `dragon-lab/index.html` and applied its sign consistently to torso roll and mirrored shoulder articulation in `paulo-lab.js`.
