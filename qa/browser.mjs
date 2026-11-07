@@ -669,6 +669,22 @@ try {
       'full side-view dragon anatomy fits the frame');
     report.pauloReferenceViews={front:frontFrame.referenceFrame,side:sideFrame.referenceFrame};
     await lab.screenshot({path:'qa-output/10-paulo-side-reference.png'});
+    for(const [name,file] of [
+      ['top','11-paulo-top-reference.png'],
+      ['rear','12-paulo-rear-reference.png']
+    ]){
+      await lab.evaluate(viewName=>{
+        const selector=document.querySelector('#view');
+        selector.value=viewName;
+        selector.dispatchEvent(new Event('change'));
+      },name);
+      const reference=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+      assert.equal(reference.cameraType,'orthographic',name+' view uses true orthographic projection');
+      assert.ok(reference.referenceFrame?.maxX<.90&&reference.referenceFrame?.maxY<.90,
+        name+' view fits complete dragon geometry');
+      report.pauloReferenceViews[name]=reference.referenceFrame;
+      await lab.screenshot({path:'qa-output/'+file});
+    }
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};
