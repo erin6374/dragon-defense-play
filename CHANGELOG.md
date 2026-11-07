@@ -1,3 +1,15 @@
+# Dragon Defense v5.3.1 — Wind & Street Effects Preview
+
+## Wind breath: ground targets, blowing debris, responsive smoke (November 7)
+
+- Added pure bounded `groundWindWeight` and `groundWindStep` simulation helpers. Active dragon wind now gently displaces pedestrians and mobile road traffic in the projected street-level cone. Push strength decreases by vehicle class (pedestrian > bicycle/scooter > car > van/truck > bus/fire truck), has a capped per-target displacement per gust, and does not inflict new injury or knockdown.
+- Added two preallocated instanced batches for up to 44 road dust particles and 16 lightweight scraps. Particles swirl along the gust, fade as the effect finishes, and require no per-gust mesh, material, or geometry allocation.
+- Existing school-fire smoke in the pooled cinematic effects renderer now bends with nearby gusts and temporarily becomes more transparent. Existing street/explosion smoke puffs also drift and thin when within range. Distant smoke outside the gust is unchanged.
+- Preserved meteor and helicopter deflection, school-fire suppression, short-click fireball, long-press wind, right-click gas, wind charge meter, and 4-second wind recharge.
+- New deterministic browser QA covers weight ordering, cone bounds, gentle displacement, actual synthetic ground-vehicle/pedestrian movement, dust/litter instance budgets, and actual smoke-puff displacement and opacity.
+- Bumped build identity to `5.3.1` / `5.3-wind-ground-01`, added `PREVIEW_v5.3.1_README.txt`, and added an Actions upload-artifact step to deliver a complete Windows preview folder with the launcher and assets after successful browser QA.
+- **Verification pending for the latest PR head.** Headless browser assertions do not establish real Windows GPU performance, aesthetic quality or the exact perceived force of the wind. No changes to production main or the separate Building Explorer.
+
 # Dragon Defense v5.3.0 — North Broad Street
 
 ## Continuation — persistent skyline aftermath visual regression
