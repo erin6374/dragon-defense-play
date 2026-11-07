@@ -545,6 +545,9 @@ try {
   await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
   assert.deepEqual(report.warnings, [], 'preview must not produce WebGL/material console warnings');
+  // The main game runs a perpetual WebGL animation loop. Release its software
+  // renderer before starting Paulo Lab to keep the two QA scenes independent.
+  await page.close();
   // Separate design lab: do not alter the playable dragon or simulation.
   const lab=await browser.newPage({viewport:{width:1280,height:800}});
   const labErrors=[];
