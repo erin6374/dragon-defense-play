@@ -6,6 +6,7 @@
 - Added browser regression coverage for the time *after* an impact flash finishes: the flash must disappear, while smoke, facade scorch marks and grounded rubble remain visible through the later simulated frames.
 - Added a read-only smoke world-position probe and a bounded-drift check, ensuring the plume continues moving gently without jumping across the skyline. Browser QA now saves a separate `06-skyline-smoke-aftermath.png` capture after additional simulated time, separate from the earlier rubble frame.
 - This is **QA-only coverage**, not a change in the visual simulation or a hardware performance improvement. A new browser run must pass before treating the extra check as verified. Production, deployment and Building Explorer remain unchanged.
+- A second camera angle now captures `06-skyline-close-aftermath.png` from a point nearer the towers, in addition to the original wide shot. The closer QA-only camera is intended to expose facade and rubble that foreground streets obstruct; it is not a new gameplay camera, not a substitute scene, and must be visually inspected before claiming it succeeds.
 
 
 ## Continuation — repeat-impact flash radius reset (November 7)
