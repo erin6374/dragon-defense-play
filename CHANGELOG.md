@@ -1,5 +1,12 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — distant helicopter patrol wrap (November 7)
+
+- Corrected a long-session skyline animation defect: the westbound decorative helicopter's JavaScript remainder became negative after approximately five minutes, allowing it to leave its intended 170-unit patrol interval. The orbit remainder is now normalized to a nonnegative value before applying the helicopter's x-offset.
+- Added a QA-only, reversible helicopter-position sampler for 0, 300, 600, and 1,200 simulated seconds; browser QA checks all three distant helicopter positions stay finite and within their original patrol bounds. The sampler restores the current animation time and does not simulate foreground combat.
+- This is a cosmetic background-traffic correction, not a gameplay, camera, GPU optimization, or real-world flight-path change. New browser QA is **pending**; no hardware FPS or cinematic fidelity claim.
+
+
 ## Continuation — skyline aftermath restart regression (November 7)
 
 - Extended the existing read-only skyline QA state snapshot to expose strike damage, collapse fraction, height scale, and the visibility of meteor flash, smoke, and scorch effects.
