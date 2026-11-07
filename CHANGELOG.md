@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 breath preview and QA isolation (November 7)
+
+- Previous Paulo Lab GitHub Actions browser QA failed while waiting for `DOMContentLoaded` after the lab and bundled Three.js returned HTTP 200. The QA navigation now waits for the response commit, and separately waits for the lab-ready interface (up to 90 seconds); this changes test readiness, not game performance.
+- The game browser page is closed after its final assertions and before the standalone Paulo Lab test. This avoids two simultaneous software-WebGL animation loops and releases the gameplay renderer's resources during the isolated test.
+- New `dragon-lab/breath-effects.js` uses exactly one visible preallocated 24-instance emission batch at a time: fiery cone-shaped sparks, translucent wind rings, or descending green gas clouds. The preview follows the articulated head and uses a shared temporary transform, with no mesh or geometry allocation per frame.
+- The Paulo Lab test checks the fire, wind and gas emission selection, pooled count and absence of elemental emissions in the bank pose. A dedicated screenshot now captures the wind pose. These are illustrative lab visuals only; gameplay wind/fire/gas mechanics and Building Explorer are unchanged.
+- Static JavaScript parse checks passed for the changed lab and test scripts. **Current PR-head browser QA, actual Windows playtest and hardware FPS are not yet verified.** This is an unmerged development preview; do not deploy or merge before review.
+
+
 ## Paulo v5.4 design laboratory — isolated animation and anatomy prototype (November 7)
 
 - Added `dragon-lab/index.html` and `dragon-lab/paulo-lab.js`: a separate original procedural Three.js dragon with charcoal armor, crimson membrane wings, bronze horns and amber eyes. This is a **blockout**, not a production-ready skinned model.
