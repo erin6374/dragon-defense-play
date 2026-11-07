@@ -141,7 +141,9 @@ function membrane(parent,verts,side){
 // Lightweight procedural skinning preview: billow the membrane interior,
  // while pinning the leading root and the outer finger boundaries.
  // The final GLB will use bone weights and blend shapes instead.
+let membraneNormalTick=0;
 function deformMembranes(t,intensity){
+ const refreshNormals=(membraneNormalTick++%4)===0;
  for(const panel of membranePanels){
   const attr=panel.mesh.geometry.attributes.position,base=panel.rest;
   for(let j=0;j<7;j++){
@@ -154,7 +156,7 @@ function deformMembranes(t,intensity){
    }
   }
   attr.needsUpdate=true;
-  // Normals are refreshed at a reduced cadence by the caller.
+  if(refreshNormals)panel.mesh.geometry.computeVertexNormals();
  }
 }
 const wings=[];
