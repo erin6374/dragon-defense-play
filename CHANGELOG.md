@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — stable meteor contact point during skyline collapse
+
+- Corrected a source-confirmed coordinate ordering issue: `strikeNearest` previously calculated the world-space explosion position *after* `setDamage` shrank or tilted the struck skyscraper. The meteor burst could therefore appear at a displaced facade location on the very strike that caused collapse.
+- Capture the world-space contact point before applying tower damage, and return that preserved position for the existing cinematic explosion. Smoke/scorch placement, collapse behavior, object counts and foreground health are unchanged.
+- Added a deterministic six-strike browser regression: for each subsequent strike, the returned explosion position must equal the pre-damage facade contact point. The test also requires at least one impact to actually move the facade, so the check cannot pass vacuously.
+- Prior head `f5fcb28` passed browser QA run #119. **New code remains unverified until its own browser QA completes.** This is a coordinate-correctness fix, not a hardware performance claim. No merge/deploy or Building Explorer edits.
+
+
 ## Continuation — immediate smoke and stable-position regression
 
 - Moved the skyline smoke sprite's visibility toggle into the meteor strike handler. The plume appears in the impact event itself, without waiting for a subsequent animation update; damaged towers no longer repeat that visibility assignment every frame.
