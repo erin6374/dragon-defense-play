@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js';
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
+import {groundWindWeight,groundWindStep} from './simulation/ground-wind.js';
 import {createProfiler} from './rendering/profiler.js';
 import {InstancedParticlePool} from './rendering/instanced-particles.js';
 import {AdaptiveQuality} from './rendering/adaptive-quality.js';
@@ -1267,7 +1268,7 @@ function aim(e){const r=renderer.domElement.getBoundingClientRect();aimNdc.set((
 renderer.domElement.addEventListener('pointermove',aim);
 // Mobile aiming is independent of the movement and action controls.
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){aim(e);e.preventDefault();}}, {passive:false});
-let fireHealthAccumulator=0;let holdStart=0;let windActive=false;let windCharge=1;let windCooldown=0;let gustTime=0;let gustOrigin=new THREE.Vector3(),gustDirection=new THREE.Vector3(1,0,0);
+let fireHealthAccumulator=0;let holdStart=0;let windActive=false;let windCharge=1;let windCooldown=0;let gustTime=0;let gustId=0;let gustOrigin=new THREE.Vector3(),gustDirection=new THREE.Vector3(1,0,0);
 // Stylized animated wind particles: translucent layered eddies, not solid tubes.
 const windVisual=new THREE.Group();scene.add(windVisual);
 const windMaterial=new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0xc4f2ff,transparent:true,opacity:.19,depthWrite:false,blending:THREE.NormalBlending});
@@ -1287,8 +1288,9 @@ function updateBreathMeter(){const inhale=holdStart?Math.min(1,(performance.now(
  breathFill.style.width=Math.round(fraction*100)+'%';
  breathLabel.textContent=gustTime>0?'WIND GUST!':windCooldown>0?'BREATH RECHARGE '+Math.round(fraction*100)+'%':holdStart?'INHALING '+Math.round(inhale*100)+'%':'WIND READY — HOLD / RELEASE';
 }
+function gustCooldownReset(){windCooldown=4;gustId++;}
 function releaseWind(){if(!holdStart)return;const held=(performance.now()-holdStart)/1000;holdStart=0;if(held<.27){shoot();return;}if(held<.7||windCooldown>0||dragonStun>0||!active||paused){message(windCooldown>0?'WIND RECHARGING':'HOLD LONGER TO INHALE');return;}
- gustOrigin.copy(dragon.position);gustDirection.copy(pointer).sub(gustOrigin).normalize();if(gustDirection.lengthSq()<.1)gustDirection.set(facing,0,0);gustTime=.85;windCooldown=4;windActive=true;sound('bonus');message('PAULO UNLEASHES A GALE!');}
+ gustOrigin.copy(dragon.position);gustDirection.copy(pointer).sub(gustOrigin).normalize();if(gustDirection.lengthSq()<.1)gustDirection.set(facing,0,0);gustTime=.85;gustCooldownReset();windActive=true;sound('bonus');message('PAULO UNLEASHES A GALE!');}
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;aim(e);if(e.button===2){e.preventDefault();gasAttack();return;}if(e.button!==0)return;holdStart=performance.now()});
 window.addEventListener('pointerup',()=>releaseWind());window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS)gasAttack();if(action===ACTIONS.DEBUG)profiler.toggle();});window.addEventListener('keyup',e=>{input.keyUp(e.code);if(e.code==='Space')holdStart=0;});window.addEventListener('blur',()=>input.clear());
@@ -1324,6 +1326,35 @@ function updateDragonWind(dt){
  }
  for(const m of meteors){if(m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<43&&across<5+along*.35){m.vel.addScaledVector(direction,dt*32/(1+(m.size||1)*.16));m.vel.y+=dt*8;}}
  for(const h of helicopters){if(h.crashing||!h.root)continue;const delta=h.root.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<48&&across<7+along*.35){h.root.position.addScaledVector(direction,dt*29);h.root.position.y+=dt*5;if(h.disorientTime<=0){h.disorientTime=5;h.contactTime=0;message('HELICOPTER CAUGHT IN WIND — LOSING CONTROL!');}h.evasion=Math.max(h.evasion,1);h.dodgeSide=direction.x>0?1:-1;}}
+ // Ground targets receive a much gentler, mass-dependent push. Project
+ // the gust onto street level so a dragon flying above the rooftops can still
+ // move nearby traffic and pedestrians. Preserve their route/AI controllers.
+ let windX=direction.x,windZ=direction.z;
+ const groundLen=Math.hypot(windX,windZ);
+ if(groundLen<.15){windX=facing;windZ=0;}
+ else {windX/=groundLen;windZ/=groundLen;}
+ for(const c of cars){
+  if(c.destroyed||c.burning||c.frozen||!c.root?.visible)continue;
+  const weight=groundWindWeight(c);
+  const step=groundWindStep(c.root.position.x,1,c.root.position.z,origin.x,1,origin.z,windX,0,windZ,weight,dt);
+  if(step<=0)continue;
+  if(c.windGustId!==gustId){c.windGustId=gustId;c.windTravel=0;}
+  const move=Math.min(step,Math.max(0,weight*.95-c.windTravel));
+  c.windTravel+=move;
+  c.root.position.x+=windX*move;
+  c.root.position.z+=windZ*move*.25;
+ }
+ for(const p of crowd){
+  if(p.down>0||!p.g?.visible)continue;
+  const step=groundWindStep(p.g.position.x,1,p.g.position.z,origin.x,1,origin.z,1.2,dt);
+  if(step<=0)continue;
+  if(p.windGustId!==gustId){p.windGustId=gustId;p.windTravel=0;}
+  const move=Math.min(step,Math.max(0,1.3-p.windTravel));
+  p.windTravel+=move;
+  p.g.position.x+=windX*move;
+  p.g.position.z+=windZ*move*.4;
+  p.g.rotation.z+=windX*move*.18;
+ }
  for(const fire of schoolFire){const delta=fire.root.position.clone().sub(origin),along=delta.dot(direction);if(along>0&&along<43&&delta.clone().addScaledVector(direction,-along).length()<8+along*.17)fire.suppression=Math.min(1,fire.suppression+dt*1.7);}
 }
 function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;sound('fire');const start=dragon.position.clone().add(new THREE.Vector3(facing*2.6,1.2,0)),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
