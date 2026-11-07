@@ -1,5 +1,13 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 wind pulse refinement and anatomy capture (November 7)
+
+- Reviewed the real `08-paulo-dragon-lab.png` from successful browser QA run `42422806438`. The initial 24-ring wind preview overlapped into an unnaturally dense, bright cone, while the dragon's silhouette remains a stylized blockout.
+- Refined the isolated wind emitter to **nine visible instances from the same 24-instance preallocated pool**, a thinner torus, lower opacity and a narrower expansion/wobble envelope. Fire and gas retain their original 24-instance capacities. QA now asserts the active draw instance count per effect; no gameplay breath/collision changes.
+- Added repeatable `09-paulo-front-reference.png` and `10-paulo-side-reference.png` screenshots during the browser QA, alongside the wind preview. These are for inspecting wing proportions, joints and leg silhouette before any production dragon replacement.
+- These refinements passed static parsing but **are not browser-verified until the newest workflow completes**; do not treat the earlier successful run as verification of these subsequent commits.
+
+
 ## Paulo v5.4 deterministic animation inspection (November 7)
 
 - Added **Pause/Play**, **+1 frame** (1/60 second) and an eight-second **pose-time scrubber** to the isolated `dragon-lab/index.html` viewer.
