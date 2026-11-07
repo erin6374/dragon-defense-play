@@ -1987,6 +1987,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const expectedPreDamageWorld=before>0?t.group.localToWorld(t.impactLocal.clone()).toArray():null;
    const hit=skylineBackdrop.strikeNearest(t.group.position.x);
    const postDamageImpactWorld=t.group.localToWorld(t.impactLocal.clone()).toArray();
+   // Snapshot before the animation tick: the next strike must not inherit
+   // the previous flash's expanded radius.
+   const flashScaleImmediately=t.impactSprite.scale.x;
    const smokeVisibleImmediately=t.smokeSprite.visible;
    skylineBackdrop.setDamage(skylineDamage);
    skylineBackdrop.update(elapsed,displayedDarkness,1/60);
@@ -1996,6 +1999,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     flashParentStable:t.impactSprite.parent===skylineBackdrop.group,
     flashWorldPosition:t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray(),
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
+    flashScaleImmediately,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
     smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
