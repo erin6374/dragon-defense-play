@@ -342,18 +342,29 @@ try {
   const impactCascade=await page.evaluate(()=>{
     const qa=window.__DD_QA, hpBefore=qa.snap().hp;
     let hit;
+    const smokeSamples=[];
     for(let i=0;i<6;i++){
       hit=qa.stageSkylineStrike();
       if(!hit.ok)return hit;
+      smokeSamples.push({opacity:hit.result.smokeOpacity,scale:hit.result.smokeWorldScale[0]});
     }
     const state=qa.skylineFallState();
     if(!state.ok)return state;
     return {ok:true,result:{hits:6,strikeDamage:hit.result.afterDamage,
       fallActive:state.result.fallActive,ruinVisible:state.result.ruinVisible,
-      hpBefore,hpAfter:qa.snap().hp}};
+      smokeSamples,hpBefore,hpAfter:qa.snap().hp}};
   });
   assert.ok(impactCascade.ok,impactCascade.error);
   assert.ok(impactCascade.result.strikeDamage>=.40,'repeated skyline hits accumulate independent tower damage');
+  assert.equal(impactCascade.result.smokeSamples.length,6,'each distant strike captures smoke state');
+  for(let i=1;i<impactCascade.result.smokeSamples.length;i++){
+   const before=impactCascade.result.smokeSamples[i-1];
+   const after=impactCascade.result.smokeSamples[i];
+   assert.ok(after.opacity>=before.opacity-1e-6,'smoke opacity increases only when damage grows');
+   assert.ok(after.scale>=before.scale-1e-6,'smoke width increases only when damage grows');
+  }
+  assert.ok(impactCascade.result.smokeSamples[1].scale>impactCascade.result.smokeSamples[0].scale,
+   'additional impact visibly thickens plume');
   assert.equal(impactCascade.result.fallActive,true,'repeated skyline hits start tower breakup');
   assert.equal(impactCascade.result.ruinVisible,true,'repeated skyline hits reveal persistent debris');
   assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');
