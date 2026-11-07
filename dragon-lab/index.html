@@ -19,13 +19,13 @@ select,input{width:100%}
 </style>
 <script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.js"}}</script></head>
 <body><header><div><strong>PAULO / DRAGON LAB</strong> <small>v5.4 · isolated design prototype</small></div><small>Not integrated into Dragon Defense gameplay</small></header>
-<main><section id="viewport"><div id="info">Original procedural blockout · no copyrighted character mesh or animation. Drag to orbit, scroll to zoom.</div></section>
+<main><section id="viewport"><div id="info">Original procedural blockout · no copyrighted character mesh or animation. Three-quarter: drag to orbit. All views: scroll to zoom. Front, side, top and rear use fitted orthographic projections.</div></section>
 <aside><h2>Animation studies</h2><div class="controls" id="poses"></div>
 <label for="speed">Animation speed</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1">
 <div class="controls" style="margin-top:12px"><button id="play-toggle" type="button" aria-pressed="false">Pause</button><button id="step-frame" type="button">+1 frame</button></div>
 <label for="timeline">Pose time <output id="timeline-label" for="timeline">0.00s</output></label><input id="timeline" type="range" min="0" max="8" step=".01" value="0" aria-label="Scrub animation time">
 <label for="bank-direction">Bank study direction</label><select id="bank-direction"><option value="right">Right bank</option><option value="left">Left bank</option></select>
-<label for="view">Orthographic reference</label><select id="view"><option value="perspective">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="top">Top</option><option value="rear">Rear</option></select>
+<label for="view">Camera view</label><select id="view"><option value="perspective">Three-quarter (perspective)</option><option value="front">Front</option><option value="side">Side</option><option value="top">Top</option><option value="rear">Rear</option></select>
 <label for="wire">Rig / joint markers</label><input id="wire" type="checkbox">
 <h2>Model specification</h2><p>Original realistic-mascot hybrid. Charcoal scale plates, crimson wing membrane, bronze horns, amber eyes. A four-legged, two-winged silhouette; head and neck counterbalance a segmented tail.</p>
 <p>Wing rig: shoulder → elbow → wrist → outer fingers. Wingbeats are asymmetric in banks, with fold and span changes for glide and takeoff. Chest, jaw, neck and tail are separately articulated.</p>
