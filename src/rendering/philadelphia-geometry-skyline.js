@@ -84,6 +84,20 @@ function addLine(parent,x1,y1,x2,y2,mat,r=.065,z=1.2){const a=new THREE.Vector3(
 export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const group=new THREE.Group();group.name='PHILADELPHIA-ORIGINAL-3D-SKYLINE';parent.add(group);
  const towers=[],beacons=[],distantHelis=[],clockMat=new THREE.MeshBasicMaterial({color:0xd8c6a3});
+ // A shared atlas and one dormant sprite per landmark. Impact effects never
+ // allocate new GPU resources while meteor waves are running.
+ const impactCanvas=document.createElement('canvas');
+ impactCanvas.width=64;impactCanvas.height=64;
+ const impactContext=impactCanvas.getContext('2d');
+ const impactGlow=impactContext.createRadialGradient(32,32,1,32,32,31);
+ impactGlow.addColorStop(0,'rgba(255,251,216,1)');
+ impactGlow.addColorStop(.21,'rgba(255,181,74,.94)');
+ impactGlow.addColorStop(.55,'rgba(249,81,28,.45)');
+ impactGlow.addColorStop(1,'rgba(244,50,12,0)');
+ impactContext.fillStyle=impactGlow;impactContext.fillRect(0,0,64,64);
+ const impactTexture=new THREE.CanvasTexture(impactCanvas);
+ impactTexture.colorSpace=THREE.SRGBColorSpace;
+ const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
  const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
@@ -167,7 +181,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const ruin=new THREE.Group();ruin.name='landmark-collapse-rubble';ruin.visible=false;g.add(ruin);
   const stoneRubble=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.7,0),side,32),o=new THREE.Object3D();
   for(let j=0;j<32;j++){const r=seeded(480+i*31+j)();o.position.set((r-.5)*d.w*1.6,.35+(j%4)*.4,(j%5-2)*1.3);o.scale.set(.5+(j%6)*.1,.23,.35);o.rotation.set(0,j*.37,0);o.updateMatrix();stoneRubble.setMatrixAt(j,o.matrix);}stoneRubble.instanceMatrix.needsUpdate=true;ruin.add(stoneRubble);
-  towers.push({def:d,group:g,facade,side,ruin,damage:0,collapse:0});
+  const impactSprite=new THREE.Sprite(impactMaterial.clone());
+  impactSprite.name='landmark-meteor-impact-'+d.id;
+  impactSprite.visible=false;
+  impactSprite.position.set(0,d.h*.68,d.depth/2+.5);
+  impactSprite.scale.set(7,7,1);
+  g.add(impactSprite);
+  towers.push({def:d,group:g,facade,side,ruin,impactSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -187,6 +207,28 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   distantHelis.push({group:h,rotor,nav,seed:i*13.1,x0:-82+i*55,y0:45+(i%2)*18,speed:i===1?-1:1});
  }
  let time=-1,lastPhase=-1,damage=0;
+ function strikeNearest(localX){
+  // The skyline's towers share this group's local coordinates. Snap a distant
+  // streak to the nearest tower facade rather than exploding in empty sky.
+  let selected=towers[0],distance=Infinity;
+  for(const tower of towers){
+   const delta=Math.abs(tower.group.position.x-localX);
+   if(delta<distance){selected=tower;distance=delta;}
+  }
+  if(!selected)return null;
+  const tower=selected,impact=tower.impactSprite;
+  const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
+  impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
+  tower.impactAge=1.15;
+  tower.impactEnergy=1;
+  // This is deliberately a small distant damage contribution: foreground
+  // school and neighborhood health continue to use their existing simulation.
+  tower.strikeDamage=Math.min(.28,tower.strikeDamage+.018);
+  impact.visible=true;
+  impact.material.opacity=.93;
+  const local=new THREE.Vector3(tower.group.position.x+impact.position.x,tower.group.position.y+impact.position.y,tower.group.position.z+impact.position.z);
+  return group.localToWorld(local);
+ }
  function setTime(phase,darkness){
   const desired=Math.max(0,Math.min(1,darkness));
   if(Math.abs(desired-time)<.01&&Math.abs(phase-lastPhase)<.01)return;
@@ -207,7 +249,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   damage=Math.max(damage,Math.max(0,Math.min(1,value)));
   towers.forEach((t,i)=>{
    const threshold=.24+i*.077;
-   const collapse=Math.max(0,Math.min(1,(damage-threshold)/.23));
+   const collapse=Math.max(0,Math.min(1,(damage+t.strikeDamage-threshold)/.23));
    if(Math.abs(t.collapse-collapse)<.02)return;
    t.collapse=collapse;
    // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
@@ -218,7 +260,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    // Damage updates must not accumulate artificial darkening each time.
   });
  }
- function update(elapsed,darkness=0){
+ function update(elapsed,darkness=0,dt=1/60){
   for(let i=0;i<beacons.length;i++){
    const b=beacons[i];b.material.opacity=(.13+.83*Math.pow(Math.max(0,Math.sin(elapsed*3.8+b.userData.phase)),9))*(.55+.45*darkness);
   }
@@ -233,6 +275,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   for(let i=0;i<towers.length;i++){
    const t=towers[i];
    if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   if(t.impactAge>0){
+    t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));
+    const fade=t.impactAge/1.15;
+    t.impactSprite.material.opacity=.93*fade*fade;
+    t.impactSprite.scale.setScalar(5+(1-fade)*7);
+    t.impactSprite.visible=t.impactAge>0;
+   }
    // Sustained, irregular electrical flicker signals damage across the distant
    // city without dynamic lights, added meshes, or per-frame allocations.
    const broken=Math.min(1,t.collapse*2.5);
@@ -241,6 +290,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;}setTime(0,0);}
- return {group,towers,setTime,setDamage,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;}setTime(0,0);}
+ return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
