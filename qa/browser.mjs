@@ -271,6 +271,12 @@ try {
   assert.equal(towerImpact.result.landmark, 'comcast-technology');
   assert.ok(towerImpact.result.afterDamage > towerImpact.result.beforeDamage, 'individual tower strike adds visual damage');
   assert.equal(towerImpact.result.flashVisible, true, 'landmark impact flash is displayed');
+  assert.equal(towerImpact.result.flashParentStable,true,
+   'impact flash is independent of shrinking tower');
+  assert.ok(towerImpact.result.flashWorldPosition.every(Number.isFinite),
+   'impact flash has a finite world-space contact position');
+  assert.ok(Math.hypot(...towerImpact.result.flashWorldPosition.map((v,i)=>v-towerImpact.result.worldPosition[i]))<1e-4,
+   'impact flash appears exactly at the reported meteor contact position');
   assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
   assert.equal(towerImpact.result.smokeVisibleImmediately,true,
    'landmark smoke is visible during the impact event, before the next animation update');
@@ -288,6 +294,16 @@ try {
   assert.ok(skylineCollapse.ok,skylineCollapse.error);
   assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
   assert.equal(skylineCollapse.result.smokeParentStable,true,'smoke remains outside collapse transform');
+  assert.equal(skylineCollapse.result.flashParentStable,true,
+   'meteor flash stays outside collapse transform');
+  for(let i=0;i<3;i++){
+   assert.ok(Number.isFinite(skylineCollapse.result.flashWorldBefore[i])&&
+     Number.isFinite(skylineCollapse.result.flashWorldAfter[i]),
+     'meteor flash world position remains finite across structural collapse');
+   assert.ok(Math.abs(skylineCollapse.result.flashWorldAfter[i]-
+     skylineCollapse.result.flashWorldBefore[i])<1e-5,
+     'meteor flash remains fixed at the contact point while tower shrinks');
+  }
   assert.equal(skylineCollapse.result.smokeVisible,true,'smoke persists during structural collapse');
   for(let i=0;i<3;i++){
    assert.ok(Number.isFinite(skylineCollapse.result.smokeWorldBefore[i])&&
