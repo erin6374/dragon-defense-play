@@ -1,5 +1,12 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 two-way bank reference (November 7)
+
+- The original bank state only expressed one direction despite the design specification requiring left and right turns. Added a direction selector to `dragon-lab/index.html` and applied its sign consistently to torso roll and mirrored shoulder articulation in `paulo-lab.js`.
+- Extended the deterministic browser test: pause at 0.75 seconds, capture both bank directions with identical time, and assert equal-and-opposite body roll plus mirrored left/right shoulder angles. The existing twelve named animation states and normal-game controls remain unchanged.
+- This is a **design-lab improvement**, not gameplay movement logic or a released dragon replacement. Changed JavaScript passed static syntax parsing; full browser/WebGL and hardware performance results for the new commits are pending.
+
+
 ## Paulo v5.4 wind pulse refinement and anatomy capture (November 7)
 
 - Reviewed the real `08-paulo-dragon-lab.png` from successful browser QA run `42422806438`. The initial 24-ring wind preview overlapped into an unnaturally dense, bright cone, while the dragon's silhouette remains a stylized blockout.
