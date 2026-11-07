@@ -226,8 +226,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   tower.strikeDamage=Math.min(.28,tower.strikeDamage+.018);
   impact.visible=true;
   impact.material.opacity=.93;
-  const local=new THREE.Vector3(tower.group.position.x+impact.position.x,tower.group.position.y+impact.position.y,tower.group.position.z+impact.position.z);
-  return group.localToWorld(local);
+  return tower.group.localToWorld(impact.position.clone());
  }
  function setTime(phase,darkness){
   const desired=Math.max(0,Math.min(1,darkness));
