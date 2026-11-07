@@ -1989,6 +1989,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
+    smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
   }),
   stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
@@ -2000,6 +2002,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     rubbleDetached:t.ruin.parent===skylineBackdrop.group,
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
+    smokeVisible:t.smokeSprite.visible,
+    smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
+    smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
     slabReleaseY:t.slabs.map(s=>s.userData.fallStartY),
     slabGroundY:t.slabs.map(s=>s.userData.groundY),
