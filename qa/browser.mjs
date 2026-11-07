@@ -579,14 +579,14 @@ try {
     assert.ok(poses.length>=12,'dragon has twelve animation reference poses');
     const fire=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('fire');return window.__PAULO_LAB_QA.snapshot();});
     assert.ok(fire.jawAngle<-.2,'fire animation opens the jaw');
-    assert.deepEqual(fire.breath,{active:'fire',poolSize:24,visibleEmitters:1},
+    assert.deepEqual(fire.breath,{active:'fire',poolSize:24,drawnInstances:24,visibleEmitters:1},
       'fire pose displays one pooled breath emitter');
     const wind=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('wind');return window.__PAULO_LAB_QA.snapshot();});
     assert.ok(wind.jawAngle<-.2,'wind breath opens the jaw');
-    assert.deepEqual(wind.breath,{active:'wind',poolSize:24,visibleEmitters:1},
+    assert.deepEqual(wind.breath,{active:'wind',poolSize:24,drawnInstances:9,visibleEmitters:1},
       'wind pose displays a distinct pooled emitter');
     const gas=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('gas');return window.__PAULO_LAB_QA.snapshot();});
-    assert.deepEqual(gas.breath,{active:'gas',poolSize:24,visibleEmitters:1},
+    assert.deepEqual(gas.breath,{active:'gas',poolSize:24,drawnInstances:24,visibleEmitters:1},
       'gas pose displays its own pooled emitter');
     const inhale=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('inhale');return window.__PAULO_LAB_QA.snapshot();});
     assert.ok(inhale.chestHeight>initial.chestHeight+.1,
