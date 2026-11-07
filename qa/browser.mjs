@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
+import {Script} from 'node:vm';
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
+// Fast fail for malformed inline startup scripts, before expensive WebGL QA.
+// A stray literal \\n between JavaScript statements previously reached the
+// end of a multi-minute browser run before its SyntaxError was reported.
+for(const [index, script] of Array.from(launchHtml.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)).entries()){
+ const attrs=script[1];
+ if(/\\bsrc\\s*=|\\btype\\s*=\\s*["'](?:importmap|application\\/json)/i.test(attrs))continue;
+ if(!script[2].trim())continue;
+ try { new Script(script[2],{filename:'index.html:inline-script-'+index}); }
+ catch(error){throw new Error('Inline startup script has invalid JavaScript: '+error.message,{cause:error});}
+}
 // Guard against the common Windows file:// launch failure and stale startup
 // guidance. Browser QA still uses HTTP to exercise actual module loading.
 assert.match(launchHtml, /"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
