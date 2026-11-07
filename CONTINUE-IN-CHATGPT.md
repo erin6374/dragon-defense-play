@@ -75,3 +75,10 @@ GitHub browser QA run #61 **failed** with `SyntaxError: Invalid or unexpected to
 
 The user explicitly asked to keep development going when a chat stops. A separate hourly "Dragon Defense Development" scheduled task was created to try to resume bounded work using GitHub, while the existing "Dragon Defense QA Watch" continues checking build status. These automations do not guarantee Windows gameplay or GPU testing, and must not merge/deploy. Avoid duplicate edits from concurrent sessions. Keep production main at v5.2.3.
 
+
+## Scheduled continuation — cumulative distant impacts (November 7)
+
+At the start of this run, the branch was still at `e5de445` (no intervening commits), and GitHub browser QA run #66 had **passed**. That verifies the earlier startup syntax repair. The draft PR remains #2, with main unchanged.
+
+New development on this branch: `787f0bd` increases per-tower cumulative damage from distant meteor strikes, allowing repeated hits to trigger collapse independently of foreground health; `1c80f77` adds a browser regression scenario and a screenshot. `CHANGELOG.md` has detailed scope. **Do not claim this new feature is QA-verified until the newest workflow run passes.** Inspect the current branch head and GitHub Actions first; other sessions may have added commits. The change intentionally does not alter local player/neighborhood health, and has no hardware FPS evidence. Do not merge or deploy without further review.
+
