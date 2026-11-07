@@ -352,21 +352,38 @@ try {
   const impactCascade=await page.evaluate(()=>{
     const qa=window.__DD_QA, hpBefore=qa.snap().hp;
     let hit;
-    const smokeSamples=[];
+    const smokeSamples=[],impactSamples=[];
     for(let i=0;i<6;i++){
       hit=qa.stageSkylineStrike();
       if(!hit.ok)return hit;
       smokeSamples.push({opacity:hit.result.smokeOpacity,scale:hit.result.smokeWorldScale[0]});
+      impactSamples.push({world:hit.result.worldPosition,
+        expectedPre:hit.result.expectedPreDamageWorld,
+        post:hit.result.postDamageImpactWorld});
     }
     const state=qa.skylineFallState();
     if(!state.ok)return state;
     return {ok:true,result:{hits:6,strikeDamage:hit.result.afterDamage,
       fallActive:state.result.fallActive,ruinVisible:state.result.ruinVisible,
-      smokeSamples,hpBefore,hpAfter:qa.snap().hp}};
+      smokeSamples,impactSamples,hpBefore,hpAfter:qa.snap().hp}};
   });
   assert.ok(impactCascade.ok,impactCascade.error);
   assert.ok(impactCascade.result.strikeDamage>=.40,'repeated skyline hits accumulate independent tower damage');
   assert.equal(impactCascade.result.smokeSamples.length,6,'each distant strike captures smoke state');
+  // An impact can itself trigger collapse. Its explosion must stay at the
+  // pre-damage contact point, not follow the newly shrunken facade.
+  const impacts=impactCascade.result.impactSamples;
+  assert.equal(impacts.length,6,'all distant strikes capture world-space impact positions');
+  let movedFacade=false;
+  for(let i=1;i<impacts.length;i++){
+   const hit=impacts[i];
+   assert.ok(hit.expectedPre&&hit.world&&hit.post,'subsequent strikes expose contact positions');
+   const distance=(a,b)=>Math.hypot(...a.map((v,j)=>v-b[j]));
+   assert.ok(distance(hit.world,hit.expectedPre)<1e-4,
+    'cinematic explosion remains anchored to pre-collapse contact point on strike '+(i+1));
+   if(distance(hit.post,hit.expectedPre)>.1)movedFacade=true;
+  }
+  assert.equal(movedFacade,true,'cascade includes a facade transform that would displace a late explosion');
   for(let i=1;i<impactCascade.result.smokeSamples.length;i++){
    const before=impactCascade.result.smokeSamples[i-1];
    const after=impactCascade.result.smokeSamples[i];
