@@ -2038,6 +2038,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
     strikeDamage:t.strikeDamage,collapse:t.collapse,towerScaleY:t.group.scale.y,
     impactVisible:t.impactSprite.visible,smokeVisible:t.smokeSprite.visible,
+    smokeWorldPosition:t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,
     slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
