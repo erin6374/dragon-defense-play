@@ -346,6 +346,10 @@ try {
   assert.ok(settledSkyline.ok,settledSkyline.error);
   for(let i=0;i<settledSkyline.result.slabY.length;i++)
    assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
+  const smokeBeforeIdle=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  assert.ok(smokeBeforeIdle.ok,smokeBeforeIdle.error);
+  assert.ok(smokeBeforeIdle.result.smokeWorldPosition.every(Number.isFinite),
+   'persistent smoke has a finite world position after debris settles');
   await skylineShot('06-skyline-rubble');
   // Once all slabs reach their supported ground poses, subsequent frames
   // should not continue recomputing transforms for motionless rubble.
@@ -363,6 +367,12 @@ try {
    'short-lived skyline flash expires after several seconds');
   assert.equal(aftermath.result.smokeVisible,true,
    'impact smoke persists after the flash expires');
+  assert.ok(aftermath.result.smokeWorldPosition.every(Number.isFinite),
+   'persistent smoke position remains finite over time');
+  const smokeMotion=Math.hypot(...aftermath.result.smokeWorldPosition.map((v,i)=>
+   v-smokeBeforeIdle.result.smokeWorldPosition[i]));
+  assert.ok(smokeMotion>.001&&smokeMotion<4,
+   'smoke drifts gently but does not teleport after the flash expires');
   assert.equal(aftermath.result.scorchVisible,true,
    'facade scorch persists after the flash expires');
   assert.equal(aftermath.result.ruinVisible,true,
