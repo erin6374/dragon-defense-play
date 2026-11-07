@@ -239,6 +239,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    slab.scale.set(d.w*(.23+j*.045),.38+j*.13,d.depth*(.43-j*.075));
    slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
    slab.rotation.set(.11*j,.17*j,.09*(j-1));
+   // Each slab has a fixed fall start height and a staggered release time.
+   // Reuse these meshes throughout the collapse and reset their poses on restart.
+   slab.userData.fallStartY=d.h*(.39+j*.15);
+   slab.userData.fallDelay=j*.21;
+   slab.userData.groundY=slab.scale.y*.5+.02;
    ruin.add(slab);slabs.push(slab);
   }
   const impactSprite=new THREE.Sprite(impactMaterial.clone());
@@ -259,7 +264,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
   scorchSprite.scale.set(5,5,1);
   g.add(scorchSprite);
-  towers.push({def:d,group:g,facade,side,ruin,slabs,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallElapsed:0,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -332,12 +337,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
    if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
    else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
-   // Independent ground-level rubble persists even when the tower is scaled.
+   // The small instanced rubble is already settled at ground level. Large
+   // facade sections release once and fall over time in update(), independent
+   // of the tower's transform (no rigid-body allocation during the collapse).
    t.ruin.visible=collapse>.18;
-   for(let j=0;j<t.slabs.length;j++){
-    const slab=t.slabs[j];
-    slab.scale.y=(.38+j*.13)*Math.max(.25,collapse);
-    slab.position.y=slab.scale.y*.5+.02;
+   if(collapse>.18&&!t.fallActive){
+    t.fallActive=true;
+    t.fallElapsed=0;
    }
    // Emission is derived in update() rather than repeatedly multiplied here.
    // Damage updates must not accumulate artificial darkening each time.
@@ -358,6 +364,19 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   for(let i=0;i<towers.length;i++){
    const t=towers[i];
    if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   if(t.fallActive){
+    t.fallElapsed+=Math.max(0,Math.min(.1,dt));
+    for(let j=0;j<t.slabs.length;j++){
+     const slab=t.slabs[j],fallTime=Math.max(0,t.fallElapsed-slab.userData.fallDelay);
+     // Gravity-like descent with a hard ground clamp keeps all facade sections
+     // supported, even if simulation frames arrive irregularly.
+     const y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
+     slab.position.y=y;
+     const settled=y<=slab.userData.groundY+.001;
+     slab.rotation.z=(j-1)*.09+(settled?1:Math.min(1,fallTime/2))*(j%2?-.36:.28);
+     slab.rotation.x=.11*j+Math.min(1,fallTime/2)*.24;
+    }
+   }
    if(t.strikeDamage>0){
     const intensity=Math.min(1,t.strikeDamage/.16);
     // Persistent damage plume rises and drifts slightly, never allocating
@@ -384,6 +403,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.groundY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
