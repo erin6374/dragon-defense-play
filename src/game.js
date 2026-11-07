@@ -1938,13 +1938,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // camera, coordinates and renderer remain unchanged after the next RAF.
  const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
-  captureSkyline:()=>run('captureSkyline',()=>{
+  captureSkyline:(detail=false)=>run('captureSkyline',()=>{
    const centerX=skyline.position.x;
-   qaSkylineCamera.position.set(centerX,62,skyline.position.z+165);
-   qaSkylineCamera.lookAt(centerX,39,skyline.position.z);
+   // Wide shows the skyline in its city context; close places the diagnostic
+   // camera between near residential blocks and the skyline to reveal debris
+   // that those blocks otherwise obscure. Neither modifies the gameplay view.
+   qaSkylineCamera.position.set(centerX,detail?51:62,skyline.position.z+(detail?35:165));
+   qaSkylineCamera.lookAt(centerX,detail?30:39,skyline.position.z);
    qaSkylineCamera.updateProjectionMatrix();
    renderer.render(scene,qaSkylineCamera);
-   return {png:renderer.domElement.toDataURL('image/png'),
+   return {png:renderer.domElement.toDataURL('image/png'),detail,
     camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
     skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
   }),
