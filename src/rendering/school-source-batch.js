@@ -39,7 +39,13 @@ export function batchSchoolSource(source, prepareMaterial) {
   const usePalette=original.name==='__DEFAULT';
   const key=usePalette?role:original.id;
   if(!materials.has(key)){
-   const material=original.clone();
+   const material=usePalette?new THREE.MeshStandardMaterial({
+    color:palette[role],side:original.side,
+    roughness:role==='glass'?.24:role==='metal'?.48:.9,
+    metalness:role==='glass'?.12:role==='metal'?.45:0,
+    transparent:role==='glass',opacity:role==='glass'?.48:1,
+    depthWrite:role!=='glass'
+   }):original.clone();
    if(usePalette)material.color.setHex(palette[role]);
    material.userData.photoColor=material.color?.getHex();
    material.name='school-'+role;
