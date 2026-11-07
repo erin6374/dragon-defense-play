@@ -1301,7 +1301,7 @@ const windDustPool=new InstancedParticlePool({THREE,parent:scene,
  capacity:44});
 const windLitterPool=new InstancedParticlePool({THREE,parent:scene,
  geometry:new THREE.BoxGeometry(.25,.08,.15),
- material:new THREE.MeshBasicMaterial({color:0x9e988d,roughness:1}),
+ material:new THREE.MeshBasicMaterial({color:0x9e988d}),
  capacity:16});
 const windDebrisPoint=new THREE.Vector3();
 function clearWindDebris(){windDustPool.clear();windLitterPool.clear();}
