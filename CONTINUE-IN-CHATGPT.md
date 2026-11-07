@@ -97,3 +97,10 @@ Run #71 failed the **new** assertion `repeated skyline hits accumulate independe
 
 GitHub Actions browser QA run #74 **passed** for the six-hit regression fix at `b0d9f37`, and run #76 **passed** for the complete subsequent PR head `f8e2f52`. This verifies the independent repeated-hit skyline-collapse scenario, the old collapse/reset assertions, startup, and the rest of the software-WebGL browser suite. Changelog records these runs. Documentation-only commits may trigger newer QA runs; always check the current branch head before claiming the newest commit has passed. The effect is intentionally cosmetic for foreground health. Hardware FPS, Windows preview launcher behavior, and photorealistic geographic fidelity remain unverified. Main and Building Explorer are unchanged.
 
+
+## Scheduled continuation — skyline restart integrity (November 7)
+
+At the start of this run the branch matched `407d188` exactly; GitHub Actions run #78 had **passed**. No competing branch edits or running QA were detected. The earlier six-hit skyline damage test was already verified.
+
+This run added a **read-only QA state extension** (`8c8b7ac`) and a **post-cascade restart regression** (`7a8b004`). It checks that restarting a level clears tower damage, collapse/scale, rubble, flash, persistent smoke and scorch. A dedicated post-restart skyline screenshot is written to QA artifacts. Changelog documents the change. **The new test is not verified until the current PR head's GitHub browser QA passes.** Do not report a gameplay feature or hardware speedup: these commits only improve test coverage. Re-check latest head and CI before any further edits; avoid overlap with other development sessions. Main v5.2.3 and Building Explorer remain untouched.
+
