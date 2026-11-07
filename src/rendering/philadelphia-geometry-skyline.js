@@ -332,6 +332,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // Distant strikes are an independent disaster, not just a reaction to
   // damage on the player's block. Repeated hits can eventually break a tower.
   tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07);
+  // Smoke density and width depend only on accumulated strikes, not time.
+  // Update these once per hit rather than reassigning material and scale on
+  // every animation frame for every previously damaged landmark.
+  const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
+  const smokeWidth=5.5+smokeIntensity*5.2;
+  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*1.8,1);
+  tower.smokeSprite.material.opacity=.12+smokeIntensity*.42;
   setDamage(damage); // Apply the new tower damage immediately, even in quiet scenes.
   tower.scorchSprite.visible=true;
   const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
@@ -426,15 +433,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     if(allGrounded)t.fallSettled=true;
    }
    if(t.strikeDamage>0){
+    // Only position changes over time; stable smoke size and opacity were set
+    // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
-    // Persistent damage plume rises and drifts slightly, never allocating
-    // additional sprites as hits accumulate.
     t.smokeSprite.visible=true;
     t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
     t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*.8;
-    const width=5.5+intensity*5.2;
-    t.smokeSprite.scale.set(width,width*1.8,1);
-    t.smokeSprite.material.opacity=.12+intensity*.42;
    }
    if(t.impactAge>0){
     t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));
