@@ -134,3 +134,8 @@ Comcast, Liberty Place and glass towers use larger glazing panels, restrained pa
 
 Night emission now emphasizes retained source interior surfaces while glass emission is subdued. No new geometry or lights. Full local browser QA passed; actual capture is qa/review/interior-night.png. This is a presentation improvement, not a verified atrium reconstruction.
 
+
+## Grounded tower collapse and playable preview
+
+All collapsing landmarks now shorten above the ground datum; tilted profiles lift their lower corner rather than sinking below the street. Full local QA passed and the rubble screenshot was inspected. PLAY-PREVIEW.cmd serves the development build on localhost:8769 using Python.
+

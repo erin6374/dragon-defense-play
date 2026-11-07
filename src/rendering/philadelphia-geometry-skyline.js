@@ -339,8 +339,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    if(Math.abs(t.collapse-collapse)<.02)return;
    t.collapse=collapse;
    // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
-   if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
-   else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
+   t.group.scale.y=1-collapse*.86;
+   if(i%3===0){
+    t.group.rotation.z=collapse*.10*(i%2?1:-1);
+    // The profile starts at y=0. Lift the rotated lower corner to ground
+    // instead of translating a tall intact facade below the street datum.
+    t.group.position.y=Math.abs(Math.sin(t.group.rotation.z))*t.def.w*.5;
+   }else t.group.position.y=0;
    // The small instanced rubble is already settled at ground level. Large
    // facade sections release once and fall over time in update(), independent
    // of the tower's transform (no rigid-body allocation during the collapse).
