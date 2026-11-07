@@ -3,6 +3,10 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
+# Avoid running obsolete full software-WebGL suites for superseded PR heads.
+concurrency:
+  group: dragon-browser-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     runs-on: ubuntu-24.04
