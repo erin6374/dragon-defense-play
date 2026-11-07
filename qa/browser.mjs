@@ -374,6 +374,9 @@ try {
       if(!hit.ok)return hit;
       smokeSamples.push({opacity:hit.result.smokeOpacity,scale:hit.result.smokeWorldScale[0]});
       impactSamples.push({world:hit.result.worldPosition,
+        flash:hit.result.flashWorldPosition,
+        flashParentStable:hit.result.flashParentStable,
+        flashVisible:hit.result.flashVisible,
         expectedPre:hit.result.expectedPreDamageWorld,
         post:hit.result.postDamageImpactWorld});
     }
@@ -390,11 +393,22 @@ try {
   // pre-damage contact point, not follow the newly shrunken facade.
   const impacts=impactCascade.result.impactSamples;
   assert.equal(impacts.length,6,'all distant strikes capture world-space impact positions');
+  // Check every strike, not only the first. Late hits can trigger a
+  // facade shrink, so the visible sprite must still match the returned burst.
+  const distance=(a,b)=>Math.hypot(...a.map((v,j)=>v-b[j]));
+  for(let i=0;i<impacts.length;i++){
+   const hit=impacts[i];
+   assert.equal(hit.flashParentStable,true,'meteor flash remains outside tower transform on strike '+(i+1));
+   assert.equal(hit.flashVisible,true,'meteor flash remains visible on strike '+(i+1));
+   assert.ok(hit.flash&&hit.world&&hit.flash.every(Number.isFinite),
+    'meteor flash and explosion coordinates are finite on strike '+(i+1));
+   assert.ok(distance(hit.flash,hit.world)<1e-4,
+    'visible meteor flash matches returned contact position on strike '+(i+1));
+  }
   let movedFacade=false;
   for(let i=1;i<impacts.length;i++){
    const hit=impacts[i];
    assert.ok(hit.expectedPre&&hit.world&&hit.post,'subsequent strikes expose contact positions');
-   const distance=(a,b)=>Math.hypot(...a.map((v,j)=>v-b[j]));
    assert.ok(distance(hit.world,hit.expectedPre)<1e-4,
     'cinematic explosion remains anchored to pre-collapse contact point on strike '+(i+1));
    if(distance(hit.post,hit.expectedPre)>.1)movedFacade=true;
