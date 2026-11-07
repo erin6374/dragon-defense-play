@@ -221,9 +221,22 @@ try {
   assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
   assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
   assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
-  report.skylineCollapse=skylineCollapse.result;
+  assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
+  const falling=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(.45));
+  assert.ok(falling.ok,falling.error);
+  assert.ok(falling.result.slabY.some((v,i)=>v>falling.result.groundY[i]+.01),'facade sections visibly pass through a falling state');
+  const settledSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
+  assert.ok(settledSkyline.ok,settledSkyline.error);
+  for(let i=0;i<settledSkyline.result.slabY.length;i++)
+   assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
+  report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result};
   await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
+  const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  assert.ok(skylineReset.ok,skylineReset.error);
+  assert.equal(skylineReset.result.fallActive,false,'restart resets skyline falling state');
+  assert.equal(skylineReset.result.ruinVisible,false,'restart hides skyline rubble');
+  report.skylineReset=skylineReset.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
