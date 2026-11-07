@@ -274,6 +274,8 @@ try {
   assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
+  assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');
+  assert.ok(towerImpact.result.smokeWorldScale.every(v=>v>0),'intact smoke has nonzero world scale');
   assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
   assert.ok(towerImpact.result.scorchOpacity>0,'facade damage mark has positive opacity');
   assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
@@ -283,6 +285,9 @@ try {
   const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
   assert.ok(skylineCollapse.ok,skylineCollapse.error);
   assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
+  assert.equal(skylineCollapse.result.smokeParentStable,true,'smoke remains outside collapse transform');
+  assert.equal(skylineCollapse.result.smokeVisible,true,'smoke persists during structural collapse');
+  for(let i=0;i<3;i++)assert.ok(Math.abs(skylineCollapse.result.smokeWorldScale[i]-towerImpact.result.smokeWorldScale[i])<.001,'smoke world scale does not shrink with tower');
   const damagedEmission=await page.evaluate(()=>window.__DD_QA.sampleSkylineEmissive());
   assert.ok(damagedEmission.ok,damagedEmission.error);
   assert.ok(damagedEmission.result.collapse>0,'damaged skyline tower has structural collapse');
