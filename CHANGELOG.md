@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — distant disaster independent of foreground health
+
+- Cumulative distant meteor impacts now contribute **0.07** local structural damage per strike (capped at **0.90**) to their targeted skyline landmark, rather than **0.018** capped at **0.28**. Repeated impacts can therefore trigger facade breakup and persistent rubble even if the school and neighborhood are unharmed.
+- A hit immediately reevaluates the existing landmark collapse state; no new meshes, physics systems, or foreground gameplay damage were introduced.
+- Browser QA now stages six consecutive hits on Comcast Technology Center, verifies visible rubble and active facade fall, and asserts that the foreground health does not change. A dedicated skyline screenshot is captured.
+- **Verification:** the code and regression test have been committed, but the updated browser workflow result must be checked before declaring this change verified. This is a stylized background-disaster effect, not surveyed geographic realism or measured GPU performance.
+
+
 ## QA regression fix — malformed startup script
 
 - GitHub QA run #61 failed its final `report.errors` assertion with `SyntaxError: Invalid or unexpected token`. The cause was literal `\\n` sequences accidentally inserted *between JavaScript statements* while revising the `index.html` launch warning. The HTML has been corrected to real statement line breaks, while message text still uses valid escaped newlines inside its string literals.
