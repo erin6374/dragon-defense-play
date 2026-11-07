@@ -283,7 +283,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
   scorchSprite.scale.set(5,5,1);
   g.add(scorchSprite);
-  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallElapsed:0,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -370,6 +370,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.ruin.visible=collapse>.18;
    if(collapse>.18&&!t.fallActive){
     t.fallActive=true;
+    t.fallSettled=false;
     t.fallElapsed=0;
    }
    // Emission is derived in update() rather than repeatedly multiplied here.
@@ -394,8 +395,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   for(let i=0;i<towers.length;i++){
    const t=towers[i];
    if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
-   if(t.fallActive){
+   if(t.fallActive&&!t.fallSettled){
     t.fallElapsed+=Math.max(0,Math.min(.1,dt));
+    // Once every facade slab has landed and finished rotating, its pose is
+    // static until reset. Avoid repeated matrix updates for settled rubble.
+    let allGrounded=true;
     for(let j=0;j<t.slabs.length;j++){
      const slab=t.slabs[j],fallTime=Math.max(0,t.fallElapsed-slab.userData.fallDelay);
      // Gravity-like descent with a hard ground clamp keeps all facade sections
@@ -409,7 +413,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
      const e=slab.matrix.elements;
      slab.userData.groundY=(Math.abs(e[1])+Math.abs(e[5])+Math.abs(e[9]))*.5+.02;
      slab.position.y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
+     if(turn<1||slab.position.y>slab.userData.groundY+.001)allGrounded=false;
     }
+    if(allGrounded)t.fallSettled=true;
    }
    if(t.strikeDamage>0){
     const intensity=Math.min(1,t.strikeDamage/.16);
@@ -442,6 +448,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallSettled=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
