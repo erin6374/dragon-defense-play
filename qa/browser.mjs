@@ -514,6 +514,21 @@ try {
    }
   }
   report.distantHelicopterPatrol=heliPatrol.result;
+  const groundWind=await page.evaluate(()=>window.__DD_QA.stageGroundWind());
+  assert.ok(groundWind.ok,groundWind.error);
+  assert.ok(groundWind.result.personX>groundWind.result.bikeX,
+   'pedestrian is pushed more than a lightweight bike');
+  assert.ok(groundWind.result.bikeX>groundWind.result.busX,
+   'lightweight bike is pushed more than a large bus');
+  assert.ok(groundWind.result.busX>12,'large vehicle receives only a small nudge');
+  assert.ok(groundWind.result.personX<12.5,'pedestrian gust shift remains gentle');
+  assert.ok(groundWind.result.dustInstances>0&&groundWind.result.dustInstances<=44,
+   'visible bounded dust batch responds to the dragon gust');
+  assert.ok(groundWind.result.litterInstances>0&&groundWind.result.litterInstances<=16,
+   'small ground debris particles move with the gust');
+  assert.ok(groundWind.result.smokeWindStrength>0,
+   'building smoke receives gust-driven lean and fade');
+  report.groundWind=groundWind.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
