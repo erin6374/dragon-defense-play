@@ -564,6 +564,11 @@ try {
       'dragon dorsal scales share one preallocated instanced armor batch');
     assert.ok(membrane.vertices>=900,
       'curved membrane panels are tessellated rather than single triangles');
+    await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('hover'));
+    await lab.waitForTimeout(150);
+    const deform=await lab.evaluate(()=>window.__PAULO_LAB_QA.membraneDeformation());
+    assert.ok(Number.isFinite(deform.current)&&Math.abs(deform.current-deform.rest)>.005,
+      'animated wing membranes deform an interior vertex while retaining the rest buffer');
     const poses=await lab.evaluate(()=>window.__PAULO_LAB_QA.states);
     assert.ok(poses.length>=12,'dragon has twelve animation reference poses');
     const fire=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('fire');return window.__PAULO_LAB_QA.snapshot();});
