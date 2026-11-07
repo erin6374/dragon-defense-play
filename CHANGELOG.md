@@ -1,5 +1,13 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 deterministic animation inspection (November 7)
+
+- Added **Pause/Play**, **+1 frame** (1/60 second) and an eight-second **pose-time scrubber** to the isolated `dragon-lab/index.html` viewer.
+- `dragon-lab/paulo-lab.js` now uses a single pose-time source for animation, scrubbing and frame stepping. Paused state stops advancing the rig or issuing continuous WebGL draws; camera orbit, view presets, zoom and joint-marker toggling still render while paused.
+- QA checks the paused time remains unchanged, a frame step advances by exactly 1/60 second, and scrubbing sets an exact reference time. The wind preview screenshot is captured from a paused reference pose for repeatability.
+- JavaScript source and test edits passed syntax parsing. **Full PR-head browser QA and Windows hardware inspection remain pending**. The gameplay dragon and separate Building Explorer were not modified.
+
+
 ## Paulo v5.4 breath preview and QA isolation (November 7)
 
 - Previous Paulo Lab GitHub Actions browser QA failed while waiting for `DOMContentLoaded` after the lab and bundled Three.js returned HTTP 200. The QA navigation now waits for the response commit, and separately waits for the lab-ready interface (up to 90 seconds); this changes test readiness, not game performance.
