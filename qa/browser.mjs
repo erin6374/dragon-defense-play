@@ -213,6 +213,16 @@ try {
   assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
   report.landmarkImpact = towerImpact.result;
   await shot('06-landmark-strike');
+  const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
+  assert.ok(skylineCollapse.ok,skylineCollapse.error);
+  assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
+  assert.equal(skylineCollapse.result.ruinVisible,true,'skyscraper rubble remains rendered');
+  assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
+  assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
+  assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
+  assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
+  report.skylineCollapse=skylineCollapse.result;
+  await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
