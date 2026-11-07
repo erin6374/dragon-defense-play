@@ -222,6 +222,12 @@ try {
   assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
   assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
   assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
+  for(let i=0;i<skylineCollapse.result.slabY.length;i++){
+   assert.ok(Math.abs(skylineCollapse.result.slabY[i]-skylineCollapse.result.slabReleaseY[i])<.001,
+    'facade section begins at its release height, not at the ground');
+   assert.ok(skylineCollapse.result.slabY[i]>skylineCollapse.result.slabGroundY[i],
+    'facade section has a positive falling distance');
+  }
   const falling=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(.45));
   assert.ok(falling.ok,falling.error);
   assert.ok(falling.result.slabY.some((v,i)=>v>falling.result.groundY[i]+.01),'facade sections visibly pass through a falling state');
