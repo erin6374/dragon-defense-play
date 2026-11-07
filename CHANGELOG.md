@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — repeat-impact flash radius reset (November 7)
+
+- Verified that prior branch head `27ad3bf` passed complete GitHub browser QA run #133, including the six-strike world-space impact-position assertions. No concurrent branch changes were present before this edit.
+- Found a source-confirmed visual timing defect: `update()` expands each impact sprite as it fades, but `strikeNearest()` did not restore the sprite's starting radius. A new strike could therefore briefly reuse an enlarged radius from the previous flash before the next animation frame.
+- Each strike now resets its preallocated flash sprite to radius 5 immediately, retaining the existing expansion/fade curve, position, material budget, damage behavior and foreground health. Added a QA-only immediate-scale snapshot and a six-strike browser assertion to catch recurrence.
+- Gameplay commit `a8610d4`, QA telemetry `5ad3602`, regression `5fe53e9`. **The new correction is not browser-verified until fresh PR-head QA passes.** This is a small visual consistency fix, not a measured performance improvement; no hardware FPS or fidelity claim. Main, deployment and Building Explorer unchanged.
+
+
 ## Continuation — six-strike meteor flash contact regression
 
 - Previous branch head `092efaad` passed browser QA run #130, verifying the skyline-space impact flash correction.
