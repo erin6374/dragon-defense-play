@@ -1,7 +1,7 @@
 {
-  "build": "5.3-north-broad-01",
-  "version": "5.3.0",
+  "build": "5.3-wind-ground-01",
+  "version": "5.3.1",
   "gameplay_base": "5.2.3",
-  "scope": "North Broad Street perspective, world-space neighborhood, and Philadelphia skyline",
-  "new_gameplay_features": false
+  "scope": "North Broad graphics and gust-powered ground vehicles, pedestrians, debris and smoke",
+  "new_gameplay_features": true
 }
