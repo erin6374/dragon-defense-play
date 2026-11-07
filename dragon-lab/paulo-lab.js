@@ -157,10 +157,14 @@ function applyPose(t){
  jaw.rotation.z=['wind','fire','gas'].includes(state)?-.37:state==='inhale'?-.11:0;
  wings.forEach(({shoulder,elbow,wrist,side})=>{
   const phase=cycle*power;
-  shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24);
-  shoulder.rotation.y=side*(state==='glide'?-.15:state==='idle'?.45:.08);
-  elbow.rotation.x=side*(.12+phase*.22);
-  wrist.rotation.y=side*(state==='glide'?.05:state==='idle'?.35:.16);
+  // Brace the wings during exhale; fire keeps a narrower, more aerodynamic
+  // profile. Bank favors the outside wing and partially folds the inside.
+  const braced=state==='wind'?.26:state==='inhale'?.15:0;
+  const fireFold=state==='fire'?.25:0;
+  shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24+braced);
+  shoulder.rotation.y=side*(state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
+  elbow.rotation.x=side*(.12+phase*.22+braced*.65);
+  wrist.rotation.y=side*(state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
  });
  tail.forEach((seg,i)=>{seg.rotation.y=Math.sin(t*1.7-i*.5)*.09;seg.rotation.z=Math.sin(t*1.15-i*.35)*.045;});
  legs.forEach(({hip,knee,fore,side})=>{
@@ -178,5 +182,8 @@ function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/M
 new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
- snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),jawAngle:jaw.rotation.z,headAngle:head.rotation.z,
- visible:renderer.domElement.width>0&&renderer.domElement.height>0};}};
+ snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),
+ wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
+ headAngle:head.rotation.z,chestHeight:chest.scale.y,
+ visible:renderer.domElement.width>0&&renderer.domElement.height>0,
+ drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles};}};
