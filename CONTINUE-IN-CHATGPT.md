@@ -147,3 +147,12 @@ Identified a per-frame source inefficiency: skyline towers with `fallActive` kep
 
 **Verification pending:** check the newest PR-head GitHub browser QA; inspect failures before further edits. This optimization is not measured hardware FPS or CPU time, and no source-level speed claim should be inflated. If test fails, verify the final fall pose and settling condition before changing visuals. No edits to main, Building Explorer, deployment or packaging. Avoid duplicate/conflicting writes.
 
+
+## Interactive continuation — stable skyline smoke (November 7)
+
+Before changes, PR #2 head was `1a1cb13`; GitHub browser QA run #105 had **passed**. Existing scheduled fixes included touch pointer handler de-duplication, intact-tower emissive skipping, and settled-rubble transform skipping; do not repeat them.
+
+This interactive pass corrected an unaddressed visual hierarchy issue: persistent smoke was attached to the shrinking skyscraper. Changed `src/rendering/philadelphia-geometry-skyline.js` so the smoke sprite lives in stable skyline coordinates and follows a one-time converted strike origin, without new sprites or per-frame resource allocation. Extended the deterministic `stageSkylineStrike` and `stageSkylineCollapse` QA probes and browser assertions to confirm the smoke stays visible, its parent remains stable and its world-space scale does not shrink during tower collapse. The changelog records scope.
+
+**Verification pending until the newest PR-head browser QA completes.** If it fails, inspect actual error/log first and correct on the existing branch. Production `main` v5.2.3, Building Explorer and deployment remain untouched. Other hourly sessions may be updating this branch, so compare branch head and tests before any new writes.
+
