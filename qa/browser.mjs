@@ -528,6 +528,10 @@ try {
    'small ground debris particles move with the gust');
   assert.ok(groundWind.result.smokeWindStrength>0,
    'building smoke receives gust-driven lean and fade');
+  assert.ok(groundWind.result.puffX>12,
+   'street-level smoke puffs visibly shift downwind');
+  assert.ok(groundWind.result.puffOpacity>0&&groundWind.result.puffOpacity<.58,
+   'wind disperses and slightly reduces smoke density');
   report.groundWind=groundWind.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
