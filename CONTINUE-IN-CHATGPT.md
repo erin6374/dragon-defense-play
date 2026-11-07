@@ -111,3 +111,12 @@ Before editing, confirmed branch was still `161ed854` (identical to prior handof
 
 **Verification pending:** check the latest PR-head GitHub Actions browser QA before reporting this change as passed. Do not duplicate this helicopter fix. If QA fails, inspect the exact assertion/log first. Preserve main and the separate Building Explorer; no deployment or packaging occurred.
 
+
+
+## Scheduled continuation — allocation-free night lighting (November 7)
+
+Checked the development branch against the previous handoff commit `0756ea89`: **identical**, no competing edits. GitHub Actions browser QA **run #87 passed** at that head, verifying the earlier long-session distant helicopter patrol regression. Do not repeat that fix.
+
+Audited `src/game.js`'s per-frame `updateNight(dt)`: an unused haze color blend constructed two `THREE.Color` objects per call, and sun/ambient interpolation constructed three more. Commit `e8da884` removes the unused blend and reuses three preinitialized immutable palette colors. Hex values and interpolation order are unchanged; this is an allocation reduction only, **not measured hardware FPS, GC, or visual fidelity**. Changelog documents the exact scope.
+
+**Verification:** the new code and documentation require a fresh GitHub browser QA result for the current PR head. Check the newest workflow and any failures before further edits. Existing suite covers dusk/night and moving vehicle light behavior but is not a pixel-perfect comparison. Avoid concurrent writes while QA or another development session is in progress. Production main and separate Building Explorer remain untouched; no merge, package, or deployment.
