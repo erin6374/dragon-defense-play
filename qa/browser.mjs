@@ -654,11 +654,20 @@ try {
       document.querySelector('#view').dispatchEvent(new Event('change'));
       window.__PAULO_LAB_QA.setState('hover');
     });
+    const frontFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(frontFrame.cameraType,'orthographic','front reference uses true orthographic projection');
+    assert.ok(frontFrame.referenceFrame?.maxX<.90&&frontFrame.referenceFrame?.maxY<.90,
+      'full front-view dragon anatomy including wing tips fits the frame');
     await lab.screenshot({path:'qa-output/09-paulo-front-reference.png'});
     await lab.evaluate(()=>{
       document.querySelector('#view').value='side';
       document.querySelector('#view').dispatchEvent(new Event('change'));
     });
+    const sideFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(sideFrame.cameraType,'orthographic','side reference uses true orthographic projection');
+    assert.ok(sideFrame.referenceFrame?.maxX<.90&&sideFrame.referenceFrame?.maxY<.90,
+      'full side-view dragon anatomy fits the frame');
+    report.pauloReferenceViews={front:frontFrame.referenceFrame,side:sideFrame.referenceFrame};
     await lab.screenshot({path:'qa-output/10-paulo-side-reference.png'});
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
