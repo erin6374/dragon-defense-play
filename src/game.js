@@ -1346,7 +1346,7 @@ function updateDragonWind(dt){
  }
  for(const p of crowd){
   if(p.down>0||!p.g?.visible)continue;
-  const step=groundWindStep(p.g.position.x,1,p.g.position.z,origin.x,1,origin.z,1.2,dt);
+  const step=groundWindStep(p.g.position.x,1,p.g.position.z,origin.x,1,origin.z,windX,0,windZ,1.2,dt);
   if(step<=0)continue;
   if(p.windGustId!==gustId){p.windGustId=gustId;p.windTravel=0;}
   const move=Math.min(step,Math.max(0,1.3-p.windTravel));
