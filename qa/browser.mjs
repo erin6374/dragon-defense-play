@@ -545,6 +545,30 @@ try {
   await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
   assert.deepEqual(report.warnings, [], 'preview must not produce WebGL/material console warnings');
+  // Separate design lab: do not alter the playable dragon or simulation.
+  const lab=await browser.newPage({viewport:{width:1280,height:800}});
+  const labErrors=[];
+  lab.on('pageerror',e=>labErrors.push(String(e)));
+  try{
+    const response=await lab.goto(new URL('dragon-lab/',base).href,{waitUntil:'domcontentloaded'});
+    assert.equal(response.status(),200,'standalone dragon design lab loads');
+    await lab.waitForFunction(()=>window.__PAULO_LAB_QA?.visible!==undefined||
+      !!window.__PAULO_LAB_QA,{timeout:20000});
+    const initial=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.ok(initial.visible,'lab renderer is visible');
+    assert.ok(initial.wingAngles.length===2,'dragon has two articulated wing assemblies');
+    const poses=await lab.evaluate(()=>window.__PAULO_LAB_QA.states);
+    assert.ok(poses.length>=12,'dragon has twelve animation reference poses');
+    const fire=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('fire');return window.__PAULO_LAB_QA.snapshot();});
+    assert.ok(fire.jawAngle<-.2,'fire animation opens the jaw');
+    const wind=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('wind');return window.__PAULO_LAB_QA.snapshot();});
+    assert.ok(wind.jawAngle<-.2,'wind breath opens the jaw');
+    await lab.screenshot({path:'qa-output/08-paulo-dragon-lab.png'});
+    assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
+    report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
+      poses,initial,fire,wind,errors:labErrors};
+  }finally{await lab.close();}
+
 } catch (error) {
   report.failure = String(error.stack ?? error);
   await page?.screenshot({path: 'qa-output/failure.png', timeout: 10000}).catch(() => {});
