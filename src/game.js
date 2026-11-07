@@ -1918,6 +1918,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  const qaLog=[];let qaSequence=0;
  const snap=()=>({version:GAME_VERSION,build:BUILD_ID,active,paused,wave,score,hp,
   dragon:{x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,lives:dragonLives},
+  aim:{x:pointer.x,y:pointer.y,z:pointer.z},
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
   camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
   schoolReconstruction:schoolReconstruction?.stats()||null,
