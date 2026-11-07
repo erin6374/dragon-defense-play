@@ -243,6 +243,9 @@ try {
   assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
   assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
   assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
+  assert.deepEqual(skylineCollapse.result.slabMaterialGroups,[2,2,2],'one opaque side group and one textured front group per slab');
+  assert.deepEqual(skylineCollapse.result.slabFaceMaterialCounts,[2,2,2],'facade fragment material array uses two finishes');
+  assert.deepEqual(skylineCollapse.result.slabIndexCounts,[36,36,36],'optimized geometry retains all six faces');
   assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
   assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
   for(let i=0;i<skylineCollapse.result.slabY.length;i++){
