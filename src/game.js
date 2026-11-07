@@ -2118,6 +2118,35 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    return {fallElapsed:t.fallElapsed,slabY:t.slabs.map(s=>s.position.y),
     groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
+  stageGroundWind:()=>run('stageGroundWind',()=>{
+   // Exercise actual wind logic using temporary targets; preserve game state.
+   const before={gustTime,windCooldown,windActive,origin:gustOrigin.clone(),
+    direction:gustDirection.clone()};
+   const makeCar=(extra={})=>({root:new THREE.Group(),...extra});
+   const bike=makeCar({bike:true}),bus=makeCar({bus:true});
+   const pedestrian={g:new THREE.Group(),down:0};
+   bike.root.position.set(12,0,20);bus.root.position.set(12,0,20);
+   pedestrian.g.position.set(12,0,20);
+   cars.push(bike,bus);crowd.push(pedestrian);
+   try{
+    gustId++;gustTime=.85;windCooldown=4;windActive=true;
+    gustOrigin.set(0,24,20);gustDirection.set(1,0,0);
+    updateDragonWind(.08);
+    return {bikeX:bike.root.position.x,busX:bus.root.position.x,
+     personX:pedestrian.g.position.x,dustInstances:windDustPool.mesh.count,
+     litterInstances:windLitterPool.mesh.count,
+     smokeWindStrength:cinematicFX.stats().windStrength};
+   }finally{
+    cars.splice(cars.indexOf(bike),1);cars.splice(cars.indexOf(bus),1);
+    crowd.splice(crowd.indexOf(pedestrian),1);
+    gustTime=before.gustTime;windCooldown=before.windCooldown;
+    windActive=before.windActive;gustOrigin.copy(before.origin);
+    gustDirection.copy(before.direction);
+    windVisual.visible=windActive;
+    clearWindDebris();
+    cinematicFX.setWind(null,null,0);
+   }
+  }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
    const car=cars.find(c=>c.root.userData.headlightBeam);
