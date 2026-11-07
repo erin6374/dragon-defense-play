@@ -1,5 +1,11 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — distant rooftop architecture
+
+- Added simple HVAC units and stair-access housings to selected rows of distant residential and commercial buildings. Geometry remains fixed to each building's roof.
+- Reused the distant neighborhood's existing InstancedMesh architecture; the new rooftop material adds at most one draw batch per populated depth tier, with no per-building draw calls or per-frame update logic.
+- Visual composition and browser QA are pending confirmation. Gameplay, school source geometry, collisions and the released version were not changed.
+
 ## Continuation — soft distant smoke
 
 - Replaced the distant neighborhood's rigid black damage cones with translucent layered smoke sprites drawn from one shared 64 × 128 procedural atlas.
