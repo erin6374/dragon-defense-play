@@ -6,7 +6,7 @@
 - Each of the nine modeled landmarks has one dormant impact sprite; all sprites use a shared procedural glow atlas. Impact flashes fade in simulated time, with no per-strike GPU texture or mesh allocations.
 - Each strike adds a small, capped contribution to that landmark's visual damage; existing skyline destruction progression and foreground gameplay remain separate.
 - Corrected impact alignment to use each tower's fully transformed facade position, including collapse transforms.
-- These changes affect the development branch only. Browser QA, screenshots of the new impact effect, and a hardware performance benchmark are not yet confirmed.
+- Added a deterministic browser QA hook to stage a strike on Comcast Technology Center, assert that tower-specific damage and the flash are active, and capture `qa-output/06-landmark-strike.png` from the running renderer. The new test outcome and hardware performance are not yet confirmed.
 
 
 ## Continuation — damaged skyline electrical flicker
