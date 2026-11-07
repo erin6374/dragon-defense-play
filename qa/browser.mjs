@@ -38,8 +38,8 @@ let browser, page;
 const shot = name => page.screenshot({path: 'qa-output/' + name + '.png'});
 // Capture the geometry-based skyline unobstructed by playable foreground or HUD.
 // These are actual renderer pixels, not synthetic screenshots.
-const skylineShot = async name => {
-  const capture = await page.evaluate(() => window.__DD_QA.captureSkyline());
+const skylineShot = async (name, detail=false) => {
+  const capture = await page.evaluate(close => window.__DD_QA.captureSkyline(close),detail);
   assert.ok(capture.ok, capture.error);
   const png = capture.result.png;
   assert.ok(png.startsWith('data:image/png;base64,'), 'Skyline capture is a rendered PNG');
@@ -380,6 +380,7 @@ try {
   report.skylineAftermath=aftermath.result;
   report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result,idle:idleSkyline.result};
   await skylineShot('06-skyline-smoke-aftermath');
+  report.skylineDetailCamera=await skylineShot('06-skyline-close-aftermath',true);
   await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
   const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
