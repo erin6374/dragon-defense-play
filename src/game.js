@@ -85,6 +85,11 @@ function dayPhase(w){return (((w-1)%DAY_PHASE_WAVES)+DAY_PHASE_WAVES)%DAY_PHASE_
 function dayDarkness(w){const p=dayPhase(w);return Math.max(0,Math.min(1,(p-.28)/.32,(.94-p)/.24));}
 const ambience=scene.children.find(o=>o.isHemisphereLight);
 const skyTarget=new THREE.Color(skySteps[0]);
+// Reuse immutable palette colors in the per-frame lighting update; creating
+// THREE.Color objects every animation tick adds avoidable garbage collection.
+const sunsetSunColor=new THREE.Color(0xffc59a);
+const nightSunColor=new THREE.Color(0x8faad9);
+const nightAmbientColor=new THREE.Color(0xb5c5dd);
 let displayedPhase=0,displayedDarkness=0;
 function updateAtmosphere(){const p=dayPhase(wave)*(skySteps.length-1),i=Math.floor(p);skyTarget.setHex(skySteps[Math.min(i,skySteps.length-1)]);if(i<skySteps.length-1)skyTarget.lerp(new THREE.Color(skySteps[i+1]),p-i);}
 // Emissive window cards remain dark in daylight; individual rooms light up after dusk.
@@ -119,8 +124,8 @@ function updateNight(dt){
  const targetPhase=dayPhase(wave);let phaseDelta=targetPhase-displayedPhase;if(phaseDelta<-.5)phaseDelta+=1;if(phaseDelta>.5)phaseDelta-=1;
  const blend=1-Math.exp(-dt*.45);displayedPhase=(displayedPhase+phaseDelta*blend+1)%1;displayedDarkness+=(dayDarkness(wave)-displayedDarkness)*blend;
  const darkness=displayedDarkness;schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.15+darkness*.06;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00175+darkness*.00035;cinematicSky.setPhase(displayedPhase,darkness,dt);neighborhood.setAtmosphere(displayedPhase,darkness);
- // Distant buildings receive a stronger atmospheric veil than the playable street.
- const hazeColor=new THREE.Color(0x67778b).lerp(new THREE.Color(0x26344a),darkness);
+ // Distant building haze is now handled by the skyline materials and fog;
+ // do not allocate an unused color blend in this per-frame path.
  // Architectural texture preserves facade detail while distance haze stays subtle.
  // Skyline geometry and window emissive intensity are updated by skylineBackdrop.setTime().
  // Legacy geometric clouds remain detached from drawing; do not traverse/update
@@ -132,8 +137,8 @@ function updateNight(dt){
  for(const w of nightWindows){const lightAllowed=(!w.surface||w.surface.alive)&&w.enabled&&!w.broken;const opacity=lightAllowed?Math.max(0,(darkness-.3)*.62):0;w.mesh.material.opacity=opacity;w.mesh.visible=opacity>.001;}
  for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission;
 
- sun.intensity=2.20-darkness*1.25;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(new THREE.Color(0xffc59a),Math.min(1,sunset)).lerp(new THREE.Color(0x8faad9),darkness);
- if(ambience){ambience.intensity=1.18-darkness*.12;ambience.color.setHex(0xe9f2ff).lerp(new THREE.Color(0xb5c5dd),darkness)}
+ sun.intensity=2.20-darkness*1.25;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
+ if(ambience){ambience.intensity=1.18-darkness*.12;ambience.color.setHex(0xe9f2ff).lerp(nightAmbientColor,darkness)}
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
