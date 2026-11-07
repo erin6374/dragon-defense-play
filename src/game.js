@@ -1982,11 +1982,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
    if(index<0)throw Error('Expected landmark missing');
    const t=skylineBackdrop.towers[index],before=t.strikeDamage;
+   // Once the first impact has established its local contact coordinates,
+   // capture the next hit's expected world position before damage transforms.
+   const expectedPreDamageWorld=before>0?t.group.localToWorld(t.impactSprite.position.clone()).toArray():null;
    const hit=skylineBackdrop.strikeNearest(t.group.position.x);
+   const postDamageImpactWorld=t.group.localToWorld(t.impactSprite.position.clone()).toArray();
    const smokeVisibleImmediately=t.smokeSprite.visible;
    skylineBackdrop.setDamage(skylineDamage);
    skylineBackdrop.update(elapsed,displayedDarkness,1/60);
    return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
+    expectedPreDamageWorld,postDamageImpactWorld,
     smokeVisibleImmediately,afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
