@@ -92,3 +92,8 @@ Run #68 **failed** at the existing assertion that a facade section starts at its
 
 Run #71 failed the **new** assertion `repeated skyline hits accumulate independent tower damage`. Cause: moving the cascade after the reset cleared the original one-hit setup, but the cascade still executed only five hits while labeling them six. Five hits yield 0.35 damage, below the intended 0.40 threshold. Commit `b0d9f37` corrects the loop to perform six actual hits (0.42 expected). This is a test-setup correction, not a change to game logic. **Fresh PR-head QA is pending; do not mark verified yet.**
 
+
+### Verified browser QA for cumulative distant strikes
+
+GitHub Actions browser QA run #74 **passed** for the six-hit regression fix at `b0d9f37`, and run #76 **passed** for the complete subsequent PR head `f8e2f52`. This verifies the independent repeated-hit skyline-collapse scenario, the old collapse/reset assertions, startup, and the rest of the software-WebGL browser suite. Changelog records these runs. Documentation-only commits may trigger newer QA runs; always check the current branch head before claiming the newest commit has passed. The effect is intentionally cosmetic for foreground health. Hardware FPS, Windows preview launcher behavior, and photorealistic geographic fidelity remain unverified. Main and Building Explorer are unchanged.
+
