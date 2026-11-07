@@ -5,6 +5,17 @@ import {pathToFileURL} from 'node:url';
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
+const launchHtml = await readFile('index.html', 'utf8');
+const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
+// Guard against the common Windows file:// launch failure and stale startup
+// guidance. Browser QA still uses HTTP to exercise actual module loading.
+assert.match(launchHtml, /"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
+assert.ok(!launchHtml.includes('Check the browser console (F12), internet access to cdn.jsdelivr.net'),
+  'startup message must not point to an obsolete external CDN');
+assert.ok(launchHtml.includes("location.protocol==='file:'"),
+  'startup message must explain direct-file CORS failures');
+assert.ok(launchCmd.includes('python') && launchCmd.includes('8769') && launchCmd.includes('http.server'),
+  'Windows preview launcher must start the expected HTTP server');
 const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
