@@ -288,7 +288,7 @@ try {
   const impactCascade=await page.evaluate(()=>{
     const qa=window.__DD_QA, hpBefore=qa.snap().hp;
     let hit;
-    for(let i=0;i<5;i++){
+    for(let i=0;i<6;i++){
       hit=qa.stageSkylineStrike();
       if(!hit.ok)return hit;
     }
