@@ -16,9 +16,11 @@ function makeFacade(seed,style='glass'){
  for(let row=0;row<rows;row++){
   for(let col=0;col<cols;col++){
    const x=col*dx+dx*.18,y=row*dy+dy*.16,w=dx*.62,h=dy*.61;
-   const isLit=rnd()>.72;
+   const isLit=rnd()>.79+(row%11===0?.09:0);
    c.fillStyle='rgba(8,23,36,.52)';c.fillRect(x-1,y-1,w+2,h+2);
-   c.fillStyle=rnd()>.22?palette[0]:palette[2];c.fillRect(x,y,w,h);
+   c.globalAlpha=.20+rnd()*.57;
+   c.fillStyle=rnd()>.31?palette[0]:palette[2];c.fillRect(x,y,w,h);
+   c.globalAlpha=1;
    c.fillStyle='rgba(195,232,247,.23)';c.fillRect(x+1,y+1,Math.max(1,w*.15),h*.85);
    c.fillStyle='rgba(4,15,24,.34)';c.fillRect(x+w*.52,y,1.2,h);
    if(isLit){e.fillStyle=rnd()>.45?'#ffcf8d':'#ffebbb';e.fillRect(x+.7,y+1,w-1.4,h-2);}
@@ -77,8 +79,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  ];
  // Distant intermediate city is part of the geometry, not a photo pasted behind a cutout.
  const farTex=makeFacade(9291,'office');
- const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,transparent:true,opacity:.87,side:THREE.DoubleSide});
- const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,transparent:true,opacity:.89,side:THREE.DoubleSide});
+ const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,side:THREE.DoubleSide});
+ const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,side:THREE.DoubleSide});
  for(let i=0;i<ambientBuildings.length;i++){
   const [x,h,w]=ambientBuildings[i];const g=new THREE.Group();g.position.set(x,0,-9-i%3*2);group.add(g);
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
@@ -86,14 +88,14 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  }
  const defs=[
   // Positions are artistically scaled for the view from North Broad, not a surveyed panorama.
-  {id:'city-hall',x:-68,w:11,h:66,roof:'cityhall',style:'civic',depth:3.2},
-  {id:'comcast-technology',x:-45,w:14,h:103,roof:'comcastTech',style:'comcast',depth:4.8},
-  {id:'comcast-center',x:-26,w:15,h:79,roof:'comcast',style:'comcast',depth:4.0},
-  {id:'one-liberty-place',x:7,w:14,h:94,roof:'liberty',style:'liberty',depth:4.7},
-  {id:'two-liberty-place',x:23,w:12,h:83,roof:'liberty',style:'liberty',depth:4.1},
-  {id:'bny-mellon',x:41,w:11,h:65,roof:'setback',style:'office',depth:4.1},
-  {id:'center-city-office',x:56,w:11,h:59,roof:'flat',style:'office',depth:4.0},
-  {id:'other-center-city',x:73,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
+  {id:'city-hall',x:66,w:11,h:70,roof:'cityhall',style:'civic',depth:3.2},
+  {id:'comcast-technology',x:19,w:13,h:103,roof:'comcastTech',style:'comcast',depth:4.8},
+  {id:'comcast-center',x:38,w:15,h:89,roof:'comcast',style:'comcast',depth:4.0},
+  {id:'one-liberty-place',x:-38,w:13,h:90,roof:'liberty',style:'liberty',depth:4.7},
+  {id:'two-liberty-place',x:-23,w:12,h:80,roof:'liberty',style:'liberty',depth:4.1},
+  {id:'bny-mellon',x:51,w:12,h:69,roof:'setback',style:'office',depth:4.1},
+  {id:'center-city-office',x:83,w:11,h:63,roof:'flat',style:'office',depth:4.0},
+  {id:'other-center-city',x:-62,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
@@ -102,7 +104,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
-  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3));group.add(g);
+  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
   const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
   const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});
   const poly=polygonMesh(profile(d.w,d.h,d.roof),d.depth,facade,side);g.add(poly.front,poly.sides);

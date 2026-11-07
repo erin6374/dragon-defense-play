@@ -1,12 +1,12 @@
 import {occupiesCrossStreet} from './road-corridors.js';
 // Frontage reference: supplied April 2025 / September 2026 Google Street View
 // plus user-supplied satellite imagery. Relative x is game-space Broad Street,
-// x=0 is Tech Freire; negative trends toward Dauphin and positive trends toward
+// x=0 is Tech Freire; negative x is north toward Dauphin and positive x is south toward
 // Susquehanna. Dimensions remain visual approximations, but they now preserve
 // the real hierarchy: Tech Freire is the tallest five-story building on the block.
 export function populateCity(city){
  const house=o=>city.addBuilding({d:14.5,z:-7.4,stories:3,bays:2,...o});
- // Frontage on the east side of Broad, ordered west-to-east in the reference image.
+ // Frontage on the east side of Broad, ordered north-to-south in the reference image.
  house({name:'united-fund-cream',x:-18.8,w:5.8,h:12.3,kind:'creamWarm',stories:3,bays:2});
  house({name:'south-cream-rowhouse',x:-25.5,w:7.0,h:12.9,kind:'stoneGray',stories:3,bays:2});
  house({name:'south-tan-brick',x:-33.0,w:8.2,h:13.6,kind:'brickTan',stories:3,bays:2});
@@ -29,7 +29,7 @@ export function populateCity(city){
    const width=7.1+((i+row)%4)*.7;
    if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80))continue; // keep Dauphin and Susquehanna physically open
    const stories=2+((i*3+row)%3);
-   const h=8.6+stories*1.85+((i+row)%3)*.18;
+   const h=3.3+stories*2.7+((i+row)%3)*.34;
    house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});
   }
  }

@@ -16,6 +16,7 @@ try {
   }
   browser = await chromium.launch({
     channel: process.env.QA_BROWSER_CHANNEL,
+    executablePath: process.env.QA_BROWSER_EXECUTABLE,
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   });
   page = await browser.newPage({viewport: {width: 1024, height: 576}, serviceWorkers: 'block'});
@@ -74,6 +75,8 @@ try {
   await page.locator('#graphics').selectOption('mobile');
   await page.locator('#start').click();
   await page.waitForFunction(() => window.__DD_QA.snap().active);
+  await page.locator('#cinematic-skip').click();
+  await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
   report.browser = browser.version();
@@ -84,6 +87,7 @@ try {
   } finally {
     await page.keyboard.up('KeyD');
   }
+  await page.waitForFunction(() => window.__DD_QA.snap().dragon.z > 12);
   await page.evaluate(() => window.__DD_QA.move(57, 12));
   await page.waitForFunction(() => window.__DD_QA.snap().camera.scroll > 15);
   const right = await snap();
@@ -93,8 +97,10 @@ try {
   const left = await snap();
   await shot('04-pan-left');
   for (const {camera} of [right, left]) {
-    assert.ok(Math.abs(camera.skylineOffset - camera.scroll * .94) < .01);
+    assert.ok(Math.abs(camera.skylineOffset - camera.scroll * .62) < .01);
+    assert.equal(camera.perspective, true);
     assert.ok(Math.abs(camera.foregroundOffset + camera.scroll * .035) < .01);
+    assert.deepEqual(camera.streetOrigins, before.camera.streetOrigins, 'street and neighborhood stay anchored during pans');
   }
   report.movement = {before: before.dragon, right: right.camera, left: left.camera};
   await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 15, left.frameTimes.frames);
@@ -180,6 +186,18 @@ try {
   assert.ok(reset.ok, reset.error);
   assert.deepEqual(reset.result.sourceSchool, {visible: true, strikes: 0});
   assert.equal(reset.result.schoolReconstruction.damaged, 0);
+  const dusk = await page.evaluate(() => {
+    const qa = window.__DD_QA;
+    qa.start(4);
+    qa.cinematicStage('quiet');
+    qa.move(-29, 34);
+    return qa.qaSettleAtmosphere();
+  });
+  assert.ok(dusk.ok, dusk.error);
+  const duskFrames = (await snap()).frameTimes.frames;
+  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames > n, duskFrames);
+  report.dusk = dusk.result;
+  await shot('06-north-broad-dusk');
   assert.deepEqual(report.errors, []);
 } catch (error) {
   report.failure = String(error.stack ?? error);

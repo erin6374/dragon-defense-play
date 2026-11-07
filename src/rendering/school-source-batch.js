@@ -3,7 +3,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 // The exported model uses one neutral material. Color the actual named
 // components without rebuilding any opening, façade panel, or roof surface.
-const palette={glass:0x426d83,metal:0x273742,spandrel:0xb9a693,brick:0x8b5140,
+const palette={glass:0x527687,metal:0x616a6b,spandrel:0xb9a693,brick:0x775047,
  roof:0x39434a,stone:0xc2b7a4,door:0x53636c,interior:0x8f8b84};
 function surface(mesh){
  const name=mesh.name.toLowerCase();

@@ -34,6 +34,7 @@ export function createSchoolSourceDamage() {
  };
  const patch=material=>{
   const glass=material.name==='school-glass';
+  const brick=material.name==='school-brick';
   material.onBeforeCompile=shader=>{
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
@@ -53,10 +54,25 @@ export function createSchoolSourceDamage() {
      damage=texture(schoolDamageMap,damageUv).r;
     }
     if(damage>${glass?'.24':'.53'})discard;`);
+   if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
+    #include <color_fragment>
+    vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));
+    float horizontal=surfaceNormal.x>surfaceNormal.z?schoolDamagePosition.z:schoolDamagePosition.x;
+    vec2 course=vec2(horizontal/.235,schoolDamagePosition.y/.083);
+    course.x+=mod(floor(course.y),2.0)*.5;
+    vec2 joint=abs(fract(course)-.5);
+    vec2 footprint=fwidth(course);
+    float mortar=max(smoothstep(.46-footprint.x,.46+footprint.x,joint.x),
+     smoothstep(.44-footprint.y,.44+footprint.y,joint.y));
+    float variation=fract(sin(dot(floor(course),vec2(31.74,17.16)))*43758.54);
+    float detail=1.0-smoothstep(.30,.85,max(footprint.x,footprint.y));
+    vec3 masonry=mix(diffuseColor.rgb*mix(.76,1.23,variation),vec3(.19,.155,.13),mortar*.70);
+    diffuseColor.rgb=mix(diffuseColor.rgb,masonry,detail*(1.0-surfaceNormal.y));
+   `);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass+'-'+brick;
  };
  return {stamp,patch,strikes:()=>strikes,reset:()=>{
   pixels.fill(0);
