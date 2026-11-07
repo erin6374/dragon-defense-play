@@ -1083,7 +1083,20 @@ function updateSkyBursts(dt){for(let i=skyBursts.length-1;i>=0;i--){const b=skyB
   b.m.position.x+=(b.m.position.x-dragon.position.x>=0?1:-1)*strength;
   b.m.position.z+=(b.m.position.z-dragon.position.z>=0?1:-1)*strength*.4;
  }
- b.m.scale.multiplyScalar(1+dt*.18);b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58;}else{b.m.scale.setScalar(1+(1-b.life/.8)*5);b.m.material.opacity=Math.max(0,b.life/.8)*.75;}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
+ // Local smoke from vehicle fires and background explosions bends away
+ // from the blast and briefly disperses. Reuse existing puff sprites.
+ if(windActive){
+  const rx=b.m.position.x-gustOrigin.x,ry=b.m.position.y-gustOrigin.y,rz=b.m.position.z-gustOrigin.z;
+  const along=rx*gustDirection.x+ry*gustDirection.y+rz*gustDirection.z;
+  const across=Math.sqrt(Math.max(0,rx*rx+ry*ry+rz*rz-along*along));
+  if(along>0&&along<48&&across<8+along*.35){
+   const strength=(1-across/(8+along*.35))*Math.max(0,1-along/65);
+   b.m.position.addScaledVector(gustDirection,dt*9*strength);
+   b.windThin=Math.min(.60,(b.windThin||0)+dt*.8*strength);
+  }
+ }
+ b.m.scale.multiplyScalar(1+dt*.18);
+ b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58*(1-(b.windThin||0));}else{b.m.scale.setScalar(1+(1-b.life/.8)*5);b.m.material.opacity=Math.max(0,b.life/.8)*.75;}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
 function addCrater(x,z,radius=3){
  const mesh=new THREE.Mesh(new THREE.RingGeometry(radius*.55,radius,20),new THREE.MeshBasicMaterial({color:0x23180e,side:THREE.DoubleSide,depthWrite:false}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.11,z);scene.add(mesh);
