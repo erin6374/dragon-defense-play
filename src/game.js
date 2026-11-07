@@ -1963,7 +1963,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
     towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
     slabReleaseY:t.slabs.map(s=>s.userData.fallStartY),
-    slabGroundY:t.slabs.map(s=>s.userData.groundY)};
+    slabGroundY:t.slabs.map(s=>s.userData.groundY),
+    slabMaterialGroups:t.slabs.map(s=>s.geometry.groups.length),
+    slabFaceMaterialCounts:t.slabs.map(s=>s.material.length),
+    slabIndexCounts:t.slabs.map(s=>s.geometry.groups.reduce((sum,g)=>sum+g.count,0))};
   }),
   skylineFallState:()=>run('skylineFallState',()=>{
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
