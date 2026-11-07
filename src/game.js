@@ -1939,6 +1939,22 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
     skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
   }),
+  sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
+   // Advance only the cosmetic skyline animation to sample long sessions.
+   // Restore the live frame even if a helicopter is unexpectedly missing.
+   const samples=[];
+   try{
+    for(const seconds of [0,300,600,1200]){
+     skylineBackdrop.update(seconds,displayedDarkness,0);
+     samples.push({seconds,helicopters:[0,1,2].map(i=>{
+      const h=skylineBackdrop.group.getObjectByName('distant-helicopter-'+i);
+      if(!h)throw Error('Distant helicopter missing: '+i);
+      return {index:i,x:h.position.x,y:h.position.y};
+     })});
+    }
+   }finally{skylineBackdrop.update(elapsed,displayedDarkness,0);}
+   return samples;
+  }),
   stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
    const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
    if(index<0)throw Error('Expected landmark missing');
