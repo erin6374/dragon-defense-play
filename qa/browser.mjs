@@ -8,6 +8,11 @@ const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).hre
 const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
+const gameSource = await readFile('src/game.js', 'utf8');
+// Touch drags already reach the universal pointermove listener. A second
+// touch-specific listener used to raycast the same event twice.
+assert.equal((gameSource.match(/renderer\\.domElement\\.addEventListener\\('pointermove'/g) ?? []).length, 1,
+  'only one pointermove listener should aim the dragon');
 // Fast fail for malformed inline startup scripts, before expensive WebGL QA.
 // A stray literal \\n between JavaScript statements previously reached the
 // end of a multi-minute browser run before its SyntaxError was reported.
@@ -70,6 +75,25 @@ try {
   assert.equal(report.startup.build, expected.build);
   assert.ok(report.startup.scene.drawCalls > 0);
   await shot('01-startup');
+  // Exercise actual touch-pointer dispatch, not just a source-code assertion.
+  const touchAim = await page.evaluate(() => {
+    const canvas=document.querySelector('canvas');
+    const rect=canvas.getBoundingClientRect();
+    const move=at => {
+      canvas.dispatchEvent(new PointerEvent('pointermove', {
+        bubbles:true,pointerType:'touch',buttons:1,
+        clientX:rect.left+rect.width*at,clientY:rect.top+rect.height*.5
+      }));
+      return {...window.__DD_QA.snap().aim};
+    };
+    return {left:move(.15),right:move(.85)};
+  });
+  assert.ok(Number.isFinite(touchAim.left.x)&&Number.isFinite(touchAim.right.x),
+    'touch pointer raycast must yield finite coordinates');
+  assert.ok(touchAim.left.x<touchAim.right.x,'touch drag must move the aim point horizontally');
+  assert.ok([touchAim.left,touchAim.right].every(p=>p.x>=-94&&p.x<=94&&p.y>=2&&p.y<=64&&p.z===0),
+    'touch aim must remain in the gameplay clamp bounds');
+  report.touchAim=touchAim;
 
   const views = await page.evaluate(() => window.__DD_QA.schoolComparison());
   assert.ok(views.ok, views.error);
