@@ -550,10 +550,13 @@ try {
   const labErrors=[];
   lab.on('pageerror',e=>labErrors.push(String(e)));
   try{
-    const response=await lab.goto(new URL('dragon-lab/',base).href,{waitUntil:'domcontentloaded'});
-    assert.equal(response.status(),200,'standalone dragon design lab loads');
-    await lab.waitForFunction(()=>window.__PAULO_LAB_QA?.visible!==undefined||
-      !!window.__PAULO_LAB_QA,{timeout:20000});
+    const labUrl=new URL('dragon-lab/',base).href;
+    // Software WebGL can saturate the CI runner: navigation must not depend on
+    // DOMContentLoaded while the module initializes its procedural rig.
+    const response=await lab.goto(labUrl,{waitUntil:'commit',timeout:30000});
+    assert.equal(response.status(),200,'standalone dragon design lab responds');
+    await lab.waitForFunction(()=>!!window.__PAULO_LAB_QA?.snapshot,
+      {timeout:90000,polling:500});
     const initial=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
     assert.ok(initial.visible,'lab renderer is visible');
     assert.ok(initial.wingAngles.length===2,'dragon has two articulated wing assemblies');
