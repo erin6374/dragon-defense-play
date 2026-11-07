@@ -1922,7 +1922,20 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   meteors:meteors.slice(0,40).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
+ // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
+ // camera, coordinates and renderer remain unchanged after the next RAF.
+ const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  captureSkyline:()=>run('captureSkyline',()=>{
+   const centerX=skyline.position.x;
+   qaSkylineCamera.position.set(centerX,62,skyline.position.z+165);
+   qaSkylineCamera.lookAt(centerX,39,skyline.position.z);
+   qaSkylineCamera.updateProjectionMatrix();
+   renderer.render(scene,qaSkylineCamera);
+   return {png:renderer.domElement.toDataURL('image/png'),
+    camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
+    skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
+  }),
   stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
    const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
    if(index<0)throw Error('Expected landmark missing');
