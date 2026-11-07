@@ -382,7 +382,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   }
   for(const h of distantHelis){
    const p=(h.seed+elapsed*(1.3+h.seed*.018)*h.speed);
-   h.group.position.x=h.x0+((p+420)%170)-82;
+   // JS remainder keeps the dividend's sign: a left-moving helicopter
+   // otherwise escapes the 170-unit patrol after several minutes of play.
+   const orbit=(p+420)%170;
+   h.group.position.x=h.x0+(orbit<0?orbit+170:orbit)-82;
    h.group.position.y=h.y0+Math.sin(elapsed*.48+h.seed)*2.1;
    h.rotor.rotation.y=elapsed*17;
    h.group.scale.x=h.speed;
