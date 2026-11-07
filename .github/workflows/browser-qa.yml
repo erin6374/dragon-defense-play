@@ -30,3 +30,36 @@ jobs:
           name: dragon-defense-browser-qa
           path: qa-output/
           retention-days: 30
+
+      - name: Package playable Windows development preview
+        if: success()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          source = Path('.')
+          target = Path('dist/DragonDefense_v5.3.0_Windows_Preview')
+          target.mkdir(parents=True, exist_ok=True)
+          ignored = {'.git', '.github', 'qa', 'qa-output', 'dist', 'node_modules', '.vscode', '__pycache__'}
+          for entry in source.iterdir():
+              if entry.name in ignored:
+                  continue
+              dest = target / entry.name
+              if entry.is_dir():
+                  shutil.copytree(entry, dest, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+              elif entry.is_file():
+                  shutil.copy2(entry, dest)
+          required = ('index.html', 'PLAY-PREVIEW.cmd', 'src/game.js',
+                      'vendor/three/build/three.module.js', 'build-info.json')
+          missing = [name for name in required if not (target / name).is_file()]
+          if missing:
+              raise SystemExit('Missing preview files: ' + ', '.join(missing))
+          print('Packaged playable files:', sum(1 for p in target.rglob('*') if p.is_file()))
+          PY
+      - name: Downloadable Dragon Defense Windows preview
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DragonDefense_v5.3.0_Windows_Preview
+          path: dist/DragonDefense_v5.3.0_Windows_Preview/
+          retention-days: 30
