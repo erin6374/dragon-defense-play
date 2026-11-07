@@ -1923,6 +1923,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
+   const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
+   if(index<0)throw Error('Expected landmark missing');
+   const t=skylineBackdrop.towers[index],before=t.strikeDamage;
+   const hit=skylineBackdrop.strikeNearest(t.group.position.x);
+   skylineBackdrop.setDamage(skylineDamage);
+   return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
+    afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
+    flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge};
+  }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
    const car=cars.find(c=>c.root.userData.headlightBeam);
