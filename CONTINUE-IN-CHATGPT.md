@@ -82,3 +82,8 @@ At the start of this run, the branch was still at `e5de445` (no intervening comm
 
 New development on this branch: `787f0bd` increases per-tower cumulative damage from distant meteor strikes, allowing repeated hits to trigger collapse independently of foreground health; `1c80f77` adds a browser regression scenario and a screenshot. `CHANGELOG.md` has detailed scope. **Do not claim this new feature is QA-verified until the newest workflow run passes.** Inspect the current branch head and GitHub Actions first; other sessions may have added commits. The change intentionally does not alter local player/neighborhood health, and has no hardware FPS evidence. Do not merge or deploy without further review.
 
+
+### QA follow-up: scenario ordering
+
+Run #68 **failed** at the existing assertion that a facade section starts at its release height. This was a test-interference issue: the new cumulative-strike scenario had already started the same landmark's falling animation before the older forced-collapse test. Commit `dd40f11` moves the new strike-cascade test **after** the old collapse/restart assertions, so both run from an appropriate initial state. Changelog updated in `7ee5796`. Recheck the newest PR-head browser QA before reporting success. Do not confuse the run #68 failure with a JavaScript crash or conclude the feature is verified without a passing rerun.
+
