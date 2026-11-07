@@ -1,5 +1,14 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — falling skyline facade sections
+
+- The three preallocated large facade slabs per landmark now descend in staggered gravity-like arcs once collapse begins, before settling permanently in the independent ground-level rubble group.
+- The simulation clamps each falling slab to its ground elevation and advances with bounded frame delta. No runtime debris geometry is allocated.
+- Game reset now restores fragment positions, rotations, fall timers, and rubble visibility.
+- Added deterministic browser QA assertions for triggered collapse, mid-fall positions, settled sections and restart cleanup, plus an actual browser collapse screenshot.
+- This is a stylized collapse transition, not a full structural or rigid-body simulation. The change is in draft PR #2 only; new QA results and hardware performance are unverified.
+
+
 ## Continuation — grounded skyline rubble and fallen facade sections
 
 - Fixed an architectural hierarchy problem: skyline rubble was a child of the collapsing tower and therefore inherited its translation and scale. Rubble now sits in the fixed skyline group at ground elevation.
