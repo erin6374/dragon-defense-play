@@ -1944,7 +1944,22 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
     rubbleDetached:t.ruin.parent===skylineBackdrop.group,
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
+    fallActive:t.fallActive,fallElapsed:t.fallElapsed,
     towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y)};
+  }),
+  skylineFallState:()=>run('skylineFallState',()=>{
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
+    slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  advanceSkylineFall:(seconds=4)=>run('advanceSkylineFall',()=>{
+   if(!Number.isFinite(seconds)||seconds<0||seconds>6)throw Error('Invalid skyline QA step');
+   const frames=Math.ceil(seconds*20);
+   for(let i=0;i<frames;i++)skylineBackdrop.update(elapsed+i*.05,displayedDarkness,.05);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   return {fallElapsed:t.fallElapsed,slabY:t.slabs.map(s=>s.position.y),
+    groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
