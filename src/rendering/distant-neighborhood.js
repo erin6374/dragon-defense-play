@@ -38,6 +38,7 @@ export function createDistantNeighborhood({root}){
   main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
   roof:new THREE.MeshStandardMaterial({color:0x4a4441,roughness:.95}),
   cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.85}),
+  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.82,metalness:.14}),
   window:new THREE.MeshStandardMaterial({color:0x567383,roughness:.45,metalness:.06}),
   road:new THREE.MeshLambertMaterial({color:0x484b4d}),
   walk:new THREE.MeshLambertMaterial({color:0xaaa49a}),
@@ -48,7 +49,7 @@ export function createDistantNeighborhood({root}){
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
- const instances=tiers.map(t=>({main:[],roof:[],cornice:[],window:[],road:[],walk:[],green:[]}));
+ const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
  function street(x,z,w,d,tier){add(tier,'road',x,-.44,z,w,.12,d);}
@@ -88,6 +89,16 @@ export function createDistantNeighborhood({root}){
    const home={x,y:h/2,z,w,h,d,stories,tier,damage:0,row,ix};buildingDefs.push(home);
    add(tier,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
    add(tier,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   // Small rooftop HVAC boxes and access housings give the distant rows a
+   // varied architectural silhouette; all equipment shares one batch per tier.
+   // Place equipment toward the rear, away from the front cornice.
+   if((ix+row*3)%5===0){
+    const unitW=modern?1.4:1.1;
+    add(tier,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
+   }
+   if((ix*7+row)%23===0){
+    add(tier,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
+   }
    if(!modern)add(tier,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
    else add(tier,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
