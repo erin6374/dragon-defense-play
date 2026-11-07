@@ -129,3 +129,12 @@ At run start, `feature/north-broad-graphics` still matched `5c82a5b`; no competi
 A code audit found that the canvas registered two `pointermove` listeners: a universal `aim` handler and a second touch-drag handler that called `aim` again when touch buttons were pressed. This performed redundant raycasts. Commit `7bc274a` removes the second listener and reuses two persistent vectors for the remaining pointer raycast. The existing touch `pointerdown` listener is preserved. Commit `9ab44c6` adds read-only aim telemetry to the QA snapshot. Commit `1253e06` adds a browser regression for left/right touch-pointer movement and a single-handler source guard; commit `18e29c2` corrects the guard regex. Changelog has the full scope.
 
 **Verification pending:** check browser QA for the current PR head after the documentation commits; do not claim touch hardware or measured FPS. If QA fails, inspect the exact assertion before further edits. No changes to main, Building Explorer, deployment, or release packages. Avoid overlapping with any new branch commits from other sessions.
+
+
+## Scheduled continuation — intact skyline flicker work (November 7)
+
+Before this run's edits, `feature/north-broad-graphics` exactly matched `7e2805d`; the previous browser QA run #96 had **passed**. There were no competing branch changes. Do not repeat the prior touch-pointer work.
+
+This run changed `src/rendering/philadelphia-geometry-skyline.js` to bypass per-frame `sin/pow` electrical flicker calculations when a skyline tower has `collapse=0`. The old damaged-tower pulse formula is unchanged (`9851093`). A reversible `sampleSkylineEmissive` QA probe (`239aa25`) and browser regression (`000543c`) compare steady dusk emissive windows before impact with varying emission after a forced tower collapse. Changelog records scope and caveats. This is an unmeasured source-level CPU-work reduction; do not claim hardware FPS or GPU gains.
+
+**Next step:** check the newest PR-head browser QA and inspect exact failure logs if it fails. A newly introduced assertion checks `damagedValues` vary by more than 0.002; if this fails, first verify staged dusk darkness and the sample times before changing gameplay. The current PR head may advance due to documentation-only commits. Avoid conflicting writes with other sessions. Production main v5.2.3 and Building Explorer remain unchanged; do not merge or deploy.
