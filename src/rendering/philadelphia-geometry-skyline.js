@@ -112,6 +112,30 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
  smokeTexture.colorSpace=THREE.SRGBColorSpace;
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeTexture,color:0xc0c7ca,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+ // One shared scorch/debris atlas, placed as a local damage decal on each tower.
+ // Drawn at initialization rather than creating marks every time a meteor lands.
+ const scorchCanvas=document.createElement('canvas');
+ scorchCanvas.width=128;scorchCanvas.height=128;
+ const scorchContext=scorchCanvas.getContext('2d');
+ const scorchGlow=scorchContext.createRadialGradient(64,64,5,64,64,60);
+ scorchGlow.addColorStop(0,'rgba(12,13,17,.90)');
+ scorchGlow.addColorStop(.33,'rgba(29,30,34,.74)');
+ scorchGlow.addColorStop(.65,'rgba(55,55,57,.35)');
+ scorchGlow.addColorStop(1,'rgba(80,78,73,0)');
+ scorchContext.fillStyle=scorchGlow;scorchContext.fillRect(0,0,128,128);
+ scorchContext.lineWidth=2.2;scorchContext.strokeStyle='rgba(23,23,26,.78)';
+ // Asymmetric glass fractures are static in the atlas; no live randomization.
+ for(let i=0;i<10;i++){
+  const angle=i*Math.PI*.2+.23*Math.sin(i*3);
+  const radius=24+(i%3)*11;
+  scorchContext.beginPath();scorchContext.moveTo(64,64);
+  scorchContext.lineTo(64+Math.cos(angle)*radius*.48,64+Math.sin(angle)*radius*.48);
+  scorchContext.lineTo(64+Math.cos(angle+.15)*radius,64+Math.sin(angle+.15)*radius);
+  scorchContext.stroke();
+ }
+ const scorchTexture=new THREE.CanvasTexture(scorchCanvas);
+ scorchTexture.colorSpace=THREE.SRGBColorSpace;
+ const scorchMaterial=new THREE.SpriteMaterial({map:scorchTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
@@ -210,7 +234,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   smokeSprite.position.set(0,d.h*.73,d.depth/2+.65);
   smokeSprite.scale.set(7,13,1);
   g.add(smokeSprite);
-  towers.push({def:d,group:g,facade,side,ruin,impactSprite,smokeSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  const scorchSprite=new THREE.Sprite(scorchMaterial.clone());
+  scorchSprite.name='landmark-facade-scorch-'+d.id;
+  scorchSprite.visible=false;
+  scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
+  scorchSprite.scale.set(5,5,1);
+  g.add(scorchSprite);
+  towers.push({def:d,group:g,facade,side,ruin,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -243,11 +273,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
   impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
   tower.smokeSprite.position.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
+  tower.scorchSprite.position.set(impact.position.x,impact.position.y,tower.def.depth/2+.62);
   tower.impactAge=1.15;
   tower.impactEnergy=1;
   // This is deliberately a small distant damage contribution: foreground
   // school and neighborhood health continue to use their existing simulation.
   tower.strikeDamage=Math.min(.28,tower.strikeDamage+.018);
+  tower.scorchSprite.visible=true;
+  const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
+  tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
+  tower.scorchSprite.material.opacity=Math.min(.87,.40+tower.strikeDamage*2.3);
   impact.visible=true;
   impact.material.opacity=.93;
   return tower.group.localToWorld(impact.position.clone());
@@ -324,6 +359,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
