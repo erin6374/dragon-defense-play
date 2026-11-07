@@ -377,6 +377,7 @@ try {
         flash:hit.result.flashWorldPosition,
         flashParentStable:hit.result.flashParentStable,
         flashVisible:hit.result.flashVisible,
+        flashScaleImmediately:hit.result.flashScaleImmediately,
         expectedPre:hit.result.expectedPreDamageWorld,
         post:hit.result.postDamageImpactWorld});
     }
@@ -400,6 +401,8 @@ try {
    const hit=impacts[i];
    assert.equal(hit.flashParentStable,true,'meteor flash remains outside tower transform on strike '+(i+1));
    assert.equal(hit.flashVisible,true,'meteor flash remains visible on strike '+(i+1));
+   assert.ok(Math.abs(hit.flashScaleImmediately-5)<1e-6,
+    'each new meteor flash resets to its initial radius before animation on strike '+(i+1));
    assert.ok(hit.flash&&hit.world&&hit.flash.every(Number.isFinite),
     'meteor flash and explosion coordinates are finite on strike '+(i+1));
    assert.ok(distance(hit.flash,hit.world)<1e-4,
