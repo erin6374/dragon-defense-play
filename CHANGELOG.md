@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — persistent skyline aftermath visual regression
+
+- Reconciled the latest Work/scheduled development head `f861715` and confirmed GitHub browser QA run #138 **passed**. Its repeated-impact flash radius and six-strike contact checks are already present; no duplicate gameplay changes were made.
+- Added browser regression coverage for the time *after* an impact flash finishes: the flash must disappear, while smoke, facade scorch marks and grounded rubble remain visible through the later simulated frames.
+- Added a read-only smoke world-position probe and a bounded-drift check, ensuring the plume continues moving gently without jumping across the skyline. Browser QA now saves a separate `06-skyline-smoke-aftermath.png` capture after additional simulated time, separate from the earlier rubble frame.
+- This is **QA-only coverage**, not a change in the visual simulation or a hardware performance improvement. A new browser run must pass before treating the extra check as verified. Production, deployment and Building Explorer remain unchanged.
+
+
 ## Continuation — repeat-impact flash radius reset (November 7)
 
 - Verified that prior branch head `27ad3bf` passed complete GitHub browser QA run #133, including the six-strike world-space impact-position assertions. No concurrent branch changes were present before this edit.
