@@ -305,6 +305,26 @@ try {
   assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');
   report.skylineImpactCascade=impactCascade.result;
   await skylineShot('06-skyline-impact-cascade');
+  // Restart after the independent six-hit collapse: no old fire/smoke, impact
+  // flash, scorch or rubble may leak into a new level. This is deliberately
+  // after the prior fall assertions so the staged scenarios cannot interfere.
+  const afterCascadeRestart=await page.evaluate(()=>{
+    const qa=window.__DD_QA, restarted=qa.start(7);
+    if(!restarted.ok)return restarted;
+    qa.cinematicStage('quiet');
+    return qa.skylineFallState();
+  });
+  assert.ok(afterCascadeRestart.ok,afterCascadeRestart.error);
+  assert.equal(afterCascadeRestart.result.strikeDamage,0,'restart clears accumulated distant strikes');
+  assert.equal(afterCascadeRestart.result.collapse,0,'restart restores skyline structural state');
+  assert.equal(afterCascadeRestart.result.towerScaleY,1,'restart restores intact tower height');
+  assert.equal(afterCascadeRestart.result.fallActive,false,'restart stops tower fall animation');
+  assert.equal(afterCascadeRestart.result.ruinVisible,false,'restart removes tower rubble');
+  assert.equal(afterCascadeRestart.result.impactVisible,false,'restart clears meteor flash');
+  assert.equal(afterCascadeRestart.result.smokeVisible,false,'restart clears persistent impact smoke');
+  assert.equal(afterCascadeRestart.result.scorchVisible,false,'restart clears facade scorch');
+  report.skylineAfterCascadeRestart=afterCascadeRestart.result;
+  await skylineShot('06-skyline-after-restart');
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
