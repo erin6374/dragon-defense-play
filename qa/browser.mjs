@@ -200,6 +200,15 @@ try {
   report.dusk = dusk.result;
   await shot('06-north-broad-dusk');
   await page.locator('canvas').first().screenshot({path:'qa-output/06-dusk-scene.png'});
+  const towerImpact = await page.evaluate(() => window.__DD_QA.stageSkylineStrike());
+  assert.ok(towerImpact.ok, towerImpact.error);
+  assert.equal(towerImpact.result.landmark, 'comcast-technology');
+  assert.ok(towerImpact.result.afterDamage > towerImpact.result.beforeDamage, 'individual tower strike adds visual damage');
+  assert.equal(towerImpact.result.flashVisible, true, 'landmark impact flash is displayed');
+  assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
+  assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
+  report.landmarkImpact = towerImpact.result;
+  await shot('06-landmark-strike');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
