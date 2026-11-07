@@ -318,6 +318,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const tower=selected,impact=tower.impactSprite;
   const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
   impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
+  // Capture the hit in world space before setDamage can shrink or tilt the
+  // struck tower. The cinematic explosion must occur at the incoming meteor's
+  // actual contact point, not at the displaced facade's post-collapse pose.
+  const impactWorld=tower.group.localToWorld(impact.position.clone());
   // Resolve the strike into stable skyline-local coordinates once. Persistent
   // smoke must not move or scale with later structural collapse.
   tower.smokeOrigin.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
@@ -349,7 +353,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   tower.scorchSprite.material.opacity=Math.min(.87,.40+tower.strikeDamage*2.3);
   impact.visible=true;
   impact.material.opacity=.93;
-  return tower.group.localToWorld(impact.position.clone());
+  return impactWorld;
  }
  function setTime(phase,darkness){
   const desired=Math.max(0,Math.min(1,darkness));
