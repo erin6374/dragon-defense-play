@@ -104,3 +104,10 @@ At the start of this run the branch matched `407d188` exactly; GitHub Actions ru
 
 This run added a **read-only QA state extension** (`8c8b7ac`) and a **post-cascade restart regression** (`7a8b004`). It checks that restarting a level clears tower damage, collapse/scale, rubble, flash, persistent smoke and scorch. A dedicated post-restart skyline screenshot is written to QA artifacts. Changelog documents the change. **The new test is not verified until the current PR head's GitHub browser QA passes.** Do not report a gameplay feature or hardware speedup: these commits only improve test coverage. Re-check latest head and CI before any further edits; avoid overlap with other development sessions. Main v5.2.3 and Building Explorer remain untouched.
 
+
+## Scheduled continuation — long-session helicopter patrol (November 7)
+
+Before editing, confirmed branch was still `161ed854` (identical to prior handoff) and GitHub Actions browser QA run #82 **passed**. No competing edits were present. Inspected the existing skyline animation and found a concrete visual defect: the left-moving distant helicopter used a signed JavaScript remainder for its 170-unit patrol. After approximately 5 minutes, its x-position could fall below its intended patrol bounds. Commit `5871847` normalizes the remainder. Commit `9b94277` adds a QA-only sampler for helicopter positions at 0, 300, 600 and 1,200 simulated seconds; commit `a6b55f0` adds finite-position and patrol-bound assertions for all three distant helicopters. Changelog documents the change. This is a cosmetic long-session correction, not a new gameplay feature or measured performance gain.
+
+**Verification pending:** check the latest PR-head GitHub Actions browser QA before reporting this change as passed. Do not duplicate this helicopter fix. If QA fails, inspect the exact assertion/log first. Preserve main and the separate Building Explorer; no deployment or packaging occurred.
+
