@@ -1929,9 +1929,11 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const t=skylineBackdrop.towers[index],before=t.strikeDamage;
    const hit=skylineBackdrop.strikeNearest(t.group.position.x);
    skylineBackdrop.setDamage(skylineDamage);
+   skylineBackdrop.update(elapsed,displayedDarkness,1/60);
    return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
     afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
-    flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge};
+    flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
+    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity};
   }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
