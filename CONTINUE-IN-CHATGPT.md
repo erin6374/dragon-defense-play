@@ -120,3 +120,12 @@ Checked the development branch against the previous handoff commit `0756ea89`: *
 Audited `src/game.js`'s per-frame `updateNight(dt)`: an unused haze color blend constructed two `THREE.Color` objects per call, and sun/ambient interpolation constructed three more. Commit `e8da884` removes the unused blend and reuses three preinitialized immutable palette colors. Hex values and interpolation order are unchanged; this is an allocation reduction only, **not measured hardware FPS, GC, or visual fidelity**. Changelog documents the exact scope.
 
 **Verification:** the new code and documentation require a fresh GitHub browser QA result for the current PR head. Check the newest workflow and any failures before further edits. Existing suite covers dusk/night and moving vehicle light behavior but is not a pixel-perfect comparison. Avoid concurrent writes while QA or another development session is in progress. Production main and separate Building Explorer remain untouched; no merge, package, or deployment.
+
+
+## Scheduled continuation — pointer aiming duplicate touch events (November 7)
+
+At run start, `feature/north-broad-graphics` still matched `5c82a5b`; no competing commits were detected. GitHub Actions browser QA run #90 was **successful** for the preceding lighting optimization. The prior night-light allocation work is therefore browser-QA verified (not hardware-FPS verified).
+
+A code audit found that the canvas registered two `pointermove` listeners: a universal `aim` handler and a second touch-drag handler that called `aim` again when touch buttons were pressed. This performed redundant raycasts. Commit `7bc274a` removes the second listener and reuses two persistent vectors for the remaining pointer raycast. The existing touch `pointerdown` listener is preserved. Commit `9ab44c6` adds read-only aim telemetry to the QA snapshot. Commit `1253e06` adds a browser regression for left/right touch-pointer movement and a single-handler source guard; commit `18e29c2` corrects the guard regex. Changelog has the full scope.
+
+**Verification pending:** check browser QA for the current PR head after the documentation commits; do not claim touch hardware or measured FPS. If QA fails, inspect the exact assertion before further edits. No changes to main, Building Explorer, deployment, or release packages. Avoid overlapping with any new branch commits from other sessions.
