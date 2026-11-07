@@ -1933,7 +1933,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
     afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
-    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity};
+    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
   }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
