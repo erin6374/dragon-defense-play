@@ -1,5 +1,14 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — landmark-targeted distant meteor strikes
+
+- Distant meteor streaks now trigger a strike effect on the nearest Philadelphia skyline landmark instead of always exploding in empty space at a uniform altitude.
+- Each of the nine modeled landmarks has one dormant impact sprite; all sprites use a shared procedural glow atlas. Impact flashes fade in simulated time, with no per-strike GPU texture or mesh allocations.
+- Each strike adds a small, capped contribution to that landmark's visual damage; existing skyline destruction progression and foreground gameplay remain separate.
+- Corrected impact alignment to use each tower's fully transformed facade position, including collapse transforms.
+- These changes affect the development branch only. Browser QA, screenshots of the new impact effect, and a hardware performance benchmark are not yet confirmed.
+
+
 ## Continuation — damaged skyline electrical flicker
 
 - Damaged Philadelphia landmark facades now show irregular intermittent window illumination after dark, suggesting electrical failures during citywide meteor strikes.
