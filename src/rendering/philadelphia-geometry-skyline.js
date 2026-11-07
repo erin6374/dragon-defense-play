@@ -432,8 +432,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    // Sustained, irregular electrical flicker signals damage across the distant
    // city without dynamic lights, added meshes, or per-frame allocations.
    const broken=Math.min(1,t.collapse*2.5);
-   const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
-   const unstable=1-broken*(.50+.46*pulse);
+   // Intact towers cannot flicker: skip the expensive sine/power pulse
+   // until collapse begins. Damaged towers retain the exact prior formula.
+   let unstable=1;
+   if(broken>0){
+    const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
+    unstable=1-broken*(.50+.46*pulse);
+   }
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
