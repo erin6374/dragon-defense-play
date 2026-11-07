@@ -329,6 +329,21 @@ function resize(){
  if(paused)renderer.render(scene,camera);
 }
 new ResizeObserver(resize).observe(host);resize();animate();
+function referenceFrameMetrics(){
+ if(!camera.isOrthographicCamera)return null;
+ camera.updateMatrixWorld();
+ const bounds=new THREE.Box3().setFromObject(root);
+ const point=new THREE.Vector3();
+ let maxX=0,maxY=0;
+ for(const x of [bounds.min.x,bounds.max.x])
+  for(const y of [bounds.min.y,bounds.max.y])
+   for(const z of [bounds.min.z,bounds.max.z]){
+    point.set(x,y,z).project(camera);
+    maxX=Math.max(maxX,Math.abs(point.x));
+    maxY=Math.max(maxY,Math.abs(point.y));
+   }
+ return {maxX,maxY};
+}
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  armorPlateCount:plateIndex,
  membranePanels:membranePanels.length,
@@ -337,7 +352,7 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  current:p.mesh.geometry.attributes.position.array[3*3*13+3*6+1]};},
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
  snapshot(){return {state,paused,time,bankDirection,rootRoll:root.rotation.z,
- cameraType:camera.isOrthographicCamera?'orthographic':'perspective',
+ cameraType:camera.isOrthographicCamera?'orthographic':'perspective',referenceFrame:referenceFrameMetrics(),
  cameraFrustum:camera.isOrthographicCamera?{left:camera.left,right:camera.right,top:camera.top,bottom:camera.bottom}:null,
  modelBounds:new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).toArray(),
  wingAngles:wings.map(w=>w.shoulder.rotation.x),
