@@ -11,7 +11,7 @@ const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
 // Touch drags already reach the universal pointermove listener. A second
 // touch-specific listener used to raycast the same event twice.
-assert.equal((gameSource.match(/renderer\\.domElement\\.addEventListener\\('pointermove'/g) ?? []).length, 1,
+assert.equal((gameSource.match(/renderer\.domElement\.addEventListener\('pointermove'/g) ?? []).length, 1,
   'only one pointermove listener should aim the dragon');
 // Fast fail for malformed inline startup scripts, before expensive WebGL QA.
 // A stray literal \\n between JavaScript statements previously reached the
