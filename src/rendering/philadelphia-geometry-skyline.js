@@ -167,6 +167,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
+ const collapsedSlabGeo=new THREE.BoxGeometry(1,1,1);
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
  const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
@@ -219,9 +220,27 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     addLine(crown,0,y+3.5,w,y,trimMat,.10,d.depth/2+.25);
    }
   }
-  const ruin=new THREE.Group();ruin.name='landmark-collapse-rubble';ruin.visible=false;g.add(ruin);
+  // Rubble is a sibling of the tower, not its child. Collapse animation scales
+  // and moves the tower group; debris must remain fixed at street elevation.
+  const ruin=new THREE.Group();
+  ruin.name='landmark-collapse-rubble-'+d.id;
+  ruin.position.set(g.position.x,0,g.position.z);
+  ruin.visible=false;
+  group.add(ruin);
   const stoneRubble=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.7,0),side,32),o=new THREE.Object3D();
   for(let j=0;j<32;j++){const r=seeded(480+i*31+j)();o.position.set((r-.5)*d.w*1.6,.35+(j%4)*.4,(j%5-2)*1.3);o.scale.set(.5+(j%6)*.1,.23,.35);o.rotation.set(0,j*.37,0);o.updateMatrix();stoneRubble.setMatrixAt(j,o.matrix);}stoneRubble.instanceMatrix.needsUpdate=true;ruin.add(stoneRubble);
+  // Three larger fallen facade sections suggest recognizable structural
+  // fragments without simulating individual glass panes or allocating debris
+  // on every impact. Their transforms are derived from collapse severity.
+  const slabs=[];
+  for(let j=0;j<3;j++){
+   const slab=new THREE.Mesh(collapsedSlabGeo,side);
+   slab.name='fallen-facade-'+d.id+'-'+j;
+   slab.scale.set(d.w*(.23+j*.045),.38+j*.13,d.depth*(.43-j*.075));
+   slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
+   slab.rotation.set(.11*j,.17*j,.09*(j-1));
+   ruin.add(slab);slabs.push(slab);
+  }
   const impactSprite=new THREE.Sprite(impactMaterial.clone());
   impactSprite.name='landmark-meteor-impact-'+d.id;
   impactSprite.visible=false;
@@ -240,7 +259,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
   scorchSprite.scale.set(5,5,1);
   g.add(scorchSprite);
-  towers.push({def:d,group:g,facade,side,ruin,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  towers.push({def:d,group:g,facade,side,ruin,slabs,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -313,7 +332,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
    if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
    else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
+   // Independent ground-level rubble persists even when the tower is scaled.
    t.ruin.visible=collapse>.18;
+   for(let j=0;j<t.slabs.length;j++){
+    const slab=t.slabs[j];
+    slab.scale.y=(.38+j*.13)*Math.max(.25,collapse);
+    slab.position.y=slab.scale.y*.5+.02;
+   }
    // Emission is derived in update() rather than repeatedly multiplied here.
    // Damage updates must not accumulate artificial darkening each time.
   });
