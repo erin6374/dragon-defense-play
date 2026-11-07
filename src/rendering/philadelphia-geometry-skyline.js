@@ -193,7 +193,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   time=desired;lastPhase=phase;
   const twilight=Math.min(1,Math.exp(-Math.pow((phase-.33)*9,2))+Math.exp(-Math.pow((phase-.84)*11,2)));
   for(const t of towers){
-   t.facade.emissiveIntensity=desired*1.25;
+   t.facade.emissiveIntensity=desired*1.25*(1-t.collapse*.84);
    t.facade.color.setRGB(1-desired*.60,
     Math.min(1,1-desired*.56-twilight*.035),Math.min(1,1-desired*.47-twilight*.10));
    const civic=t.def.style==='civic';
@@ -214,7 +214,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
    else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
    t.ruin.visible=collapse>.18;
-   t.facade.emissiveIntensity*=1-collapse*.84;
+   // Emission is derived in update() rather than repeatedly multiplied here.
+   // Damage updates must not accumulate artificial darkening each time.
   });
  }
  function update(elapsed,darkness=0){
@@ -229,7 +230,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    h.group.scale.x=h.speed;
    h.nav.material.opacity=.28+.67*(.5+.5*Math.sin(elapsed*4.1+h.seed));
   }
-  for(const t of towers)if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+  for(let i=0;i<towers.length;i++){
+   const t=towers[i];
+   if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   // Sustained, irregular electrical flicker signals damage across the distant
+   // city without dynamic lights, added meshes, or per-frame allocations.
+   const broken=Math.min(1,t.collapse*2.5);
+   const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
+   const unstable=1-broken*(.50+.46*pulse);
+   t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
+  }
  }
  function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
