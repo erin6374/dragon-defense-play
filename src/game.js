@@ -130,7 +130,7 @@ function updateNight(dt){
  for(const glow of streetGlows)glow.material.opacity=darkness*.58;
  for(const car of cars)setRoadVehicleNight(car.root,darkness,!car.burning&&!car.destroyed);
  for(const w of nightWindows){const lightAllowed=(!w.surface||w.surface.alive)&&w.enabled&&!w.broken;const opacity=lightAllowed?Math.max(0,(darkness-.3)*.62):0;w.mesh.material.opacity=opacity;w.mesh.visible=opacity>.001;}
- for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.35)*.32);
+ for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission;
 
  sun.intensity=2.20-darkness*1.25;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(new THREE.Color(0xffc59a),Math.min(1,sunset)).lerp(new THREE.Color(0x8faad9),darkness);
  if(ambience){ambience.intensity=1.18-darkness*.12;ambience.color.setHex(0xe9f2ff).lerp(new THREE.Color(0xb5c5dd),darkness)}
@@ -379,9 +379,12 @@ function loadActualSchoolOverlay(){
    if(!school.children.length)throw new Error('Central school geometry not found in source');
    const central=batchSchoolSource(school,material=>{
     sourceDamage.patch(material);
-    if(material.name==='school-glass'&&material.emissive){
+    if(['school-glass','school-interior'].includes(material.name)&&material.emissive){
      material.emissive.setHex(0xffd6a2);
      material.emissiveIntensity=0;
+     // Illuminate the retained interior surfaces behind the glazing. Keep the
+     // glass itself subdued so the facade does not become a flat glowing panel.
+     material.userData.nightEmission=material.name==='school-interior'?.55:.07;
      schoolGlazingMaterials.push(material);
     }
    });
