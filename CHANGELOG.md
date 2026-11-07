@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — damage-triggered skyline smoke updates
+
+- Removed redundant per-frame smoke `Sprite.scale.set` and `SpriteMaterial.opacity` writes from `philadelphia-geometry-skyline.js`. The width/opacity depend only on the accumulated strike damage, so they are now assigned once in `strikeNearest`; per-frame animation still updates the floating smoke position.
+- All nine skyline towers retain the same one-sprite-per-landmark budget, damage intensity curve, wind-like drift and reset behavior. No additional textures or lights.
+- Expanded the existing six-hit meteor cascade browser regression to confirm the plume grows with early additional impacts, its size/opacity never decrease as hits accumulate, and the foreground health remains unchanged.
+- This is a source-level per-frame work reduction only. Actual CPU/GPU performance and visual similarity have not been measured; fresh browser QA is pending. Production and the separate Building Explorer were not changed.
+
+
 ## Continuation — independent post-impact skyline smoke
 
 - Corrected a visual hierarchy issue: persistent skyscraper smoke had been parented to the tower group, so a collapsing facade's vertical scale also compressed the smoke plume.
