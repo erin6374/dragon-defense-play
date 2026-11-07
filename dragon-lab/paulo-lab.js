@@ -120,10 +120,12 @@ const descriptions={
  takeoff:'Crouch, extend hind legs, then perform a large first downstroke.'
 };
 const poses=document.querySelector('#poses'),description=document.querySelector('#description');
-let state='hover',speed=1,time=0,paused=false;
+let state='hover',speed=1,time=0;
+// Pose evaluation is deterministic and can be called immediately when the
+// viewer switches states; animation frames then advance the same timeline.
 for(const name of Object.keys(descriptions)){
  const button=document.createElement('button');button.textContent=name.toUpperCase();button.setAttribute('aria-pressed',name===state);
- button.addEventListener('click',()=>{state=name;time=0;description.textContent=descriptions[name];for(const b of poses.children)b.setAttribute('aria-pressed',b===button);});
+ button.addEventListener('click',()=>{state=name;time=0;description.textContent=descriptions[name];for(const b of poses.children)b.setAttribute('aria-pressed',b===button);applyPose(0);renderer.render(scene,camera);});
  poses.append(button);
 }
 description.textContent=descriptions[state];
@@ -141,9 +143,8 @@ renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=
 });
 renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();camera.position.multiplyScalar(e.deltaY>0?1.09:.91);camera.position.clampLength(6,55);},{passive:false});
 const clock=new THREE.Clock();
-function animate(){
- requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);time+=dt*speed;
- const t=time,cycle=Math.sin(t*5),soft=Math.sin(t*2);
+function applyPose(t){
+ const cycle=Math.sin(t*5),soft=Math.sin(t*2);
  const airborne=!['idle','land'].includes(state);
  const power=state==='hover'?1:state==='takeoff'?1.25:state==='flight'?.6:state==='hit'?.85:state==='bank'?.48:.07;
  const bank=state==='bank'?.35:0;
@@ -166,6 +167,11 @@ function animate(){
   hip.rotation.z=airborne?(fore?-.22:.35):0;
   knee.rotation.z=state==='land'?.28:airborne?-.25:0;
  });
+}
+function animate(){
+ requestAnimationFrame(animate);
+ time+=Math.min(clock.getDelta(),.05)*speed;
+ applyPose(time);
  renderer.render(scene,camera);
 }
 function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
