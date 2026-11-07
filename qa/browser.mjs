@@ -544,6 +544,7 @@ try {
   await shot('07-vehicle-lighting');
   await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
+  assert.deepEqual(report.warnings, [], 'preview must not produce WebGL/material console warnings');
 } catch (error) {
   report.failure = String(error.stack ?? error);
   await page?.screenshot({path: 'qa-output/failure.png', timeout: 10000}).catch(() => {});
