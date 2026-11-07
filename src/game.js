@@ -1051,11 +1051,11 @@ function updateDistantMeteors(dt){
   distantStreaks.push({sprite,life:5.2,v:16+Math.random()*14+waveProgress*5,impact:Math.random()<(.58+waveProgress*.25),waveProgress});
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;s.sprite.position.x+=dt*s.v*.18;s.sprite.position.y-=dt*s.v;
-  if(s.sprite.position.y<14&&s.impact){const pos=s.sprite.position;
-   // Streaks live under the translated/scaled skyline, while bursts live in scene.
-   // Transform once so a strike blooms at its actual visible point of impact.
+  if(s.sprite.position.y<36&&s.impact){const pos=s.sprite.position;
+   // Strikes snap to an actual distant landmark facade (and apply limited
+   // cosmetic tower damage), rather than exploding in the empty skyline.
    skyline.updateWorldMatrix(true,false);
-   const impact=skyline.localToWorld(pos.clone());
+   const impact=skylineBackdrop.strikeNearest(pos.x)||skyline.localToWorld(pos.clone());
    cinematicSkyExplosion(impact.x,impact.y,impact.z);
    if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(impact.x+(Math.random()-.5)*11,impact.y+2,impact.z);
    s.impact=false;s.life=0;
@@ -1876,7 +1876,7 @@ function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagn
  const follow=Math.max(0,dragon.position.y-25)*.62;
  const deadZone=35*Math.min(1,camera.aspect/(16/9));
  cameraScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone);
- skylineBackdrop.update(elapsed,displayedDarkness);
+ skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
@@ -1925,7 +1925,60 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   meteors:meteors.slice(0,40).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
+ // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
+ // camera, coordinates and renderer remain unchanged after the next RAF.
+ const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  captureSkyline:()=>run('captureSkyline',()=>{
+   const centerX=skyline.position.x;
+   qaSkylineCamera.position.set(centerX,62,skyline.position.z+165);
+   qaSkylineCamera.lookAt(centerX,39,skyline.position.z);
+   qaSkylineCamera.updateProjectionMatrix();
+   renderer.render(scene,qaSkylineCamera);
+   return {png:renderer.domElement.toDataURL('image/png'),
+    camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
+    skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
+  }),
+  stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
+   const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
+   if(index<0)throw Error('Expected landmark missing');
+   const t=skylineBackdrop.towers[index],before=t.strikeDamage;
+   const hit=skylineBackdrop.strikeNearest(t.group.position.x);
+   skylineBackdrop.setDamage(skylineDamage);
+   skylineBackdrop.update(elapsed,displayedDarkness,1/60);
+   return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
+    afterDamage:t.strikeDamage,flashVisible:t.impactSprite.visible,
+    flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
+    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
+  }),
+  stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
+   // Validate that ground debris remains outside the animated tower hierarchy.
+   skylineBackdrop.setDamage(1);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
+    rubbleDetached:t.ruin.parent===skylineBackdrop.group,
+    rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
+    fallActive:t.fallActive,fallElapsed:t.fallElapsed,
+    towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
+    slabReleaseY:t.slabs.map(s=>s.userData.fallStartY),
+    slabGroundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  skylineFallState:()=>run('skylineFallState',()=>{
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!t)throw Error('Expected landmark missing');
+   return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
+    slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  advanceSkylineFall:(seconds=4)=>run('advanceSkylineFall',()=>{
+   if(!Number.isFinite(seconds)||seconds<0||seconds>6)throw Error('Invalid skyline QA step');
+   const frames=Math.ceil(seconds*20);
+   for(let i=0;i<frames;i++)skylineBackdrop.update(elapsed+i*.05,displayedDarkness,.05);
+   const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   return {fallElapsed:t.fallElapsed,slabY:t.slabs.map(s=>s.position.y),
+    groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();
    const car=cars.find(c=>c.root.userData.headlightBeam);

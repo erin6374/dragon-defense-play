@@ -84,6 +84,61 @@ function addLine(parent,x1,y1,x2,y2,mat,r=.065,z=1.2){const a=new THREE.Vector3(
 export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const group=new THREE.Group();group.name='PHILADELPHIA-ORIGINAL-3D-SKYLINE';parent.add(group);
  const towers=[],beacons=[],distantHelis=[],clockMat=new THREE.MeshBasicMaterial({color:0xd8c6a3});
+ // A shared atlas and one dormant sprite per landmark. Impact effects never
+ // allocate new GPU resources while meteor waves are running.
+ const impactCanvas=document.createElement('canvas');
+ impactCanvas.width=64;impactCanvas.height=64;
+ const impactContext=impactCanvas.getContext('2d');
+ const impactGlow=impactContext.createRadialGradient(32,32,1,32,32,31);
+ impactGlow.addColorStop(0,'rgba(255,251,216,1)');
+ impactGlow.addColorStop(.21,'rgba(255,181,74,.94)');
+ impactGlow.addColorStop(.55,'rgba(249,81,28,.45)');
+ impactGlow.addColorStop(1,'rgba(244,50,12,0)');
+ impactContext.fillStyle=impactGlow;impactContext.fillRect(0,0,64,64);
+ // Distant smoke is baked once and is independent of the short impact flash.
+ // Reusing one sprite per landmark bounds the smoke budget at nine drawables.
+ const smokeCanvas=document.createElement('canvas');
+ smokeCanvas.width=64;smokeCanvas.height=128;
+ const smokeContext=smokeCanvas.getContext('2d');
+ for(let i=0;i<5;i++){
+  const x=32+Math.sin(i*2.3)*8,y=104-i*20,r=17+i*2.7;
+  const haze=smokeContext.createRadialGradient(x,y,1,x,y,r);
+  haze.addColorStop(0,'rgba(50,53,57,.67)');
+  haze.addColorStop(.55,'rgba(76,82,88,.35)');
+  haze.addColorStop(1,'rgba(103,113,121,0)');
+  smokeContext.fillStyle=haze;
+  smokeContext.beginPath();smokeContext.ellipse(x,y,r*.88,r,0,0,Math.PI*2);smokeContext.fill();
+ }
+ const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
+ smokeTexture.colorSpace=THREE.SRGBColorSpace;
+ const smokeMaterial=new THREE.SpriteMaterial({map:smokeTexture,color:0xc0c7ca,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+ // One shared scorch/debris atlas, placed as a local damage decal on each tower.
+ // Drawn at initialization rather than creating marks every time a meteor lands.
+ const scorchCanvas=document.createElement('canvas');
+ scorchCanvas.width=128;scorchCanvas.height=128;
+ const scorchContext=scorchCanvas.getContext('2d');
+ const scorchGlow=scorchContext.createRadialGradient(64,64,5,64,64,60);
+ scorchGlow.addColorStop(0,'rgba(12,13,17,.90)');
+ scorchGlow.addColorStop(.33,'rgba(29,30,34,.74)');
+ scorchGlow.addColorStop(.65,'rgba(55,55,57,.35)');
+ scorchGlow.addColorStop(1,'rgba(80,78,73,0)');
+ scorchContext.fillStyle=scorchGlow;scorchContext.fillRect(0,0,128,128);
+ scorchContext.lineWidth=2.2;scorchContext.strokeStyle='rgba(23,23,26,.78)';
+ // Asymmetric glass fractures are static in the atlas; no live randomization.
+ for(let i=0;i<10;i++){
+  const angle=i*Math.PI*.2+.23*Math.sin(i*3);
+  const radius=24+(i%3)*11;
+  scorchContext.beginPath();scorchContext.moveTo(64,64);
+  scorchContext.lineTo(64+Math.cos(angle)*radius*.48,64+Math.sin(angle)*radius*.48);
+  scorchContext.lineTo(64+Math.cos(angle+.15)*radius,64+Math.sin(angle+.15)*radius);
+  scorchContext.stroke();
+ }
+ const scorchTexture=new THREE.CanvasTexture(scorchCanvas);
+ scorchTexture.colorSpace=THREE.SRGBColorSpace;
+ const scorchMaterial=new THREE.SpriteMaterial({map:scorchTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+ const impactTexture=new THREE.CanvasTexture(impactCanvas);
+ impactTexture.colorSpace=THREE.SRGBColorSpace;
+ const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
  const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
@@ -112,6 +167,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
+ const collapsedSlabGeo=new THREE.BoxGeometry(1,1,1);
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
  const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
@@ -164,10 +220,55 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     addLine(crown,0,y+3.5,w,y,trimMat,.10,d.depth/2+.25);
    }
   }
-  const ruin=new THREE.Group();ruin.name='landmark-collapse-rubble';ruin.visible=false;g.add(ruin);
+  // Rubble is a sibling of the tower, not its child. Collapse animation scales
+  // and moves the tower group; debris must remain fixed at street elevation.
+  const ruin=new THREE.Group();
+  ruin.name='landmark-collapse-rubble-'+d.id;
+  ruin.position.set(g.position.x,0,g.position.z);
+  ruin.visible=false;
+  group.add(ruin);
   const stoneRubble=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.7,0),side,32),o=new THREE.Object3D();
   for(let j=0;j<32;j++){const r=seeded(480+i*31+j)();o.position.set((r-.5)*d.w*1.6,.35+(j%4)*.4,(j%5-2)*1.3);o.scale.set(.5+(j%6)*.1,.23,.35);o.rotation.set(0,j*.37,0);o.updateMatrix();stoneRubble.setMatrixAt(j,o.matrix);}stoneRubble.instanceMatrix.needsUpdate=true;ruin.add(stoneRubble);
-  towers.push({def:d,group:g,facade,side,ruin,damage:0,collapse:0});
+  // Three larger fallen facade sections suggest recognizable structural
+  // fragments without simulating individual glass panes or allocating debris
+  // on every impact. Their transforms are derived from collapse severity.
+  const slabs=[];
+  for(let j=0;j<3;j++){
+   const slab=new THREE.Mesh(collapsedSlabGeo,side);
+   slab.name='fallen-facade-'+d.id+'-'+j;
+   slab.scale.set(d.w*(.23+j*.045),.38+j*.13,d.depth*(.43-j*.075));
+   slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
+   slab.rotation.set(.11*j,.17*j,.09*(j-1));
+   // Each slab has a fixed fall start height and a staggered release time.
+   // Reuse these meshes throughout the collapse and reset their poses on restart.
+   slab.userData.fallStartY=d.h*(.39+j*.15);
+   slab.userData.fallDelay=j*.21;
+   slab.userData.groundY=slab.scale.y*.5+.02;
+   // The rubble group is hidden until collapse; position slabs at the actual
+   // fracture release height before their first visible frame. Otherwise they
+   // teleport from the ground to the sky when update() runs.
+   slab.position.y=slab.userData.fallStartY;
+   ruin.add(slab);slabs.push(slab);
+  }
+  const impactSprite=new THREE.Sprite(impactMaterial.clone());
+  impactSprite.name='landmark-meteor-impact-'+d.id;
+  impactSprite.visible=false;
+  impactSprite.position.set(0,d.h*.68,d.depth/2+.5);
+  impactSprite.scale.set(7,7,1);
+  g.add(impactSprite);
+  const smokeSprite=new THREE.Sprite(smokeMaterial.clone());
+  smokeSprite.name='landmark-meteor-smoke-'+d.id;
+  smokeSprite.visible=false;
+  smokeSprite.position.set(0,d.h*.73,d.depth/2+.65);
+  smokeSprite.scale.set(7,13,1);
+  g.add(smokeSprite);
+  const scorchSprite=new THREE.Sprite(scorchMaterial.clone());
+  scorchSprite.name='landmark-facade-scorch-'+d.id;
+  scorchSprite.visible=false;
+  scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
+  scorchSprite.scale.set(5,5,1);
+  g.add(scorchSprite);
+  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallElapsed:0,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -187,13 +288,40 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   distantHelis.push({group:h,rotor,nav,seed:i*13.1,x0:-82+i*55,y0:45+(i%2)*18,speed:i===1?-1:1});
  }
  let time=-1,lastPhase=-1,damage=0;
+ function strikeNearest(localX){
+  // The skyline's towers share this group's local coordinates. Snap a distant
+  // streak to the nearest tower facade rather than exploding in empty sky.
+  let selected=towers[0],distance=Infinity;
+  for(const tower of towers){
+   const delta=Math.abs(tower.group.position.x-localX);
+   if(delta<distance){selected=tower;distance=delta;}
+  }
+  if(!selected)return null;
+  const tower=selected,impact=tower.impactSprite;
+  const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
+  impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
+  tower.smokeSprite.position.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
+  tower.scorchSprite.position.set(impact.position.x,impact.position.y,tower.def.depth/2+.62);
+  tower.impactAge=1.15;
+  tower.impactEnergy=1;
+  // This is deliberately a small distant damage contribution: foreground
+  // school and neighborhood health continue to use their existing simulation.
+  tower.strikeDamage=Math.min(.28,tower.strikeDamage+.018);
+  tower.scorchSprite.visible=true;
+  const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
+  tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
+  tower.scorchSprite.material.opacity=Math.min(.87,.40+tower.strikeDamage*2.3);
+  impact.visible=true;
+  impact.material.opacity=.93;
+  return tower.group.localToWorld(impact.position.clone());
+ }
  function setTime(phase,darkness){
   const desired=Math.max(0,Math.min(1,darkness));
   if(Math.abs(desired-time)<.01&&Math.abs(phase-lastPhase)<.01)return;
   time=desired;lastPhase=phase;
   const twilight=Math.min(1,Math.exp(-Math.pow((phase-.33)*9,2))+Math.exp(-Math.pow((phase-.84)*11,2)));
   for(const t of towers){
-   t.facade.emissiveIntensity=desired*1.25;
+   t.facade.emissiveIntensity=desired*1.25*(1-t.collapse*.84);
    t.facade.color.setRGB(1-desired*.60,
     Math.min(1,1-desired*.56-twilight*.035),Math.min(1,1-desired*.47-twilight*.10));
    const civic=t.def.style==='civic';
@@ -207,17 +335,25 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   damage=Math.max(damage,Math.max(0,Math.min(1,value)));
   towers.forEach((t,i)=>{
    const threshold=.24+i*.077;
-   const collapse=Math.max(0,Math.min(1,(damage-threshold)/.23));
+   const collapse=Math.max(0,Math.min(1,(damage+t.strikeDamage-threshold)/.23));
    if(Math.abs(t.collapse-collapse)<.02)return;
    t.collapse=collapse;
    // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
    if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
    else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
+   // The small instanced rubble is already settled at ground level. Large
+   // facade sections release once and fall over time in update(), independent
+   // of the tower's transform (no rigid-body allocation during the collapse).
    t.ruin.visible=collapse>.18;
-   t.facade.emissiveIntensity*=1-collapse*.84;
+   if(collapse>.18&&!t.fallActive){
+    t.fallActive=true;
+    t.fallElapsed=0;
+   }
+   // Emission is derived in update() rather than repeatedly multiplied here.
+   // Damage updates must not accumulate artificial darkening each time.
   });
  }
- function update(elapsed,darkness=0){
+ function update(elapsed,darkness=0,dt=1/60){
   for(let i=0;i<beacons.length;i++){
    const b=beacons[i];b.material.opacity=(.13+.83*Math.pow(Math.max(0,Math.sin(elapsed*3.8+b.userData.phase)),9))*(.55+.45*darkness);
   }
@@ -229,8 +365,48 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    h.group.scale.x=h.speed;
    h.nav.material.opacity=.28+.67*(.5+.5*Math.sin(elapsed*4.1+h.seed));
   }
-  for(const t of towers)if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+  for(let i=0;i<towers.length;i++){
+   const t=towers[i];
+   if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   if(t.fallActive){
+    t.fallElapsed+=Math.max(0,Math.min(.1,dt));
+    for(let j=0;j<t.slabs.length;j++){
+     const slab=t.slabs[j],fallTime=Math.max(0,t.fallElapsed-slab.userData.fallDelay);
+     // Gravity-like descent with a hard ground clamp keeps all facade sections
+     // supported, even if simulation frames arrive irregularly.
+     const y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
+     slab.position.y=y;
+     const settled=y<=slab.userData.groundY+.001;
+     slab.rotation.z=(j-1)*.09+(settled?1:Math.min(1,fallTime/2))*(j%2?-.36:.28);
+     slab.rotation.x=.11*j+Math.min(1,fallTime/2)*.24;
+    }
+   }
+   if(t.strikeDamage>0){
+    const intensity=Math.min(1,t.strikeDamage/.16);
+    // Persistent damage plume rises and drifts slightly, never allocating
+    // additional sprites as hits accumulate.
+    t.smokeSprite.visible=true;
+    t.smokeSprite.position.x=t.impactSprite.position.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
+    t.smokeSprite.position.y=Math.min(t.def.h*.96,t.impactSprite.position.y+3.2+Math.sin(elapsed*.47+i)*.8);
+    const width=5.5+intensity*5.2;
+    t.smokeSprite.scale.set(width,width*1.8,1);
+    t.smokeSprite.material.opacity=.12+intensity*.42;
+   }
+   if(t.impactAge>0){
+    t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));
+    const fade=t.impactAge/1.15;
+    t.impactSprite.material.opacity=.93*fade*fade;
+    t.impactSprite.scale.setScalar(5+(1-fade)*7);
+    t.impactSprite.visible=t.impactAge>0;
+   }
+   // Sustained, irregular electrical flicker signals damage across the distant
+   // city without dynamic lights, added meshes, or per-frame allocations.
+   const broken=Math.min(1,t.collapse*2.5);
+   const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
+   const unstable=1-broken*(.50+.46*pulse);
+   t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
+  }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;}setTime(0,0);}
- return {group,towers,setTime,setDamage,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
+ return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }

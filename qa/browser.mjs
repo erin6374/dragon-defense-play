@@ -9,6 +9,16 @@ const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
 const shot = name => page.screenshot({path: 'qa-output/' + name + '.png'});
+// Capture the geometry-based skyline unobstructed by playable foreground or HUD.
+// These are actual renderer pixels, not synthetic screenshots.
+const skylineShot = async name => {
+  const capture = await page.evaluate(() => window.__DD_QA.captureSkyline());
+  assert.ok(capture.ok, capture.error);
+  const png = capture.result.png;
+  assert.ok(png.startsWith('data:image/png;base64,'), 'Skyline capture is a rendered PNG');
+  await writeFile('qa-output/' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
+  return capture.result.camera;
+};
 try {
   for (let attempt = 0; attempt < 30; attempt++) {
     if (await fetch(new URL('build-info.json', base)).then(r => r.ok).catch(() => false)) break;
@@ -200,7 +210,54 @@ try {
   report.dusk = dusk.result;
   await shot('06-north-broad-dusk');
   await page.locator('canvas').first().screenshot({path:'qa-output/06-dusk-scene.png'});
+  report.skylineCamera=await skylineShot('06-skyline-intact');
+  const towerImpact = await page.evaluate(() => window.__DD_QA.stageSkylineStrike());
+  assert.ok(towerImpact.ok, towerImpact.error);
+  assert.equal(towerImpact.result.landmark, 'comcast-technology');
+  assert.ok(towerImpact.result.afterDamage > towerImpact.result.beforeDamage, 'individual tower strike adds visual damage');
+  assert.equal(towerImpact.result.flashVisible, true, 'landmark impact flash is displayed');
+  assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
+  assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
+  assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
+  assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
+  assert.ok(towerImpact.result.scorchOpacity>0,'facade damage mark has positive opacity');
+  assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
+  report.landmarkImpact = towerImpact.result;
+  await shot('06-landmark-strike');
+  await skylineShot('06-skyline-strike');
+  const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
+  assert.ok(skylineCollapse.ok,skylineCollapse.error);
+  assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
+  assert.equal(skylineCollapse.result.ruinVisible,true,'skyscraper rubble remains rendered');
+  assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
+  assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
+  assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
+  assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
+  assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
+  for(let i=0;i<skylineCollapse.result.slabY.length;i++){
+   assert.ok(Math.abs(skylineCollapse.result.slabY[i]-skylineCollapse.result.slabReleaseY[i])<.001,
+    'facade section begins at its release height, not at the ground');
+   assert.ok(skylineCollapse.result.slabY[i]>skylineCollapse.result.slabGroundY[i],
+    'facade section has a positive falling distance');
+  }
+  await skylineShot('06-skyline-release');
+  const falling=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(.45));
+  assert.ok(falling.ok,falling.error);
+  assert.ok(falling.result.slabY.some((v,i)=>v>falling.result.groundY[i]+.01),'facade sections visibly pass through a falling state');
+  await skylineShot('06-skyline-falling');
+  const settledSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
+  assert.ok(settledSkyline.ok,settledSkyline.error);
+  for(let i=0;i<settledSkyline.result.slabY.length;i++)
+   assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
+  report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result};
+  await skylineShot('06-skyline-rubble');
+  await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
+  const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  assert.ok(skylineReset.ok,skylineReset.error);
+  assert.equal(skylineReset.result.fallActive,false,'restart resets skyline falling state');
+  assert.equal(skylineReset.result.ruinVisible,false,'restart hides skyline rubble');
+  report.skylineReset=skylineReset.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');

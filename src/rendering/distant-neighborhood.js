@@ -11,6 +11,18 @@ const STREET_AXIS=[
  {name:'N 9th St',z:-265},{name:'N 8th St',z:-296}
 ];
 const facades=[0x9a5c4a,0x6d423b,0xb7afa1,0xcac1b1,0x8a9192,0x8a674e,0xc0a38c,0x7d5350,0xbabcc0];
+// Depth cueing is baked into existing instanced facade colors; it does not
+// introduce extra meshes, materials or per-frame work. Keep the nearer blocks
+// saturated so the playable neighborhood remains the visual focus.
+const distanceHaze=new THREE.Color(0x9daab4);
+function atmosphericFacade(hex,tier,row,lot){
+ const c=new THREE.Color(hex);
+ const haze=Math.min(.34,Math.max(0,tier)*.073);
+ c.lerp(distanceHaze,haze);
+ // Slight deterministic tonal variation avoids identical distant houses.
+ const variation=1+(((row*13+lot*7)%9)-4)*.012;
+ return c.multiplyScalar(variation);
+}
 function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};}
 const rand=seeded(1221237);
 export function createDistantNeighborhood({root}){
@@ -26,6 +38,7 @@ export function createDistantNeighborhood({root}){
   main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
   roof:new THREE.MeshStandardMaterial({color:0x4a4441,roughness:.95}),
   cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.85}),
+  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.82,metalness:.14}),
   window:new THREE.MeshStandardMaterial({color:0x567383,roughness:.45,metalness:.06}),
   road:new THREE.MeshLambertMaterial({color:0x484b4d}),
   walk:new THREE.MeshLambertMaterial({color:0xaaa49a}),
@@ -36,7 +49,7 @@ export function createDistantNeighborhood({root}){
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
- const instances=tiers.map(t=>({main:[],roof:[],cornice:[],window:[],road:[],walk:[],green:[]}));
+ const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
  function street(x,z,w,d,tier){add(tier,'road',x,-.44,z,w,.12,d);}
@@ -74,8 +87,18 @@ export function createDistantNeighborhood({root}){
    if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
    const color=facades[(ix*3+row*5)%facades.length];
    const home={x,y:h/2,z,w,h,d,stories,tier,damage:0,row,ix};buildingDefs.push(home);
-   add(tier,'main',x,h/2,z,w,h,d,color);
+   add(tier,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
    add(tier,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   // Small rooftop HVAC boxes and access housings give the distant rows a
+   // varied architectural silhouette; all equipment shares one batch per tier.
+   // Place equipment toward the rear, away from the front cornice.
+   if((ix+row*3)%5===0){
+    const unitW=modern?1.4:1.1;
+    add(tier,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
+   }
+   if((ix*7+row)%23===0){
+    add(tier,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
+   }
    if(!modern)add(tier,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
    else add(tier,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
@@ -125,14 +148,34 @@ export function createDistantNeighborhood({root}){
    g.add(mesh);drawCalls++;
   }
  }
+ // Shared translucent smoke atlas replaces obvious rigid black cones. A single
+ // billboard per damaged building retains the original 28-marker visual budget.
+ // The texture is constructed once; no per-frame canvas or material allocations.
+ const smokeCanvas=document.createElement('canvas');
+ smokeCanvas.width=64;smokeCanvas.height=128;
+ const smokeCtx=smokeCanvas.getContext('2d');
+ for(let i=0;i<4;i++){
+  const x=32+Math.sin(i*2.1)*7,y=104-i*23,r=19+i*3;
+  const gradient=smokeCtx.createRadialGradient(x,y,1,x,y,r);
+  gradient.addColorStop(0,'rgba(67,71,76,.60)');
+  gradient.addColorStop(.55,'rgba(93,100,106,.35)');
+  gradient.addColorStop(1,'rgba(117,127,135,0)');
+  smokeCtx.fillStyle=gradient;
+  smokeCtx.beginPath();smokeCtx.ellipse(x,y,r*.83,r,0,0,Math.PI*2);smokeCtx.fill();
+ }
+ const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
+ smokeTexture.colorSpace=THREE.SRGBColorSpace;
+ const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
  const damageMarkers=[];
- const smokeGeo=new THREE.ConeGeometry(.5,2,6);const smokeMat=new THREE.MeshBasicMaterial({color:0x302e30,transparent:true,opacity:.30,depthWrite:false});
  function setHealth(health){
   const damage=Math.max(0,Math.min(1,1-health/100));
   const targetCount=Math.min(28,Math.floor(damage*28));
   while(damageMarkers.length<targetCount){
    const b=buildingDefs[(damageMarkers.length*41+23)%buildingDefs.length];
-   const puff=new THREE.Mesh(smokeGeo,smokeMat);puff.position.set(b.x,b.h+1.9,b.z);puff.scale.setScalar(1+rand()*1.9);
+   const puff=new THREE.Sprite(smokeMat);
+   const size=2.4+rand()*2.5;
+   puff.position.set(b.x,b.h+size*.65,b.z);
+   puff.scale.set(size,size*1.9,1);
    groups[b.tier].add(puff);damageMarkers.push(puff);
   }
   while(damageMarkers.length>targetCount)damageMarkers.pop().removeFromParent();
