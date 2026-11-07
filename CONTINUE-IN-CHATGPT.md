@@ -181,3 +181,11 @@ The skyline meteor handler was returning its explosion world position after `set
 
 **Next action:** inspect newest PR-head browser QA. If the new regression fails, read the exact logs and verify the assumption that repeat strikes use the same local impact position; correct the test or code based on evidence. Do not mark this fix verified before QA passes. Avoid overlapping branch edits with other sessions. No main merge/deploy or Building Explorer changes.
 
+
+## Interactive continuation — meteor flash stable-space anchoring (November 7)
+
+The branch was at `ff7d7ea`, with GitHub browser QA run #124 **passed**. There were no competing commits at start. This pass found that, despite correctly returning the pre-damage contact coordinate and anchoring smoke, the actual impact flash sprite remained attached to the shrinking/tilting tower and could visually move during its own collapse-triggering strike.
+
+Reparented the existing flash sprite to stable skyline space (`src/rendering/philadelphia-geometry-skyline.js`) and retained the pre-collapse local facade contact as `tower.impactLocal` for subsequent strikes. The `src/game.js` QA probes now separately report local-facade-derived impact locations and actual stable flash position. The browser suite verifies initial flash/contact coincidence and no flash movement across a synchronous tower shrink (`qa/browser.mjs`). Changelog records the exact change. No new visual assets or per-frame meshes.
+
+**Verification pending:** check latest PR-head browser QA, inspect failures before any new change, and make no measured hardware-FPS or cinematic-quality claims. This does not touch main v5.2.3, deployment, or the separate Building Explorer. Scheduled tasks may advance the branch; re-check PR head before writing.
