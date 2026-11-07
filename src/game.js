@@ -1948,6 +1948,20 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
     skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
   }),
+  sampleSkylineEmissive:()=>run('sampleSkylineEmissive',()=>{
+   // Read-only appearance probe for the skyline's existing electrical
+   // flicker. Restore the live animation time even if a sample fails.
+   const tower=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   if(!tower)throw Error('Expected landmark missing');
+   const samples=[];
+   try{
+    for(const seconds of [0,.12,.24,.36,.48,.60,.72,.84,.96]){
+     skylineBackdrop.update(seconds,displayedDarkness,0);
+     samples.push({seconds,emissive:tower.facade.emissiveIntensity});
+    }
+   }finally{skylineBackdrop.update(elapsed,displayedDarkness,0);}
+   return {landmark:tower.def.id,collapse:tower.collapse,samples};
+  }),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
    // Advance only the cosmetic skyline animation to sample long sessions.
    // Restore the live frame even if a helicopter is unexpectedly missing.
