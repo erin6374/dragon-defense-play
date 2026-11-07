@@ -7,6 +7,7 @@
 - Added 12 named movement/attack studies: idle, hover, forward flight, glide, bank, inhale, wind exhale, fire, gas, hit, land and takeoff. These are procedural pose studies, not imported copyrighted animation clips.
 - Added `dragon-lab/DESIGN-SPEC.md` with original art direction, skeletal hierarchy, approximate motion timing and explicit acceptance criteria before replacing the current dragon.
 - Added browser QA coverage for the isolated viewer's load, two wing chains, 12 states, wind/fire jaw movement, no page errors and a screenshot (`08-paulo-dragon-lab.png`).
+- Follow-up: animation states now evaluate immediately on selection (rather than relying on the next animation frame), wind exhale braces wing joints differently from the narrower fire pose, and QA checks inhale chest expansion, bank asymmetry and actual renderer draw-call telemetry.
 - **QA pending.** No production gameplay, dragon physics, controls, or collision changes. The current v5.3.1 player dragon remains intact; production main stays v5.2.3.
 
 # Dragon Defense v5.3.1 — Wind & Street Effects Preview
