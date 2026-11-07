@@ -5,7 +5,7 @@
 - Cumulative distant meteor impacts now contribute **0.07** local structural damage per strike (capped at **0.90**) to their targeted skyline landmark, rather than **0.018** capped at **0.28**. Repeated impacts can therefore trigger facade breakup and persistent rubble even if the school and neighborhood are unharmed.
 - A hit immediately reevaluates the existing landmark collapse state; no new meshes, physics systems, or foreground gameplay damage were introduced.
 - Browser QA now stages six consecutive hits on Comcast Technology Center, verifies visible rubble and active facade fall, and asserts that the foreground health does not change. A dedicated skyline screenshot is captured.
-- **Verification:** the code and regression test have been committed, but the updated browser workflow result must be checked before declaring this change verified. This is a stylized background-disaster effect, not surveyed geographic realism or measured GPU performance.
+- **Verification:** QA run #68 failed an existing release-height assertion because the new six-hit test had already started a tower fall before the pre-existing forced-collapse scenario. The test was moved after the existing collapse/reset checks in commit `dd40f11`, isolating both scenarios. A new full browser run must pass before this change is called verified. This is a stylized background-disaster effect, not surveyed geographic realism or measured GPU performance.
 
 
 ## QA regression fix — malformed startup script
