@@ -163,3 +163,12 @@ Starting checkpoint: PR #2 head `4635445` passed GitHub browser QA run #110. Thi
 
 **Verification pending:** inspect latest PR-head GitHub Actions browser QA before considering this change verified. Do not claim measured FPS or graphics improvement, and avoid overlapping development branch writes if another scheduled session has started. No merge, production deployment, or Building Explorer changes.
 
+
+## Scheduled continuation — immediate smoke and world-position QA (November 7)
+
+At start, draft PR #2 was still at `f136f6c`, and GitHub browser QA run #114 had **passed**. The prior impact-triggered smoke size/opacity optimization is therefore browser-verified; no new performance measurement was obtained. No concurrent branch writes were observed before edits.
+
+Gameplay commit `0cdd438` makes the existing smoke sprite visible immediately in `strikeNearest` instead of reassigning `visible=true` every frame after damage. QA probe commit `1fee745` captures immediate visibility and world positions on either side of the same synchronous tower collapse. Browser test commit `ce2131b` asserts that smoke is visible before the next animation update and remains in exactly the same world position when the tower shrinks, complementing the earlier parent/scale checks. Changelog records scope.
+
+**Verification pending:** inspect the latest PR-head GitHub Actions browser QA. If it fails, read the specific failure before any additional edit. The branch must remain in draft; no production merge/deploy or Building Explorer changes. The new source-level visibility optimization has no measured FPS benefit. Another session may advance this branch, so always re-check head before writing.
+
