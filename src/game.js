@@ -2008,10 +2008,13 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
    if(!t)throw Error('Expected landmark missing');
    const smokeWorldBefore=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
+   const flashWorldBefore=t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray();
    skylineBackdrop.setDamage(1);
    const smokeWorldAfter=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
+   const flashWorldAfter=t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray();
    return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
-    smokeWorldBefore,smokeWorldAfter,
+    smokeWorldBefore,smokeWorldAfter,flashWorldBefore,flashWorldAfter,
+    flashParentStable:t.impactSprite.parent===skylineBackdrop.group,
     rubbleDetached:t.ruin.parent===skylineBackdrop.group,
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
