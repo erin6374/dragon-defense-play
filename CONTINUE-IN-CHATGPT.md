@@ -68,3 +68,10 @@ The user successfully reached the local preview at `http://127.0.0.1:8769/` afte
 - New browser QA is running for these latest changes. Verify workflow state and artifacts for the current PR head, not an old commit.
 - This session did not merge or deploy; production main remains v5.2.3. Do not alter the separate Building Explorer.
 
+
+## Latest regression repair — November 7
+
+GitHub browser QA run #61 **failed** with `SyntaxError: Invalid or unexpected token` originating from a malformed inline startup diagnostics script in `index.html`. The culprit was literal backslash-n text between JS statements, introduced in the earlier launch-help edit. Corrected the snippet (commit `79d81fa`) and added fast Node `vm.Script` inline-script syntax validation to `qa/browser.mjs` (commit `a81a194` after regex correction). The changelog records the details. **Do not claim this repair is verified** until the current PR head's QA completes; run #65 initially queued.
+
+The user explicitly asked to keep development going when a chat stops. A separate hourly "Dragon Defense Development" scheduled task was created to try to resume bounded work using GitHub, while the existing "Dragon Defense QA Watch" continues checking build status. These automations do not guarantee Windows gameplay or GPU testing, and must not merge/deploy. Avoid duplicate edits from concurrent sessions. Keep production main at v5.2.3.
+
