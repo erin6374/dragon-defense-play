@@ -321,7 +321,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   tower.impactEnergy=1;
   // This is deliberately a small distant damage contribution: foreground
   // school and neighborhood health continue to use their existing simulation.
-  tower.strikeDamage=Math.min(.28,tower.strikeDamage+.018);
+  // Distant strikes are an independent disaster, not just a reaction to
+  // damage on the player's block. Repeated hits can eventually break a tower.
+  tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07);
+  setDamage(damage); // Apply the new tower damage immediately, even in quiet scenes.
   tower.scorchSprite.visible=true;
   const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
   tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
