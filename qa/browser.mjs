@@ -11,9 +11,9 @@ const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 // Fast fail for malformed inline startup scripts, before expensive WebGL QA.
 // A stray literal \\n between JavaScript statements previously reached the
 // end of a multi-minute browser run before its SyntaxError was reported.
-for(const [index, script] of Array.from(launchHtml.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)).entries()){
+for(const [index, script] of Array.from(launchHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)).entries()){
  const attrs=script[1];
- if(/\\bsrc\\s*=|\\btype\\s*=\\s*["'](?:importmap|application\\/json)/i.test(attrs))continue;
+ if(/\bsrc\s*=|\btype\s*=\s*["'](?:importmap|application\/json)/i.test(attrs))continue;
  if(!script[2].trim())continue;
  try { new Script(script[2],{filename:'index.html:inline-script-'+index}); }
  catch(error){throw new Error('Inline startup script has invalid JavaScript: '+error.message,{cause:error});}
