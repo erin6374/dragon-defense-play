@@ -8,7 +8,9 @@
 - Preserved meteor and helicopter deflection, school-fire suppression, short-click fireball, long-press wind, right-click gas, wind charge meter, and 4-second wind recharge.
 - New deterministic browser QA covers weight ordering, cone bounds, gentle displacement, actual synthetic ground-vehicle/pedestrian movement, dust/litter instance budgets, and actual smoke-puff displacement and opacity.
 - Bumped build identity to `5.3.1` / `5.3-wind-ground-01`, added `PREVIEW_v5.3.1_README.txt`, and added an Actions upload-artifact step to deliver a complete Windows preview folder with the launcher and assets after successful browser QA.
-- **Verification pending for the latest PR head.** Headless browser assertions do not establish real Windows GPU performance, aesthetic quality or the exact perceived force of the wind. No changes to production main or the separate Building Explorer.
+- Browser QA #166 **passed** and verified live temporary wind targets (pedestrian +0.137, bike +0.114, bus +0.007 world units in one simulated step), 38 ground dust instances, 13 scraps, and deflected/thinned street smoke. The complete Windows package was successfully created and inspected (110 files; required launcher, assets and game source present).
+- QA #166 also reported a harmless Three.js material warning: `MeshBasicMaterial` does not have a `roughness` property. Removed the unsupported key and strengthened QA to fail on new console warnings. A fresh run is required before labeling the warning fix verified.
+- Headless browser assertions do not establish real Windows GPU performance, aesthetic quality or the exact perceived force of the wind. No changes to production main or the separate Building Explorer.
 
 # Dragon Defense v5.3.0 — North Broad Street
 
