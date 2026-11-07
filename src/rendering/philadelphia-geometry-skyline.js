@@ -339,6 +339,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const smokeWidth=5.5+smokeIntensity*5.2;
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*1.8,1);
   tower.smokeSprite.material.opacity=.12+smokeIntensity*.42;
+  // Make the plume visible in the same event as the impact, even if no
+  // animation update occurs before the next render.
+  tower.smokeSprite.visible=true;
   setDamage(damage); // Apply the new tower damage immediately, even in quiet scenes.
   tower.scorchSprite.visible=true;
   const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
@@ -436,7 +439,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     // Only position changes over time; stable smoke size and opacity were set
     // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
-    t.smokeSprite.visible=true;
     t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
     t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*.8;
    }
