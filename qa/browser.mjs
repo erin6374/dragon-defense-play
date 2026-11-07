@@ -346,6 +346,7 @@ try {
   assert.ok(settledSkyline.ok,settledSkyline.error);
   for(let i=0;i<settledSkyline.result.slabY.length;i++)
    assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
+  await skylineShot('06-skyline-rubble');
   // Once all slabs reach their supported ground poses, subsequent frames
   // should not continue recomputing transforms for motionless rubble.
   const idleSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(2));
@@ -368,7 +369,6 @@ try {
    'collapsed skyscraper rubble persists after the flash expires');
   report.skylineAftermath=aftermath.result;
   report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result,idle:idleSkyline.result};
-  await skylineShot('06-skyline-rubble');
   await skylineShot('06-skyline-smoke-aftermath');
   await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
