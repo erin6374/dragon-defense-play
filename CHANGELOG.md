@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — remove per-frame lighting color allocations (November 7)
+
+- Audited `updateNight(dt)`, which runs on the game animation path. Its unused `hazeColor` computation allocated two `THREE.Color` objects per call without affecting the scene. Removed that dead blend.
+- Replaced three other `new THREE.Color(...)` calls in the sun/ambient color interpolation with immutable palette colors initialized once. The original hex values and `setHex().lerp()` order are preserved, so the intended daytime/dusk/night colors are unchanged.
+- This eliminates **up to five JavaScript color-object constructions per lighting update**; it is a source-level allocation reduction, **not** a measured FPS or garbage-collection improvement. Existing browser QA includes dusk and night scene captures and vehicle-lighting checks. Await the latest PR-head workflow before treating this change as browser-verified.
+- Commit `e8da884`. No changes to `main`, Building Explorer, gameplay mechanics, or deployment.
+
+
 ## Continuation — distant helicopter patrol wrap (November 7)
 
 - Corrected a long-session skyline animation defect: the westbound decorative helicopter's JavaScript remainder became negative after approximately five minutes, allowing it to leave its intended 170-unit patrol interval. The orbit remainder is now normalized to a nonnegative value before applying the helicopter's x-offset.
