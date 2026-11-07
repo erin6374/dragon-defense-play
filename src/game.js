@@ -1259,11 +1259,14 @@ let bossSpawned=false,bossDefeated=false;let dragonMeteorTimer=8;const input=cre
 const difficulty=()=>({easy:.38,normal:1,hard:1.55}[document.getElementById('difficulty')?.value]||1);
 const easyMode=()=>document.getElementById('difficulty')?.value==='easy';
 let facing=1,turnTime=0;const explosionLights=[];let pointer=new THREE.Vector3(0,17,0);const ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,0,1),0);
-function aim(e){const r=renderer.domElement.getBoundingClientRect(),p=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));ray.setFromCamera(p,camera);const v=new THREE.Vector3();if(ray.ray.intersectPlane(plane,v))pointer.set(THREE.MathUtils.clamp(v.x,-94,94),THREE.MathUtils.clamp(v.y,2,64),0)}
+// Pointer events can arrive many times per frame. Reuse raycast scratch values.
+const aimNdc=new THREE.Vector2(),aimIntersection=new THREE.Vector3();
+function aim(e){const r=renderer.domElement.getBoundingClientRect();aimNdc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));ray.setFromCamera(aimNdc,camera);if(ray.ray.intersectPlane(plane,aimIntersection))pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-94,94),THREE.MathUtils.clamp(aimIntersection.y,2,64),0)}
+// Pointermove already includes touch drags; a second touch-specific handler
+// previously performed the same raycast twice for each touch move.
 renderer.domElement.addEventListener('pointermove',aim);
 // Mobile aiming is independent of the movement and action controls.
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){aim(e);e.preventDefault();}}, {passive:false});
-renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerType==='touch'&&e.buttons)aim(e);});
 let fireHealthAccumulator=0;let holdStart=0;let windActive=false;let windCharge=1;let windCooldown=0;let gustTime=0;let gustOrigin=new THREE.Vector3(),gustDirection=new THREE.Vector3(1,0,0);
 // Stylized animated wind particles: translucent layered eddies, not solid tubes.
 const windVisual=new THREE.Group();scene.add(windVisual);
