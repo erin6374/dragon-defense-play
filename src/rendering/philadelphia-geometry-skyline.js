@@ -95,6 +95,23 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  impactGlow.addColorStop(.55,'rgba(249,81,28,.45)');
  impactGlow.addColorStop(1,'rgba(244,50,12,0)');
  impactContext.fillStyle=impactGlow;impactContext.fillRect(0,0,64,64);
+ // Distant smoke is baked once and is independent of the short impact flash.
+ // Reusing one sprite per landmark bounds the smoke budget at nine drawables.
+ const smokeCanvas=document.createElement('canvas');
+ smokeCanvas.width=64;smokeCanvas.height=128;
+ const smokeContext=smokeCanvas.getContext('2d');
+ for(let i=0;i<5;i++){
+  const x=32+Math.sin(i*2.3)*8,y=104-i*20,r=17+i*2.7;
+  const haze=smokeContext.createRadialGradient(x,y,1,x,y,r);
+  haze.addColorStop(0,'rgba(50,53,57,.67)');
+  haze.addColorStop(.55,'rgba(76,82,88,.35)');
+  haze.addColorStop(1,'rgba(103,113,121,0)');
+  smokeContext.fillStyle=haze;
+  smokeContext.beginPath();smokeContext.ellipse(x,y,r*.88,r,0,0,Math.PI*2);smokeContext.fill();
+ }
+ const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
+ smokeTexture.colorSpace=THREE.SRGBColorSpace;
+ const smokeMaterial=new THREE.SpriteMaterial({map:smokeTexture,color:0xc0c7ca,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
@@ -187,7 +204,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   impactSprite.position.set(0,d.h*.68,d.depth/2+.5);
   impactSprite.scale.set(7,7,1);
   g.add(impactSprite);
-  towers.push({def:d,group:g,facade,side,ruin,impactSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  const smokeSprite=new THREE.Sprite(smokeMaterial.clone());
+  smokeSprite.name='landmark-meteor-smoke-'+d.id;
+  smokeSprite.visible=false;
+  smokeSprite.position.set(0,d.h*.73,d.depth/2+.65);
+  smokeSprite.scale.set(7,13,1);
+  g.add(smokeSprite);
+  towers.push({def:d,group:g,facade,side,ruin,impactSprite,smokeSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -219,6 +242,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const tower=selected,impact=tower.impactSprite;
   const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
   impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
+  tower.smokeSprite.position.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
   tower.impactAge=1.15;
   tower.impactEnergy=1;
   // This is deliberately a small distant damage contribution: foreground
@@ -274,6 +298,17 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   for(let i=0;i<towers.length;i++){
    const t=towers[i];
    if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   if(t.strikeDamage>0){
+    const intensity=Math.min(1,t.strikeDamage/.16);
+    // Persistent damage plume rises and drifts slightly, never allocating
+    // additional sprites as hits accumulate.
+    t.smokeSprite.visible=true;
+    t.smokeSprite.position.x=t.impactSprite.position.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
+    t.smokeSprite.position.y=Math.min(t.def.h*.96,t.impactSprite.position.y+3.2+Math.sin(elapsed*.47+i)*.8);
+    const width=5.5+intensity*5.2;
+    t.smokeSprite.scale.set(width,width*1.8,1);
+    t.smokeSprite.material.opacity=.12+intensity*.42;
+   }
    if(t.impactAge>0){
     t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));
     const fade=t.impactAge/1.15;
@@ -289,6 +324,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
