@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
+import {groundWindWeight,groundWindStep} from '../src/simulation/ground-wind.js';
 import {Script} from 'node:vm';
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
@@ -32,6 +33,29 @@ assert.ok(launchHtml.includes("location.protocol==='file:'"),
   'startup message must explain direct-file CORS failures');
 assert.ok(launchCmd.includes('python') && launchCmd.includes('8769') && launchCmd.includes('http.server'),
   'Windows preview launcher must start the expected HTTP server');
+// Deterministic ground-target wind checks. These exercise the same pure
+// response functions used by the live vehicle/pedestrian wind loops.
+const pushWeights={
+ bike:groundWindWeight({bike:true}),
+ sedan:groundWindWeight({}),
+ van:groundWindWeight({van:true}),
+ truck:groundWindWeight({truck:true}),
+ bus:groundWindWeight({bus:true}),
+ fireTruck:groundWindWeight({fireTruck:true})
+};
+assert.ok(pushWeights.bike>pushWeights.sedan&&pushWeights.sedan>pushWeights.van
+ &&pushWeights.van>pushWeights.truck&&pushWeights.truck>pushWeights.bus,
+ 'wind pushes smaller ground vehicles further than heavier vehicles');
+assert.ok(pushWeights.fireTruck<=pushWeights.bus,
+ 'emergency fire trucks resist wind like other large vehicles');
+const push=(x,z,weight)=>groundWindStep(x,1,z,0,1,20,1,0,0,weight,.05);
+assert.ok(push(15,20,1.2)>push(15,20,pushWeights.bike)
+ &&push(15,20,pushWeights.bike)>push(15,20,pushWeights.bus),
+ 'pedestrians shift more than bikes, and buses shift least');
+assert.equal(push(-10,20,1.2),0,'ground objects behind the dragon are not pushed');
+assert.equal(push(55,20,1.2),0,'wind has finite reach');
+assert.equal(push(15,60,1.2),0,'ground objects far outside the cone are unaffected');
+assert.ok(push(15,20,1.2)>.001,'a nearby pedestrian receives a visible gentle push');
 const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
