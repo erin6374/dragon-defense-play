@@ -1,5 +1,14 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — single-pass pointer aiming and touch regression (November 7)
+
+- Confirmed GitHub browser QA run #90 passed for the prior lighting optimization; the development branch had not advanced beyond `5c82a5b` before these edits.
+- Fixed a redundant `pointermove` registration: the universal pointer listener already processes touch drags, but a second touch-specific handler called `aim(e)` again on every pressed touch move. Removed the duplicate while retaining touch `pointerdown` aiming.
+- Reused two scratch vectors for normalized pointer coordinates and the ray-plane intersection instead of constructing a new `THREE.Vector2` and `THREE.Vector3` on each pointer event. Intended aiming clamp and plane are unchanged.
+- Added read-only `snap().aim` telemetry and browser QA coverage that dispatches left/right touch pointer moves, checks finite/clamped coordinates and directional response, and asserts there is exactly one pointermove registration.
+- Gameplay source commit `7bc274a`; QA telemetry `9ab44c6`; regression check `1253e06`, corrected static regex `18e29c2`. **Current change awaits fresh PR-head browser QA.** No claim of measured hardware FPS or touchscreen-device verification; no merge, deployment, or Building Explorer changes.
+
+
 ## Continuation — remove per-frame lighting color allocations (November 7)
 
 - Audited `updateNight(dt)`, which runs on the game animation path. Its unused `hazeColor` computation allocated two `THREE.Color` objects per call without affecting the scene. Removed that dead blend.
