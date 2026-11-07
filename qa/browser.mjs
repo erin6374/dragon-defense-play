@@ -79,6 +79,7 @@ try {
   await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
+  await page.locator('canvas').first().screenshot({path:'qa-output/02-playing-scene.png'});
   report.browser = browser.version();
   const before = await snap();
   await page.keyboard.down('KeyD');
@@ -198,6 +199,18 @@ try {
   await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames > n, duskFrames);
   report.dusk = dusk.result;
   await shot('06-north-broad-dusk');
+  await page.locator('canvas').first().screenshot({path:'qa-output/06-dusk-scene.png'});
+  await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
+  const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
+  assert.ok(traffic.ok,traffic.error);
+  assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');
+  assert.equal(traffic.result.nightVisible,true,'headlight road pool lights at night');
+  assert.ok(traffic.result.strength>0&&traffic.result.strength<=.24);
+  report.vehicleLighting=traffic.result;
+  const nightFrame=(await snap()).frameTimes.frames;
+  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>n,nightFrame);
+  await shot('07-vehicle-lighting');
+  await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
 } catch (error) {
   report.failure = String(error.stack ?? error);
