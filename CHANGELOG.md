@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — stable meteor impact flash during skyline collapse
+
+- Fixed a visual anchoring inconsistency: the short-lived skyline meteor impact flash was still parented to the damaged tower, so an impact that triggered structural collapse could cause the visible flash to shrink or move with the facade. The explosion's reported contact point and persistent smoke were already world-space anchored.
+- Reparented the preallocated flash sprite to the stable skyline group, retaining its existing shared effect material, opacity fade and geometry budget. The original local facade contact point is cached separately for later strikes and scorch marks. At strike time, a copy of its pre-collapse world contact point is converted into skyline-local sprite coordinates before the tower changes transform.
+- Updated existing world-position QA probes to use the unchanged local facade contact, and added browser assertions that the flash coincides with the returned meteor contact and remains fixed in world space across a synchronous tower collapse. The smoke/scorch mechanics, school gameplay and collision rules are unchanged.
+- This change is on draft PR #2 only. New browser QA, subjective appearance and hardware performance remain unverified.
+
+
 ## Continuation — stable meteor contact point during skyline collapse
 
 - Corrected a source-confirmed coordinate ordering issue: `strikeNearest` previously calculated the world-space explosion position *after* `setDamage` shrank or tilted the struck skyscraper. The meteor burst could therefore appear at a displaced facade location on the very strike that caused collapse.
