@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — independent post-impact skyline smoke
+
+- Corrected a visual hierarchy issue: persistent skyscraper smoke had been parented to the tower group, so a collapsing facade's vertical scale also compressed the smoke plume.
+- Smoke remains one preallocated sprite per landmark, but is now parented to the stable skyline group. On each strike, its origin is resolved once from the facade's world transform into skyline coordinates. Subsequent subtle smoke drift uses that stable origin while the tower collapses.
+- Added a browser regression that checks smoke remains visible and that its world-space scale does not change when the tower shrinks. This does not change local meteor collisions, gameplay, school destruction or production.
+- Latest software-WebGL QA is pending. Actual visual quality and hardware FPS remain unverified.
+
+
 ## Continuation — freeze fully settled skyline rubble (November 7)
 
 - Confirmed `feature/north-broad-graphics` was identical to previous handoff `90194fc`; browser QA **run #101 passed**, verifying the earlier intact-skyline flicker change.
