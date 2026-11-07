@@ -557,6 +557,11 @@ try {
     const initial=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
     assert.ok(initial.visible,'lab renderer is visible');
     assert.ok(initial.wingAngles.length===2,'dragon has two articulated wing assemblies');
+    const membrane=await lab.evaluate(()=>({panels:window.__PAULO_LAB_QA.membranePanels,
+      vertices:window.__PAULO_LAB_QA.membraneVertices}));
+    assert.equal(membrane.panels,10,'two wings each have five membrane panels');
+    assert.ok(membrane.vertices>=900,
+      'curved membrane panels are tessellated rather than single triangles');
     const poses=await lab.evaluate(()=>window.__PAULO_LAB_QA.states);
     assert.ok(poses.length>=12,'dragon has twelve animation reference poses');
     const fire=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('fire');return window.__PAULO_LAB_QA.snapshot();});
