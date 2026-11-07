@@ -193,28 +193,46 @@ const descriptions={
  takeoff:'Crouch, extend hind legs, then perform a large first downstroke.'
 };
 const poses=document.querySelector('#poses'),description=document.querySelector('#description');
-let state='hover',speed=1,time=0;
-// Pose evaluation is deterministic and can be called immediately when the
-// viewer switches states; animation frames then advance the same timeline.
+let state='hover',speed=1,time=0,paused=false;
+const playbackButton=document.querySelector('#play-toggle');
+const frameButton=document.querySelector('#step-frame');
+const timeSlider=document.querySelector('#timeline');
+const timeLabel=document.querySelector('#timeline-label');
+function syncPlaybackUI(){
+  playbackButton.textContent=paused?'Play':'Pause';
+  playbackButton.setAttribute('aria-pressed',String(paused));
+  timeSlider.value=String(time%8);
+  timeLabel.textContent=(time%8).toFixed(2)+'s';
+}
+function renderAtTime(){
+  applyPose(time);
+  renderer.render(scene,camera);
+  syncPlaybackUI();
+}
+playbackButton.addEventListener('click',()=>{paused=!paused;syncPlaybackUI();});
+frameButton.addEventListener('click',()=>{paused=true;time+=1/60;renderAtTime();});
+timeSlider.addEventListener('input',e=>{paused=true;time=Number(e.target.value);renderAtTime();});
+// The same deterministic timeline drives live animation, pause, scrubbing,
+// frame stepping, and QA. Browser tests can inspect exact poses.
 for(const name of Object.keys(descriptions)){
  const button=document.createElement('button');button.textContent=name.toUpperCase();button.setAttribute('aria-pressed',name===state);
- button.addEventListener('click',()=>{state=name;time=0;description.textContent=descriptions[name];for(const b of poses.children)b.setAttribute('aria-pressed',b===button);applyPose(0);renderer.render(scene,camera);});
+ button.addEventListener('click',()=>{state=name;time=0;description.textContent=descriptions[name];for(const b of poses.children)b.setAttribute('aria-pressed',b===button);renderAtTime();});
  poses.append(button);
 }
 description.textContent=descriptions[state];
 document.querySelector('#speed').addEventListener('input',e=>speed=+e.target.value);
-document.querySelector('#wire').addEventListener('change',e=>{for(const m of rigMarkers)m.visible=e.target.checked;});
+document.querySelector('#wire').addEventListener('change',e=>{for(const m of rigMarkers)m.visible=e.target.checked;renderAtTime();});
 const views={perspective:[13,9,18],front:[14,2,0],side:[0,3,19],top:[0,22,.01],rear:[-14,2,0]};
-document.querySelector('#view').addEventListener('change',e=>{camera.position.set(...views[e.target.value]);camera.lookAt(0,0,0);});
+document.querySelector('#view').addEventListener('change',e=>{camera.position.set(...views[e.target.value]);camera.lookAt(0,0,0);renderer.render(scene,camera);});
 let drag=false,prevX=0,prevY=0;
 renderer.domElement.addEventListener('pointerdown',e=>{drag=true;prevX=e.clientX;prevY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
 renderer.domElement.addEventListener('pointerup',()=>drag=false);
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-prevX,dy=e.clientY-prevY;prevX=e.clientX;prevY=e.clientY;
  const spherical=new THREE.Spherical().setFromVector3(camera.position);
  spherical.theta-=dx*.008;spherical.phi=THREE.MathUtils.clamp(spherical.phi+dy*.008,.1,Math.PI-.1);
- camera.position.setFromSpherical(spherical);camera.lookAt(0,0,0);
+ camera.position.setFromSpherical(spherical);camera.lookAt(0,0,0);if(paused)renderer.render(scene,camera);
 });
-renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();camera.position.multiplyScalar(e.deltaY>0?1.09:.91);camera.position.clampLength(6,55);},{passive:false});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();camera.position.multiplyScalar(e.deltaY>0?1.09:.91);camera.position.clampLength(6,55);if(paused)renderer.render(scene,camera);},{passive:false});
 const clock=new THREE.Clock();
 function applyPose(t){
  const cycle=Math.sin(t*5),soft=Math.sin(t*2);
@@ -249,11 +267,12 @@ function applyPose(t){
 }
 function animate(){
  requestAnimationFrame(animate);
- time+=Math.min(clock.getDelta(),.05)*speed;
- applyPose(time);
- renderer.render(scene,camera);
+ const dt=Math.min(clock.getDelta(),.05);
+ if(paused)return; // Freeze the pose and avoid unnecessary WebGL draw calls.
+ time+=dt*speed;
+ renderAtTime();
 }
-function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
+function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);if(paused)renderer.render(scene,camera);}
 new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  armorPlateCount:plateIndex,
@@ -262,7 +281,7 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
  current:p.mesh.geometry.attributes.position.array[3*3*13+3*6+1]};},
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
- snapshot(){return {state,wingAngles:wings.map(w=>w.shoulder.rotation.x),
+ snapshot(){return {state,paused,time,wingAngles:wings.map(w=>w.shoulder.rotation.x),
  wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
  headAngle:head.rotation.z,chestHeight:chest.scale.y,
  breath:breathPreview.snapshot(),
