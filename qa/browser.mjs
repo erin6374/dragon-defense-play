@@ -560,6 +560,8 @@ try {
     const membrane=await lab.evaluate(()=>({panels:window.__PAULO_LAB_QA.membranePanels,
       vertices:window.__PAULO_LAB_QA.membraneVertices}));
     assert.equal(membrane.panels,10,'two wings each have five membrane panels');
+    assert.equal(await lab.evaluate(()=>window.__PAULO_LAB_QA.armorPlateCount),66,
+      'dragon dorsal scales share one preallocated instanced armor batch');
     assert.ok(membrane.vertices>=900,
       'curved membrane panels are tessellated rather than single triangles');
     const poses=await lab.evaluate(()=>window.__PAULO_LAB_QA.states);
