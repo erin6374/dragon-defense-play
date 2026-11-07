@@ -138,3 +138,12 @@ Before this run's edits, `feature/north-broad-graphics` exactly matched `7e2805d
 This run changed `src/rendering/philadelphia-geometry-skyline.js` to bypass per-frame `sin/pow` electrical flicker calculations when a skyline tower has `collapse=0`. The old damaged-tower pulse formula is unchanged (`9851093`). A reversible `sampleSkylineEmissive` QA probe (`239aa25`) and browser regression (`000543c`) compare steady dusk emissive windows before impact with varying emission after a forced tower collapse. Changelog records scope and caveats. This is an unmeasured source-level CPU-work reduction; do not claim hardware FPS or GPU gains.
 
 **Next step:** check the newest PR-head browser QA and inspect exact failure logs if it fails. A newly introduced assertion checks `damagedValues` vary by more than 0.002; if this fails, first verify staged dusk darkness and the sample times before changing gameplay. The current PR head may advance due to documentation-only commits. Avoid conflicting writes with other sessions. Production main v5.2.3 and Building Explorer remain unchanged; do not merge or deploy.
+
+## Scheduled continuation — settled skyline rubble (November 7)
+
+At start, development branch was still exactly `90194fc`; GitHub Actions browser QA **run #101 passed** for the prior intact-tower flicker optimization. No concurrent edits or active QA were found at start.
+
+Identified a per-frame source inefficiency: skyline towers with `fallActive` kept recomputing all three facade slab rotations, matrices and ground-support heights after their rubble had landed. Gameplay commit `20f8757` adds a `fallSettled` flag, set only when all slabs have finished their rotation and reached the ground. The animation loop then stops doing slab transforms for that tower; reset clears the flag and restores release poses. QA commit `f1be956` extends the existing facade-fall regression to advance another two simulated seconds after landing and check both elapsed fall time and slab heights remain constant. Changelog documents the change.
+
+**Verification pending:** check the newest PR-head GitHub browser QA; inspect failures before further edits. This optimization is not measured hardware FPS or CPU time, and no source-level speed claim should be inflated. If test fails, verify the final fall pose and settling condition before changing visuals. No edits to main, Building Explorer, deployment or packaging. Avoid duplicate/conflicting writes.
+
