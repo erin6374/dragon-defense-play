@@ -234,9 +234,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // on every impact. Their transforms are derived from collapse severity.
   const slabs=[];
   for(let j=0;j<3;j++){
-   const slab=new THREE.Mesh(collapsedSlabGeo,side);
+   const slab=new THREE.Mesh(collapsedSlabGeo,[side,side,side,side,facade,side]);
    slab.name='fallen-facade-'+d.id+'-'+j;
-   slab.scale.set(d.w*(.23+j*.045),.38+j*.13,d.depth*(.43-j*.075));
+   slab.scale.set(d.w*(.23+j*.045),d.h*(.09+j*.015),.24+j*.08);
    slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
    slab.rotation.set(.11*j,.17*j,.09*(j-1));
    // Each slab has a fixed fall start height and a staggered release time.
@@ -379,11 +379,15 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
      const slab=t.slabs[j],fallTime=Math.max(0,t.fallElapsed-slab.userData.fallDelay);
      // Gravity-like descent with a hard ground clamp keeps all facade sections
      // supported, even if simulation frames arrive irregularly.
-     const y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
-     slab.position.y=y;
-     const settled=y<=slab.userData.groundY+.001;
-     slab.rotation.z=(j-1)*.09+(settled?1:Math.min(1,fallTime/2))*(j%2?-.36:.28);
-     slab.rotation.x=.11*j+Math.min(1,fallTime/2)*.24;
+     const turn=Math.min(1,fallTime/1.8);
+     slab.rotation.z=(j-1)*.09+turn*(j%2?-.36:.28);
+     slab.rotation.x=.11*j+turn*(Math.PI/2-.11*j);
+     slab.updateMatrix();
+     // Box support height includes the rotated panel, not only its thickness.
+     // Matrix columns already include scale, so this keeps every corner above ground.
+     const e=slab.matrix.elements;
+     slab.userData.groundY=(Math.abs(e[1])+Math.abs(e[5])+Math.abs(e[9]))*.5+.02;
+     slab.position.y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
     }
    }
    if(t.strikeDamage>0){

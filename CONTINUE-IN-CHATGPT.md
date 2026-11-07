@@ -53,3 +53,6 @@ Integrated remote skyline work through 78e4262 with local source-interior night 
 
 Latest correction: collapsing tower bodies now stay above ground; full local QA passed. See grounded-collapse.png and grounded-report.json. PLAY-PREVIEW.cmd launches a local server at http://127.0.0.1:8769/. Public production is still unchanged.
 
+
+Latest: upright textured facade fragments with rotated-box ground support; full local QA passed. Evidence: facade-panels-falling.png and facade-panels-report.json. Hardware performance and cinematic realism remain unverified.
+
