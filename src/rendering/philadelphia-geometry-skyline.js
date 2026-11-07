@@ -167,7 +167,22 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
+ // One geometry shared by all fallen facade panels. A stock BoxGeometry has
+ // six material groups (one draw for every face). The only distinct finish is
+ // the camera-facing +Z facade. Reorder its indexed triangles into five side
+ // faces then one front face, reducing six groups/draws to two per panel.
  const collapsedSlabGeo=new THREE.BoxGeometry(1,1,1);
+ const slabIndices=collapsedSlabGeo.index.array;
+ const groupedIndices=new Uint16Array(slabIndices.length);
+ const faceOrder=[0,1,2,3,5,4];
+ for(let face=0;face<faceOrder.length;face++){
+  const at=faceOrder[face]*6;
+  groupedIndices.set(slabIndices.slice(at,at+6),face*6);
+ }
+ collapsedSlabGeo.setIndex(new THREE.BufferAttribute(groupedIndices,1));
+ collapsedSlabGeo.clearGroups();
+ collapsedSlabGeo.addGroup(0,30,0); // shared opaque side finish
+ collapsedSlabGeo.addGroup(30,6,1); // original textured front facade
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
  const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
@@ -234,7 +249,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // on every impact. Their transforms are derived from collapse severity.
   const slabs=[];
   for(let j=0;j<3;j++){
-   const slab=new THREE.Mesh(collapsedSlabGeo,[side,side,side,side,facade,side]);
+   const slab=new THREE.Mesh(collapsedSlabGeo,[side,facade]);
    slab.name='fallen-facade-'+d.id+'-'+j;
    slab.scale.set(d.w*(.23+j*.045),d.h*(.09+j*.015),.24+j*.08);
    slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
