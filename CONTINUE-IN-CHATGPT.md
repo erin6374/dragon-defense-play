@@ -172,3 +172,12 @@ Gameplay commit `0cdd438` makes the existing smoke sprite visible immediately in
 
 **Verification pending:** inspect the latest PR-head GitHub Actions browser QA. If it fails, read the specific failure before any additional edit. The branch must remain in draft; no production merge/deploy or Building Explorer changes. The new source-level visibility optimization has no measured FPS benefit. Another session may advance this branch, so always re-check head before writing.
 
+
+## Scheduled continuation — skyline impact coordinate anchoring (November 7)
+
+At start, draft PR #2 head `f5fcb28` matched the latest handoff and browser QA run #119 had **passed**. No competing branch edits or running QA were observed before this change.
+
+The skyline meteor handler was returning its explosion world position after `setDamage` changed the struck tower's height/tilt. The actual contact point and persistent smoke were resolved before damage, so a collapse-triggering strike could place its cinematic explosion at the displaced facade rather than the incoming meteor's contact. Gameplay commit `b1dd36c` captures the hit position before damage, without adding per-impact allocations. QA probe commit `a00a052` exposes expected pre-damage and actual post-damage contact positions; browser regression commit `268744c` checks the returned explosion position against the former for six strikes and ensures at least one tower transform actually occurs. Changelog updated in `eee3114`.
+
+**Next action:** inspect newest PR-head browser QA. If the new regression fails, read the exact logs and verify the assumption that repeat strikes use the same local impact position; correct the test or code based on evidence. Do not mark this fix verified before QA passes. Avoid overlapping branch edits with other sessions. No main merge/deploy or Building Explorer changes.
+
