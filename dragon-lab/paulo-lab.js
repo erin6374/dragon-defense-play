@@ -3,8 +3,12 @@ import { createBreathPreview } from './breath-effects.js';
 const host=document.querySelector('#viewport');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#101a27');
 scene.fog=new THREE.Fog('#101a27',28,65);
-const camera=new THREE.PerspectiveCamera(40,1,.1,120);
-camera.position.set(13,9,18);camera.lookAt(0,1,0);
+const perspectiveCamera=new THREE.PerspectiveCamera(40,1,.1,120);
+perspectiveCamera.position.set(13,9,18);perspectiveCamera.lookAt(0,1,0);
+// Alignment views use a true orthographic camera, not merely a named
+// perspective preset; compare anatomy and wing symmetry without foreshortening.
+const referenceCamera=new THREE.OrthographicCamera(-10,10,10,-10,.1,200);
+let camera=perspectiveCamera,currentView='perspective';
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -228,16 +232,55 @@ document.querySelector('#bank-direction').addEventListener('change',e=>{
  renderAtTime();
 });
 const views={perspective:[13,9,18],front:[14,2,0],side:[0,3,19],top:[0,22,.01],rear:[-14,2,0]};
-document.querySelector('#view').addEventListener('change',e=>{camera.position.set(...views[e.target.value]);camera.lookAt(0,0,0);renderer.render(scene,camera);});
+// Model bounds are recalculated on view selection (not on every frame).
+// Include a 30% silhouette margin so wingtips remain inside reference shots.
+function setView(name){
+  currentView=name in views?name:'perspective';
+  if(currentView==='perspective'){
+    camera=perspectiveCamera;
+    camera.up.set(0,1,0);
+    camera.position.set(...views.perspective);
+    camera.lookAt(0,1,0);
+  } else {
+    camera=referenceCamera;
+    const bounds=new THREE.Box3().setFromObject(root);
+    const center=bounds.getCenter(new THREE.Vector3());
+    const extent=bounds.getSize(new THREE.Vector3());
+    camera.up.set(0,currentView==='top'?0:1,currentView==='top'?-1:0);
+    camera.position.set(...views[currentView]).add(center);
+    camera.lookAt(center);
+    const aspect=Math.max(.1,host.clientWidth/Math.max(1,host.clientHeight));
+    let halfW=(currentView==='front'||currentView==='rear'?extent.z:extent.x)*.65;
+    let halfH=(currentView==='top'?extent.z:extent.y)*.65;
+    halfW=Math.max(1.5,halfW);halfH=Math.max(1.5,halfH);
+    halfH=Math.max(halfH,halfW/aspect);
+    halfW=halfH*aspect;
+    camera.left=-halfW;camera.right=halfW;
+    camera.top=halfH;camera.bottom=-halfH;
+    camera.zoom=1;
+  }
+  camera.updateProjectionMatrix();
+}
+document.querySelector('#view').addEventListener('change',e=>{setView(e.target.value);renderer.render(scene,camera);});
 let drag=false,prevX=0,prevY=0;
-renderer.domElement.addEventListener('pointerdown',e=>{drag=true;prevX=e.clientX;prevY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
+renderer.domElement.addEventListener('pointerdown',e=>{if(camera.isOrthographicCamera)return;drag=true;prevX=e.clientX;prevY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
 renderer.domElement.addEventListener('pointerup',()=>drag=false);
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-prevX,dy=e.clientY-prevY;prevX=e.clientX;prevY=e.clientY;
  const spherical=new THREE.Spherical().setFromVector3(camera.position);
  spherical.theta-=dx*.008;spherical.phi=THREE.MathUtils.clamp(spherical.phi+dy*.008,.1,Math.PI-.1);
  camera.position.setFromSpherical(spherical);camera.lookAt(0,0,0);if(paused)renderer.render(scene,camera);
 });
-renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();camera.position.multiplyScalar(e.deltaY>0?1.09:.91);camera.position.clampLength(6,55);if(paused)renderer.render(scene,camera);},{passive:false});
+renderer.domElement.addEventListener('wheel',e=>{
+ e.preventDefault();
+ if(camera.isOrthographicCamera){
+  camera.zoom=THREE.MathUtils.clamp(camera.zoom*(e.deltaY>0?.92:1.08),.4,4);
+  camera.updateProjectionMatrix();
+ }else{
+  camera.position.multiplyScalar(e.deltaY>0?1.09:.91);
+  camera.position.clampLength(6,55);
+ }
+ if(paused)renderer.render(scene,camera);
+},{passive:false});
 const clock=new THREE.Clock();
 function applyPose(t){
  const cycle=Math.sin(t*5),soft=Math.sin(t*2);
@@ -277,7 +320,14 @@ function animate(){
  time+=dt*speed;
  renderAtTime();
 }
-function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();renderer.setSize(w,h,false);if(paused)renderer.render(scene,camera);}
+function resize(){
+ const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);
+ perspectiveCamera.aspect=w/h;
+ perspectiveCamera.updateProjectionMatrix();
+ renderer.setSize(w,h,false);
+ if(currentView!=='perspective')setView(currentView);
+ if(paused)renderer.render(scene,camera);
+}
 new ResizeObserver(resize).observe(host);resize();animate();
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  armorPlateCount:plateIndex,
@@ -286,7 +336,11 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
  current:p.mesh.geometry.attributes.position.array[3*3*13+3*6+1]};},
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
- snapshot(){return {state,paused,time,bankDirection,rootRoll:root.rotation.z,wingAngles:wings.map(w=>w.shoulder.rotation.x),
+ snapshot(){return {state,paused,time,bankDirection,rootRoll:root.rotation.z,
+ cameraType:camera.isOrthographicCamera?'orthographic':'perspective',
+ cameraFrustum:camera.isOrthographicCamera?{left:camera.left,right:camera.right,top:camera.top,bottom:camera.bottom}:null,
+ modelBounds:new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).toArray(),
+ wingAngles:wings.map(w=>w.shoulder.rotation.x),
  wingFold:wings.map(w=>w.shoulder.rotation.y),jawAngle:jaw.rotation.z,
  headAngle:head.rotation.z,chestHeight:chest.scale.y,
  breath:breathPreview.snapshot(),
