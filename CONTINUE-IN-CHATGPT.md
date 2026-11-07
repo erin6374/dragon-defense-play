@@ -156,3 +156,10 @@ This interactive pass corrected an unaddressed visual hierarchy issue: persisten
 
 **Verification pending until the newest PR-head browser QA completes.** If it fails, inspect actual error/log first and correct on the existing branch. Production `main` v5.2.3, Building Explorer and deployment remain untouched. Other hourly sessions may be updating this branch, so compare branch head and tests before any new writes.
 
+
+## Interactive continuation — impact-only smoke updates (November 7)
+
+Starting checkpoint: PR #2 head `4635445` passed GitHub browser QA run #110. This run audited the new independent skyline smoke effect and found smoke dimensions/opacity were still being assigned every frame, even though they depend only on cumulative hits. Commit `ad46338` moves those stable property writes into `strikeNearest`, retaining the same opacity/size formulas and per-frame position drift. Commit `b2eae59` adds a six-hit QA regression checking that plume width/opacity increase or stay constant as damage accumulates. Changelog is updated.
+
+**Verification pending:** inspect latest PR-head GitHub Actions browser QA before considering this change verified. Do not claim measured FPS or graphics improvement, and avoid overlapping development branch writes if another scheduled session has started. No merge, production deployment, or Building Explorer changes.
+
