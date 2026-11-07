@@ -206,6 +206,8 @@ try {
   assert.ok(towerImpact.result.afterDamage > towerImpact.result.beforeDamage, 'individual tower strike adds visual damage');
   assert.equal(towerImpact.result.flashVisible, true, 'landmark impact flash is displayed');
   assert.ok(towerImpact.result.flashOpacity > 0, 'landmark impact flash has positive opacity');
+  assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
+  assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
   assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
   report.landmarkImpact = towerImpact.result;
   await shot('06-landmark-strike');
