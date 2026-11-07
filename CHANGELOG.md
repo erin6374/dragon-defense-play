@@ -1,3 +1,14 @@
+# Dragon Defense — Development Changelog
+
+## Paulo v5.4 design laboratory — isolated animation and anatomy prototype (November 7)
+
+- Added `dragon-lab/index.html` and `dragon-lab/paulo-lab.js`: a separate original procedural Three.js dragon with charcoal armor, crimson membrane wings, bronze horns and amber eyes. This is a **blockout**, not a production-ready skinned model.
+- Articulated torso/chest, neck/head/jaw, two multi-joint wings with membrane fingers, four legs and seven tail segments. Includes perspective plus front, side, top and rear views, orbit/zoom, animation speed control and optional joint markers.
+- Added 12 named movement/attack studies: idle, hover, forward flight, glide, bank, inhale, wind exhale, fire, gas, hit, land and takeoff. These are procedural pose studies, not imported copyrighted animation clips.
+- Added `dragon-lab/DESIGN-SPEC.md` with original art direction, skeletal hierarchy, approximate motion timing and explicit acceptance criteria before replacing the current dragon.
+- Added browser QA coverage for the isolated viewer's load, two wing chains, 12 states, wind/fire jaw movement, no page errors and a screenshot (`08-paulo-dragon-lab.png`).
+- **QA pending.** No production gameplay, dragon physics, controls, or collision changes. The current v5.3.1 player dragon remains intact; production main stays v5.2.3.
+
 # Dragon Defense v5.3.1 — Wind & Street Effects Preview
 
 ## Wind breath: ground targets, blowing debris, responsive smoke (November 7)
