@@ -22,7 +22,7 @@ The existing perspective camera, fixed world-space city blocks, near-foreground 
 
 The complete Playwright suite passed twice on Microsoft Edge 156.0.4314.58, using software WebGL and the mobile graphics preset at 1024 × 576. The final run recorded zero browser errors and zero warnings. All changed JavaScript files passed syntax checks; `git diff --check` passed.
 
-Coverage includes startup, actual source/game school geometry comparisons, both camera pans, anchored streets, localized school impact, terminal collapse, settled rubble, restart, dusk, and daylight/night headlight visibility. Real PNGs and full diagnostics are in `qa-output/` locally. The final run's road-light check returned daylight hidden, night visible, strength 0.24.
+Coverage includes startup, actual source/game school geometry comparisons, both camera pans, anchored streets, localized school impact, terminal collapse, settled rubble, restart, dusk, and daylight/night headlight visibility. Full diagnostics are in `qa-output/` locally. Review copies are committed in `qa/review/`: [dusk](review/dusk.png), [night](review/night.png), and the [browser report](review/report.json). The final run's road-light check returned daylight hidden, night visible, strength 0.24.
 
 The final performance sample recorded 721 draw calls, 1,028,048 triangles and render scale 1. Its reported 0.8 FPS is a headless software-rendering result, not a hardware or mobile benchmark. Traffic and damage evolve during the suite; counts from different runs are not controlled before/after comparisons. No frame-rate improvement is claimed.
 
@@ -43,4 +43,4 @@ The final performance sample recorded 721 draw calls, 1,028,048 triangles and re
 
 ## Release status
 
-No production deployment or merge. Keep the existing PR in draft until the remaining visual targets and device performance are reviewed. Windows allowed shell copying into the project after a security adjustment, but Node screenshot writes there were blocked again; the user was notified before retrying.
+No production deployment or merge. Keep the existing PR in draft until the remaining visual targets and device performance are reviewed. A second Windows Security adjustment restored Node screenshot writes to the project. New dusk and night captures were saved successfully and reviewed.
