@@ -1,5 +1,13 @@
 # Dragon Defense v5.3.0 — North Broad Street
 
+## Continuation — immediate smoke and stable-position regression
+
+- Moved the skyline smoke sprite's visibility toggle into the meteor strike handler. The plume appears in the impact event itself, without waiting for a subsequent animation update; damaged towers no longer repeat that visibility assignment every frame.
+- The smoke still drifts in its existing skyline-space coordinates, uses the same one-sprite budget, and is hidden on restart.
+- Browser QA now checks visibility **before** the next update and compares smoke world positions immediately before and after a forced tower collapse in one synchronous probe. This closes a coverage gap: checking parent identity and world scale alone could miss unwanted translation.
+- Previous head `f136f6c` passed GitHub browser QA run #114. This new change remains unverified until a fresh PR-head run passes. No measured hardware performance or cinematic-fidelity claim; production and Building Explorer unchanged.
+
+
 ## Continuation — damage-triggered skyline smoke updates
 
 - Removed redundant per-frame smoke `Sprite.scale.set` and `SpriteMaterial.opacity` writes from `philadelphia-geometry-skyline.js`. The width/opacity depend only on the accumulated strike damage, so they are now assigned once in `strikeNearest`; per-frame animation still updates the floating smoke position.
