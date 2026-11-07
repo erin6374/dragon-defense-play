@@ -624,6 +624,19 @@ try {
       'scrubber sets deterministic pose time');
     await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('wind'));
     await lab.screenshot({path:'qa-output/08-paulo-dragon-lab.png'});
+    // Repeatable orthographic inspection frames expose wing and leg silhouette
+    // problems that can hide in a single three-quarter camera.
+    await lab.evaluate(()=>{
+      document.querySelector('#view').value='front';
+      document.querySelector('#view').dispatchEvent(new Event('change'));
+      window.__PAULO_LAB_QA.setState('hover');
+    });
+    await lab.screenshot({path:'qa-output/09-paulo-front-reference.png'});
+    await lab.evaluate(()=>{
+      document.querySelector('#view').value='side';
+      document.querySelector('#view').dispatchEvent(new Event('change'));
+    });
+    await lab.screenshot({path:'qa-output/10-paulo-side-reference.png'});
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};
