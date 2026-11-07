@@ -354,8 +354,22 @@ try {
    'settled skyline fall simulation stops advancing elapsed time');
   assert.deepEqual(idleSkyline.result.slabY,settledSkyline.result.slabY,
    'settled skyline rubble remains fixed on the ground');
+  // A short impact flash should be gone after the simulated collapse,
+  // but persistent smoke, scorch and rubble should still be visible.
+  const aftermath=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  assert.ok(aftermath.ok,aftermath.error);
+  assert.equal(aftermath.result.impactVisible,false,
+   'short-lived skyline flash expires after several seconds');
+  assert.equal(aftermath.result.smokeVisible,true,
+   'impact smoke persists after the flash expires');
+  assert.equal(aftermath.result.scorchVisible,true,
+   'facade scorch persists after the flash expires');
+  assert.equal(aftermath.result.ruinVisible,true,
+   'collapsed skyscraper rubble persists after the flash expires');
+  report.skylineAftermath=aftermath.result;
   report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result,idle:idleSkyline.result};
   await skylineShot('06-skyline-rubble');
+  await skylineShot('06-skyline-smoke-aftermath');
   await shot('06-landmark-collapse');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
   const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
