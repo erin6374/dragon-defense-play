@@ -137,14 +137,34 @@ export function createDistantNeighborhood({root}){
    g.add(mesh);drawCalls++;
   }
  }
+ // Shared translucent smoke atlas replaces obvious rigid black cones. A single
+ // billboard per damaged building retains the original 28-marker visual budget.
+ // The texture is constructed once; no per-frame canvas or material allocations.
+ const smokeCanvas=document.createElement('canvas');
+ smokeCanvas.width=64;smokeCanvas.height=128;
+ const smokeCtx=smokeCanvas.getContext('2d');
+ for(let i=0;i<4;i++){
+  const x=32+Math.sin(i*2.1)*7,y=104-i*23,r=19+i*3;
+  const gradient=smokeCtx.createRadialGradient(x,y,1,x,y,r);
+  gradient.addColorStop(0,'rgba(67,71,76,.60)');
+  gradient.addColorStop(.55,'rgba(93,100,106,.35)');
+  gradient.addColorStop(1,'rgba(117,127,135,0)');
+  smokeCtx.fillStyle=gradient;
+  smokeCtx.beginPath();smokeCtx.ellipse(x,y,r*.83,r,0,0,Math.PI*2);smokeCtx.fill();
+ }
+ const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
+ smokeTexture.colorSpace=THREE.SRGBColorSpace;
+ const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
  const damageMarkers=[];
- const smokeGeo=new THREE.ConeGeometry(.5,2,6);const smokeMat=new THREE.MeshBasicMaterial({color:0x302e30,transparent:true,opacity:.30,depthWrite:false});
  function setHealth(health){
   const damage=Math.max(0,Math.min(1,1-health/100));
   const targetCount=Math.min(28,Math.floor(damage*28));
   while(damageMarkers.length<targetCount){
    const b=buildingDefs[(damageMarkers.length*41+23)%buildingDefs.length];
-   const puff=new THREE.Mesh(smokeGeo,smokeMat);puff.position.set(b.x,b.h+1.9,b.z);puff.scale.setScalar(1+rand()*1.9);
+   const puff=new THREE.Sprite(smokeMat);
+   const size=2.4+rand()*2.5;
+   puff.position.set(b.x,b.h+size*.65,b.z);
+   puff.scale.set(size,size*1.9,1);
    groups[b.tier].add(puff);damageMarkers.push(puff);
   }
   while(damageMarkers.length>targetCount)damageMarkers.pop().removeFromParent();
