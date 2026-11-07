@@ -274,16 +274,19 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const smokeSprite=new THREE.Sprite(smokeMaterial.clone());
   smokeSprite.name='landmark-meteor-smoke-'+d.id;
   smokeSprite.visible=false;
-  smokeSprite.position.set(0,d.h*.73,d.depth/2+.65);
+  smokeSprite.position.set(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
   smokeSprite.scale.set(7,13,1);
-  g.add(smokeSprite);
+  // Smoke lives in stable skyline space rather than inheriting the tower's
+  // shrinking/tilting collapse transform.
+  group.add(smokeSprite);
   const scorchSprite=new THREE.Sprite(scorchMaterial.clone());
   scorchSprite.name='landmark-facade-scorch-'+d.id;
   scorchSprite.visible=false;
   scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
   scorchSprite.scale.set(5,5,1);
   g.add(scorchSprite);
-  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,impactSprite,smokeSprite,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
+  const smokeOrigin=new THREE.Vector3(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
+  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,impactSprite,smokeSprite,smokeOrigin,scorchSprite,impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -315,7 +318,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   const tower=selected,impact=tower.impactSprite;
   const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
   impact.position.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55);
-  tower.smokeSprite.position.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
+  // Resolve the strike into stable skyline-local coordinates once. Persistent
+  // smoke must not move or scale with later structural collapse.
+  tower.smokeOrigin.set(impact.position.x,Math.min(tower.def.h*.91,impact.position.y+3),tower.def.depth/2+.65);
+  tower.group.localToWorld(tower.smokeOrigin);
+  group.worldToLocal(tower.smokeOrigin);
+  tower.smokeSprite.position.copy(tower.smokeOrigin);
   tower.scorchSprite.position.set(impact.position.x,impact.position.y,tower.def.depth/2+.62);
   tower.impactAge=1.15;
   tower.impactEnergy=1;
@@ -422,8 +430,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     // Persistent damage plume rises and drifts slightly, never allocating
     // additional sprites as hits accumulate.
     t.smokeSprite.visible=true;
-    t.smokeSprite.position.x=t.impactSprite.position.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
-    t.smokeSprite.position.y=Math.min(t.def.h*.96,t.impactSprite.position.y+3.2+Math.sin(elapsed*.47+i)*.8);
+    t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
+    t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*.8;
     const width=5.5+intensity*5.2;
     t.smokeSprite.scale.set(width,width*1.8,1);
     t.smokeSprite.material.opacity=.12+intensity*.42;
