@@ -622,6 +622,29 @@ try {
     assert.equal(scrubbed.paused,true,'scrubbing keeps preview paused');
     assert.ok(Math.abs(scrubbed.time-1.25)<.0001,
       'scrubber sets deterministic pose time');
+    // Match both bank directions at exactly the same timeline position.
+    const rightBank=await lab.evaluate(()=>{
+      window.__PAULO_LAB_QA.setState('bank');
+      const timeline=document.querySelector('#timeline');
+      timeline.value='0.75';timeline.dispatchEvent(new Event('input',{bubbles:true}));
+      const direction=document.querySelector('#bank-direction');
+      direction.value='right';direction.dispatchEvent(new Event('change',{bubbles:true}));
+      return window.__PAULO_LAB_QA.snapshot();
+    });
+    const leftBank=await lab.evaluate(()=>{
+      const direction=document.querySelector('#bank-direction');
+      direction.value='left';direction.dispatchEvent(new Event('change',{bubbles:true}));
+      return window.__PAULO_LAB_QA.snapshot();
+    });
+    assert.equal(rightBank.bankDirection,1,'right bank is the default orientation');
+    assert.equal(leftBank.bankDirection,-1,'left bank reverses the direction');
+    assert.equal(rightBank.time,leftBank.time,'bank comparison uses the identical animation time');
+    assert.ok(Math.abs(rightBank.rootRoll)>.05,'bank pose produces visible body roll');
+    assert.ok(Math.abs(rightBank.rootRoll+leftBank.rootRoll)<.00001,
+      'body roll reverses symmetrically for left/right bank');
+    assert.ok(Math.abs(rightBank.wingAngles[0]+leftBank.wingAngles[1])<.00001&&
+      Math.abs(rightBank.wingAngles[1]+leftBank.wingAngles[0])<.00001,
+      'left and right wing shoulder poses mirror across banking directions');
     await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('wind'));
     await lab.screenshot({path:'qa-output/08-paulo-dragon-lab.png'});
     // Repeatable orthographic inspection frames expose wing and leg silhouette
