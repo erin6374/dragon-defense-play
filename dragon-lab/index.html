@@ -22,6 +22,8 @@ select,input{width:100%}
 <main><section id="viewport"><div id="info">Original procedural blockout · no copyrighted character mesh or animation. Drag to orbit, scroll to zoom.</div></section>
 <aside><h2>Animation studies</h2><div class="controls" id="poses"></div>
 <label for="speed">Animation speed</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1">
+<div class="controls" style="margin-top:12px"><button id="play-toggle" type="button" aria-pressed="false">Pause</button><button id="step-frame" type="button">+1 frame</button></div>
+<label for="timeline">Pose time <output id="timeline-label" for="timeline">0.00s</output></label><input id="timeline" type="range" min="0" max="8" step=".01" value="0" aria-label="Scrub animation time">
 <label for="view">Orthographic reference</label><select id="view"><option value="perspective">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="top">Top</option><option value="rear">Rear</option></select>
 <label for="wire">Rig / joint markers</label><input id="wire" type="checkbox">
 <h2>Model specification</h2><p>Original realistic-mascot hybrid. Charcoal scale plates, crimson wing membrane, bronze horns, amber eyes. A four-legged, two-winged silhouette; head and neck counterbalance a segmented tail.</p>
