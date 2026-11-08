@@ -108,11 +108,19 @@ function teeth(parent,upper){
 const upperTeeth=teeth(head,true);
 const lowerTeeth=teeth(jaw,false);
 const breathPreview=createBreathPreview(head);
-const tail=[];let previous=torso;
+const tail=[],tailProfile=[];let previous=torso;
+// Tapered overlapping tail links replace isolated bead-like ellipsoids.
+// Each link reaches past the next joint, preserving a continuous silhouette
+// while the seven original pivots continue to animate independently.
 for(let i=0;i<7;i++){
  const seg=pivot(previous,i===0?[-1.78,.04,0]:[-.61,0,0]);marker(seg);
- ell(seg,i%2?mat.armor:mat.plates,[-.34,0,0],[.48-i*.047,.31-i*.033,.31-i*.033]);
- spike(seg,-.25,.24-i*.02,0,.25-i*.017);
+ const baseRadius=Math.max(.07,.31-i*.035);
+ const tipRadius=Math.max(.055,baseRadius-.035);
+ const length=.74;
+ const taperedLink=new THREE.CylinderGeometry(tipRadius,baseRadius,length,9);
+ part(seg,taperedLink,i%2?mat.armor:mat.plates,[-.32,0,0],[1,1,1],[0,0,Math.PI/2]);
+ spike(seg,-.25,.24-i*.025,0,Math.max(.09,.25-i*.022));
+ tailProfile.push({length,baseRadius,tipRadius});
  tail.push(seg);previous=seg;
 }
 part(previous,cone,mat.bronze,[-.75,0,0],[.15,.75,.15],[0,0,Math.PI/2]);
@@ -373,6 +381,7 @@ function referenceFrameMetrics(){
 }
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
  armorPlateCount:plateIndex,fangCounts:[upperTeeth.count,lowerTeeth.count],
+ tailProfile,
  membranePanels:membranePanels.length,
  membraneVertices:membranePanels.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0),
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
