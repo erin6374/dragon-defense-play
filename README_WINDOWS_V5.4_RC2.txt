@@ -3,6 +3,14 @@ TECH FREIRE DRAGON DEFENSE — v5.4.0 RC2 WINDOWS DEVELOPMENT PREVIEW
 Status: unmerged developer release candidate; original dragon remains default.
 Base game v5.2.3 / North Broad graphics / wind gameplay v5.3.1 / Paulo v5.4 design.
 
+WINDOWS PREREQUISITES
+- Python 3 must be installed and available as `py -3` or `python`.
+  Check in Command Prompt with `py -3 --version` or `python --version`.
+  If neither works, install Python 3 from https://www.python.org/downloads/windows/
+  (enable the PATH option if offered), then reopen Command Prompt.
+- Use a current Chrome or Edge browser with WebGL enabled.
+- The launcher runs a local-only HTTP server; no cloud account is required.
+
 PLAY ON WINDOWS
 1. Extract the ENTIRE ZIP into a normal folder (do not run inside the ZIP).
 2. Double-click PLAY-PREVIEW.cmd; let it start the local HTTP server.
