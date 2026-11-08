@@ -59,6 +59,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   }
   updateExhaust(dt);for(let i=missiles.length-1;i>=0;i--){const m=missiles[i];m.life-=dt;m.age=(m.age||0)+dt;smokeTrail(m.mesh.position,dt);
    if(m.homing){const wanted=dragon.position.clone().sub(m.mesh.position).normalize().multiplyScalar(21);m.vel.lerp(wanted,Math.min(1,dt*.9));}
+   const previousPosition=m.mesh.position.clone();
    m.mesh.position.addScaledVector(m.vel,dt);m.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),m.vel.clone().normalize());
    let hit=false;
    for(const shot of playerShots){if(shot.hostile||shot.fireTarget||shot.life<=0)continue;if(shot.mesh.position.distanceTo(m.mesh.position)<1.8){shot.life=0;hit=true;break;}}
@@ -67,8 +68,8 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
    // When Paulo evades, a military rocket can strike the neighborhood below.
    let collateral=false;
    if(!hit&&typeof onCollateral==='function'){
-    const impact=detectMilitaryCollateral(m.mesh.position,m.age,getCollateralStructures?.()||[]);
-    if(impact){onCollateral(impact);collateral=true;hit=true;
+    const impact=detectMilitaryCollateral(m.mesh.position,m.age,getCollateralStructures?.()||[],previousPosition);
+    if(impact){m.mesh.position.set(impact.x,impact.y,impact.z);onCollateral(impact);collateral=true;hit=true;
      if(collateralNotice<=0){onMessage(impact.type==='structure'?'MILITARY ROCKET HITS A BUILDING!':'MILITARY STRIKE CRATERS BROAD STREET!');collateralNotice=3.4;}
     }
    }
