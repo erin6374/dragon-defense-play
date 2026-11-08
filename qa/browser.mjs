@@ -288,13 +288,15 @@ try {
   await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
-  // The desktop wave toast must not be covered by the interception status.
+  // Real 1024x576 screenshot: status must clear HUD health/lives, then wave clears status.
   const desktopAlerts = await page.evaluate(() => {
     const bounds = id => { const r = document.getElementById(id).getBoundingClientRect();
       return {left:r.left,top:r.top,right:r.right,bottom:r.bottom}; };
-    return {power:bounds('power-status'),wave:bounds('toast')};
+    return {hud:bounds('hud'),power:bounds('power-status'),wave:bounds('toast')};
   });
-  assert.ok(desktopAlerts.wave.top >= desktopAlerts.power.bottom+4,
+  assert.ok(desktopAlerts.power.top >= desktopAlerts.hud.bottom+4,
+    '1024x576 interception status must clear the health/lives HUD: '+JSON.stringify(desktopAlerts));
+  assert.ok(desktopAlerts.wave.top >= desktopAlerts.power.bottom+8,
     '1024x576 wave announcement must clear interception status: '+JSON.stringify(desktopAlerts));
   report.desktopAlerts={viewport:'1024x576',...desktopAlerts};
   await page.locator('canvas').first().screenshot({path:'qa-output/02-playing-scene.png'});
