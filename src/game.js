@@ -2093,8 +2093,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    qaDragonCamera.position.set(dragon.position.x+9,dragon.position.y+5,dragon.position.z+14);
    qaDragonCamera.lookAt(dragon.position.x,dragon.position.y+.4,dragon.position.z);
    qaDragonCamera.updateProjectionMatrix();
-   renderer.render(scene,qaDragonCamera);
-   return {png:renderer.domElement.toDataURL('image/png'),
+   // Damage invulnerability can blink the creature at the instant of capture.
+   // Force a visible reference frame, then restore the game-controlled flag.
+   const wasVisible=dragon.visible;
+   let png;
+   try{
+    dragon.visible=true;
+    renderer.render(scene,qaDragonCamera);
+    png=renderer.domElement.toDataURL('image/png');
+   }finally{dragon.visible=wasVisible;}
+   return {png,
     model:pauloPreviewEnabled?'paulo':'legacy',
     dragon:dragon.position.toArray(),
     camera:qaDragonCamera.position.toArray(),
