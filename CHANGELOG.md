@@ -1,5 +1,11 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 front-bank screenshot verification and framing guard (November 7)
+
+- Downloaded and directly inspected the actual [browser QA run #236](https://github.com/erin6374/dragon-defense-play/actions/runs/42438685499) screenshot artifact for `2abd8670`. The paired `14-paulo-bank-front-left.png` and `14-paulo-bank-front-right.png` now show opposite wing-up/wing-down roll instead of the previous back/underside pitching error. Run #236 passed. This accepts the **bank-axis correction** visually, not the final dragon asset or gameplay integration.
+- The report records symmetric longitudinal roll of approximately +0.274/-0.274 radians at 0.75 seconds. The front orthographic frame extents are (0.769, 0.481) right and (0.769, 0.498) left. Added a narrow browser assertion requiring comparable front-bank framing to catch future camera-fit regressions without imposing fragile screenshot pixel matching.
+- Wing membranes remain very thin/edge-on from some front-bank angles. Further art review and real-GPU testing are still required. This is QA-only; no playable dragon, production main, deployment, or Building Explorer changes. New QA for the framing guard is pending.
+
 ## Paulo v5.4 longitudinal banking-axis correction (November 7)
 
 - [Browser QA run #235](https://github.com/erin6374/dragon-defense-play/actions/runs/42433995673) **passed** the new matched front-bank captures at `d1b65f7`. Direct inspection of `14-paulo-bank-front-left.png` and `14-paulo-bank-front-right.png` showed the left bank exposing Paulo's back while the right bank exposed his underside: the pose was pitching about Z rather than rolling about his forward (+X) axis.
