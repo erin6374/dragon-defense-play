@@ -502,3 +502,10 @@ All collapsing landmarks now shorten above the ground datum; tilted profiles lif
 
 Fragments now use upright architectural proportions and the tower facade material, rotating toward a resting pose. Ground support uses the full rotated box extent. Full local browser regression passed. Hardware cost remains unverified.
 
+
+
+## RC5 desktop interception HUD clearance — November 8, 2026
+
+- Exact-head [browser QA #294](https://github.com/erin6374/dragon-defense-play/actions/runs/42480421784) passed on `02c39cf`, including Chrome browser checks and Windows preview packaging; inspected the actual `02-playing.png` and `02b-compact-hud-synthetic-alerts.png` artifacts. The previous wave/compact warning spacing is now clear in those captures.
+- Found a separate **visible** desktop defect at 1024×576: the centered interception-status banner (`top=70`, `bottom=103`) covers the bottom of the top HUD (lives/health), while the HUD ends near 88px. Desktop-only CSS now moves status to 96px, wave toast to 144px, and hostile warning to 187px. Compact 848×480 CSS remains unchanged.
+- Extended the real 1024×576 Playwright geometry assertion to require a gap between top HUD and interception status, plus status and wave toast. No simulation, controls, asset, camera, or render work changed. **New exact-head browser QA and screenshot review are required before this correction is verified.** No hardware FPS claims.
