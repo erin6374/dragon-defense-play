@@ -696,6 +696,30 @@ try {
       report.pauloReferenceViews[name]=reference.referenceFrame;
       await lab.screenshot({path:'qa-output/'+file});
     }
+    // A matched top-down pair makes the newly filled upper wing easy to
+    // inspect in both bank directions without perspective distortion.
+    report.pauloBankReference={};
+    for(const direction of ['right','left']){
+      await lab.evaluate(dir=>{
+        window.__PAULO_LAB_QA.setState('bank');
+        const timeline=document.querySelector('#timeline');
+        timeline.value='0.75';
+        timeline.dispatchEvent(new Event('input',{bubbles:true}));
+        const bankSelector=document.querySelector('#bank-direction');
+        bankSelector.value=dir;
+        bankSelector.dispatchEvent(new Event('change',{bubbles:true}));
+        const viewSelector=document.querySelector('#view');
+        viewSelector.value='top';
+        viewSelector.dispatchEvent(new Event('change',{bubbles:true}));
+      },direction);
+      const bankFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+      assert.equal(bankFrame.cameraType,'orthographic','bank anatomy uses top orthographic camera');
+      assert.ok(Math.abs(bankFrame.time-.75)<.0001,'bank reference uses fixed 0.75-second pose time');
+      assert.ok(bankFrame.referenceFrame?.maxX<.90&&bankFrame.referenceFrame?.maxY<.90,
+        direction+' bank wings fit the reference camera');
+      report.pauloBankReference[direction]={roll:bankFrame.rootRoll,frame:bankFrame.referenceFrame};
+      await lab.screenshot({path:'qa-output/13-paulo-bank-'+direction+'.png'});
+    }
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};
