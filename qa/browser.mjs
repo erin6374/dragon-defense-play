@@ -653,7 +653,12 @@ try {
       'legacy fallback preserves current game '+key);
   }
   await page.screenshot({path:'qa-output/07c-legacy-fallback.png'});
-  const legacyClose=await page.evaluate(()=>window.__DD_QA.captureDragonDetail());
+  const legacyClose=await page.evaluate(()=>{
+    // Reuse the exact same staging coordinates even if the live simulation
+    // advanced while switching the visual asset back to the original.
+    const move=window.__DD_QA.move(0,27);
+    return move.ok?window.__DD_QA.captureDragonDetail():move;
+  });
   assert.ok(legacyClose.ok,legacyClose.error);
   assert.equal(legacyClose.result.model,'legacy','fallback close-up uses the original dragon');
   assert.deepEqual(legacyClose.result.dragon,pauloClose.result.dragon,
