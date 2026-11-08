@@ -642,15 +642,19 @@ try {
       const holder=new THREE.Group();holder.add(rig.root);
       const cleanup=rig.dispose();
       const detached=rig.root.parent===null;
+      const jawAfterDispose=rig.jaw.rotation.z;
+      rig.applyPose(.25,'fire',1);
+      const writesGuarded=rig.jaw.rotation.z===jawAfterDispose;
       const secondCleanup=rig.dispose();
       return {mounted,panels:rig.membranePanels.length,
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
-        cleanup,detached,secondCleanup};
+        cleanup,detached,writesGuarded,secondCleanup};
     });
     assert.equal(reusableRig.mounted,false,'shared Paulo rig is not scene-bound');
     assert.equal(reusableRig.detached,true,'disposal removes the rig from its scene parent');
+    assert.equal(reusableRig.writesGuarded,true,'disposed rig no longer writes to released buffers');
     assert.ok(reusableRig.cleanup.geometries>5&&reusableRig.cleanup.materials>5,
       'disposal releases the factory-owned geometry and material resources');
     assert.deepEqual(reusableRig.secondCleanup,{geometries:0,materials:0},
