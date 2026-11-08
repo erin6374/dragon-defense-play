@@ -42,7 +42,7 @@ jobs:
           from pathlib import Path
           import shutil
           source = Path('.')
-          target = Path('dist/DragonDefense_v5.4.0_RC8_Windows_Preview')
+          target = Path('dist/DragonDefense_v5.4.0_RC9_Windows_Preview')
           target.mkdir(parents=True, exist_ok=True)
           ignored = {'.git', '.github', 'qa', 'qa-output', 'dist', 'node_modules', '.vscode', '__pycache__'}
           for entry in source.iterdir():
@@ -65,6 +65,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: DragonDefense_v5.4.0_RC8_Windows_Preview
-          path: dist/DragonDefense_v5.4.0_RC8_Windows_Preview/
+          name: DragonDefense_v5.4.0_RC9_Windows_Preview
+          path: dist/DragonDefense_v5.4.0_RC9_Windows_Preview/
           retention-days: 30

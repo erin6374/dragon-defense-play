@@ -315,6 +315,39 @@ try {
   await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
+  // Cinematic HUD removes only low-priority overlays; the game remains playable
+  // and the player can restore the complete interface immediately.
+  const cinematicBefore=await page.evaluate(()=>window.__DD_CINEMA_HUD?.snapshot());
+  assert.equal(cinematicBefore?.enabled,false,'QA defaults to full HUD for existing legibility tests');
+  assert.equal(cinematicBefore?.toggleVisible,true,'film/full toggle is available');
+  await page.locator('#cinema-hud-toggle').click();
+  const cinema=await page.evaluate(()=>{
+   const visible=id=>{const e=document.getElementById(id);
+    const s=getComputedStyle(e),r=e.getBoundingClientRect();
+    return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;};
+   return {state:window.__DD_CINEMA_HUD.snapshot(),
+    title:visible('hud-version'),chapter:visible('campaign-chapter-label'),
+    build:visible('game-build'),instructions:getComputedStyle(document.querySelector('#bottom>div:first-child')).display,
+    callBlock:visible('call-block'),pause:visible('pause'),cinemaButton:visible('cinema-hud-toggle'),
+    gameCanvas:visible(document.querySelector('canvas')?.id||'game-canvas')};
+  });
+  assert.equal(cinema.state.enabled,true,'film HUD activates');
+  assert.equal(cinema.title,false,'redundant build/title hidden during cinematic play');
+  assert.equal(cinema.chapter,false,'redundant chapter plaque hidden during cinematic play');
+  assert.equal(cinema.build,false,'developer version hidden during cinematic play');
+  assert.equal(cinema.instructions,'none','permanent help panel hidden during cinematic play');
+  assert.ok(cinema.callBlock&&cinema.pause&&cinema.cinemaButton,'critical controls remain reachable');
+  report.cinematicHud=cinema;
+  await shot('02c-cinematic-hud');
+  await page.keyboard.press('h');
+  assert.equal(await page.evaluate(()=>window.__DD_CINEMA_HUD.snapshot().enabled),false,
+   'H shortcut restores full HUD without restarting game');
+  await page.keyboard.press('h');
+  assert.equal(await page.evaluate(()=>window.__DD_CINEMA_HUD.snapshot().enabled),true,
+   'H shortcut can re-enter cinematic mode');
+  await page.locator('#cinema-hud-toggle').click();
+  assert.equal(await page.evaluate(()=>window.__DD_CINEMA_HUD.snapshot().enabled),false,
+   'on-screen toggle restores full HUD');
   // Real 1024x576 screenshot: status must clear HUD health/lives, then wave clears status.
   const desktopAlerts = await page.evaluate(() => {
     const bounds = id => { const r = document.getElementById(id).getBoundingClientRect();

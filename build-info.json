@@ -1,8 +1,8 @@
 {
-  "build": "5.4-interception-credit-rc08",
-  "version": "5.4.0-rc.8",
+  "build": "5.4-cinematic-hud-rc09",
+  "version": "5.4.0-rc.9",
   "gameplay_base": "5.2.3",
-  "scope": "RC7 wind missile defense plus separated military versus Paulo interception scoring and bonus credit",
+  "scope": "QA-tested RC8 gameplay plus reversible cinematic/full HUD with clear-screen default for players, preserving controls and accessible H toggle",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC8 — browser QA required; European Dragon FBX not hosted"
+  "release_status": "experimental development RC9 — browser QA required; licensed European Dragon assets not yet hosted"
 }

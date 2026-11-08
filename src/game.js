@@ -1370,7 +1370,7 @@ const windLitterPool=new InstancedParticlePool({THREE,parent:scene,
  capacity:16});
 const windDebrisPoint=new THREE.Vector3();
 function clearWindDebris(){windDustPool.clear();windLitterPool.clear();}
-const breathMeter=document.createElement('div');breathMeter.style.cssText='position:fixed;left:14px;bottom:102px;z-index:12;color:#e5faff;background:#09202cbf;border:1px solid #8cd8e6;border-radius:8px;padding:6px 10px;font:700 12px system-ui;pointer-events:none;min-width:170px';
+const breathMeter=document.createElement('div');breathMeter.id='wind-meter';breathMeter.style.cssText='position:fixed;left:14px;bottom:102px;z-index:12;color:#e5faff;background:#09202cbf;border:1px solid #8cd8e6;border-radius:8px;padding:6px 10px;font:700 12px system-ui;pointer-events:none;min-width:170px';
 breathMeter.innerHTML='<div id="breath-label">WIND READY</div><div style="height:9px;background:#163946;border-radius:7px;overflow:hidden;margin-top:5px"><div id="breath-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#5cbed6,#d4f8ff);transition:width .08s linear"></div></div>';
 document.body.appendChild(breathMeter);
 const breathLabel=breathMeter.querySelector('#breath-label'),breathFill=breathMeter.querySelector('#breath-fill');

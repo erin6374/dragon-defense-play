@@ -1,3 +1,10 @@
+## 2026-11-08 — v5.4.0 RC9: immersive cinematic HUD (new QA pending)
+- Addressed real 1024×576 Chrome software-renderer screenshot review: multiple heavy header cards, development controls and permanent instructions obscure the Philadelphia and Paulo scene.
+- Added reversible **Cinematic HUD / Full HUD** toggle (visible button or H key). Human gameplay defaults to cinematic mode; `?hud=full` opts into complete layout and `?qa=1` keeps original QA geometry unless toggled.
+- Cinematic mode hides only nonessential developer controls/version labels and the permanent instruction plaque, shrinks health/status tiles, and leaves school/block health, lives, attack charge, radar, Call the Block, pause, settings and mobile attack controls accessible.
+- New screenshot and interaction regressions verify that toggling is reversible and gameplay controls remain visible; desktop/full HUD assertions run afterward. No gameplay simulation or renderer change.
+- No production/main/Building Explorer changes. Realistic licensed European Dragon binary integration remains pending; screen-space human acceptance and real GPU FPS not claimed.
+
 ## 2026-11-08 — v5.4.0 RC8: preserve Paulo's interception credit (QA pending)
 - Military missiles or battery impacts no longer award player meteor intercepts, rapid-fire streaks, hunter shields, score or player accuracy. The government receives its own `militaryInterceptions` telemetry counter.
 - Military-destroyed meteors remain removed using the existing blast and debris pathways, while real player interceptions and rewards are unchanged.
