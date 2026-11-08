@@ -610,12 +610,23 @@ try {
       rig.applyPose(.75,'bank',-1);
       const left={roll:rig.root.rotation.x,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
-      return {mounted:!!rig.root.parent,panels:rig.membranePanels.length,
+      const mounted=!!rig.root.parent;
+      const holder=new THREE.Group();holder.add(rig.root);
+      const cleanup=rig.dispose();
+      const detached=rig.root.parent===null;
+      const secondCleanup=rig.dispose();
+      return {mounted,panels:rig.membranePanels.length,
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
-        breath:rig.breathPreview.snapshot(),visits,right,left};
+        breath:rig.breathPreview.snapshot(),visits,right,left,
+        cleanup,detached,secondCleanup};
     });
     assert.equal(reusableRig.mounted,false,'shared Paulo rig is not scene-bound');
+    assert.equal(reusableRig.detached,true,'disposal removes the rig from its scene parent');
+    assert.ok(reusableRig.cleanup.geometries>5&&reusableRig.cleanup.materials>5,
+      'disposal releases the factory-owned geometry and material resources');
+    assert.deepEqual(reusableRig.secondCleanup,{geometries:0,materials:0},
+      'repeated cleanup is a no-op and cannot dispose resources twice');
     assert.equal(reusableRig.panels,12,'shared geometry retains every membrane');
     assert.equal(reusableRig.tail,7,'shared geometry retains seven tail joints');
     assert.deepEqual(reusableRig.toothCount,[12,12],'shared geometry retains animated teeth');
