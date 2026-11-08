@@ -1,5 +1,13 @@
 # Dragon Defense — Development Changelog
 
+## RC2 exact-head QA and realistic Paulo asset audition handoff (November 8)
+
+- Browser QA [#279](https://github.com/erin6374/dragon-defense-play/actions/runs/42454741049) **passed** on `96062397d9274ca975100ca731e6d0f78ae84248`, covering the Windows Python 3 fallback source-level guard. This is **not** an actual Windows batch-file launch test.
+- Browser QA [#280](https://github.com/erin6374/dragon-defense-play/actions/runs/42456654546) **passed** on `e42f99831b18c2fb075b0570dfddc39f8b1a1337` and produced browser diagnostics plus an RC2 Windows preview. That commit adds only `PAULO-REALISTIC-ASSET-AUDIT.md`; it does **not** integrate either licensed source dragon into the game.
+- The new audit documents two user-provided CC BY 4.0 dragon candidates, their rig/clip inventory and conversion blockers. In particular, the European Dragon FBX needs texture path cleanup, while the Three Motion Loops GLB needs specular-glossiness material conversion for Three.js r160. The latter conversion is approximate, not visually validated.
+- **No asset selection or integration approval:** close-up appearance, wing/skin deformation, four-legged perch and flight transitions, material accuracy, attribution and Windows GPU performance still need independent validation. Existing RC2 legacy fallback remains authoritative; no production merge, deployment or Building Explorer changes.
+
+
 ## RC2 Windows launcher Python-version guard (November 8)
 
 - [Exact-head browser QA #278](https://github.com/erin6374/dragon-defense-play/actions/runs/42450767263) **passed** on `3982dcd6622cd83b152654979d1a3277bfdd67ba`, including the RC2 README update; GitHub Actions uploaded the RC2 Windows preview artifact (119 visible files). This is browser/software-WebGL verification, not a physical Windows launch or hardware GPU test.
