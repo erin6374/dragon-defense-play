@@ -1,3 +1,9 @@
+## 2026-11-08 — RC9b: cinematic button/radar clearance (new browser QA pending)
+- Reviewed the actual successful RC9 browser screenshot `02c-cinematic-hud.png`: top HUD is much clearer, but the persistent 160px radar at bottom right obscures Settings/Pause and part of the button row.
+- Reserve right-side radar and left-side wind-meter footprints on desktop, reduce cinematic button padding, and allow wrapping within safe area. Keep mobile controls untouched.
+- Give radar a stable DOM id and assert in Playwright that every visible cinematic game button is spatially clear of radar and breath meter. Existing on-screen toggle and H shortcut remain tested.
+- RC9 [browser QA #42494350467](https://github.com/erin6374/dragon-defense-play/actions/runs/42494350467) passed with zero page errors/warnings before this refinement; RC9b must pass its own tests before being called verified.
+
 ## 2026-11-08 — v5.4.0 RC9: immersive cinematic HUD (new QA pending)
 - Addressed real 1024×576 Chrome software-renderer screenshot review: multiple heavy header cards, development controls and permanent instructions obscure the Philadelphia and Paulo scene.
 - Added reversible **Cinematic HUD / Full HUD** toggle (visible button or H key). Human gameplay defaults to cinematic mode; `?hud=full` opts into complete layout and `?qa=1` keeps original QA geometry unless toggled.

@@ -90,6 +90,13 @@ body.cinematic-hud #bottom{left:8px;right:8px;bottom:8px;justify-content:flex-en
 body.cinematic-hud #bottom>div:first-child{display:none!important}
 body.cinematic-hud #bottom>div:last-child{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;align-items:end}
 body.cinematic-hud #bottom button{padding:6px 9px!important;font-size:11px!important;line-height:1.2;box-shadow:0 2px 7px #0005!important;border-color:#90afbc55!important;background:rgba(9,23,35,.68)!important}
+/* On desktop, reserve the entire radar footprint (160px + margins) on the right.
+   Also keep the wind meter's 142px footprint clear on the left. */
+@media(min-width:851px){
+ body.cinematic-hud #bottom{left:210px!important;right:188px!important;bottom:8px!important}
+ body.cinematic-hud #bottom>div:last-child{gap:3px;justify-content:flex-end}
+ body.cinematic-hud #bottom button{font-size:10px!important;padding:5px 6px!important}
+}
 body.cinematic-hud #bottom button[onclick*='campaign/'],
 body.cinematic-hud #bottom button[onclick*='model-inspector'],
 body.cinematic-hud #bottom #model-mode,body.cinematic-hud #bottom #export-stats,

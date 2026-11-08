@@ -1,8 +1,8 @@
 {
-  "build": "5.4-cinematic-hud-rc09",
-  "version": "5.4.0-rc.9",
+  "build": "5.4-cinematic-hud-rc09b",
+  "version": "5.4.0-rc.9.1",
   "gameplay_base": "5.2.3",
-  "scope": "QA-tested RC8 gameplay plus reversible cinematic/full HUD with clear-screen default for players, preserving controls and accessible H toggle",
+  "scope": "RC9 cinematic HUD refined with reserved radar and breath-meter control clearances; independent reversible full HUD",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC9 — browser QA required; licensed European Dragon assets not yet hosted"
+  "release_status": "experimental development RC9b — exact-head browser QA required; European Dragon assets not hosted"
 }

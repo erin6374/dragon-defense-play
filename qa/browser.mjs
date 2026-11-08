@@ -337,7 +337,26 @@ try {
   assert.equal(cinema.build,false,'developer version hidden during cinematic play');
   assert.equal(cinema.instructions,'none','permanent help panel hidden during cinematic play');
   assert.ok(cinema.callBlock&&cinema.pause&&cinema.cinemaButton,'critical controls remain reachable');
-  report.cinematicHud=cinema;
+  const radarClearance=await page.evaluate(()=>{
+   const radar=document.getElementById('incoming-radar').getBoundingClientRect();
+   const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+   const buttons=Array.from(document.querySelectorAll('#bottom button')).filter(e=>{
+    const s=getComputedStyle(e),r=e.getBoundingClientRect();
+    return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;
+   }).map(e=>{const r=e.getBoundingClientRect();
+    return {id:e.id||e.textContent?.slice(0,28),left:r.left,right:r.right,top:r.top,bottom:r.bottom,
+      overlapsRadar:overlaps(r,radar)}});
+   const meter=document.getElementById('wind-meter').getBoundingClientRect();
+   return {radar:{left:radar.left,right:radar.right,top:radar.top,bottom:radar.bottom},
+    meter:{left:meter.left,right:meter.right,top:meter.top,bottom:meter.bottom},
+    buttons,windOverlaps:buttons.some(b=>overlaps(b,meter))};
+  });
+  assert.ok(radarClearance.buttons.length>=4,'cinematic interface retains essential buttons');
+  assert.ok(radarClearance.buttons.every(b=>!b.overlapsRadar),
+    'all cinematic HUD controls must clear the right-side incoming radar: '+JSON.stringify(radarClearance));
+  assert.equal(radarClearance.windOverlaps,false,
+    'cinematic controls must also clear the left-side breath charge meter');
+  report.cinematicHud={...cinema,radarClearance};
   await shot('02c-cinematic-hud');
   await page.keyboard.press('h');
   assert.equal(await page.evaluate(()=>window.__DD_CINEMA_HUD.snapshot().enabled),false,
