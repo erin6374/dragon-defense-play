@@ -1,3 +1,9 @@
+## 2026-11-08 — v5.4.0 RC5: Military missile collateral damage
+- Missed missiles from the antagonist military batteries now collide with school/nearby building footprints or Broad Street rather than ghosting through structures or quietly disappearing at ground level.
+- Collisions reuse the existing school/rowhouse damage, street crater, debris, fire and visual effects systems, with distinctive military-strike UI cues.
+- Collision detector is bounded, supports launch-clearance arming, avoids destroyed/distant buildings, and has deterministic regression coverage.
+- Existing Paulo, player fire/wind, and production main remain unchanged. European Dragon assets still need hosted integration.
+
 ## 2026-11-08 — v5.4.0 RC4: Dragon wind now visibly affects ground traffic
 - Changed vehicle wind from tiny capped translation to mass-dependent once-per-gust velocity, skid and post-gust inertia.
 - Added chassis roll/yaw, controlled tire dust and speed disturbance; bikes react most, sedans skid, buses resist.

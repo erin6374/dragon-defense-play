@@ -1,8 +1,8 @@
 {
-  "build": "5.4-wind-skid-rc04",
-  "version": "5.4.0-rc.4",
+  "build": "5.4-collateral-rc05",
+  "version": "5.4.0-rc.5",
   "gameplay_base": "5.2.3",
-  "scope": "RC2-based preview: mass-dependent wind vehicle skids, roll, dust, and gradual AI recovery; Paulo optional",
+  "scope": "RC4 wind vehicle skids plus cinematic military missile collateral hits to buildings and roads; Paulo optional",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC4 — browser QA required; European Dragon asset not hosted"
+  "release_status": "experimental development RC5 — browser QA required; European Dragon FBX asset still not hosted"
 }

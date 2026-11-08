@@ -1067,7 +1067,9 @@ document.getElementById('call-block')?.addEventListener('click',activateBlock);
 const militaryOccupation=createMilitaryOccupation({scene,dragon,getWave:()=>wave,
  onDragonHit:reason=>hurtDragon(reason),
  onMeteorHit:meteor=>{const i=meteors.indexOf(meteor);if(i>=0){registerIntercept(meteor);remove(meteors,i);}},
- onBlast:(x,y,z,r)=>blast(x,y,z,r),onMessage:message});
+ onBlast:(x,y,z,r)=>blast(x,y,z,r),onMessage:message,
+ getCollateralStructures:()=>[neighborhood.school,...neighborhood.targetBuildings.filter(b=>!b.background)],
+ onCollateral:impact=>damage(impact.x,impact.z,impact.y,{size:impact.type==='structure'?1.45:1.2,kind:'flaming'})});
 const dangerZones=[];
 function warnCrowd(x,z,r=13){dangerZones.push({x,z,r,ttl:4});if(dangerZones.length>12)dangerZones.shift();
  for(const p of crowd){const d=Math.hypot(p.g.position.x-x,p.g.position.z-z);if(d<r&&p.down<=0){p.down=3+Math.random()*4;p.vy=d<r*.5?4+Math.random()*5:0;p.dx=p.g.position.x<x?-1:1;}}

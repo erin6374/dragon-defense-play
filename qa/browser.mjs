@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
+import {detectMilitaryCollateral} from '../src/simulation/military-collateral.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -77,6 +78,16 @@ assert.ok(Math.abs(windBus.root.position.z-20)<Math.abs(windSedan.root.position.
 for(let i=0;i<200;i++)advanceVehicleWind(windSedan,.05);
 assert.ok(Math.abs(windSedan.root.rotation.x)<.001,'vehicle roll eventually settles');
 assert.ok(Number.isFinite(windSedan.root.position.x)&&Number.isFinite(windSedan.root.position.z),'wind positions remain finite');
+// Missed government missiles now cause bounded physical collateral damage.
+const schoolCollider={name:'tech-freire-school',x:0,z:-8.6,w:27,d:18,h:28,damage:0};
+const homeCollider={name:'rowhouse',x:24,z:-7.4,w:7,d:14.5,h:12,damage:0};
+assert.equal(detectMilitaryCollateral({x:2,y:9,z:-2},.2,[schoolCollider]),null,'missile must clear launch area');
+assert.equal(detectMilitaryCollateral({x:2,y:9,z:-2},.6,[schoolCollider])?.name,'tech-freire-school','missed missile hits school footprint');
+assert.equal(detectMilitaryCollateral({x:23,y:7,z:-5},.7,[homeCollider])?.name,'rowhouse','missed missile hits neighbor');
+assert.equal(detectMilitaryCollateral({x:14,y:.7,z:26},.7,[schoolCollider])?.type,'road','missed missile craters street');
+assert.equal(detectMilitaryCollateral({x:14,y:20,z:26},.7,[schoolCollider]),null,'noncolliding flight path unaffected');
+assert.equal(detectMilitaryCollateral({x:100,y:.6,z:26},.7,[]),null,'offscreen floor does not cause damage');
+assert.equal(detectMilitaryCollateral({x:2,y:9,z:-2},.7,[{...schoolCollider,damage:1}]),null,'destroyed building not struck again');
 const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
 for(const [signals,state] of [
