@@ -551,7 +551,10 @@ function setPauloPreview(enabled){
   let candidate=null;
   try{
    candidate=createPauloRig(THREE); // no lab-only attack particles
-   candidate.root.scale.setScalar(.50);
+   // Compare at the same gameplay-camera distance as the old dragon.
+   // 0.50 made Paulo look miniature in browser QA #42446279065; .68
+   // restores readable head/wing detail without scaling the collision root.
+   candidate.root.scale.setScalar(.68);
    candidate.root.position.set(-.30,-.10,0);
    dragon.add(candidate.root);
    const driver=createPauloPoseDriver(candidate,{initialState:'hover'});
@@ -586,6 +589,7 @@ if(pauloPreviewAllowed)window.__DD_PAULO_PREVIEW={
   legacyVisible:legacyDragonVisuals.every(item=>item.object.visible===item.visible),
   legacyHidden:legacyDragonVisuals.every(item=>!item.object.visible),
   visualCount:legacyDragonVisuals.length,
+  visualScale:pauloPreviewRig?.root.scale.x??null,
   pose:pauloPoseDriver?.snapshot()??null,
   position:dragon.position.toArray(),
   scale:dragon.scale.toArray()
