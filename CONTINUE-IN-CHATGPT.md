@@ -366,3 +366,8 @@ Exact-head QA #308 failed at `qa/browser.mjs:784`: waiting for the 1.8-second ch
 ## Scheduled continuation — chapter-only Paulo perch (November 8)
 
 QA #309 passed at `8b464ba` and branch was unchanged before editing. Removed unconditional roof perch in `newWave()` so Paulo remains freely positioned through ordinary waves. Initial reset and chapter settlement still call `perchDragon` explicitly. Added browser QA source assertions. **Check latest exact-head QA and verify wave transition gameplay** before certifying; this is not yet an end-to-end runtime position test. Continue with 3D attack first-hit ordering and windstorm. No main, Pages, Building Explorer, or licensed dragon binary changes.
+
+
+## Scheduled continuation — runtime ordinary-wave position QA (November 8)
+
+QA #310 passed at `59be198`. Added QA-only `advanceOrdinaryWave` hook and browser assertion: start wave 2, move Paulo to (31,23,15), advance via real `newWave()` to wave 3, assert unchanged xyz, then restore wave 1. This exercises runtime position preservation rather than just source matching. **Exact-head QA pending**; fix any failures before further graphics/gameplay work. No main/production/Building Explorer changes.
