@@ -1,3 +1,9 @@
+## 2026-11-08 — v5.4.0 RC6: cinematic military searchlight pursuit (QA pending)
+- Chapter-three military missile batteries now carry pale volumetric-style searchlight cones, with reusable geometry/material and no extra shadow-casting GPU lights (maximum three active beams).
+- Searchlights sweep smoothly and continuously toward Paulo, with a small imperfect tracking motion; their visuals don't affect targeting or damage.
+- Added deterministic normalized/smoothed aim tests and a staged real-scene browser QA screenshot with beam-count/aim/distance assertions. Visual legibility and real GPU FPS remain to be reviewed, not claimed verified.
+- Preserved military collateral, fire, meteor, wind systems, production main and Building Explorer. European Dragon mesh still awaiting hosted import.
+
 ## 2026-11-08 — RC5 wave/warning overlay separation (new exact-head QA pending)
 - Verified [browser QA #291](https://github.com/erin6374/dragon-defense-play/actions/runs/42475844384) passed at `0cf3afa86c6f74f48652ce113bede2d896f14695`, with zero reported JS errors/warnings and RC5 Windows artifact. Inspected actual `02-playing.png` (1024×576) and `02b-compact-hud-synthetic-alerts.png` (848×480) from the QA ZIP.
 - Visual defects: at 1024×576 the wave banner sits behind the interception status; at 848×480 the synthetic hostile-aircraft warning touches/overlaps the first menu-button row. Move desktop wave/warning lower and compact warning 12 px higher without modifying game simulation or controls.

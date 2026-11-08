@@ -1,6 +1,7 @@
 // Campaign Preview 4: chapter-three military occupation. All meshes and projectiles are owned here.
 import * as THREE from 'three';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from './military-collateral.js';
+import {slewSearchlightDirection} from './military-searchlight.js';
 const shotCenter=shot=>shot.mesh.position,shotRadius=()=>1.8;
 const shotEligible=shot=>!shot.hostile&&!shot.fireTarget&&shot.life>0;
 const meteorCenter=meteor=>meteor.mesh.position,meteorRadius=meteor=>meteor.size+1;
@@ -23,6 +24,13 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  const warning=new THREE.MeshBasicMaterial({color:0xffb04a});
  const rocketMat=new THREE.MeshStandardMaterial({color:0xb5bab0,metalness:.45,roughness:.45});
  const cube=new THREE.BoxGeometry(1,1,1),ball=new THREE.SphereGeometry(1,8,6),cone=new THREE.ConeGeometry(1,1,8);
+ // Two/three bounded draw calls, shared mesh/material, NO shadow-casting lights.
+ // A subtle tapered visible cone creates volumetric-style searchlight pursuit.
+ const searchlightGeo=new THREE.CylinderGeometry(2.65,.06,1,12,1,true);
+ searchlightGeo.translate(0,.5,0); // cone starts at launcher lens, ends at far aim point
+ const searchlightMat=new THREE.MeshBasicMaterial({color:0xd4e6ff,transparent:true,opacity:.075,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+ const searchlightLensMat=new THREE.MeshBasicMaterial({color:0xeef6ff});
+ const searchlightUp=new THREE.Vector3(0,1,0);
  let spawnClock=0,enabled=false,collateralNotice=0;
  function box(root,mat,x,y,z,w,h,d){const mesh=new THREE.Mesh(cube,mat);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);root.add(mesh);return mesh;}
  function deploy(x,advanced=false){
@@ -36,8 +44,28 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   box(launcher,steel,0,0,0,advanced?2.7:1.9,.65,1.35);
   for(const z of [-.48,.48])box(launcher,rocketMat,0,.15,z,advanced?2.4:1.7,.23,.25);
   const beacon=new THREE.Mesh(ball,warning);beacon.scale.set(.25,.25,.25);beacon.position.set(0,3.1,0);root.add(beacon);
-  scene.add(root);vehicles.push({root,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0});
+  const searchlight=new THREE.Mesh(searchlightGeo,searchlightMat);
+  searchlight.name='military-searchlight-beam';searchlight.position.set(0,3.52,0);
+  searchlight.frustumCulled=false;searchlight.renderOrder=2;
+  searchlight.scale.set(1,12,1);root.add(searchlight);
+  const searchLens=new THREE.Mesh(ball,searchlightLensMat);
+  searchLens.scale.setScalar(.18);searchLens.position.set(0,3.52,0);root.add(searchLens);
+  scene.add(root);vehicles.push({root,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0,
+   searchlight,searchDir:new THREE.Vector3(0,1,0),searchTarget:new THREE.Vector3(0,1,0),searchClock:0});
   return root;
+ }
+ function updateSearchlight(v,dt){
+  v.searchClock+=Math.min(.1,Math.max(0,dt));
+  const origin=v.root.position.clone().add(v.searchlight.position);
+  const desired=dragon.position.clone().sub(origin);
+  // Deliberate slow sweeping offset: government pursuit tracks imperfectly.
+  desired.x+=Math.sin(v.searchClock*.69+v.root.position.x*.14)*1.1;
+  desired.y+=Math.cos(v.searchClock*.52+v.root.position.x*.11)*.48;
+  const tracked=slewSearchlightDirection(v.searchDir,desired,dt,v.advanced?2.2:1.7);
+  v.searchDir.set(tracked.x,tracked.y,tracked.z);
+  v.searchTarget.copy(desired).normalize();
+  v.searchlight.quaternion.setFromUnitVectors(searchlightUp,v.searchDir);
+  v.searchlight.scale.y=Math.min(70,Math.max(5,desired.length()));
  }
  function fire(v){const origin=v.root.position.clone().add(new THREE.Vector3(0,3.1,0));
   const aim=dragon.position.clone().sub(origin).normalize();
@@ -55,6 +83,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   for(let i=vehicles.length-1;i>=0;i--){const v=vehicles[i];v.cooldown-=dt;v.flash=Math.max(0,v.flash-dt);v.beacon.visible=v.flash>0;
    const dx=dragon.position.x-v.root.position.x,dy=dragon.position.y-3;
    v.launcher.rotation.z=Math.atan2(dy,dx)*.45;
+   updateSearchlight(v,dt);
    if(v.cooldown<=0){fire(v);v.cooldown=(v.advanced?3.7:5.3)*(0.85+Math.random()*.4);}
    for(const meteor of meteors){if(meteor.mesh.position.distanceTo(v.root.position)<meteor.size+2.5){meteor.hp=0;onMeteorHit(meteor);destroy(v);break;}}
    if(!vehicles.includes(v))continue;
@@ -89,5 +118,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  }
  function reset(){clearExhaust();for(const v of vehicles)scene.remove(v.root);for(const m of missiles)scene.remove(m.mesh);vehicles.length=0;missiles.length=0;spawnClock=0;collateralNotice=0;enabled=false;}
  function suppress(seconds=10){for(const v of vehicles)v.cooldown=Math.max(v.cooldown,seconds);for(const m of missiles)scene.remove(m.mesh);missiles.length=0;}
- return {update,reset,suppress,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length})};
+ return {update,reset,suppress,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
+  searchlightStates:()=>vehicles.map(v=>({x:v.root.position.x,visible:v.searchlight.visible,length:+v.searchlight.scale.y.toFixed(2),
+   direction:v.searchDir.toArray(),targetDot:+v.searchDir.dot(v.searchTarget).toFixed(4)}))};
 }

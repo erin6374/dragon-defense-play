@@ -3,6 +3,7 @@ import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from '../src/simulation/military-collateral.js';
+import {slewSearchlightDirection} from '../src/simulation/military-searchlight.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -132,6 +133,21 @@ assert.equal(detectMilitaryCollateral({x:50,y:9,z:5},.8,[schoolCollider],{x:50,y
  'parallel missile outside building footprint remains clear');
 assert.equal(detectMilitaryCollateral({x:14,y:-3,z:26},.2,[],{x:14,y:4,z:26}),null,
  'swept collision respects missile launch arming delay');
+
+// Searchlights must approach Paulo smoothly without instantly snapping their aim.
+const up={x:0,y:1,z:0},targetLight={x:.8,y:.5,z:.6};
+const still=slewSearchlightDirection(up,targetLight,0);
+assert.deepEqual(still,up,'zero-time searchlight update is unchanged');
+const firstTrack=slewSearchlightDirection(up,targetLight,1/60);
+assert.ok(firstTrack.x>0&&firstTrack.x<.2,'first searchlight movement is bounded');
+assert.ok(Math.abs(Math.hypot(firstTrack.x,firstTrack.y,firstTrack.z)-1)<1e-8,'searchlight aim unit normalized');
+let tracked=up;
+for(let t=0;t<100;t++)tracked=slewSearchlightDirection(tracked,targetLight,1/60);
+const normalizedTarget=Math.hypot(targetLight.x,targetLight.y,targetLight.z);
+assert.ok((tracked.x*targetLight.x+tracked.y*targetLight.y+tracked.z*targetLight.z)/normalizedTarget>.96,
+ 'searchlight eventually points near the intended target');
+const frozenTrack=slewSearchlightDirection(up,targetLight,Infinity);
+assert.ok(Object.values(frozenTrack).every(Number.isFinite),'invalid timestep cannot produce NaNs');
 
 const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
@@ -720,6 +736,25 @@ try {
    }
   }
   report.distantHelicopterPatrol=heliPatrol.result;
+  const batteryStage=await page.evaluate(()=>window.__DD_QA.labStageMilitarySearchlights());
+  assert.ok(batteryStage.ok,batteryStage.error);
+  assert.ok(batteryStage.result.states.length>=2&&batteryStage.result.states.length<=3,
+   'Chapter 3 uses at most three shared military searchlight beams');
+  assert.equal(batteryStage.result.counts.searchlights,batteryStage.result.states.length,
+   'every active military battery visibly tracks Paulo');
+  for(const beam of batteryStage.result.states){
+   assert.equal(beam.visible,true,'active searchlight cone visible');
+   assert.ok(beam.length>10&&beam.length<70,'searchlight scales to rooftop height');
+   assert.ok(beam.targetDot>.94,'searchlight direction converges toward Paulo');
+   assert.ok(beam.direction.every(Number.isFinite),'tracking does not create invalid transforms');
+  }
+  report.militarySearchlights=batteryStage.result.states;
+  const stageNight=await page.evaluate(()=>window.__DD_QA.qaSettleAtmosphere());
+  assert.ok(stageNight.ok,stageNight.error);
+  await page.screenshot({path:'qa-output/07-military-searchlights.png'});
+  const restoreStage=await page.evaluate(()=>window.__DD_QA.start(7));
+  assert.ok(restoreStage.ok,restoreStage.error);
+  await page.evaluate(()=>window.__DD_QA.cinematicStage('quiet'));
   const groundWind=await page.evaluate(()=>window.__DD_QA.stageGroundWind());
   assert.ok(groundWind.ok,groundWind.error);
   assert.ok(groundWind.result.bikeX>groundWind.result.personX,

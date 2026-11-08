@@ -2317,6 +2317,13 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     simulationTime:elapsed,active,paused};
   }),
 
+  labStageMilitarySearchlights:()=>run('labStageMilitarySearchlights',()=>{
+   if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;
+   wave=11;dragon.position.set(0,18,15);militaryOccupation.reset();
+   // No missiles are fired during this 1.5s visual-only staged aim test.
+   for(let i=0;i<90;i++)militaryOccupation.update(1/60,[],[]);
+   return {states:militaryOccupation.searchlightStates(),counts:militaryOccupation.counts(),snapshot:snap()};
+  }),
   labStageWind:()=>run('labStageWind',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;wave=6;dragon.position.set(-3,13,15);facing=1;helicopterTimer=600;spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('Unable to spawn test helicopter');h.root.position.set(9,13,15);h.disorientTime=0;gustOrigin.copy(dragon.position);gustDirection.set(1,0,0);gustTime=.85;windCooldown=4;windActive=true;return {description:'Production dragon wind will strike a helicopter and induce 5s disorientation',snapshot:snap()};}),
   labStageIce:()=>run('labStageIce',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;wave=6;dragon.position.set(0,13,15);helicopterTimer=600;spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('Unable to spawn ICE helicopter');h.root.position.set(10,13,15);h.role='ice';h.disorientTime=0;h.iceCooldown=0;h.contactTime=0;return {description:'Continuous 17-unit beam; uninterrupted 3s contact required',snapshot:snap()};}),
   labStageDragonFall:()=>run('labStageDragonFall',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;dragon.position.set(0,26,15);stunDragon('QA ELECTRICAL FALL');return {description:'Production stun, falling, impact and takeoff sequences',snapshot:snap()};}),

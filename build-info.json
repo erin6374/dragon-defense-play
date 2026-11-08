@@ -1,8 +1,8 @@
 {
-  "build": "5.4-collateral-rc05",
-  "version": "5.4.0-rc.5",
+  "build": "5.4-searchlight-rc06",
+  "version": "5.4.0-rc.6",
   "gameplay_base": "5.2.3",
-  "scope": "RC4 wind vehicle skids plus cinematic military missile collateral hits to buildings and roads; Paulo optional",
+  "scope": "RC5 browser-tested wind and missile collateral, plus bounded tracking military searchlight cones during chapter three",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC5 — browser QA required; European Dragon FBX asset still not hosted"
+  "release_status": "experimental development RC6 — browser QA required; professional European Dragon FBX not yet hosted"
 }
