@@ -42,7 +42,7 @@ jobs:
           from pathlib import Path
           import shutil
           source = Path('.')
-          target = Path('dist/DragonDefense_v5.3.1_Windows_Preview')
+          target = Path('dist/DragonDefense_v5.4.0_RC2_Windows_Preview')
           target.mkdir(parents=True, exist_ok=True)
           ignored = {'.git', '.github', 'qa', 'qa-output', 'dist', 'node_modules', '.vscode', '__pycache__'}
           for entry in source.iterdir():
@@ -54,7 +54,8 @@ jobs:
               elif entry.is_file():
                   shutil.copy2(entry, dest)
           required = ('index.html', 'PLAY-PREVIEW.cmd', 'src/game.js',
-                      'vendor/three/build/three.module.js', 'build-info.json')
+                      'vendor/three/build/three.module.js', 'build-info.json',
+                      'src/dragon/paulo-rig.js', 'README_WINDOWS_V5.4_RC2.txt')
           missing = [name for name in required if not (target / name).is_file()]
           if missing:
               raise SystemExit('Missing preview files: ' + ', '.join(missing))
@@ -64,6 +65,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: DragonDefense_v5.3.1_Windows_Preview
-          path: dist/DragonDefense_v5.3.1_Windows_Preview/
+          name: DragonDefense_v5.4.0_RC2_Windows_Preview
+          path: dist/DragonDefense_v5.4.0_RC2_Windows_Preview/
           retention-days: 30
