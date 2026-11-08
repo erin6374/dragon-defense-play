@@ -1,3 +1,8 @@
+## 2026-11-08 — RC5 follow-up: swept military rocket impacts (verification pending)
+- Source audit after passing [browser QA #285](https://github.com/erin6374/dragon-defense-play/actions/runs/42460992019) found that RC5 checked only the rocket's final frame position. At low frame rates, fast missiles could jump entirely through a rowhouse or the street plane, suppressing the intended collateral impact.
+- Added bounded segment-vs-AABB entry tests for school/rowhouses and Broad Street, choosing the earliest intersection and placing the visual missile at that hit point. Preserves existing arming delay, destroyed/distant exclusions, and hit precedence for dragon, player fire, and meteors.
+- Added deterministic high-speed crossing, road descent, near-miss and arming regression assertions. **This follow-up is unverified until new exact-head browser QA completes.** Hardware FPS and European Dragon FBX integration remain unverified; no production/main/Building Explorer changes.
+
 ## 2026-11-08 — v5.4.0 RC5: Military missile collateral damage
 - Missed missiles from the antagonist military batteries now collide with school/nearby building footprints or Broad Street rather than ghosting through structures or quietly disappearing at ground level.
 - Collisions reuse the existing school/rowhouse damage, street crater, debris, fire and visual effects systems, with distinctive military-strike UI cues.
