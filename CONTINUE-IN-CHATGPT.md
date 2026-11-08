@@ -361,3 +361,8 @@ Exact-head [QA #307](https://github.com/erin6374/dragon-defense-play/actions/run
 ## Scheduled continuation — RC9c high-wave toast screenshot timeout (November 8)
 
 Exact-head QA #308 failed at `qa/browser.mjs:784`: waiting for the 1.8-second chapter toast to expire timed out after 10 seconds, even though the chapter cinematic was dismissed and gameplay was unpaused. The QA atmospheric-settle helper does not necessarily advance the gameplay timer. QA artifact `13635007342` includes `report.json` with `toastBeforeWait` and the timeout. Commit `f1b72a7` replaces that timer-dependent wait with screenshot-only DOM toast clearing after recording its text; no gameplay logic, timer, visuals or production source changed. **Check exact-head QA for f1b72a7 and visually inspect the new wave-15 screenshots before certifying glow visibility.** Then pursue chapter-only perch and 3D attack ordering. Preserve main, Pages, Building Explorer and licensed dragon binaries.
+
+
+## Scheduled continuation — chapter-only Paulo perch (November 8)
+
+QA #309 passed at `8b464ba` and branch was unchanged before editing. Removed unconditional roof perch in `newWave()` so Paulo remains freely positioned through ordinary waves. Initial reset and chapter settlement still call `perchDragon` explicitly. Added browser QA source assertions. **Check latest exact-head QA and verify wave transition gameplay** before certifying; this is not yet an end-to-end runtime position test. Continue with 3D attack first-hit ordering and windstorm. No main, Pages, Building Explorer, or licensed dragon binary changes.
