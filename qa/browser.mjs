@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep} from '../src/simulation/ground-wind.js';
+import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {Script} from 'node:vm';
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
@@ -56,6 +57,27 @@ assert.equal(push(-10,20,1.2),0,'ground objects behind the dragon are not pushed
 assert.equal(push(55,20,1.2),0,'wind has finite reach');
 assert.equal(push(15,60,1.2),0,'ground objects far outside the cone are unaffected');
 assert.ok(push(15,20,1.2)>.001,'a nearby pedestrian receives a visible gentle push');
+const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
+assert.deepEqual(PAULO_POSES,expectedPauloPoses);
+for(const [signals,state] of [
+ [{stunned:true,windGust:true},'hit'],
+ [{recovering:true,windGust:true},'takeoff'],
+ [{windGust:true,gasAttack:true},'wind'],
+ [{gasAttack:true,windCharging:true},'gas'],
+ [{windCharging:true,fireAttack:true},'inhale'],
+ [{fireAttack:true,turning:true},'fire'],
+ [{landing:true,turning:true},'land'],
+ [{turning:true,moving:true},'bank'],
+ [{gliding:true,moving:true},'glide'],
+ [{perched:true},'idle'],
+ [{active:false},'idle'],
+ [{moving:true},'flight'],
+ [{rising:true},'flight'],
+ [{},'hover'],
+]) assert.equal(choosePauloPose(signals),state);
+assert.equal(choosePauloBankDirection({horizontal:-1,facing:1}),-1);
+assert.equal(choosePauloBankDirection({horizontal:1,facing:-1}),1);
+assert.equal(choosePauloBankDirection({facing:-1}),-1);
 const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
@@ -587,7 +609,7 @@ try {
     assert.ok(Number.isFinite(deform.current)&&Math.abs(deform.current-deform.rest)>.005,
       'animated wing membranes deform an interior vertex while retaining the rest buffer');
     const poses=await lab.evaluate(()=>window.__PAULO_LAB_QA.states);
-    assert.ok(poses.length>=12,'dragon has twelve animation reference poses');
+    assert.deepEqual(poses,PAULO_POSES,'lab and game adapter use identical state names');
     const fire=await lab.evaluate(()=>{window.__PAULO_LAB_QA.setState('fire');return window.__PAULO_LAB_QA.snapshot();});
     assert.ok(fire.jawAngle<-.2,'fire animation opens the jaw');
     assert.deepEqual(fire.breath,{active:'fire',poolSize:24,drawnInstances:24,visibleEmitters:1},
