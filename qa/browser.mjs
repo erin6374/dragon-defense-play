@@ -624,6 +624,20 @@ try {
       'preview toggle preserves current game '+key);
   }
   await page.screenshot({path:'qa-output/07b-paulo-gameplay-preview.png'});
+  // The regular street camera renders the rooftop dragon at a few pixels.
+  // Capture the actual game scene again through a dedicated inspection lens,
+  // without introducing a second renderer or changing any game camera.
+  const pauloClose=await page.evaluate(()=>{
+    const move=window.__DD_QA.move(0,27);
+    if(!move.ok)return move;
+    return window.__DD_QA.captureDragonDetail();
+  });
+  assert.ok(pauloClose.ok,pauloClose.error);
+  assert.equal(pauloClose.result.model,'paulo','close-up shows the new in-game rig');
+  assert.ok(pauloClose.result.png.startsWith('data:image/png;base64,'),
+    'Paulo close-up contains actual renderer output');
+  await writeFile('qa-output/07d-paulo-gameplay-closeup.png',
+    Buffer.from(pauloClose.result.png.split(',')[1],'base64'));
   const pauloGameplayOff=await page.evaluate(()=>{
     const visual=window.__DD_PAULO_PREVIEW,qa=window.__DD_QA;
     const before=qa.snap();
@@ -639,6 +653,13 @@ try {
       'legacy fallback preserves current game '+key);
   }
   await page.screenshot({path:'qa-output/07c-legacy-fallback.png'});
+  const legacyClose=await page.evaluate(()=>window.__DD_QA.captureDragonDetail());
+  assert.ok(legacyClose.ok,legacyClose.error);
+  assert.equal(legacyClose.result.model,'legacy','fallback close-up uses the original dragon');
+  assert.deepEqual(legacyClose.result.dragon,pauloClose.result.dragon,
+    'both close-up reference views use the same unchanged gameplay position');
+  await writeFile('qa-output/07e-legacy-gameplay-closeup.png',
+    Buffer.from(legacyClose.result.png.split(',')[1],'base64'));
   report.pauloGameplayPreview={
     legacyObjects:pauloPreviewStart.visualCount,
     activePose:pauloGameplayOn.now.pose?.pose,
