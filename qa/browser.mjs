@@ -762,6 +762,14 @@ try {
       report.pauloBankReference[direction].frontFrame=bankFront.referenceFrame;
       await lab.screenshot({path:'qa-output/14-paulo-bank-front-'+direction+'.png'});
     }
+    // Preserve comparable front-view silhouette evidence in both directions.
+    // Matched screenshots should not accidentally zoom or clip one bank more
+    // than the other when the orthographic camera fitting code changes.
+    const bankRightFrame=report.pauloBankReference.right.frontFrame;
+    const bankLeftFrame=report.pauloBankReference.left.frontFrame;
+    assert.ok(Math.abs(bankRightFrame.maxX-bankLeftFrame.maxX)<.025 &&
+      Math.abs(bankRightFrame.maxY-bankLeftFrame.maxY)<.04,
+      'matched front-bank reference framing must remain comparable');
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};
