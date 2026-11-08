@@ -1,5 +1,13 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 head and tail anatomy refinement (November 7)
+
+- Reviewed the **passed** browser QA run `42427391118`: fitted front/side/top/rear orthographic cameras now show Paulo fully without cutting off the wing tips. This supersedes the previously cropped perspective reference views.
+- The side screenshot exposed a tail silhouette defect: seven isolated ellipsoid forms looked like disconnected beads at the tip. Replaced them with seven overlapping, radius-tapered cylinder frustums that follow the same articulated chain; retained dorsal spines and animated pivots. QA checks the seven link lengths exceed joint spacing and progressively taper toward the tip.
+- Improved the original dragon head blockout with a defined snout bridge, brow ridges, lower-jaw mass and two 12-fang instanced tooth rows following separate head/jaw transforms. QA checks 12 upper and 12 lower fangs; the 24 fangs use only two additional instance batches.
+- These model details passed source JavaScript syntax checks. **Current-head browser render/visual QA and Windows GPU performance remain unverified**. The isolated lab is not yet a production-ready dragon; no changes to gameplay integration, production main or Building Explorer.
+
+
 ## Consolidated release directive and Paulo reference framing (November 7)
 
 - User requested that the **finished new Paulo dragon trigger a combined Dragon Defense release** incorporating the recent graphics, wind, destruction, and gameplay improvements. Added `RELEASE-PLAN-v5.4.md` with an explicit integration audit, regression gates, Windows/Android delivery targets, rollback criteria, and distinctions among source QA, browser QA, actual GPU/device verification, and release status. **This does not authorize an immediate merge or deployment.**
