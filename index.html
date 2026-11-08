@@ -44,8 +44,10 @@
 <style id="desktop-alert-legibility">
 /* Keep the wave banner below the interception status on desktop. */
 @media (min-width:851px) {
-  #toast { top:116px!important; }
-  #hunter-warning { top:166px!important; }
+  /* The top HUD extends below 88px at 1024x576: never cover lives/health. */
+  #power-status { top:96px!important; }
+  #toast { top:144px!important; }
+  #hunter-warning { top:187px!important; }
 }
 </style>
 <style id="compact-hud-legibility">
