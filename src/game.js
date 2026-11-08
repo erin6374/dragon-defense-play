@@ -1815,7 +1815,8 @@ function updateChapterSettlement(dt){
 }
 function updateHud(){document.getElementById('score').textContent=score.toLocaleString();document.getElementById('wave').textContent=wave;const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent='CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title;document.getElementById('hp').textContent=hp+'%';document.getElementById('healthbar').style.width=hp+'%';const blockHealth=Math.round((1-neighborhood.targetBuildings.reduce((a,b)=>a+b.damage,0)/Math.max(1,neighborhood.targetBuildings.length))*100);document.getElementById('blockhp').textContent=blockHealth+'%';document.getElementById('blockbar').style.width=blockHealth+'%';neighborhood.setDistantHealth?.(blockHealth);document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);document.getElementById('block-wire').style.opacity=Math.max(.15,blockHealth/100)}
 let toastTimer=0;function message(t){document.getElementById('toast').textContent=t;toastTimer=1.8}function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
- perchDragon(false);
+ // Ordinary waves preserve Paulo's free-flight position. Chapter transitions
+ // and a fresh game explicitly manage the roof perch separately.
  // Frozen emergency responders remain until this wave ends.
  for(let i=cars.length-1;i>=0;i--)if(cars[i].frozen){recycleCar(cars[i]);cars.splice(i,1)}
  updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);waveStats.push({wave,startedAt:Math.round(elapsed),scoreAtStart:score});if(wave>1){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05).length;
