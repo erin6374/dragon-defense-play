@@ -24,6 +24,13 @@ const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
+// Fireball interception must select nearest swept 3D contact rather than
+// whichever meteor happens to occur last in the live meteor array.
+assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
+  'player fireballs track earliest swept meteor contact');
+assert.match(gameSource,/if\(t<hitT\)\{hitT=t;hitIndex=mi;\}/,
+  'player fireball chooses nearest valid collision time');
+
 // Paulo must not be teleported back to the roof at each ordinary wave.
 // Initial reset and chapter settlement retain their explicit perch behavior.
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
