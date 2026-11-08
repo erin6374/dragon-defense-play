@@ -1,10 +1,17 @@
+// Distant catastrophe atmosphere is a screen-space shader treatment, not a
+// new light, draw call or collision effect. Damage remains a separate system.
+export function disasterSkyIntensity(wave=1,skylineDamage=0){
+ const chapter=Number.isFinite(wave)?Math.max(0,Math.min(1,(wave-1)/14)):0;
+ const damage=Number.isFinite(skylineDamage)?Math.max(0,Math.min(1,skylineDamage)):0;
+ return .12+chapter*.35+damage*.5;
+}
 
 // v4.2 cinematic sky and street surface treatment.
 export function createCinematicSky(THREE,scene){
- const uniforms={phase:{value:0},darkness:{value:0},aspect:{value:1.78},time:{value:0}};
+ const uniforms={phase:{value:0},darkness:{value:0},aspect:{value:1.78},time:{value:0},disaster:{value:.12}};
  const material=new THREE.ShaderMaterial({depthWrite:false,depthTest:false,uniforms,
  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.9999,1.0);}`,
- fragmentShader:`uniform float phase,darkness,aspect,time;varying vec2 vUv;
+ fragmentShader:`uniform float phase,darkness,aspect,time,disaster;varying vec2 vUv;
  float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
  void main(){float night=darkness;float dusk=exp(-pow((phase-.34)*12.,2.))+exp(-pow((phase-.84)*12.,2.));
@@ -28,9 +35,16 @@ export function createCinematicSky(THREE,scene){
  float star=(1.-smoothstep(.025,.20,length(st)))*step(.991,chance)*( .5+.5*hash(cell+5.));
  col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
  float sun=exp(-length((vUv-vec2(.25,.66))*vec2(aspect,1.))*32.);col+=vec3(.9,.55,.22)*sun*(1.-night)*(.3+dusk);
+ // Two distant skyline impact glows, softened by haze and low enough to
+ // remain behind architecture; no extra lights, sprites or draw calls.
+ float impactWest=exp(-pow((vUv.x-.31)*9.5,2.)-pow((vUv.y-.16)*15.,2.));
+ float impactEast=exp(-pow((vUv.x-.68)*6.8,2.)-pow((vUv.y-.23)*11.,2.));
+ float emberPulse=.80+.12*sin(time*.95)+.08*sin(time*1.73+2.);
+ float distantFire=disaster*(impactWest*.30+impactEast*.48)*emberPulse*(.62+.38*night);
+ col+=vec3(.90,.24,.08)*distantFire;
  gl_FragColor=vec4(col,1.);}`});
  const plane=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);plane.frustumCulled=false;plane.renderOrder=-1000;scene.add(plane);
- return {mesh:plane,setPhase(p,d=0,dt=0){uniforms.phase.value=p;uniforms.darkness.value=d;uniforms.aspect.value=globalThis.innerWidth/Math.max(1,globalThis.innerHeight);uniforms.time.value+=dt}};
+ return {mesh:plane,setPhase(p,d=0,dt=0,disasterLevel=.12){uniforms.phase.value=p;uniforms.darkness.value=d;uniforms.disaster.value=Math.max(0,Math.min(1,disasterLevel));uniforms.aspect.value=globalThis.innerWidth/Math.max(1,globalThis.innerHeight);uniforms.time.value+=dt}};
 }
 
 function pavementMaterial(THREE,color,kind){

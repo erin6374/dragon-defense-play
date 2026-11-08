@@ -1,8 +1,8 @@
 {
-  "build": "5.4-cinematic-hud-rc09b",
-  "version": "5.4.0-rc.9.1",
+  "build": "5.4-disaster-horizon-rc09c",
+  "version": "5.4.0-rc.9.2",
   "gameplay_base": "5.2.3",
-  "scope": "RC9 cinematic HUD refined with reserved radar and breath-meter control clearances; independent reversible full HUD",
+  "scope": "RC9c screen-space distant skyline impact glow with wave/damage escalation; RC9b radar clearance retained",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC9b — exact-head browser QA required; European Dragon assets not hosted"
+  "release_status": "experimental development RC9c — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
 }

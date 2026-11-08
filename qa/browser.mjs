@@ -4,10 +4,19 @@ import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from '../src/simulation/military-collateral.js';
 import {slewSearchlightDirection} from '../src/simulation/military-searchlight.js';
+import {disasterSkyIntensity} from '../src/rendering/cinematic-environment.js';
 import {militaryWindImpulse} from '../src/simulation/military-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
+
+// Distant disaster glow must build gradually without exceeding a bounded
+// shader uniform; this test is deterministic and does not claim GPU FPS.
+assert.ok(disasterSkyIntensity(1,0)>=.1 && disasterSkyIntensity(1,0)<.2);
+assert.ok(disasterSkyIntensity(10,.4)>disasterSkyIntensity(2,0));
+assert.ok(disasterSkyIntensity(15,1)<=1);
+assert.equal(disasterSkyIntensity(-100,-1),.12);
+assert.equal(disasterSkyIntensity(NaN,Infinity),.12);
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);

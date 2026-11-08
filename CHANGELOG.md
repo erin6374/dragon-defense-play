@@ -1,3 +1,9 @@
+## 2026-11-08 — RC9c: restrained skyline fire-glow atmosphere (new QA pending)
+- Confirmed RC9b exact-head [browser QA #304](https://github.com/erin6374/dragon-defense-play/actions/runs/42500182720) passed before editing; branch still matched e793e38.
+- Added two soft, distant orange impact glows to the existing full-screen sky shader. Their intensity gradually follows wave progression and skyline damage, with low-amplitude flicker; no new mesh, shadow light, texture, draw call, physics or collision change.
+- Added deterministic bounds/escalation assertions for the shared sky-intensity helper and advanced both canonical build stamps to RC9c.
+- **Pending:** exact-head browser QA and actual screenshot review; no hardware GPU FPS measurement. Preserve RC9b radar, attacks, main, Pages, Building Explorer and licensed dragon assets.
+
 ## 2026-11-08 — RC9b follow-up: radar clearance for full/touch HUD (new QA pending)
 - Inspected actual [QA #303](https://github.com/erin6374/dragon-defense-play/actions/runs/42495308567) screenshots. Cinematic desktop controls clear radar, but full desktop radar obscures CALL THE BLOCK/performance buttons; compact full HUD radar covers FIRE/GAS touch buttons.
 - Place radar at top right below health cards in full desktop and compact/coarse-pointer layouts. Preserve bottom-right radar in cinematic desktop, all attacks and HUD toggle.

@@ -337,3 +337,8 @@ Before editing, branch exactly matched `02c39cf0089d1c9e9af938fe1e03a064a879a20b
 ## Scheduled continuation — RC9b radar clearance in full/touch layouts (November 8)
 
 At start branch matched `4e7ecc055c2353ba71b5927fce11a76d5e7c6cb0` and [QA #303](https://github.com/erin6374/dragon-defense-play/actions/runs/42495308567) **passed**. Downloaded and inspected actual desktop full/cinematic and compact synthetic-alert screenshots. Found full desktop radar over menu buttons and compact radar over FIRE/GAS; cinematic desktop is already clear. Added mode-specific radar CSS and Playwright assertions/snapshots for desktop full, compact full and compact cinematic. Local Chromium was blocked from localhost (`ERR_BLOCKED_BY_ADMINISTRATOR`); do **not** claim local browser QA. Check new exact-head GitHub Actions and screenshots before accepting. Preserve RC9b build identity, main, Pages deployment, Building Explorer and licensed dragon binaries; real GPU FPS unverified.
+
+
+## Scheduled continuation — RC9c distant impact glow (November 8)
+
+At start development HEAD was `e793e38d4b3bdb8a1f6bcc72c025061fdc4a8b49` and exact-head [QA #304](https://github.com/erin6374/dragon-defense-play/actions/runs/42500182720) **passed**. Added a small screen-space sky glow for two distant Philadelphia disaster zones, with restrained wave/damage escalation and deterministic QA assertions. No additional draw calls or gameplay changes. **Inspect fresh RC9c exact-head browser QA and screenshots before certifying visual acceptance.** Real GPU FPS and licensed European Dragon binaries remain unverified; do not merge/deploy or touch main/Building Explorer.

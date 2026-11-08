@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.4.0-rc.9.1';
-export const BUILD_ID='5.4-cinematic-hud-rc09b';
+export const GAME_VERSION='5.4.0-rc.9.2';
+export const BUILD_ID='5.4-disaster-horizon-rc09c';
