@@ -1,5 +1,12 @@
 # Dragon Defense — Development Changelog
 
+## RC2 exact-head QA and Windows package audit (November 8)
+
+- Exact-head browser QA [run #275](https://github.com/erin6374/dragon-defense-play/actions/runs/42447703016) **passed** for commit `ef67361549c3bad9b60b6e3c2536174ee586bec3`; the QA report lists no JavaScript errors or WebGL/material warnings. This validates the RC2 rig, visual-only fallback tests, browser assertions and CI packaging on that commit, **not** physical Windows GPU performance.
+- Downloaded the actual `DragonDefense_v5.4.0_RC2_Windows_Preview` artifact (29,911,589 bytes); ZIP integrity test passed for **119 entries**. Confirmed launcher, build-info, original game, shared Paulo rig/pose driver, standalone lab, vendor Three.js, and RC2 README are present. The embedded build identifies `5.4.0-rc.2` / `5.4-paulo-rc02` with legacy dragon as default.
+- Inspected real `07d-paulo-gameplay-closeup.png`, `07e-legacy-gameplay-closeup.png`, lab and banking reference screenshots from run #275. The corrected opposing bank poses and wing membranes are visible. Paulo remains comparatively dark in the nighttime game view; this is an **art-review limitation**, not a proven gameplay or rendering regression. No hardware FPS or final visual approval is claimed.
+- The Windows launcher requires Python 3, but the RC2 README previously omitted that prerequisite. Added a check/install instruction to `README_WINDOWS_V5.4_RC2.txt`; this **documentation-only follow-up requires its own exact-head browser QA** before the updated ZIP is distributed. Production `main`, deployment and Building Explorer remain untouched.
+
 ## v5.4 RC2 packaging and wing readability pass (November 8)
 
 - **Release safety:** Preserved a real downloadable Windows preview **RC1** from passing browser QA [#42446279065](https://github.com/erin6374/dragon-defense-play/actions/runs/42446279065). The ZIP was integrity-tested and includes all game assets, `PLAY-PREVIEW.cmd`, vendor Three.js and an explicit release README. Pinned its exact source SHA `7edc9ad` on `release/v5.3.1-paulo-preview-rc1` so a working fallback exists even if newer artwork/tests fail. RC1's in-game version is correctly identified as v5.3.1.
