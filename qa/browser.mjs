@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
-import {detectMilitaryCollateral} from '../src/simulation/military-collateral.js';
+import {detectMilitaryCollateral,segmentSphereEntry} from '../src/simulation/military-collateral.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -78,6 +78,21 @@ assert.ok(Math.abs(windBus.root.position.z-20)<Math.abs(windSedan.root.position.
 for(let i=0;i<200;i++)advanceVehicleWind(windSedan,.05);
 assert.ok(Math.abs(windSedan.root.rotation.x)<.001,'vehicle roll eventually settles');
 assert.ok(Number.isFinite(windSedan.root.position.x)&&Number.isFinite(windSedan.root.position.z),'wind positions remain finite');
+// A 24-unit/s rocket can cross a small dragon or projectile in one slow frame.
+// End-point-only tests would miss these hits; preserve first-contact coordinates.
+const missileStart={x:-10,y:2,z:5},missileEnd={x:10,y:2,z:5};
+const missileTarget={x:0,y:2,z:5};
+assert.deepEqual(segmentSphereEntry(missileStart,missileEnd,missileTarget,2),
+ {t:.4,x:-2,y:2,z:5},'fast rocket contacts target at swept entry face');
+assert.equal(segmentSphereEntry(missileStart,missileEnd,{x:0,y:5,z:5},2),null,
+ 'swept sphere rejects a parallel near miss');
+assert.deepEqual(segmentSphereEntry(missileTarget,missileEnd,missileTarget,2),
+ {t:0,x:0,y:2,z:5},'rocket already inside target contacts immediately');
+assert.equal(segmentSphereEntry(missileStart,missileStart,missileTarget,2),null,
+ 'stationary rocket outside target does not hit');
+assert.equal(segmentSphereEntry(missileStart,missileEnd,missileTarget,-1),null,
+ 'invalid collision radius cannot create a hit');
+
 // Missed government missiles now cause bounded physical collateral damage.
 const schoolCollider={name:'tech-freire-school',x:0,z:-8.6,w:27,d:18,h:28,damage:0};
 const homeCollider={name:'rowhouse',x:24,z:-7.4,w:7,d:14.5,h:12,damage:0};

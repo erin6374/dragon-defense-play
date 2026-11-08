@@ -1,3 +1,19 @@
+// Segment/sphere intersection for fast military rockets versus moving targets.
+// Returns the first contact in this frame, or null for a clear path.
+export function segmentSphereEntry(start,end,center,radius){
+ if(!start||!end||!center||!(radius>0)||![start.x,start.y,start.z,end.x,end.y,end.z,center.x,center.y,center.z,radius].every(Number.isFinite))return null;
+ const dx=end.x-start.x,dy=end.y-start.y,dz=end.z-start.z;
+ const fx=start.x-center.x,fy=start.y-center.y,fz=start.z-center.z;
+ const a=dx*dx+dy*dy+dz*dz,c=fx*fx+fy*fy+fz*fz-radius*radius;
+ if(c<=0)return {t:0,x:start.x,y:start.y,z:start.z};
+ if(a<1e-12)return null;
+ const b=2*(fx*dx+fy*dy+fz*dz),disc=b*b-4*a*c;
+ if(disc<0)return null;
+ const t=(-b-Math.sqrt(disc))/(2*a);
+ if(t<0||t>1)return null;
+ return {t,x:start.x+dx*t,y:start.y+dy*t,z:start.z+dz*t};
+}
+
 // Collision-only helper. Kept independent of Three.js for deterministic QA.
 // Geometry is an approximate gameplay footprint, not actual BIM mesh raycasting.
 // Sweep the missile's entire frame segment so fast rockets cannot tunnel through
