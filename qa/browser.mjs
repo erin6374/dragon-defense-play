@@ -613,6 +613,8 @@ try {
   });
   assert.equal(pauloGameplayOn.enabled,true,'development preview switches to Paulo');
   assert.equal(pauloGameplayOn.now.rigMounted,true,'Paulo mounts beneath the legacy gameplay root');
+  assert.equal(pauloGameplayOn.now.visualScale,.68,
+    'Paulo visual rig has readable in-game scale without changing gameplay root');
   assert.equal(pauloGameplayOn.now.legacyHidden,true,'only old dragon artwork is hidden');
   assert.ok(pauloGameplayOn.now.pose?.pose,'new model has an active animation driver');
   assert.deepEqual(pauloGameplayOn.now.position,pauloPreviewStart.position,
@@ -647,6 +649,7 @@ try {
   assert.equal(pauloGameplayOff.enabled,false,'preview switches back to original');
   assert.equal(pauloGameplayOff.now.legacyVisible,true,'original dragon visibility is restored');
   assert.equal(pauloGameplayOff.now.rigMounted,false,'Paulo visual root is detached');
+  assert.equal(pauloGameplayOff.now.visualScale,null,'fallback releases the scaled visual-only rig');
   assert.equal(pauloGameplayOff.now.pose,null,'fallback releases Paulo animation controller');
   for(const key of ['score','hp','wave','dragon']){
     assert.deepEqual(pauloGameplayOff.after[key],pauloGameplayOff.before[key],
