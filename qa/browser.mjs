@@ -35,6 +35,8 @@ assert.ok(launchHtml.includes("location.protocol==='file:'"),
   'startup message must explain direct-file CORS failures');
 assert.ok(launchCmd.includes('python') && launchCmd.includes('8769') && launchCmd.includes('http.server'),
   'Windows preview launcher must start the expected HTTP server');
+assert.ok(launchCmd.includes('python -c "import sys; assert sys.version_info[0] == 3"'),
+  'Windows preview launcher must reject Python 2 when using the python PATH fallback');
 // Deterministic ground-target wind checks. These exercise the same pure
 // response functions used by the live vehicle/pedestrian wind loops.
 const pushWeights={

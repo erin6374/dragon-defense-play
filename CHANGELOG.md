@@ -1,5 +1,11 @@
 # Dragon Defense — Development Changelog
 
+## RC2 Windows launcher Python-version guard (November 8)
+
+- [Exact-head browser QA #278](https://github.com/erin6374/dragon-defense-play/actions/runs/42450767263) **passed** on `3982dcd6622cd83b152654979d1a3277bfdd67ba`, including the RC2 README update; GitHub Actions uploaded the RC2 Windows preview artifact (119 visible files). This is browser/software-WebGL verification, not a physical Windows launch or hardware GPU test.
+- Source audit found a specific launcher edge case: the `python --version` fallback accepted any installed Python version, including Python 2, even though the server uses Python 3's `http.server`. Changed the fallback to execute a Python major-version-3 assertion before selecting it. `py -3` remains preferred.
+- Added a browser QA source-level regression assertion for that guard. **New guard is unverified until fresh PR-head browser QA passes; the Windows batch launcher still needs real-device validation.** No gameplay, production `main`, merge, deployment or Building Explorer change.
+
 ## RC2 exact-head QA and Windows package audit (November 8)
 
 - Exact-head browser QA [run #275](https://github.com/erin6374/dragon-defense-play/actions/runs/42447703016) **passed** for commit `ef67361549c3bad9b60b6e3c2536174ee586bec3`; the QA report lists no JavaScript errors or WebGL/material warnings. This validates the RC2 rig, visual-only fallback tests, browser assertions and CI packaging on that commit, **not** physical Windows GPU performance.

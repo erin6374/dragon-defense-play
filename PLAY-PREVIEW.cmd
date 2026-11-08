@@ -16,11 +16,11 @@ echo Game folder: %CD%
 echo Preview address: %GAME_URL%
 echo.
 
-rem Try the Windows Python launcher first, then the python executable.
+rem Try the Windows Python 3 launcher first, then validate python on PATH is version 3.
 py -3 --version >nul 2>&1
 if not errorlevel 1 set "PYTHON_CMD=py -3"
 if not defined PYTHON_CMD (
-  python --version >nul 2>&1
+  python -c "import sys; assert sys.version_info[0] == 3" >nul 2>&1
   if not errorlevel 1 set "PYTHON_CMD=python"
 )
 if not defined PYTHON_CMD (
