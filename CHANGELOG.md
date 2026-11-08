@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 proximal wing silhouette pass (November 7)
+
+- Browser QA run `42428004854` passed the prior head-and-tail anatomy revision. I reviewed the actual front, side and top reference images: face and tapering tail render, but wing membrane coverage is concentrated near the tips, leaving the shoulder-to-elbow spans visually skeletal.
+- Added one tessellated **shoulder-attached proximal wing patagium on each side**, complementing the existing central elbow panel and four distal finger fans. Each wing now has six panels; 12 total (previously ten), with unchanged shoulder/elbow/wrist rig, positional joints, wing fold/bank and pose state system.
+- The panel meshes share existing geometry/material patterns and are allocated at initialization rather than during animation; the original per-frame vertex deformation still updates the preallocated buffers.
+- Expanded browser QA to check the 2 proximal, 2 middle and 8 outer panels, at least 1,092 membrane vertices, and matched top-down images `13-paulo-bank-right.png` and `13-paulo-bank-left.png` at the same 0.75-second pose time.
+- Source JS and QA syntax parsing passed. **Current-head browser QA, real screenshot inspection of the newly widened membranes, and Windows hardware measurements remain pending.** This is a procedural prototype; a final weighted/sculpted skinned dragon is not complete, and the existing gameplay dragon/production main/Building Explorer were not modified.
+
+
 ## Paulo v5.4 head and tail anatomy refinement (November 7)
 
 - Reviewed the **passed** browser QA run `42427391118`: fitted front/side/top/rear orthographic cameras now show Paulo fully without cutting off the wing tips. This supersedes the previously cropped perspective reference views.
