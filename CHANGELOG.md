@@ -1,3 +1,8 @@
+## 2026-11-08 — RC5 wave/warning overlay separation (new exact-head QA pending)
+- Verified [browser QA #291](https://github.com/erin6374/dragon-defense-play/actions/runs/42475844384) passed at `0cf3afa86c6f74f48652ce113bede2d896f14695`, with zero reported JS errors/warnings and RC5 Windows artifact. Inspected actual `02-playing.png` (1024×576) and `02b-compact-hud-synthetic-alerts.png` (848×480) from the QA ZIP.
+- Visual defects: at 1024×576 the wave banner sits behind the interception status; at 848×480 the synthetic hostile-aircraft warning touches/overlaps the first menu-button row. Move desktop wave/warning lower and compact warning 12 px higher without modifying game simulation or controls.
+- Add desktop wave/status bounding-box assertion and compact warning/visible-menu-button separation assertion. New browser QA and fresh screenshot review required; wave-15 warning remains synthetic, not real campaign evidence. No hardware FPS claim, deployment, main, Building Explorer or licensed European Dragon integration.
+
 ## 2026-11-08 — RC5 compact landscape HUD separation (new QA pending)
 - Exact-head [browser QA #290](https://github.com/erin6374/dragon-defense-play/actions/runs/42471074050) **passed** at `9ee667f44849c82879af9f8fd4e000285d708e68`, including Windows preview packaging and nearest-target missile assertions.
 - Address the previously observed overlapping wave announcement/status/HUD at 848×480 by giving compact layouts distinct vertical positions for power, model, chapter, wave and hostile-aircraft notices. Keep all controls and game simulation unchanged. Add 848×480 Playwright DOM-bounds assertions and a screenshot with **synthetic alert text**, not a real wave-15 gameplay capture.
