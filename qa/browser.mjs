@@ -289,6 +289,61 @@ try {
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
   await page.locator('canvas').first().screenshot({path:'qa-output/02-playing-scene.png'});
+
+  // Reproduce the observed compact landscape HUD overlap at 848x480.
+  // The wave announcement is synthetic DOM text for layout verification only;
+  // it does not assert that wave 15 gameplay was reached.
+  await page.setViewportSize({width:848,height:480});
+  const compactAlertPrevious = await page.evaluate(() => {
+    const toast = document.getElementById('toast');
+    const warning = document.getElementById('hunter-warning');
+    const previous = {toast:toast.textContent, warning:warning.textContent,
+      opacity:warning.style.opacity, transition:warning.style.transition};
+    toast.textContent = 'WAVE 15 · METEOR STORM';
+    warning.textContent = 'HOSTILE AIRCRAFT';
+    warning.style.transition = 'none';
+    warning.style.opacity = '1';
+    return previous;
+  });
+  try {
+    const compactHud = await page.evaluate(() => {
+      const ids = ['hud','power-status','model-status','campaign-chapter-label','toast','hunter-warning'];
+      const boxes = Object.fromEntries(ids.map(id => {
+        const rect = document.getElementById(id).getBoundingClientRect();
+        return [id, {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}];
+      }));
+      const cards = Array.from(document.querySelectorAll('#hud > div'), element => {
+        const rect = element.getBoundingClientRect();
+        return {left:rect.left,right:rect.right,width:rect.width};
+      });
+      return {boxes,cards};
+    });
+    const separated = (a,b) => a.bottom <= b.top+1 || b.bottom <= a.top+1 ||
+      a.right <= b.left+1 || b.right <= a.left+1;
+    for(const [a,b] of [
+      ['hud','power-status'],['power-status','model-status'],
+      ['model-status','campaign-chapter-label'],
+      ['campaign-chapter-label','toast'],['toast','hunter-warning']
+    ]) {
+      assert.ok(separated(compactHud.boxes[a],compactHud.boxes[b]),
+        '848x480 HUD overlap: '+a+' / '+b+' '+JSON.stringify(compactHud.boxes));
+    }
+    assert.ok(compactHud.cards.every(card => card.width>15 && card.left>=0 && card.right<=848),
+      '848x480 top HUD cards must remain on-screen');
+    report.compactHud={viewport:'848x480',syntheticAlert:true,...compactHud};
+    await shot('02b-compact-hud-synthetic-alerts');
+  } finally {
+    await page.evaluate(previous => {
+      const toast = document.getElementById('toast');
+      const warning = document.getElementById('hunter-warning');
+      toast.textContent = previous.toast;
+      warning.textContent = previous.warning;
+      warning.style.opacity = previous.opacity;
+      warning.style.transition = previous.transition;
+    },compactAlertPrevious);
+    await page.setViewportSize({width:1024,height:576});
+  }
+
   report.browser = browser.version();
   const before = await snap();
   await page.keyboard.down('KeyD');

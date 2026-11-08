@@ -1,3 +1,8 @@
+## 2026-11-08 — RC5 compact landscape HUD separation (new QA pending)
+- Exact-head [browser QA #290](https://github.com/erin6374/dragon-defense-play/actions/runs/42471074050) **passed** at `9ee667f44849c82879af9f8fd4e000285d708e68`, including Windows preview packaging and nearest-target missile assertions.
+- Address the previously observed overlapping wave announcement/status/HUD at 848×480 by giving compact layouts distinct vertical positions for power, model, chapter, wave and hostile-aircraft notices. Keep all controls and game simulation unchanged. Add 848×480 Playwright DOM-bounds assertions and a screenshot with **synthetic alert text**, not a real wave-15 gameplay capture.
+- New CSS and regression assertions require exact-head browser QA before acceptance; mobile hardware, gameplay-wave visual fidelity and GPU FPS remain unverified. No production deployment or licensed dragon integration.
+
 ## 2026-11-08 — RC5 follow-up: deterministic first contact within rocket target classes (new QA pending)
 - Exact-head [browser QA #289](https://github.com/erin6374/dragon-defense-play/actions/runs/42466717298) **passed** at `87ee68fd4c6408fadffeb05dd4b1afb007752e79`, including the prior swept rocket collision assertions and Windows preview packaging.
 - Audited the swept missile loops: when several player shots or meteors intersected a rocket's movement in one frame, the first array entry won even if another target was physically closer. Resolve the minimum swept contact time **within** each class, preserving established shot > meteor > dragon > collateral class priority and existing effects. Added deterministic reversed-order, ineligible, miss and contact-position assertions.
