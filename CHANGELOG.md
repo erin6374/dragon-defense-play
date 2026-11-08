@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## v5.4 RC2 packaging and wing readability pass (November 8)
+
+- **Release safety:** Preserved a real downloadable Windows preview **RC1** from passing browser QA [#42446279065](https://github.com/erin6374/dragon-defense-play/actions/runs/42446279065). The ZIP was integrity-tested and includes all game assets, `PLAY-PREVIEW.cmd`, vendor Three.js and an explicit release README. Pinned its exact source SHA `7edc9ad` on `release/v5.3.1-paulo-preview-rc1` so a working fallback exists even if newer artwork/tests fail. RC1's in-game version is correctly identified as v5.3.1.
+- **More finished wing silhouette:** Expanded the shoulder and elbow patagium rearward to reduce the skeletal void between wing root and finger fan. Upgraded crimson membranes to **per-vertex radial tint** and warmer bronze ribs, preserving all 12 existing panels, 12-pose animation, rig joints and draw-call count. QA verifies that every panel has per-vertex colors and the outer span receives more light than the inner root. Visual confirmation in fresh in-game screenshots is still required.
+- **Current RC2 identifiers:** Set `build-info.json`, `src/core/build-info.js`, and HTML title to `v5.4.0-rc.2` / `5.4-paulo-rc02`, keeping the gameplay base correctly disclosed as v5.2.3 with v5.3 wind features. Replaced outdated Windows instructions with `README_WINDOWS_V5.4_RC2.txt`, including the hidden-by-default Paulo preview URL `?paulo=1`, controls, rollback and known untested devices.
+- Updated the browser QA workflow to package `DragonDefense_v5.4.0_RC2_Windows_Preview` **only after tests pass**, and to verify required Paulo rig and new README files before publishing the artifact.
+- **Do not confuse RC2 with a tested release yet:** all new model, screenshot, timing and packaging changes must pass the exact-head GitHub browser QA before distributing the RC2 package. RC1 remains the tested downloadable fallback. Neither release modifies production `main` or the separate Building Explorer. Android APK and actual Windows GPU FPS remain unverified.
+
+
 ## Paulo v5.4 long-session hit recoil timing (November 8)
 
 - Source audit found that Paulo's `hit` pose used `Math.exp(-t*2)` with `t` supplied by the **continuous wingbeat clock**, so recoil would be practically invisible after even a short gameplay session. The lab's reset-to-zero pose timeline had masked the problem.
