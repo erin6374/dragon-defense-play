@@ -7,8 +7,8 @@ const mat={
  armor:new THREE.MeshStandardMaterial({color:0x343943,roughness:.83,metalness:.13,emissive:0x181d24,emissiveIntensity:.27}),
  plates:new THREE.MeshStandardMaterial({color:0x58535f,roughness:.74,metalness:.13,emissive:0x2b2331,emissiveIntensity:.29}),
  red:new THREE.MeshStandardMaterial({color:0xb43a4b,roughness:.69,side:THREE.DoubleSide,emissive:0x471520,emissiveIntensity:.26}),
- membrane:new THREE.MeshStandardMaterial({color:0x973043,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.95,emissive:0x4f1927,emissiveIntensity:.26}),
- bronze:new THREE.MeshStandardMaterial({color:0xa67b4e,metalness:.47,roughness:.45}),
+ membrane:new THREE.MeshStandardMaterial({color:0xc55268,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.95,vertexColors:true,emissive:0x4f1927,emissiveIntensity:.22}),
+ bronze:new THREE.MeshStandardMaterial({color:0xc6a073,metalness:.34,roughness:.51,emissive:0x3d2916,emissiveIntensity:.13}),
  eye:new THREE.MeshStandardMaterial({color:0xffcb64,emissive:0xbd5809,emissiveIntensity:.72}),
  mouth:new THREE.MeshStandardMaterial({color:0x160e14,roughness:.92}),
  ivory:new THREE.MeshStandardMaterial({color:0xe7d8b7,roughness:.68})
@@ -134,7 +134,7 @@ function membrane(parent,verts,side,region='outer'){
  const root=new THREE.Vector3(...verts[0]);
  const left=new THREE.Vector3(...verts[1]).sub(root);
  const right=new THREE.Vector3(...verts[2]).sub(root);
- const positions=[],uvs=[],indices=[];
+ const positions=[],uvs=[],colors=[],indices=[];
  const segments=12,radial=6;
  for(let j=0;j<=radial;j++){
   const v=j/radial;
@@ -148,6 +148,10 @@ function membrane(parent,verts,side,region='outer'){
    p.y+=side*Math.sin(Math.PI*u)*Math.sin(Math.PI*v)*.17;
    positions.push(p.x,p.y,p.z);
    uvs.push(u,v);
+   // Prebaked radial tint gives each membrane depth at night without
+   // allocating textures or adding lights/draw calls during gameplay.
+   const depth=.59+.38*v*(.65+.35*Math.sin(Math.PI*u));
+   colors.push(depth,depth*(.80+.17*Math.sin(Math.PI*u)),depth*.90);
    if(i<segments&&j<radial){
     const a=j*(segments+1)+i,b=a+segments+1;
     indices.push(a,b,a+1,b,b+1,a+1);
@@ -157,6 +161,7 @@ function membrane(parent,verts,side,region='outer'){
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
  geometry.setIndex(indices);geometry.computeVertexNormals();
  // Keep the rest pose in a typed array; deformation is a bounded update
  // of existing vertex buffers, never a per-frame mesh allocation.
@@ -194,7 +199,7 @@ for(const side of [-1,1]){
  // Shoulder-to-elbow patagium fills the previously bare upper wing.
  // Its shoulder pivot is shared with the upper arm, so banks and wingbeats
  // move the leading edge with the existing articulated rig.
- membrane(shoulder,[[0,0,0],[-1.85,-.12,side*.70],[-.35,.28,side*1.8]],side,'proximal');
+ membrane(shoulder,[[0,0,0],[-2.35,-.28,side*.40],[-.35,.28,side*1.8]],side,'proximal');
  const wrist=pivot(elbow,[-.85,.1,side*1.5]);marker(wrist);
  bone(elbow,[0,0,0],[-.85,.1,side*1.5],.12,mat.armor);
  const fingerEnds=[[-3.7,.03,side*3.8],[-2.2,.12,side*4.8],[-.4,.02,side*4.6],[.8,-.03,side*3.5]];
@@ -204,7 +209,7 @@ for(const side of [-1,1]){
   const prev=i===0?rear:fingerEnds[i-1],next=fingerEnds[i];
   membrane(wrist,[base,prev,next],side);
  }
- membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-2.6,-.12,side*.35]],side,'middle');
+ membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-3.05,-.24,side*.26]],side,'middle');
  wings.push({shoulder,elbow,wrist,side});
 }
 
