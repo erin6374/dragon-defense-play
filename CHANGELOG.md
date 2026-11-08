@@ -1,3 +1,7 @@
+## 2026-11-08 — Nearest swept 3D meteor interception (QA pending)
+- Player fireballs now test the whole frame segment against meteor collision spheres and select the earliest 3D entry contact, rather than taking the first match in reverse meteor array order. Retains existing damage, shrapnel, scoring, fragment and blast effects.
+- Added source-level QA guard; exact-head browser QA and visual/gameplay verification still required. Does not yet apply to wind, gas or helicopters.
+
 ## 2026-11-08 — Runtime QA for ordinary-wave Paulo position (pending exact-head QA)
 - Added QA-only `advanceOrdinaryWave()` hook to advance a live non-chapter wave through the real `newWave()` path.
 - Browser regression starts wave 2, moves Paulo to (31,23,15), advances to wave 3 and asserts x/y/z world coordinates preserved; restores wave 1 before existing QA.
