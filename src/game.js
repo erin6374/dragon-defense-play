@@ -526,7 +526,7 @@ dragon.scale.setScalar(1.20);
 let dragonLeavingRoof=false;
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
- facing=1;turnTime=0;gasPose=0;dragonGroundImpact=false;recoveryLift=0;windActive=false;gustTime=0;
+ facing=1;turnTime=0;gasPose=0;dragonGroundImpact=false;recoveryLift=0;windActive=false;gustTime=0;pauloFirePoseUntil=0;
  dragon.position.set(0,schoolBounds.max.y+2.2,schoolBounds.max.z-2.6);
  dragon.rotation.x=rest?0.03:0;dragon.rotation.y=rest?0.16:0.08;dragon.rotation.z=rest?-0.08:-0.03;
  for(const wing of wings)wing.pivot.rotation.z=rest?wing.sign*.34:wing.sign*.18;
