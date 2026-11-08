@@ -1,5 +1,19 @@
 # Dragon Defense — carry-over bookmark
 
+## Latest continuation — reusable Paulo rig and pose driver (November 7–8)
+
+**Do not redo the extraction or merge the release prematurely.** As of this handoff the development branch contains these unmerged changes:
+
+- **Latest verified prior checkpoint:** GitHub browser QA [#42442263143](https://github.com/erin6374/dragon-defense-play/actions/runs/42442263143) passed. Its actual screenshots were reviewed: left/right bank angles show opposite longitudinal roll; thin, edge-on wing membranes still need artistic refinement. The procedural Paulo model remains a blockout, not a production skinned GLB.
+- **New renderer-independent factory:** `src/dragon/paulo-rig.js` exports `createPauloRig(THREE,{breathPreviewFactory})`; creates geometry and a detached root, returns `applyPose(time,pose,bankDirection)`, articulated joints/QA data and `dispose()`. The actual `dragon-lab/paulo-lab.js` has been reduced to viewer, camera, control and scene logic and now imports the exact same rig. Game use MUST omit the lab-only breath preview factory.
+- **Safe lifetime:** `rig.dispose()` unmounts the visual root and disposes unique geometries/materials once. Subsequent pose writes are a no-op; the second disposal is harmless. This is groundwork for the required selectable legacy-dragon fallback, **not** a runtime model switch yet.
+- **Visual clock/intent:** `src/dragon/paulo-animation-intent.js` remains the pure 12-pose state selector; added `src/dragon/paulo-pose-driver.js` to bridge game signals with continuous wingbeat phase, capped 50ms visual delta, pause freeze and reset independently of simulation. Six independent source-level driver checks passed.
+- **Browser QA:** `qa/browser.mjs` now constructs a second unattached Paulo rig using the real Three.js module, runs all twelve poses, checks mirrored banks/membranes/tail/fangs, cleans it up and checks safe repeated disposal/updates. It also covers pose-driver pause/reset/phase behavior.
+- **Verification:** changed JS and browser test syntax parsed; the newest full browser QA must be checked at the exact latest PR head before claiming the extraction verified. Prior green runs do not validate these new commits. Preserve draft PR #2, production main, Building Explorer and the existing v5.3.1 playable dragon.
+
+**Next sequence:** (1) Get current-head browser suite green and inspect actual screenshot output for the shared rig; (2) art/animation polish and actual Windows GPU check; (3) guarded gameplay child/fallback integration preserving existing attack/collision simulation; (4) consolidate all recent graphics/wind/Paulo changes per `RELEASE-PLAN-v5.4.md` only after acceptance. Avoid running two unsynchronized dragon simulators or injecting the lab renderer into the game.
+
+
 Continue the Tech Freire Dragon Defense graphics overhaul. Do not start over.
 
 - Repository: https://github.com/erin6374/dragon-defense-play
