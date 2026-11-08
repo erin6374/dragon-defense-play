@@ -509,6 +509,24 @@ try {
   }
 
   report.browser = browser.version();
+  // End-to-end ordinary-wave regression: Paulo must retain his world-space
+  // position rather than silently returning to the school roof.
+  const wavePosition=await page.evaluate(()=>{
+    const qa=window.__DD_QA,initial=qa.start(2);
+    if(!initial.ok)return initial;
+    const moved=qa.move(31,23);
+    if(!moved.ok)return moved;
+    return qa.advanceOrdinaryWave();
+  });
+  assert.ok(wavePosition.ok,wavePosition.error);
+  assert.equal(wavePosition.result.before.wave,2);
+  assert.equal(wavePosition.result.after.wave,3);
+  for(const axis of ['x','y','z'])assert.ok(
+    Math.abs(wavePosition.result.after.dragon[axis]-wavePosition.result.before.dragon[axis])<.00001,
+    'ordinary wave preserves Paulo '+axis+' world coordinate');
+  report.ordinaryWaveDragonPosition=wavePosition.result;
+  const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
+  assert.ok(restoredWave.ok,restoredWave.error);
   const before = await snap();
   await page.keyboard.down('KeyD');
   try {
