@@ -144,7 +144,7 @@ function bone(parent,start,end,radius,material){
 // the leading and trailing edges are scalloped and the fabric billows in 3D.
 // Geometry is generated once per wing panel, not during animation.
 const membranePanels=[];
-function membrane(parent,verts,side){
+function membrane(parent,verts,side,region='outer'){
  const root=new THREE.Vector3(...verts[0]);
  const left=new THREE.Vector3(...verts[1]).sub(root);
  const right=new THREE.Vector3(...verts[2]).sub(root);
@@ -176,7 +176,7 @@ function membrane(parent,verts,side){
  // of existing vertex buffers, never a per-frame mesh allocation.
  geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
  const mesh=part(parent,geometry,mat.membrane);
- membranePanels.push({mesh,rest:Float32Array.from(positions),side});
+ membranePanels.push({mesh,rest:Float32Array.from(positions),side,region});
  return mesh;
 }
 // Lightweight procedural skinning preview: billow the membrane interior,
@@ -205,6 +205,10 @@ for(const side of [-1,1]){
  const shoulder=pivot(chest,[-.12,.55,side*.53]);marker(shoulder);
  const elbow=pivot(shoulder,[-.35,.28,side*1.8]);marker(elbow);
  bone(shoulder,[0,0,0],[-.35,.28,side*1.8],.16,mat.armor);
+ // Shoulder-to-elbow patagium fills the previously bare upper wing.
+ // Its shoulder pivot is shared with the upper arm, so banks and wingbeats
+ // move the leading edge with the existing articulated rig.
+ membrane(shoulder,[[0,0,0],[-1.85,-.12,side*.70],[-.35,.28,side*1.8]],side,'proximal');
  const wrist=pivot(elbow,[-.85,.1,side*1.5]);marker(wrist);
  bone(elbow,[0,0,0],[-.85,.1,side*1.5],.12,mat.armor);
  const fingerEnds=[[-3.7,.03,side*3.8],[-2.2,.12,side*4.8],[-.4,.02,side*4.6],[.8,-.03,side*3.5]];
@@ -214,7 +218,7 @@ for(const side of [-1,1]){
   const prev=i===0?rear:fingerEnds[i-1],next=fingerEnds[i];
   membrane(wrist,[base,prev,next],side);
  }
- membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-2.6,-.12,side*.35]],side);
+ membrane(elbow,[[0,0,0],[-.85,.1,side*1.5],[-2.6,-.12,side*.35]],side,'middle');
  wings.push({shoulder,elbow,wrist,side});
 }
 const descriptions={
@@ -383,6 +387,7 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  armorPlateCount:plateIndex,fangCounts:[upperTeeth.count,lowerTeeth.count],
  tailProfile,
  membranePanels:membranePanels.length,
+ membraneRegions:membranePanels.reduce((acc,p)=>{acc[p.region]=(acc[p.region]??0)+1;return acc;},{}),
  membraneVertices:membranePanels.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0),
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
  current:p.mesh.geometry.attributes.position.array[3*3*13+3*6+1]};},
