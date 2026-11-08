@@ -24,6 +24,13 @@ const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
+// Paulo must not be teleported back to the roof at each ordinary wave.
+// Initial reset and chapter settlement retain their explicit perch behavior.
+const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
+assert.ok(waveSource.startsWith('function newWave(){'),'wave transition function found');
+assert.doesNotMatch(waveSource,/perchDragon\s*\(/,'ordinary waves preserve Paulo free-flight position');
+assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(false\)/,'initial game reset still perches Paulo');
+
 // Touch drags already reach the universal pointermove listener. A second
 // touch-specific listener used to raycast the same event twice.
 assert.equal((gameSource.match(/renderer\.domElement\.addEventListener\('pointermove'/g) ?? []).length, 1,
