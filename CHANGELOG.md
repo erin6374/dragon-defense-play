@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 long-session hit recoil timing (November 8)
+
+- Source audit found that Paulo's `hit` pose used `Math.exp(-t*2)` with `t` supplied by the **continuous wingbeat clock**, so recoil would be practically invisible after even a short gameplay session. The lab's reset-to-zero pose timeline had masked the problem.
+- The reusable `applyPose(t,state,direction,poseElapsed=t)` now uses **pose-local elapsed time** for finite impact recoil, while global `t` still drives continuous wingbeats, breathing and tail sway. The optional fourth argument keeps standalone lab behavior compatible.
+- `src/dragon/paulo-pose-driver.js` now supplies `poseTime` separately to the rig, resets it on state changes, and preserves continuous wingbeat time across attacks. This does not alter stun damage, health, invulnerability or projectile rules.
+- Expanded browser QA to assert identical recoil after 0.1 and 120.0 seconds of wingbeat time, visible initial recoil and per-pose driver clock progress. An independent source simulation of **2,400 steps / 120 seconds** passed.
+- **Full browser QA and visual acceptance for the latest combined scale/material/recoil head remain pending.** No production/main or Building Explorer changes.
+
+
 ## Paulo v5.4 in-game visibility and scale pass (November 8)
 
 - [Browser QA #42446279065](https://github.com/erin6374/dragon-defense-play/actions/runs/42446279065) **passed** the previously added `captureDragonDetail()` and real-game preview round-trip tests; report recorded no JS errors or WebGL warnings. Downloaded the 12 MB QA artifact and inspected actual `07d-paulo-gameplay-closeup.png` and `07e-legacy-gameplay-closeup.png` at identical staging coordinates.
