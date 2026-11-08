@@ -371,3 +371,8 @@ QA #309 passed at `8b464ba` and branch was unchanged before editing. Removed unc
 ## Scheduled continuation — runtime ordinary-wave position QA (November 8)
 
 QA #310 passed at `59be198`. Added QA-only `advanceOrdinaryWave` hook and browser assertion: start wave 2, move Paulo to (31,23,15), advance via real `newWave()` to wave 3, assert unchanged xyz, then restore wave 1. This exercises runtime position preservation rather than just source matching. **Exact-head QA pending**; fix any failures before further graphics/gameplay work. No main/production/Building Explorer changes.
+
+
+## Scheduled continuation — nearest swept fireball interception (November 8)
+
+QA #311 passed for runtime Paulo ordinary-wave position regression at `51cf369`. New game change selects earliest segment-sphere intersection among meteors for Paulo's fireball; existing scoring and impact effects retained. Added source-level guard in browser QA. **Exact-head QA pending**; verify no JavaScript syntax/runtime regressions before further work. This change does NOT yet solve wind/gas/vehicle/helicopter 3D target ordering. No main/production/Building Explorer edits.
