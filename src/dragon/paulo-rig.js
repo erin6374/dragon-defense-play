@@ -208,7 +208,9 @@ for(const side of [-1,1]){
  wings.push({shoulder,elbow,wrist,side});
 }
 
+let disposed=false;
 function applyPose(t,state,bankDirection=1){
+ if(disposed)return; // never update buffers after the fallback releases this rig
  const cycle=Math.sin(t*5),soft=Math.sin(t*2);
  const airborne=!['idle','land'].includes(state);
  const power=state==='hover'?1:state==='takeoff'?1.25:state==='flight'?.6:state==='hit'?.85:state==='bank'?.48:.07;
@@ -245,7 +247,6 @@ function applyPose(t,state,bankDirection=1){
  // The final game can switch to the legacy dragon without retaining
  // duplicate rig buffers. Geometry and material sets prevent double-disposal
  // of the shared sphere, cone and armor assets within this factory instance.
- let disposed=false;
  function dispose(){
   if(disposed)return {geometries:0,materials:0};
   disposed=true;
