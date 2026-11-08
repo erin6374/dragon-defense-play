@@ -1,3 +1,8 @@
+## 2026-11-08 — RC9c high-wave QA toast timeout fix (new QA pending)
+- QA #308 failed because a chapter announcement toast never cleared while the QA atmosphere-settle routine was controlling the simulation; the test's 10-second wait timed out.
+- Record and clear only the screenshot DOM toast in Playwright instead of waiting for a gameplay timer; preserve game state, chapter logic and controls. Wave-15 screenshot remains subject to visual review after exact-head QA.
+- No gameplay/renderer/source changes; development branch only. Real GPU FPS, licensed dragon, production and deployment remain untouched.
+
 ## 2026-11-08 — RC9c QA #307 chapter-announcement screenshot clearance (new QA pending)
 - Verified exact-head [browser QA #307](https://github.com/erin6374/dragon-defense-play/actions/runs/42519919972) **passed** on `2400e1d`; downloaded its browser artifact and visually inspected the actual wave-15 screenshots. The cinematic is now hidden, but the separate 1.8-second **“A NEW CHAPTER BEGINS”** toast still blocks the skyline. Automated assertions did not check this overlay.
 - In `qa/browser.mjs`, wait for the actual in-game `#toast` to clear before the high-wave screenshots, assert it is empty, and record the initial toast plus clearance in the QA report. Preserve chapter gameplay behavior and the wave-7 restore. No runtime source, physics, graphics, version or deployment change.
