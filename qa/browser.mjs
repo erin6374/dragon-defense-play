@@ -758,13 +758,25 @@ try {
   const highWaveGlow=await page.evaluate(()=>{
     const qa=window.__DD_QA, started=qa.start(15);
     if(!started.ok)return started;
-    return qa.qaSettleAtmosphere();
+    // Wave 15 opens a chapter cinematic. Explicitly dismiss it so the
+    // screenshot captures the actual game sky rather than a cutscene overlay.
+    const closed=qa.closeCinematic();
+    if(!closed.ok)return closed;
+    const settled=qa.qaSettleAtmosphere();
+    if(!settled.ok)return settled;
+    return {ok:true,result:{...settled.result,
+      cinematicHidden:document.getElementById('cinematic-player').hidden,
+      paused:qa.snap().paused}};
   });
   assert.ok(highWaveGlow.ok,highWaveGlow.error);
   assert.equal(highWaveGlow.result.wave,15,'disaster-glow capture uses final wave');
+  assert.equal(highWaveGlow.result.cinematicHidden,true,'high-wave screenshot must not show chapter cutscene');
+  assert.equal(highWaveGlow.result.paused,false,'high-wave gameplay resumes after dismissing chapter cinematic');
   const highWaveFrames=(await snap()).frameTimes.frames;
   await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>n,highWaveFrames);
   report.highWaveDisasterGlow=highWaveGlow.result;
+  assert.equal(await page.locator('#cinematic-player').isHidden(),true,
+    'high-wave screenshot captures gameplay, not an overlay');
   await shot('06b-high-wave-disaster-glow');
   await page.locator('canvas').first().screenshot({path:'qa-output/06b-high-wave-disaster-glow-scene.png'});
   const restoreAfterGlow=await page.evaluate(()=>{

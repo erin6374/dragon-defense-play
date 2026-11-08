@@ -1,3 +1,9 @@
+## 2026-11-08 — RC9c QA high-wave capture fix (exact-head QA pending)
+- Inspected [QA #306](https://github.com/erin6374/dragon-defense-play/actions/runs/42515153457): browser assertions, screenshots and packaging steps completed, but GitHub Actions cancelled while finalizing the **Windows preview artifact** after repeated upload-service JSON errors. Its QA artifact was retained; overall run is **cancelled, not passed**.
+- Downloaded QA #306 screenshots and discovered that both purported wave-15 disaster-glow captures show the **chapter cinematic overlay**, not the actual game sky. The prior test verified the wave counter but did not dismiss the cutscene.
+- Corrected QA to call the existing QA-only `closeCinematic()` immediately after staging wave 15, assert the overlay is hidden and gameplay unpaused, then capture both game and canvas screenshots; wave 7 restoration remains intact. This is test-only and does not change live chapter behavior.
+- Corrected the Windows development-preview workflow's stale RC9b artifact/folder label to **RC9c**, matching `build-info.json` (5.4.0-rc.9.2). New exact-head QA and visual screenshot inspection required before certifying the glow. Hardware FPS and licensed European Dragon remain unverified.
+
 ## 2026-11-08 — RC9c skyline-glow visibility correction (QA pending)
 - Exact-head [QA #305](https://github.com/erin6374/dragon-defense-play/actions/runs/42505013025) passed for `d0d519d`; visual review found the two new fire glows largely obscured by foreground roofs at their original vUv heights (.16 and .23).
 - Raised and broadened both glows to y=.49/.55 in the existing full-screen sky shader, retaining restrained intensity and zero additional geometry, textures, lights or draw calls. The sky treatment is visual only; no gameplay or HUD logic changed.

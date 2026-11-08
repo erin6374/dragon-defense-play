@@ -157,3 +157,8 @@ Run `git diff --check` and relevant `node --check` commands. QA output includes 
 4. Update the bookmark, publish tested changes to the existing PR, and package the latest verified source before ending the session.
 
 If the next model is regular ChatGPT without execution tools, upload the source ZIP and this document. It can review and propose code but must not claim it ran tests, committed, or deployed without those capabilities.
+
+
+### November 8 RC9c QA visual-capture finding
+
+The exact-head #306 browser job passed its QA assertions and saved a QA artifact, but the workflow ended **cancelled** during the second (Windows preview) artifact finalization after GitHub's artifact service returned invalid JSON. Actual `06b-high-wave-disaster-glow*.png` screenshots showed the chapter cinematic overlay, **not** the skyline: staging wave 15 automatically opens the chapter cinematic. The QA correction dismisses the cinematic through existing QA-only `closeCinematic()`, asserts it is hidden and the game unpaused, and retains wave-7 restoration. Windows preview workflow label was also corrected from stale RC9b to RC9c. Inspect fresh exact-head QA and high-wave screenshots before accepting the visual effect. New user requests (3D first-hit targeting, 7-second military gas disable, windstorm, chapter-only dragon roof respawn, contact impulses) are recorded in PR #2 comment 6726406282; none are implemented in this QA-only patch.
