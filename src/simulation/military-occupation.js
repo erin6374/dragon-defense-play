@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from './military-collateral.js';
 import {slewSearchlightDirection} from './military-searchlight.js';
+import {militaryWindImpulse} from './military-wind.js';
 const shotCenter=shot=>shot.mesh.position,shotRadius=()=>1.8;
 const shotEligible=shot=>!shot.hostile&&!shot.fireTarget&&shot.life>0;
 const meteorCenter=meteor=>meteor.mesh.position,meteorRadius=meteor=>meteor.size+1;
@@ -67,10 +68,23 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   v.searchlight.quaternion.setFromUnitVectors(searchlightUp,v.searchDir);
   v.searchlight.scale.y=Math.min(70,Math.max(5,desired.length()));
  }
+ function deflectWind(origin,direction,dt){
+  let affected=0,homingDisrupted=0;
+  if(!origin||!direction||dt<=0)return {affected,homingDisrupted};
+  for(const rocket of missiles){
+   const effect=militaryWindImpulse(rocket.mesh.position,origin,direction,dt);
+   if(!effect)continue;
+   rocket.vel.x+=effect.x;rocket.vel.y+=effect.y;rocket.vel.z+=effect.z;
+   rocket.disruptTime=Math.max(rocket.disruptTime||0,effect.disrupt);
+   affected++;
+   if(rocket.homing)homingDisrupted++;
+  }
+  return {affected,homingDisrupted};
+ }
  function fire(v){const origin=v.root.position.clone().add(new THREE.Vector3(0,3.1,0));
   const aim=dragon.position.clone().sub(origin).normalize();
   const mesh=new THREE.Mesh(cone,rocketMat);mesh.scale.set(.35,1.4,.35);mesh.position.copy(origin);scene.add(mesh);
-  missiles.push({mesh,vel:aim.multiplyScalar(v.advanced?18:24),homing:v.advanced,life:7,age:0,smoke:0});
+  missiles.push({mesh,vel:aim.multiplyScalar(v.advanced?18:24),homing:v.advanced,life:7,age:0,smoke:0,disruptTime:0});
   v.flash=.28;
  }
  function destroy(v){onBlast(v.root.position.x,2.2,v.root.position.z,4);scene.remove(v.root);vehicles.splice(vehicles.indexOf(v),1);spawnClock=Math.min(spawnClock,5);}
@@ -90,7 +104,8 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
    for(const shot of playerShots){if(shot.hostile||shot.fireTarget||shot.life<=0)continue;if(shot.mesh.position.distanceTo(v.root.position)<3.3){shot.life=0;v.hp--;if(v.hp<=0){destroy(v);break;}}}
   }
   updateExhaust(dt);for(let i=missiles.length-1;i>=0;i--){const m=missiles[i];m.life-=dt;m.age=(m.age||0)+dt;smokeTrail(m.mesh.position,dt);
-   if(m.homing){const wanted=dragon.position.clone().sub(m.mesh.position).normalize().multiplyScalar(21);m.vel.lerp(wanted,Math.min(1,dt*.9));}
+   if(m.disruptTime>0)m.disruptTime=Math.max(0,m.disruptTime-dt);
+   else if(m.homing){const wanted=dragon.position.clone().sub(m.mesh.position).normalize().multiplyScalar(21);m.vel.lerp(wanted,Math.min(1,dt*.9));}
    const previousPosition=m.mesh.position.clone();
    m.mesh.position.addScaledVector(m.vel,dt);m.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),m.vel.clone().normalize());
    let hit=false;
@@ -118,7 +133,15 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  }
  function reset(){clearExhaust();for(const v of vehicles)scene.remove(v.root);for(const m of missiles)scene.remove(m.mesh);vehicles.length=0;missiles.length=0;spawnClock=0;collateralNotice=0;enabled=false;}
  function suppress(seconds=10){for(const v of vehicles)v.cooldown=Math.max(v.cooldown,seconds);for(const m of missiles)scene.remove(m.mesh);missiles.length=0;}
- return {update,reset,suppress,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
+ // A production-model rocket, staged only by the ?qa=1 bridge; the normal
+ // gameplay creates identical objects in fire(). This never awards player score.
+ function stageWindRocket(position){
+  const mesh=new THREE.Mesh(cone,rocketMat);mesh.scale.set(.35,1.4,.35);mesh.position.copy(position);scene.add(mesh);
+  const rocket={mesh,vel:new THREE.Vector3(-11,0,0),homing:true,life:7,age:1,smoke:0,disruptTime:0};
+  missiles.push(rocket);return rocket;
+ }
+ function windRocketStates(){return missiles.map(m=>({position:m.mesh.position.toArray(),velocity:m.vel.toArray(),disruptTime:m.disruptTime||0,homing:m.homing}));}
+ return {update,reset,suppress,deflectWind,stageWindRocket,windRocketStates,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
   searchlightStates:()=>vehicles.map(v=>({x:v.root.position.x,visible:v.searchlight.visible,length:+v.searchlight.scale.y.toFixed(2),
    direction:v.searchDir.toArray(),targetDot:+v.searchDir.dot(v.searchTarget).toFixed(4)}))};
 }

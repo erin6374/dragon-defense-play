@@ -4,6 +4,7 @@ import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from '../src/simulation/military-collateral.js';
 import {slewSearchlightDirection} from '../src/simulation/military-searchlight.js';
+import {militaryWindImpulse} from '../src/simulation/military-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -149,6 +150,16 @@ assert.ok((tracked.x*targetLight.x+tracked.y*targetLight.y+tracked.z*targetLight
 const frozenTrack=slewSearchlightDirection(up,targetLight,Infinity);
 assert.ok(Object.values(frozenTrack).every(Number.isFinite),'invalid timestep cannot produce NaNs');
 
+// Dragon wind must genuinely change military missiles, not only its visuals.
+const windOrigin={x:-3,y:13,z:15},windAim={x:1,y:0,z:0};
+const rocketWind=militaryWindImpulse({x:12,y:13,z:15},windOrigin,windAim,.05);
+assert.ok(rocketWind&&rocketWind.x>.7&&rocketWind.y>0,'in-cone rocket gains significant lateral velocity and lift');
+assert.ok(rocketWind.disrupt>.6,'wind interrupts homing long enough for a visible evasive turn');
+assert.equal(militaryWindImpulse({x:-5,y:13,z:15},windOrigin,windAim,.05),null,'rocket behind dragon unaffected');
+assert.equal(militaryWindImpulse({x:12,y:13,z:70},windOrigin,windAim,.05),null,'outside-cone rocket unaffected');
+assert.equal(militaryWindImpulse({x:12,y:13,z:15},windOrigin,windAim,0),null,'paused game does not deflect missiles');
+const bounded=militaryWindImpulse({x:12,y:13,z:15},windOrigin,windAim,4);
+assert.ok(bounded.x<rocketWind.x*1.3,'a stalled frame cannot launch a rocket with unbounded energy');
 const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
 for(const [signals,state] of [
@@ -736,6 +747,17 @@ try {
    }
   }
   report.distantHelicopterPatrol=heliPatrol.result;
+  const windMissileStage=await page.evaluate(()=>window.__DD_QA.labStageMilitaryWind());
+  assert.ok(windMissileStage.ok,windMissileStage.error);
+  assert.equal(windMissileStage.result.before.length,1,'stage creates one real enemy homing rocket');
+  assert.equal(windMissileStage.result.after.length,1,'rocket survives as deflected threat');
+  assert.ok(windMissileStage.result.after[0].velocity[0]>windMissileStage.result.before[0].velocity[0]+.7,
+    'Paulo gust visibly alters the live enemy rocket trajectory');
+  assert.ok(windMissileStage.result.after[0].velocity[1]>.1,
+    'Paulo gust lifts the rocket vertically');
+  assert.ok(windMissileStage.result.after[0].disruptTime>.5,
+    'homing reacquisition is delayed after wind impact');
+  report.militaryWindDeflection=windMissileStage.result;
   const batteryStage=await page.evaluate(()=>window.__DD_QA.labStageMilitarySearchlights());
   assert.ok(batteryStage.ok,batteryStage.error);
   assert.ok(batteryStage.result.states.length>=2&&batteryStage.result.states.length<=3,

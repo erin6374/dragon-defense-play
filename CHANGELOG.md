@@ -1,3 +1,9 @@
+## 2026-11-08 — v5.4.0 RC7: Paulo's wind intercepts military rockets (new browser QA pending)
+- Wind now bends incoming military missile trajectories when rockets enter the dragon's 3D gust cone, with lightweight deterministic bounded impulses and a visible gameplay message.
+- Homing rockets temporarily lose guidance after an air blast, giving Paulo a defensive counter to military pursuit; regular missile collision and collateral damage remain enabled.
+- Added pure regression checks for wind range, angle, frame-step bounding and re-acquisition delay, plus an in-game staged rocket velocity test through the real wind gameplay function.
+- No extra render objects or dynamic GPU lights. Exact-head QA and live deployment must complete before visual acceptance; production main, Building Explorer and European Dragon asset stay untouched.
+
 ## 2026-11-08 — v5.4.0 RC6: cinematic military searchlight pursuit (QA pending)
 - Chapter-three military missile batteries now carry pale volumetric-style searchlight cones, with reusable geometry/material and no extra shadow-casting GPU lights (maximum three active beams).
 - Searchlights sweep smoothly and continuously toward Paulo, with a small imperfect tracking motion; their visuals don't affect targeting or damage.
