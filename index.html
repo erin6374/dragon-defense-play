@@ -41,6 +41,13 @@
 #performance-lab-panel [data-lab-status]{margin-top:10px;background:#22354b;padding:8px;border:1px solid #7295ae;border-radius:6px;color:#b7f5dd;min-height:55px;white-space:normal;line-height:1.45}
 @media(pointer:coarse),(max-width:850px){#performance-lab-panel{top:84px;max-height:calc(100vh - 240px);width:min(360px,calc(100vw - 12px));padding:10px;font-size:12px}#performance-lab-panel .perf-lab-switch{grid-template-columns:20px 1fr 90px}}
 #campaign-transition[hidden]{display:none!important}</style><style id="cinematic-integrated-css">#cinematic-player[hidden]{display:none!important}#cinematic-player{position:fixed;inset:0;z-index:180;background:#02030a;opacity:0;transition:opacity .7s ease}#cinematic-player.visible{opacity:1}#cinematic-player iframe{width:100%;height:100%;border:0}#cinematic-skip{position:absolute;right:22px;top:20px;z-index:2;padding:13px 22px;border:2px solid #ffda8e;border-radius:9px;background:#11192ce8;color:#ffdb8e;font-weight:900;cursor:pointer}#cinematic-chapter{position:absolute;top:22px;left:20px;z-index:2;background:#090c1cb9;color:#ffe4b1;padding:10px;font:700 14px system-ui;pointer-events:none}#game-build{position:fixed;right:12px;bottom:2px;z-index:6;padding:4px 8px;border:1px solid #6387a7;border-radius:5px;background:#111c2bdd;color:#dbe9f8;font:700 11px/1.3 ui-monospace,monospace;letter-spacing:.03em;pointer-events:none;text-shadow:0 1px 2px #000}#start-build,#settings-build{display:block;margin:8px auto 12px;color:#b9d9ff;font:700 12px/1.4 ui-monospace,monospace;letter-spacing:.02em}#hud-version{display:block;margin-top:5px;color:#b9d9ff;font:700 11px/1.2 ui-monospace,monospace} </style>
+<style id="desktop-alert-legibility">
+/* Keep the wave banner below the interception status on desktop. */
+@media (min-width:851px) {
+  #toast { top:116px!important; }
+  #hunter-warning { top:166px!important; }
+}
+</style>
 <style id="compact-hud-legibility">
 /* Compact landscape: separate top HUD, status, chapter, wave and warning layers.
    Preserve all controls and desktop presentation; no renderer or simulation changes. */
@@ -52,7 +59,7 @@
   #model-status { top:103px!important; width:min(45vw,280px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #campaign-chapter-label { top:124px!important; left:6px!important; font-size:10px!important; padding:3px 5px!important; max-width:50vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #toast { top:157px!important; max-width:56vw; text-align:center; font-size:clamp(15px,2.5vw,21px); line-height:1.15; overflow-wrap:break-word; }
-  #hunter-warning { top:206px!important; max-width:56vw; text-align:center; font-size:14px!important; }
+  #hunter-warning { top:194px!important; max-width:56vw; text-align:center; font-size:14px!important; }
 }
 @media (max-width:520px) {
   #hud > div { padding:2px!important; font-size:8px; }
