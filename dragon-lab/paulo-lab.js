@@ -327,7 +327,9 @@ function applyPose(t){
  const power=state==='hover'?1:state==='takeoff'?1.25:state==='flight'?.6:state==='hit'?.85:state==='bank'?.48:.07;
  const bank=state==='bank'?.35*bankDirection:0;
  root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
- root.rotation.z=bank*Math.sin(t*1.2)+(state==='hit'?Math.sin(t*12)*Math.exp(-t*2)*.18:0);
+ // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
+ root.rotation.x=bank*Math.sin(t*1.2);
+ root.rotation.z=state==='hit'?Math.sin(t*12)*Math.exp(-t*2)*.18:0;
  torso.scale.set(1,1+(state==='inhale'?.16:0)+soft*.015,1);
  chest.scale.set(1,1+(state==='inhale'?.19:state==='wind'?.10:0),1);
  neck.rotation.z=state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
@@ -392,7 +394,7 @@ window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.le
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
  current:p.mesh.geometry.attributes.position.array[3*3*13+3*6+1]};},
  setState(name){const i=Object.keys(descriptions).indexOf(name);if(i<0)return false;poses.children[i].click();return true;},
- snapshot(){return {state,paused,time,bankDirection,rootRoll:root.rotation.z,
+ snapshot(){return {state,paused,time,bankDirection,rootRoll:root.rotation.x,rootPitch:root.rotation.z,
  cameraType:camera.isOrthographicCamera?'orthographic':'perspective',referenceFrame:referenceFrameMetrics(),
  cameraFrustum:camera.isOrthographicCamera?{left:camera.left,right:camera.right,top:camera.top,bottom:camera.bottom}:null,
  modelBounds:new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).toArray(),

@@ -1,5 +1,11 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 longitudinal banking-axis correction (November 7)
+
+- [Browser QA run #235](https://github.com/erin6374/dragon-defense-play/actions/runs/42433995673) **passed** the new matched front-bank captures at `d1b65f7`. Direct inspection of `14-paulo-bank-front-left.png` and `14-paulo-bank-front-right.png` showed the left bank exposing Paulo's back while the right bank exposed his underside: the pose was pitching about Z rather than rolling about his forward (+X) axis.
+- In the **isolated Paulo lab only**, bank motion now rotates `root.rotation.x`; `root.rotation.z` remains reserved for the existing hit recoil. The read-only `rootRoll` QA field now reports the actual longitudinal roll, and a new assertion rejects any pitch during banking. This is a visual-rig correction, not gameplay integration or a performance claim.
+- **Verification pending:** inspect the new current-head browser QA and both front-bank screenshots before accepting the corrected silhouette. Production main, v5.3.1 playable dragon, Building Explorer and deployment are unchanged.
+
 ## Paulo v5.4 front-bank visual QA (November 7)
 
 - Reviewed actual front, side, top, rear and matched banking screenshots from successful browser QA [run #234](https://github.com/erin6374/dragon-defense-play/actions/runs/42429170223) at `9409c1f`. Top-down left/right bank images are visually similar because roll is difficult to judge overhead, despite opposite-sign rig assertions.

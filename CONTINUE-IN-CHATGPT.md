@@ -257,3 +257,9 @@ At start, draft PR #2 remained at `9409c1f`; current-head browser QA run #234 pa
 Added **QA-only** matched front orthographic banking captures (`14-paulo-bank-front-right.png`, `14-paulo-bank-front-left.png`) at paused 0.75 seconds, with camera-fit and state assertions. Existing top captures remain; no gameplay or rig edits.
 
 **Next:** verify new PR-head browser QA and inspect both new front images. Do not claim visual acceptance or hardware FPS. Preserve draft PR, production main, Building Explorer and the v5.3.1 preview.
+
+## Scheduled continuation — Paulo bank axis correction (November 7)
+
+At start, draft PR #2 remained at `d1b65f7` and current-head browser QA **run #235 passed**. Downloaded and inspected the actual `14-paulo-bank-front-left.png` and `14-paulo-bank-front-right.png` artifact images. The left bank exposes the dorsal surface and the right bank exposes the ventral surface rather than showing mirrored wing-up/wing-down roll. Source audit found the root banking pose used `root.rotation.z` (pitch for a dragon facing +X) instead of `root.rotation.x` (longitudinal roll).
+
+This continuation corrects only the isolated `dragon-lab/paulo-lab.js` bank axis, preserves Z-axis hit recoil, updates the `rootRoll` QA probe to measure X rotation and adds a browser assertion for zero pitch in either bank. Changelog records the visual evidence. **New QA pending**: inspect fresh front-bank images and browser result before calling the fix visually accepted. No playable-dragon integration, hardware FPS claim, main merge, deployment or Building Explorer change. Recheck branch head before further edits.
