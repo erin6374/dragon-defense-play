@@ -591,6 +591,45 @@ try {
     assert.deepEqual(await lab.evaluate(()=>window.__PAULO_LAB_QA.membraneRegions),
       {proximal:2,outer:8,middle:2},
       'each wing has a proximal patagium attached to the shoulder pivot');
+    // Exercise the same rig independently of the standalone lab scene/camera.
+    // This is the integration contract: gameplay can mount the new dragon as
+    // a visual-only child without adopting lab UI or its renderer.
+    const reusableRig=await lab.evaluate(async()=>{
+      const [{createPauloRig},THREE]=await Promise.all([
+        import('../src/dragon/paulo-rig.js'),import('three')
+      ]);
+      const rig=createPauloRig(THREE);
+      const states=window.__PAULO_LAB_QA.states;
+      const visits=states.map(name=>{
+        rig.applyPose(.75,name,1);
+        return {name,jaw:rig.jaw.rotation.z,chest:rig.chest.scale.y};
+      });
+      rig.applyPose(.75,'bank',1);
+      const right={roll:rig.root.rotation.x,
+        wings:rig.wings.map(w=>w.shoulder.rotation.x)};
+      rig.applyPose(.75,'bank',-1);
+      const left={roll:rig.root.rotation.x,
+        wings:rig.wings.map(w=>w.shoulder.rotation.x)};
+      return {mounted:!!rig.root.parent,panels:rig.membranePanels.length,
+        joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
+        toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
+        breath:rig.breathPreview.snapshot(),visits,right,left};
+    });
+    assert.equal(reusableRig.mounted,false,'shared Paulo rig is not scene-bound');
+    assert.equal(reusableRig.panels,12,'shared geometry retains every membrane');
+    assert.equal(reusableRig.tail,7,'shared geometry retains seven tail joints');
+    assert.deepEqual(reusableRig.toothCount,[12,12],'shared geometry retains animated teeth');
+    assert.equal(reusableRig.visits.length,12,'independent factory supports all animation states');
+    assert.ok(reusableRig.visits.every(p=>Number.isFinite(p.jaw)&&Number.isFinite(p.chest)),
+      'standalone rig produces finite jaw and chest transforms');
+    assert.equal(reusableRig.breath.visibleEmitters,0,
+      'gameplay factory does not instantiate laboratory-only breath particles');
+    assert.ok(Math.abs(reusableRig.right.roll+reusableRig.left.roll)<.000001,
+      'standalone rig mirrors longitudinal bank rotation');
+    assert.ok(Math.abs(reusableRig.right.wings[0]+reusableRig.left.wings[1])<.000001,
+      'standalone rig mirrors opposite shoulder angles');
+    report.pauloReusableRig={panels:reusableRig.panels,joints:reusableRig.joints,
+      tail:reusableRig.tail,poses:reusableRig.visits.length};
     assert.equal(await lab.evaluate(()=>window.__PAULO_LAB_QA.armorPlateCount),66,
       'dragon dorsal scales share one preallocated instanced armor batch');
     assert.deepEqual(await lab.evaluate(()=>window.__PAULO_LAB_QA.fangCounts),[12,12],
