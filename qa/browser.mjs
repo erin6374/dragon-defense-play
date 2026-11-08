@@ -82,7 +82,7 @@ assert.equal(choosePauloBankDirection({facing:-1}),-1);
 // The future game may choose attack poses, but must not transfer control of
 // simulation, the frame clock or cooldowns into the rig renderer.
 const poseCalls=[];
-const poseDriver=createPauloPoseDriver({applyPose:(t,p,d)=>poseCalls.push({t,p,d})});
+const poseDriver=createPauloPoseDriver({applyPose:(t,p,d,poseElapsed)=>poseCalls.push({t,p,d,poseElapsed})});
 assert.deepEqual(poseDriver.snapshot(),
   {pose:'hover',poseTime:0,animationTime:0,bankDirection:1});
 assert.equal(poseDriver.update(.016,{moving:true,horizontal:-1,facing:-1}),'flight');
@@ -100,6 +100,10 @@ assert.deepEqual(poseDriver.snapshot(),chargingFrame,'pause freezes pose and con
 assert.equal(poseDriver.update(0,{stunned:true,facing:1}),'hit');
 assert.equal(poseDriver.snapshot().animationTime,chargingFrame.animationTime,
   'zero-delta state transitions preserve continuous wingbeat phase');
+assert.equal(poseCalls.at(-1).poseElapsed,0,'hit recoil gets a fresh local clock');
+poseDriver.update(.05,{stunned:true,facing:1});
+assert.ok(Math.abs(poseCalls.at(-1).poseElapsed-.05)<1e-8,
+  'hit recoil damping advances by elapsed pose time');
 assert.throws(()=>poseDriver.update(-1,{}),/delta/);
 assert.throws(()=>poseDriver.update(Infinity,{}),/delta/);
 assert.equal(poseDriver.reset('idle'),'idle');
@@ -718,6 +722,12 @@ try {
       rig.applyPose(.75,'bank',-1);
       const left={roll:rig.root.rotation.x,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
+      // A late-game hit must recoil exactly as visibly as an early hit;
+      // global wingbeat time is intentionally much larger in the first call.
+      rig.applyPose(120,'hit',1,.10);
+      const lateHitRecoil=rig.root.rotation.z;
+      rig.applyPose(.10,'hit',1,.10);
+      const earlyHitRecoil=rig.root.rotation.z;
       const mounted=!!rig.root.parent;
       const holder=new THREE.Group();holder.add(rig.root);
       const cleanup=rig.dispose();
@@ -730,9 +740,14 @@ try {
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
+        lateHitRecoil,earlyHitRecoil,
         cleanup,detached,writesGuarded,secondCleanup};
     });
     assert.equal(reusableRig.mounted,false,'shared Paulo rig is not scene-bound');
+    assert.ok(Math.abs(reusableRig.earlyHitRecoil)>.05,
+      'fresh hit pose creates perceptible physical recoil');
+    assert.ok(Math.abs(reusableRig.lateHitRecoil-reusableRig.earlyHitRecoil)<1e-8,
+      'recoil amplitude remains unchanged after 120 seconds of wingbeat time');
     assert.equal(reusableRig.detached,true,'disposal removes the rig from its scene parent');
     assert.equal(reusableRig.writesGuarded,true,'disposed rig no longer writes to released buffers');
     assert.ok(reusableRig.cleanup.geometries>5&&reusableRig.cleanup.materials>5,
