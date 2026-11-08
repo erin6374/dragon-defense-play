@@ -26,7 +26,8 @@ const mat={
  membrane:new THREE.MeshStandardMaterial({color:0x7e1d2b,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.93}),
  bronze:new THREE.MeshStandardMaterial({color:0xa67b4e,metalness:.47,roughness:.45}),
  eye:new THREE.MeshStandardMaterial({color:0xffc04c,emissive:0xa74404,emissiveIntensity:.5}),
- mouth:new THREE.MeshStandardMaterial({color:0x160e14,roughness:.92})
+ mouth:new THREE.MeshStandardMaterial({color:0x160e14,roughness:.92}),
+ ivory:new THREE.MeshStandardMaterial({color:0xe7d8b7,roughness:.68})
 };
 const root=new THREE.Group();scene.add(root);
 const rigMarkers=[];
@@ -72,14 +73,40 @@ ell(neck,mat.red,[.6,-.06,0],[.66,.17,.24]);
 const head=pivot(neck,[1.27,.24,0]);marker(head);
 ell(head,mat.armor,[.33,0,0],[.73,.35,.43]);
 ell(head,mat.plates,[.82,-.08,0],[.57,.22,.31]);
+// Distinct reptilian muzzle: pronounced nasal bridge, protective brows and jaw.
+ell(head,mat.plates,[1.04,.075,0],[.37,.15,.28]);
 const jaw=pivot(head,[.55,-.22,0]);marker(jaw);
 ell(jaw,mat.mouth,[.38,-.035,0],[.56,.105,.29]);
+ell(jaw,mat.armor,[.38,-.12,0],[.59,.14,.31]);
 for(const side of [-1,1]){
  ell(head,mat.eye,[.38,.13,side*.35],[.14,.09,.07]);
+ ell(head,mat.plates,[.29,.27,side*.345],[.36,.11,.17]);
  part(head,cone,mat.bronze,[-.1,.38,side*.27],[.12,.7,.12],[0,0,-.6]);
  part(head,cone,mat.bronze,[.2,.34,side*.39],[.08,.38,.08],[0,0,-.35]);
- ell(head,mat.mouth,[1.05,-.06,side*.23],[.085,.045,.07]);
+ ell(head,mat.mouth,[1.20,-.015,side*.205],[.09,.045,.067]);
 }
+// Two instanced tooth rows stay attached to their respective jaw bones,
+// so the original jaw-opening pose reveals interlocking teeth without adding
+// individual draw calls for every small fang.
+const toothGeometry=new THREE.ConeGeometry(.052,.21,5);
+const toothDummy=new THREE.Object3D();
+function teeth(parent,upper){
+ const batch=new THREE.InstancedMesh(toothGeometry,mat.ivory,12);
+ let index=0;
+ for(const side of [-1,1])for(let i=0;i<6;i++){
+  toothDummy.position.set(upper?.53+i*.135:.20+i*.14,upper?-.23:.045,side*(upper?.24:.23));
+  toothDummy.rotation.set(0,0,upper?Math.PI:0);
+  const size=.78+.16*Math.sin((i+1)*2.1);
+  toothDummy.scale.set(size,size,size);
+  toothDummy.updateMatrix();
+  batch.setMatrixAt(index++,toothDummy.matrix);
+ }
+ batch.instanceMatrix.needsUpdate=true;
+ parent.add(batch);
+ return batch;
+}
+const upperTeeth=teeth(head,true);
+const lowerTeeth=teeth(jaw,false);
 const breathPreview=createBreathPreview(head);
 const tail=[];let previous=torso;
 for(let i=0;i<7;i++){
@@ -345,7 +372,7 @@ function referenceFrameMetrics(){
  return {maxX,maxY};
 }
 window.__PAULO_LAB_QA={states:Object.keys(descriptions),jointCount:rigMarkers.length,wingCount:wings.length,
- armorPlateCount:plateIndex,
+ armorPlateCount:plateIndex,fangCounts:[upperTeeth.count,lowerTeeth.count],
  membranePanels:membranePanels.length,
  membraneVertices:membranePanels.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0),
  membraneDeformation(){const p=membranePanels[0];return {rest:p.rest[3*3*13+3*6+1],
