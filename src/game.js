@@ -15,6 +15,8 @@ import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stabl
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
 import {groundWindWeight,groundWindStep} from './simulation/ground-wind.js';
+import {createPauloRig} from './dragon/paulo-rig.js';
+import {createPauloPoseDriver} from './dragon/paulo-pose-driver.js';
 import {createProfiler} from './rendering/profiler.js';
 import {InstancedParticlePool} from './rendering/instanced-particles.js';
 import {AdaptiveQuality} from './rendering/adaptive-quality.js';
@@ -528,10 +530,67 @@ function perchDragon(rest=false){
  dragon.position.set(0,schoolBounds.max.y+2.2,schoolBounds.max.z-2.6);
  dragon.rotation.x=rest?0.03:0;dragon.rotation.y=rest?0.16:0.08;dragon.rotation.z=rest?-0.08:-0.03;
  for(const wing of wings)wing.pivot.rotation.z=rest?wing.sign*.34:wing.sign*.18;
+ pauloPoseDriver?.reset('idle');
  if(dragonStun<=0)invulnerable=Math.max(invulnerable,.55);
 }
 
 const dragonVisuals=enhanceDragon(THREE,dragon,wings);
+// The gameplay dragon root remains the single collision/aim/camera/NPC target.
+// Switch ONLY its visual child meshes; projectiles, breath, health, physics,
+// invulnerability and existing shock arcs continue to use the original root.
+const legacyDragonVisuals=dragon.children.map(object=>({object,visible:object.visible}));
+let pauloPreviewRig=null,pauloPoseDriver=null,pauloPreviewEnabled=false,pauloFirePoseUntil=0;
+const pauloPreviewButton=document.querySelector('#paulo-toggle');
+const pauloPreviewAllowed=new URLSearchParams(location.search).get('paulo')==='1'||
+  new URLSearchParams(location.search).get('qa')==='1';
+if(pauloPreviewButton)pauloPreviewButton.hidden=!pauloPreviewAllowed;
+function setPauloPreview(enabled){
+ if(!pauloPreviewAllowed)return false;
+ if(!!enabled===pauloPreviewEnabled)return pauloPreviewEnabled;
+ if(enabled){
+  let candidate=null;
+  try{
+   candidate=createPauloRig(THREE); // no lab-only attack particles
+   candidate.root.scale.setScalar(.50);
+   candidate.root.position.set(-.30,-.10,0);
+   dragon.add(candidate.root);
+   const driver=createPauloPoseDriver(candidate,{initialState:'hover'});
+   pauloPreviewRig=candidate;pauloPoseDriver=driver;
+   for(const item of legacyDragonVisuals)item.object.visible=false;
+   pauloPreviewEnabled=true;
+  }catch(error){
+   candidate?.dispose();
+   for(const item of legacyDragonVisuals)item.object.visible=item.visible;
+   console.error('Paulo preview could not initialize; original dragon remains active.',error);
+   pauloPreviewRig=null;pauloPoseDriver=null;pauloPreviewEnabled=false;
+   return false;
+  }
+ }else{
+  const old=pauloPreviewRig;
+  pauloPreviewRig=null;pauloPoseDriver=null;pauloPreviewEnabled=false;
+  old?.dispose();
+  for(const item of legacyDragonVisuals)item.object.visible=item.visible;
+ }
+ if(pauloPreviewButton){
+  pauloPreviewButton.textContent=pauloPreviewEnabled?'🐉 Original Dragon':'🐉 Try Paulo';
+  pauloPreviewButton.setAttribute('aria-pressed',String(pauloPreviewEnabled));
+ }
+ return pauloPreviewEnabled;
+}
+pauloPreviewButton?.addEventListener('click',()=>setPauloPreview(!pauloPreviewEnabled));
+if(pauloPreviewAllowed)window.__DD_PAULO_PREVIEW={
+ setEnabled:setPauloPreview,
+ snapshot:()=>({
+  enabled:pauloPreviewEnabled,
+  rigMounted:!!pauloPreviewRig&&pauloPreviewRig.root.parent===dragon,
+  legacyVisible:legacyDragonVisuals.every(item=>item.object.visible===item.visible),
+  legacyHidden:legacyDragonVisuals.every(item=>!item.object.visible),
+  visualCount:legacyDragonVisuals.length,
+  pose:pauloPoseDriver?.snapshot()??null,
+  position:dragon.position.toArray(),
+  scale:dragon.scale.toArray()
+ })
+};
 dragon.position.set(0,2,15);
 // Synthesized, license-free arcade audio. Initialized on first user gesture.
 let audio=null,muted=false;
@@ -1404,7 +1463,7 @@ function updateDragonWind(dt){
  windDustPool.end();windLitterPool.end();
  for(const fire of schoolFire){const delta=fire.root.position.clone().sub(origin),along=delta.dot(direction);if(along>0&&along<43&&delta.clone().addScaledVector(direction,-along).length()<8+along*.17)fire.suppression=Math.min(1,fire.suppression+dt*1.7);}
 }
-function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;sound('fire');const start=dragon.position.clone().add(new THREE.Vector3(facing*2.6,1.2,0)),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
+function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;pauloFirePoseUntil=elapsed+.26;sound('fire');const start=dragon.position.clone().add(new THREE.Vector3(facing*2.6,1.2,0)),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
 // Engine-independent gameplay timers; rendered shield is intentionally cosmetic.
 const shieldMesh=new THREE.Mesh(new THREE.SphereGeometry(1,32,18,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x65d9ff,transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false}));
 shieldMesh.visible=false;scene.add(shieldMesh);
@@ -1838,6 +1897,15 @@ if(recoveryLift>0&&dragonStun<=0){
 }else dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,1,Math.min(1,dt*8));
 for(let k=0;k<shockArcs.length;k++){const arc=shockArcs[k];arc.visible=shocked&&(Math.sin(elapsed*33+k*4)>-.25);if(arc.visible){const a=k*2.4+elapsed*14;arc.position.set(Math.cos(a)*1.4,Math.sin(a)*1.2,Math.sin(a*2)*.65);arc.rotation.set(a,a*.6,a*1.7);}}
 for(const w of wings)w.pivot.rotation.x=w.sign*(Math.sin(elapsed*(recoveryLift>0?20:9))*.37+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.3+(gasPose>0?-.22:0));
+// Paulo is a visual-only child of the original simulation root. This
+// driver reads the same game signals; it never fires or moves projectiles.
+pauloPoseDriver?.update(dt,{
+ stunned:dragonStun>0,recovering:recoveryLift>0,windGust:gustTime>0,
+ gasAttack:gasPose>0,windCharging:holdStart>0&&windCooldown<=0,
+ fireAttack:elapsed<pauloFirePoseUntil,
+ turning:turnTime>0,moving:move!==0,rising:rise!==0,
+ perched:!dragonLeavingRoof,horizontal:move,facing
+});
 updateExplosionLights(dt);
 if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
 // A persistent, bounded meteor shower continues even after the scheduled wave budget.
