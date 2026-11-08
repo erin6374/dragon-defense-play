@@ -1,5 +1,14 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 in-game visibility and scale pass (November 8)
+
+- [Browser QA #42446279065](https://github.com/erin6374/dragon-defense-play/actions/runs/42446279065) **passed** the previously added `captureDragonDetail()` and real-game preview round-trip tests; report recorded no JS errors or WebGL warnings. Downloaded the 12 MB QA artifact and inspected actual `07d-paulo-gameplay-closeup.png` and `07e-legacy-gameplay-closeup.png` at identical staging coordinates.
+- **Visual finding:** the new procedural dragon was markedly smaller and almost black in the late-night school scene, obscuring its anatomical/wing-detail advantages; the original dragon remained more legible with a larger head and brighter silhouette.
+- Changed only the **Paulo preview child root** scale from `0.50` to `0.68` in `src/game.js`; do not alter the authoritative gameplay dragon root, physics, controls, NPC targeting, projectiles, health or score. Added a QA-visible `visualScale` field and assertions that it is `0.68` while Paulo is mounted and `null` after returning to the original dragon.
+- Improved Paulo's shared `src/dragon/paulo-rig.js` charcoal armor, plates and crimson wing/body palette with modest night-legibility emissive fills and a brighter eye. The material changes affect the shared design lab too.
+- **New appearance unverified:** modified JS/QA scripts parsed; the current development branch requires a fresh browser run and direct inspection of its `07d` and `07e` screenshots before judging scale/lighting successful. Do not claim game-ready art, Windows hardware FPS, Android APK or final v5.4 release. Production main and Building Explorer remain untouched.
+
+
 ## Paulo v5.4 reusable rig extraction and pose driver (November 7–8)
 
 - **Verified previous checkpoint:** [browser QA #42442263143](https://github.com/erin6374/dragon-defense-play/actions/runs/42442263143) passed the prior isolated-lab geometry/banking build. Its genuine screenshots were inspected: the corrected longitudinal axis yields opposite left/right front banking silhouettes. The procedural model is still a blockout; this is not a finished asset.
