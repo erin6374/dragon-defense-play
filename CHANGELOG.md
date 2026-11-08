@@ -1,5 +1,12 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 front-bank visual QA (November 7)
+
+- Reviewed actual front, side, top, rear and matched banking screenshots from successful browser QA [run #234](https://github.com/erin6374/dragon-defense-play/actions/runs/42429170223) at `9409c1f`. Top-down left/right bank images are visually similar because roll is difficult to judge overhead, despite opposite-sign rig assertions.
+- Added deterministic **front orthographic** bank-right and bank-left screenshots at the same paused 0.75-second pose time, with direction and full-frame assertions. Original top-down captures and numeric checks remain. This adds visual evidence, not automatic visual acceptance.
+- **QA-only change:** no Paulo rig, gameplay, collision or rendering changes. New browser QA is pending; no hardware performance claims.
+
+
 ## Paulo gameplay animation selector — integration staging (November 7)
 
 - Added `src/dragon/paulo-animation-intent.js`, a **pure, side-effect-free, DOM/WebGL-independent** selector for the existing 12 Paulo pose names. It prioritizes stun/recovery, wind/gas, charging/fire, landing/banking, glide/flight and idle/hover, plus travel-sign-dependent banking. No in-game dragon is replaced or controlled by this module yet.

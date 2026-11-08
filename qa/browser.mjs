@@ -741,6 +741,24 @@ try {
         direction+' bank wings fit the reference camera');
       report.pauloBankReference[direction]={roll:bankFrame.rootRoll,frame:bankFrame.referenceFrame};
       await lab.screenshot({path:'qa-output/13-paulo-bank-'+direction+'.png'});
+      // Top-down references show membrane coverage, but body roll projects
+      // poorly from above. Matched front frames expose actual banking
+      // silhouette/wing asymmetry for human visual review.
+      await lab.evaluate(()=>{
+        const selector=document.querySelector('#view');
+        selector.value='front';
+        selector.dispatchEvent(new Event('change',{bubbles:true}));
+      });
+      const bankFront=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+      assert.equal(bankFront.cameraType,'orthographic','front bank uses orthographic camera');
+      assert.equal(bankFront.bankDirection,direction==='right'?1:-1,
+        direction+' front bank retains selected turn direction');
+      assert.ok(Math.abs(bankFront.time-.75)<.0001,
+        direction+' front bank uses the matched pose time');
+      assert.ok(bankFront.referenceFrame?.maxX<.90&&bankFront.referenceFrame?.maxY<.90,
+        direction+' front bank silhouette fits the camera');
+      report.pauloBankReference[direction].frontFrame=bankFront.referenceFrame;
+      await lab.screenshot({path:'qa-output/14-paulo-bank-front-'+direction+'.png'});
     }
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),

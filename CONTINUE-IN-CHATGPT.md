@@ -248,3 +248,12 @@ In `dragon-lab/paulo-lab.js`, replaced original single-triangle wing membranes w
 ## Paulo v5.4 flexible wing prototype (November 7)
 
 `dragon-lab/paulo-lab.js` now caches the rest positions for all ten tessellated wing membranes and deforms interior vertices in a bounded oscillation for billow/flutter while preserving boundary positions. Normal buffers are recomputed every fourth animation update, no new meshes created per frame. The deformation amplitude depends on animation state (hover vs glide). `qa/browser.mjs` checks that a sampled interior vertex moves relative to the rest buffer after hovering. **Latest QA must pass before claiming verified.** Next inspect screenshot for visual quality, address surface artifacts and progress toward real skinned GLB. Main gameplay is unchanged.
+
+
+## Scheduled continuation — front-view banking evidence (November 7)
+
+At start, draft PR #2 remained at `9409c1f`; current-head browser QA run #234 passed and packaged the v5.3.1 Windows preview. Inspected actual QA artifact Paulo front, side, top, rear and both bank images. The top-down bank pair has little visual differentiation despite telemetry verifying opposite roll and mirrored shoulder angles. Paulo remains an isolated procedural blockout.
+
+Added **QA-only** matched front orthographic banking captures (`14-paulo-bank-front-right.png`, `14-paulo-bank-front-left.png`) at paused 0.75 seconds, with camera-fit and state assertions. Existing top captures remain; no gameplay or rig edits.
+
+**Next:** verify new PR-head browser QA and inspect both new front images. Do not claim visual acceptance or hardware FPS. Preserve draft PR, production main, Building Explorer and the v5.3.1 preview.
