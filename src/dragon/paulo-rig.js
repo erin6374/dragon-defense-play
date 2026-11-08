@@ -242,10 +242,29 @@ function applyPose(t,state,bankDirection=1){
  breathPreview.update(state,t);
 }
 
+ // The final game can switch to the legacy dragon without retaining
+ // duplicate rig buffers. Geometry and material sets prevent double-disposal
+ // of the shared sphere, cone and armor assets within this factory instance.
+ let disposed=false;
+ function dispose(){
+  if(disposed)return {geometries:0,materials:0};
+  disposed=true;
+  root.removeFromParent();
+  const geometries=new Set(),materials=new Set();
+  root.traverse(object=>{
+   if(!object.isMesh)return;
+   if(object.geometry)geometries.add(object.geometry);
+   const current=Array.isArray(object.material)?object.material:[object.material];
+   for(const material of current)if(material)materials.add(material);
+  });
+  for(const geometry of geometries)geometry.dispose();
+  for(const material of materials)material.dispose();
+  return {geometries:geometries.size,materials:materials.size};
+ }
  return {
   root,rigMarkers,wings,tailProfile,membranePanels,plateIndex,
   upperTeeth,lowerTeeth,breathPreview,head,jaw,neck,chest,
-  applyPose,
+  applyPose,dispose,
   membraneDeformation(){
    const p=membranePanels[0],off=3*3*13+3*6+1;
    return {rest:p.rest[off],current:p.mesh.geometry.attributes.position.array[off]};
