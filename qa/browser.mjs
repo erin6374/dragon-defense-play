@@ -367,6 +367,23 @@ try {
   await page.locator('#cinema-hud-toggle').click();
   assert.equal(await page.evaluate(()=>window.__DD_CINEMA_HUD.snapshot().enabled),false,
    'on-screen toggle restores full HUD');
+  const fullRadarClearance=await page.evaluate(()=>{
+    const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+    const overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    const radar=rect(document.getElementById('incoming-radar'));
+    const hud=rect(document.getElementById('hud'));
+    const buttons=Array.from(document.querySelectorAll('#bottom button')).filter(e=>{
+      const s=getComputedStyle(e),r=e.getBoundingClientRect();
+      return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;
+    }).map(e=>({id:e.id,rect:rect(e)}));
+    return {radar,hud,overlaps:buttons.filter(e=>overlap(e.rect,radar)).map(e=>e.id)};
+  });
+  assert.ok(fullRadarClearance.radar.top>=fullRadarClearance.hud.bottom+8,
+    '1024x576 full radar must clear health HUD: '+JSON.stringify(fullRadarClearance));
+  assert.deepEqual(fullRadarClearance.overlaps,[],
+    '1024x576 full radar must clear buttons: '+JSON.stringify(fullRadarClearance));
+  report.fullRadarClearance=fullRadarClearance;
+  await shot('02d-full-hud-radar');
   // Real 1024x576 screenshot: status must clear HUD health/lives, then wave clears status.
   const desktopAlerts = await page.evaluate(() => {
     const bounds = id => { const r = document.getElementById(id).getBoundingClientRect();
@@ -415,7 +432,13 @@ try {
           const rect = element.getBoundingClientRect();
           return {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom};
         });
-      return {boxes,cards,bottomButtons};
+      const rect=e=>{const r=e.getBoundingClientRect();
+        return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+      const radar=rect(document.getElementById('incoming-radar'));
+      const touchButtons=Array.from(document.querySelectorAll('#mobile-actions button'))
+        .filter(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();
+          return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;}).map(rect);
+      return {boxes,cards,bottomButtons,radar,touchButtons};
     });
     const separated = (a,b) => a.bottom <= b.top+1 || b.bottom <= a.top+1 ||
       a.right <= b.left+1 || b.right <= a.left+1;
@@ -431,8 +454,32 @@ try {
       '848x480 hostile-aircraft warning must not overlap visible menu buttons: '+JSON.stringify(compactHud));
     assert.ok(compactHud.cards.every(card => card.width>15 && card.left>=0 && card.right<=848),
       '848x480 top HUD cards must remain on-screen');
+    assert.ok(compactHud.radar.top>=compactHud.boxes.hud.bottom+8 && compactHud.radar.right<=848,
+      '848x480 radar must clear health HUD and remain on screen: '+JSON.stringify(compactHud));
+    assert.ok([...compactHud.bottomButtons,...compactHud.touchButtons].every(b=>separated(b,compactHud.radar)),
+      '848x480 full radar must clear menu and FIRE/GAS buttons: '+JSON.stringify(compactHud));
     report.compactHud={viewport:'848x480',syntheticAlert:true,...compactHud};
     await shot('02b-compact-hud-synthetic-alerts');
+    await page.locator('#cinema-hud-toggle').click();
+    try {
+      const compactCinema=await page.evaluate(()=>{
+        const rect=e=>{const r=e.getBoundingClientRect();
+          return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+        const radar=rect(document.getElementById('incoming-radar'));
+        const controls=Array.from(document.querySelectorAll('#bottom button,#mobile-actions button'))
+          .filter(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();
+            return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;})
+          .map(e=>({id:e.id,rect:rect(e)}));
+        return {enabled:window.__DD_CINEMA_HUD.snapshot().enabled,radar,controls};
+      });
+      assert.equal(compactCinema.enabled,true,'compact cinematic toggle activates');
+      assert.ok(compactCinema.controls.every(e=>separated(e.rect,compactCinema.radar)),
+        '848x480 cinematic radar must clear touch/menu controls: '+JSON.stringify(compactCinema));
+      report.compactCinematicRadar={viewport:'848x480',syntheticAlert:true,...compactCinema};
+      await shot('02e-compact-cinematic-synthetic-alerts');
+    } finally {
+      await page.locator('#cinema-hud-toggle').click();
+    }
   } finally {
     await page.evaluate(previous => {
       const toast = document.getElementById('toast');

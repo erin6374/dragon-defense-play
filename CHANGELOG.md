@@ -1,3 +1,9 @@
+## 2026-11-08 — RC9b follow-up: radar clearance for full/touch HUD (new QA pending)
+- Inspected actual [QA #303](https://github.com/erin6374/dragon-defense-play/actions/runs/42495308567) screenshots. Cinematic desktop controls clear radar, but full desktop radar obscures CALL THE BLOCK/performance buttons; compact full HUD radar covers FIRE/GAS touch buttons.
+- Place radar at top right below health cards in full desktop and compact/coarse-pointer layouts. Preserve bottom-right radar in cinematic desktop, all attacks and HUD toggle.
+- Add desktop full, compact full and compact cinematic Playwright overlap assertions and `02d-full-hud-radar.png` / `02e-compact-cinematic-synthetic-alerts.png` screenshots. Synthetic alerts are layout probes, not wave 15 gameplay.
+- No simulation, build identity, production or asset change. New browser QA and screenshots must pass before certification.
+
 ## 2026-11-08 — RC9b: cinematic button/radar clearance (new browser QA pending)
 - Reviewed the actual successful RC9 browser screenshot `02c-cinematic-hud.png`: top HUD is much clearer, but the persistent 160px radar at bottom right obscures Settings/Pause and part of the button row.
 - Reserve right-side radar and left-side wind-meter footprints on desktop, reduce cinematic button padding, and allow wrapping within safe area. Keep mobile controls untouched.
