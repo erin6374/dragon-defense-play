@@ -595,6 +595,57 @@ try {
   await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
   assert.deepEqual(report.warnings, [], 'preview must not produce WebGL/material console warnings');
+  // Developer-only visual preview must mount Paulo without moving the
+  // authoritative dragon entity or altering score, health, wave or cooldowns.
+  const pauloPreviewStart=await page.evaluate(()=>{
+    const visual=window.__DD_PAULO_PREVIEW;
+    if(!visual)throw new Error('Paulo QA preview controller not initialized');
+    return visual.snapshot();
+  });
+  assert.equal(pauloPreviewStart.enabled,false,'original dragon is the default model');
+  assert.equal(pauloPreviewStart.legacyVisible,true,'original dragon is initially visible');
+  assert.ok(pauloPreviewStart.visualCount>5,'legacy dragon is fully captured as visual objects');
+  const pauloGameplayOn=await page.evaluate(()=>{
+    const visual=window.__DD_PAULO_PREVIEW,qa=window.__DD_QA;
+    const before=qa.snap();
+    const enabled=visual.setEnabled(true);
+    return {enabled,now:visual.snapshot(),before,after:qa.snap()};
+  });
+  assert.equal(pauloGameplayOn.enabled,true,'development preview switches to Paulo');
+  assert.equal(pauloGameplayOn.now.rigMounted,true,'Paulo mounts beneath the legacy gameplay root');
+  assert.equal(pauloGameplayOn.now.legacyHidden,true,'only old dragon artwork is hidden');
+  assert.ok(pauloGameplayOn.now.pose?.pose,'new model has an active animation driver');
+  assert.deepEqual(pauloGameplayOn.now.position,pauloPreviewStart.position,
+    'switching artwork does not reposition gameplay dragon');
+  assert.deepEqual(pauloGameplayOn.now.scale,pauloPreviewStart.scale,
+    'switching artwork does not rescale the collision/movement root');
+  for(const key of ['score','hp','wave','dragon']){
+    assert.deepEqual(pauloGameplayOn.after[key],pauloGameplayOn.before[key],
+      'preview toggle preserves current game '+key);
+  }
+  await page.screenshot({path:'qa-output/07b-paulo-gameplay-preview.png'});
+  const pauloGameplayOff=await page.evaluate(()=>{
+    const visual=window.__DD_PAULO_PREVIEW,qa=window.__DD_QA;
+    const before=qa.snap();
+    const enabled=visual.setEnabled(false);
+    return {enabled,now:visual.snapshot(),before,after:qa.snap()};
+  });
+  assert.equal(pauloGameplayOff.enabled,false,'preview switches back to original');
+  assert.equal(pauloGameplayOff.now.legacyVisible,true,'original dragon visibility is restored');
+  assert.equal(pauloGameplayOff.now.rigMounted,false,'Paulo visual root is detached');
+  assert.equal(pauloGameplayOff.now.pose,null,'fallback releases Paulo animation controller');
+  for(const key of ['score','hp','wave','dragon']){
+    assert.deepEqual(pauloGameplayOff.after[key],pauloGameplayOff.before[key],
+      'legacy fallback preserves current game '+key);
+  }
+  await page.screenshot({path:'qa-output/07c-legacy-fallback.png'});
+  report.pauloGameplayPreview={
+    legacyObjects:pauloPreviewStart.visualCount,
+    activePose:pauloGameplayOn.now.pose?.pose,
+    roundTrip:true,previewOnly:true
+  };
+  assert.deepEqual(report.errors,[],'Paulo preview introduced no gameplay errors');
+  assert.deepEqual(report.warnings,[],'Paulo preview introduced no WebGL warnings');
   // The main game runs a perpetual WebGL animation loop. Release its software
   // renderer before starting Paulo Lab to keep the two QA scenes independent.
   await page.close();
