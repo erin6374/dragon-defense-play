@@ -329,7 +329,7 @@ try {
     title:visible('hud-version'),chapter:visible('campaign-chapter-label'),
     build:visible('game-build'),instructions:getComputedStyle(document.querySelector('#bottom>div:first-child')).display,
     callBlock:visible('call-block'),pause:visible('pause'),cinemaButton:visible('cinema-hud-toggle'),
-    gameCanvas:visible(document.querySelector('canvas')?.id||'game-canvas')};
+    gameCanvas:getComputedStyle(document.querySelector('canvas')).display!=='none'};
   });
   assert.equal(cinema.state.enabled,true,'film HUD activates');
   assert.equal(cinema.title,false,'redundant build/title hidden during cinematic play');
