@@ -209,7 +209,7 @@ for(const side of [-1,1]){
 }
 
 let disposed=false;
-function applyPose(t,state,bankDirection=1){
+function applyPose(t,state,bankDirection=1,poseElapsed=t){
  if(disposed)return; // never update buffers after the fallback releases this rig
  const cycle=Math.sin(t*5),soft=Math.sin(t*2);
  const airborne=!['idle','land'].includes(state);
@@ -218,7 +218,9 @@ function applyPose(t,state,bankDirection=1){
  root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
  root.rotation.x=bank*Math.sin(t*1.2);
- root.rotation.z=state==='hit'?Math.sin(t*12)*Math.exp(-t*2)*.18:0;
+ // Impact recoil decays from time IN THIS pose, not session time. Otherwise
+ // a late-level hit would vanish because the global wingbeat clock is large.
+ root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:0;
  torso.scale.set(1,1+(state==='inhale'?.16:0)+soft*.015,1);
  chest.scale.set(1,1+(state==='inhale'?.19:state==='wind'?.10:0),1);
  neck.rotation.z=state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
