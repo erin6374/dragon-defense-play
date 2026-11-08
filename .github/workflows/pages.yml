@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Successful browser QA on our established development branch may publish
+  # a /preview/ snapshot. The production root remains checked out from main.
+  workflow_run:
+    workflows: ["Dragon Defense browser QA"]
+    types: [completed]
+    branches: [feature/north-broad-graphics]
 
 permissions:
   contents: read
@@ -16,6 +22,9 @@ concurrency:
 
 jobs:
   qa:
+    # Run the existing production QA before each deployment. For a preview
+    # update, require its own browser QA to have succeeded first.
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     uses: ./.github/workflows/browser-qa.yml
   deploy:
     needs: qa
@@ -53,6 +62,36 @@ jobs:
           assert not report.get('failure'), 'QA report recorded failure'
           assert not report.get('errors'), 'QA report recorded browser errors'
           PY
+      # Every Pages deployment contains the unchanged production main files
+      # at /, plus an isolated versioned preview at /preview/. On workflow_run
+      # use the exact SHA that just passed the development browser QA rather
+      # than potentially untested newer commits on its moving branch.
+      - name: Check out development preview snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'release/v5.4.0-rc2' }}
+          path: preview
+          persist-credentials: false
+      - name: Stage the independent playable preview
+        run: |
+          test -f preview/index.html
+          test -f preview/src/game.js
+          test -f preview/build-info.json
+          test -f preview/vendor/three/build/three.module.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          main=json.loads(Path('build-info.json').read_text())
+          preview=json.loads(Path('preview/build-info.json').read_text())
+          print('Production:',main.get('version'),main.get('build'))
+          print('Preview:',preview.get('version'),preview.get('build'))
+          assert preview.get('version'), 'Preview version missing'
+          assert main.get('build') != preview.get('build'), 'Preview should not silently match production'
+          PY
+          # Do not publish Git internals or a second copy of CI workflows.
+          rm -rf preview/.git preview/.github preview/qa preview/dist
+          # GitHub Pages static files are served verbatim by the Actions deploy.
+          touch .nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload game site
@@ -74,7 +113,13 @@ jobs:
               curl -fsS "${PAGE_URL%/}/src/game.js?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-game.js &&
               cmp -s src/game.js /tmp/live-game.js &&
               curl -fsS "${PAGE_URL%/}/qa/dashboard/report.json?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-qa.json &&
-              cmp -s qa/dashboard/report.json /tmp/live-qa.json; then
+              cmp -s qa/dashboard/report.json /tmp/live-qa.json &&
+              curl -fsS "${PAGE_URL%/}/preview/build-info.json?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-preview-build.json &&
+              cmp -s preview/build-info.json /tmp/live-preview-build.json &&
+              curl -fsS "${PAGE_URL%/}/preview/index.html?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-preview-index.html &&
+              cmp -s preview/index.html /tmp/live-preview-index.html &&
+              curl -fsS "${PAGE_URL%/}/preview/src/game.js?run=${GITHUB_RUN_ID}-$attempt" -o /tmp/live-preview-game.js &&
+              cmp -s preview/src/game.js /tmp/live-preview-game.js; then
               cat /tmp/live-build.json
               exit 0
             fi
