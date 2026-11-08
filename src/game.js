@@ -2275,7 +2275,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    for(const v of vehicles)v.root.position.set(12,0,20);
    pedestrian.g.position.set(12,0,20);
    const origin=new THREE.Vector3(0,0,20),direction=new THREE.Vector3(1,0,0);
-   const before={score,wave,hp};
+   const before={score,wave,hp,windActive,origin:gustOrigin.clone(),direction:gustDirection.clone()};
    const existingPuffs=skyBursts.splice(0);
    try{
     let foliageBend=0,carTilt=0;
@@ -2284,8 +2284,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
      advancePedestrianWind(pedestrian,.05);
      carTilt=Math.max(carTilt,Math.abs(car.root.rotation.x));
     }
-    cinematicFX.setWind(new THREE.Vector3(0,24,20),direction,1);
-    const testSmoke={m:{position:new THREE.Vector3(12,24,20),
+    const smokeY=dragon.position.y+30;
+    windActive=true;gustOrigin.set(0,smokeY,20);gustDirection.copy(direction);
+    cinematicFX.setWind(gustOrigin,gustDirection,1);
+    const testSmoke={m:{position:new THREE.Vector3(12,smokeY,20),
      scale:new THREE.Vector3(1,1,1),material:{opacity:.58}},
      smoke:true,life:2,initialLife:2};
     skyBursts.push(testSmoke);
@@ -2305,6 +2307,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
      puffX:testSmoke.m.position.x,puffOpacity:testSmoke.m.material.opacity};
    }finally{
     skyBursts.length=0;skyBursts.push(...existingPuffs);
+    windActive=before.windActive;gustOrigin.copy(before.origin);gustDirection.copy(before.direction);
     clearWindDebris();
     updateWindPlanting(1);
     cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
