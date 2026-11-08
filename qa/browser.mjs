@@ -570,6 +570,12 @@ try {
       'dragon dorsal scales share one preallocated instanced armor batch');
     assert.deepEqual(await lab.evaluate(()=>window.__PAULO_LAB_QA.fangCounts),[12,12],
       'upper and articulated lower jaws each use one preallocated 12-fang batch');
+    const tailProfile=await lab.evaluate(()=>window.__PAULO_LAB_QA.tailProfile);
+    assert.equal(tailProfile.length,7,'tail retains all seven articulated links');
+    assert.ok(tailProfile.every(link=>link.length>.61&&link.tipRadius>0),
+      'tail frustums overlap the next pivot without thin gaps');
+    assert.ok(tailProfile.every((link,i)=>i===0||link.baseRadius<tailProfile[i-1].baseRadius),
+      'tail smoothly tapers toward the tip');
     assert.ok(membrane.vertices>=900,
       'curved membrane panels are tessellated rather than single triangles');
     await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('hover'));
