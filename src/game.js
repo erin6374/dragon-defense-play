@@ -2083,7 +2083,23 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
  // camera, coordinates and renderer remain unchanged after the next RAF.
  const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
+ // A close camera captures Paulo at real gameplay scale and lighting.
+ // Rendering here is diagnostic only; the next game frame restores its camera.
+ const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  captureDragonDetail:()=>run('captureDragonDetail',()=>{
+   const width=renderer.domElement.width,height=renderer.domElement.height;
+   qaDragonCamera.aspect=width/Math.max(1,height);
+   qaDragonCamera.position.set(dragon.position.x+9,dragon.position.y+5,dragon.position.z+14);
+   qaDragonCamera.lookAt(dragon.position.x,dragon.position.y+.4,dragon.position.z);
+   qaDragonCamera.updateProjectionMatrix();
+   renderer.render(scene,qaDragonCamera);
+   return {png:renderer.domElement.toDataURL('image/png'),
+    model:pauloPreviewEnabled?'paulo':'legacy',
+    dragon:dragon.position.toArray(),
+    camera:qaDragonCamera.position.toArray(),
+    pose:pauloPoseDriver?.snapshot().pose??null};
+  }),
   captureSkyline:(detail=false)=>run('captureSkyline',()=>{
    const centerX=skyline.position.x;
    // Wide shows the skyline in its city context; close places the diagnostic
