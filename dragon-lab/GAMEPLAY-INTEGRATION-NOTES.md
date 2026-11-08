@@ -8,7 +8,7 @@
 - `perchDragon()` resets root pose, perch position, attack timers and legacy wing pivots. The game tick (near lines 1820–1840) updates movement, `facing`, `turnTime`, root scale/orientation, hit-recovery and wingbeats.
 - `gasAttack()` starts `gasPose` for a short interval; `releaseWind()` uses a charged `holdStart` and starts `gustTime`; `shoot()` produces fireballs with a cooldown. Keep those **real simulation systems**; the replacement is visual only.
 - `dragonStun` and `recoveryLift` drive fall/impact/takeoff; `dragon.visible` includes damage blink/invulnerability, and `dragon.scale.x` is used to turn the old mesh.
-- The independent `dragon-lab/paulo-lab.js` builds an original procedural anatomical rig, but also constructs its own renderer, camera, scene and DOM. **Do not import the entire lab into `src/game.js`**; extract a renderer-agnostic rig factory first.
+- The original procedural geometry and `applyPose(time, state, direction)` have now been extracted to **`src/dragon/paulo-rig.js`**. `createPauloRig(THREE,{breathPreviewFactory})` returns an unattached `root`, articulated joints, pose update method, geometry QA data and an idempotent `dispose()`. The lab still owns its own renderer, camera, scene, and controls and injects preview-only breath effects. **Do not import the entire lab into `src/game.js`**.
 
 ## Pure animation adapter
 
@@ -30,12 +30,12 @@ Approximate signals to bind when ready:
 | airborne with no input | no special flag | hover |
 | future explicit glide/land state | `gliding/landing` | glide / land |
 
-The selector only chooses intent. **Pause must freeze pose time** without changing state; smooth transition blending and attack overlays still need implementation. Do not infer attack state from a general keypress if shooting was disabled by stun or water.
+The selector only chooses intent. A separate, tested `src/dragon/paulo-pose-driver.js` bridges simulation signals into `rig.applyPose()`, advances wingbeat phase continuously across state changes, caps visual-only delta to 50 ms, and freezes all transforms on pause. Its `reset()` is independent of gameplay reset. **Smooth transition blending and attack overlays still need implementation.** Do not infer fire state from a general keypress if shooting was disabled by stun or water.
 
 ## Safe integration sequence
 
-1. Extract `createPauloRig(THREE)` and `updatePauloRig(rig, pose, time, direction)` from the lab **without** copying its camera, renderer, DOM, or standalone scene into the game.
-2. Place the new rig under a *visual-only* child of the existing `dragon` root. Preserve the root's coordinates, ray/aim interactions, health/collision bounds, invulnerability visibility and camera tracking.
+1. **Completed as a development implementation, browser QA pending:** `createPauloRig(THREE,{breathPreviewFactory})` and `rig.applyPose(time,pose,direction)` are exported from `src/dragon/paulo-rig.js` without importing camera, renderer, DOM or lab scene. The adapter and visual clock driver are in `src/dragon/paulo-animation-intent.js` and `src/dragon/paulo-pose-driver.js`. Test extraction, 12 poses, both banks, cleanup and absence of lab-only effects before using the factory in gameplay.
+2. When artwork is accepted, place the new rig under a *visual-only* child of the existing `dragon` root. Preserve the root's coordinates, ray/aim interactions, health/collision bounds, invulnerability visibility and camera tracking.
 3. Keep the entire old dragon as a selectable fallback; use a development-only toggle defaulting to legacy until accepted. Switching must not reset health, cooldowns, score, level, or movement.
 4. Normalize Paulo's model scale/orientation against the existing 1.20-scaled mesh. Check negative-X facing, independent of the model's local coordinate frame; avoid double-mirroring wing articulation when the game turns.
 5. Use the game's existing `shoot()`, `releaseWind()` and `gasAttack()` for collision and gameplay effects. The lab particle systems are illustrative preview visuals only; prevent duplicate gameplay projectiles, smoke and wind.
