@@ -288,6 +288,15 @@ try {
   await page.locator('#cinematic-player').waitFor({state:'hidden'});
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
+  // The desktop wave toast must not be covered by the interception status.
+  const desktopAlerts = await page.evaluate(() => {
+    const bounds = id => { const r = document.getElementById(id).getBoundingClientRect();
+      return {left:r.left,top:r.top,right:r.right,bottom:r.bottom}; };
+    return {power:bounds('power-status'),wave:bounds('toast')};
+  });
+  assert.ok(desktopAlerts.wave.top >= desktopAlerts.power.bottom+4,
+    '1024x576 wave announcement must clear interception status: '+JSON.stringify(desktopAlerts));
+  report.desktopAlerts={viewport:'1024x576',...desktopAlerts};
   await page.locator('canvas').first().screenshot({path:'qa-output/02-playing-scene.png'});
 
   // Reproduce the observed compact landscape HUD overlap at 848x480.
@@ -316,7 +325,16 @@ try {
         const rect = element.getBoundingClientRect();
         return {left:rect.left,right:rect.right,width:rect.width};
       });
-      return {boxes,cards};
+      const bottomButtons = Array.from(document.querySelectorAll('#bottom button'))
+        .filter(element => {
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display!=='none' && style.visibility!=='hidden' && rect.width>0 && rect.height>0;
+        }).map(element => {
+          const rect = element.getBoundingClientRect();
+          return {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom};
+        });
+      return {boxes,cards,bottomButtons};
     });
     const separated = (a,b) => a.bottom <= b.top+1 || b.bottom <= a.top+1 ||
       a.right <= b.left+1 || b.right <= a.left+1;
@@ -328,6 +346,8 @@ try {
       assert.ok(separated(compactHud.boxes[a],compactHud.boxes[b]),
         '848x480 HUD overlap: '+a+' / '+b+' '+JSON.stringify(compactHud.boxes));
     }
+    assert.ok(compactHud.bottomButtons.every(button => separated(compactHud.boxes['hunter-warning'],button)),
+      '848x480 hostile-aircraft warning must not overlap visible menu buttons: '+JSON.stringify(compactHud));
     assert.ok(compactHud.cards.every(card => card.width>15 && card.left>=0 && card.right<=848),
       '848x480 top HUD cards must remain on-screen');
     report.compactHud={viewport:'848x480',syntheticAlert:true,...compactHud};
