@@ -747,6 +747,19 @@ try {
    }
   }
   report.distantHelicopterPatrol=heliPatrol.result;
+  const militaryCredit=await page.evaluate(()=>window.__DD_QA.labStageMilitaryInterception());
+  assert.ok(militaryCredit.ok,militaryCredit.error);
+  assert.equal(militaryCredit.result.handled,true,'real military meteor callback removes its target');
+  assert.equal(militaryCredit.result.removed,true,'military-destroyed meteor is removed');
+  assert.equal(militaryCredit.result.after.military,militaryCredit.result.before.military+1,
+    'military kills have a separate telemetry counter');
+  for(const field of ['score','playerIntercepts','streak','powerups','rapidFireUntil','schoolShieldUntil']){
+   assert.equal(militaryCredit.result.after[field],militaryCredit.result.before[field],
+    'military intercept cannot grant Paulo player reward '+field);
+  }
+  assert.equal(militaryCredit.result.after.meteors,militaryCredit.result.before.meteors,
+    'only the newly staged meteor is destroyed without harming unrelated meteors');
+  report.militaryInterceptionCredit=militaryCredit.result;
   const windMissileStage=await page.evaluate(()=>window.__DD_QA.labStageMilitaryWind());
   assert.ok(windMissileStage.ok,windMissileStage.error);
   assert.equal(windMissileStage.result.before.length,1,'stage creates one real enemy homing rocket');

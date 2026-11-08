@@ -1,3 +1,9 @@
+## 2026-11-08 — v5.4.0 RC8: preserve Paulo's interception credit (QA pending)
+- Military missiles or battery impacts no longer award player meteor intercepts, rapid-fire streaks, hunter shields, score or player accuracy. The government receives its own `militaryInterceptions` telemetry counter.
+- Military-destroyed meteors remain removed using the existing blast and debris pathways, while real player interceptions and rewards are unchanged.
+- Added a staged real-game meteor interception regression asserting unchanged player stats and shield, including a simulated special hunter meteor.
+- Exact-head browser QA required before deployment; no graphics, production main, Building Explorer or European Dragon binary changes.
+
 ## 2026-11-08 — v5.4.0 RC7: Paulo's wind intercepts military rockets (new browser QA pending)
 - Wind now bends incoming military missile trajectories when rockets enter the dragon's 3D gust cone, with lightweight deterministic bounded impulses and a visible gameplay message.
 - Homing rockets temporarily lose guidance after an air blast, giving Paulo a defensive counter to military pursuit; regular missile collision and collateral damage remain enabled.

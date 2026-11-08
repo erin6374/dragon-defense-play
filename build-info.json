@@ -1,8 +1,8 @@
 {
-  "build": "5.4-military-wind-rc07",
-  "version": "5.4.0-rc.7",
+  "build": "5.4-interception-credit-rc08",
+  "version": "5.4.0-rc.8",
   "gameplay_base": "5.2.3",
-  "scope": "RC6 military searchlights plus Paulo wind deflection of military rockets with temporary homing disruption",
+  "scope": "RC7 wind missile defense plus separated military versus Paulo interception scoring and bonus credit",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC7 — browser QA required; European Dragon FBX still not on GitHub"
+  "release_status": "experimental development RC8 — browser QA required; European Dragon FBX not hosted"
 }
