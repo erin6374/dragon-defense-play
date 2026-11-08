@@ -1,3 +1,8 @@
+## 2026-11-08 — RC9c QA #307 chapter-announcement screenshot clearance (new QA pending)
+- Verified exact-head [browser QA #307](https://github.com/erin6374/dragon-defense-play/actions/runs/42519919972) **passed** on `2400e1d`; downloaded its browser artifact and visually inspected the actual wave-15 screenshots. The cinematic is now hidden, but the separate 1.8-second **“A NEW CHAPTER BEGINS”** toast still blocks the skyline. Automated assertions did not check this overlay.
+- In `qa/browser.mjs`, wait for the actual in-game `#toast` to clear before the high-wave screenshots, assert it is empty, and record the initial toast plus clearance in the QA report. Preserve chapter gameplay behavior and the wave-7 restore. No runtime source, physics, graphics, version or deployment change.
+- **Do not certify the distant fire-glow appearance until fresh exact-head browser QA passes and both new screenshots are visually inspected.** Hardware GPU FPS, licensed European Dragon and new 3D combat features remain unverified.
+
 ## 2026-11-08 — RC9c QA high-wave capture fix (exact-head QA pending)
 - Inspected [QA #306](https://github.com/erin6374/dragon-defense-play/actions/runs/42515153457): browser assertions, screenshots and packaging steps completed, but GitHub Actions cancelled while finalizing the **Windows preview artifact** after repeated upload-service JSON errors. Its QA artifact was retained; overall run is **cancelled, not passed**.
 - Downloaded QA #306 screenshots and discovered that both purported wave-15 disaster-glow captures show the **chapter cinematic overlay**, not the actual game sky. The prior test verified the wave counter but did not dismiss the cutscene.

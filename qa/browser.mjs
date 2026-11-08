@@ -777,6 +777,16 @@ try {
   report.highWaveDisasterGlow=highWaveGlow.result;
   assert.equal(await page.locator('#cinematic-player').isHidden(),true,
     'high-wave screenshot captures gameplay, not an overlay');
+  // Dismissing the chapter cinematic does not dismiss the independent toast.
+  // Wait for the simulated 1.8s chapter announcement to expire so the
+  // skyline is actually visible in BOTH wave-15 visual QA screenshots.
+  report.highWaveDisasterGlow.toastBeforeWait=(await page.locator('#toast').textContent())?.trim()||'';
+  await page.waitForFunction(
+    ()=>document.getElementById('toast')?.textContent.trim()==='',
+    null,{timeout:10000,polling:100});
+  assert.equal((await page.locator('#toast').textContent())?.trim(),'',
+    'wave-15 disaster-glow screenshot must have no chapter announcement');
+  report.highWaveDisasterGlow.toastCleared=true;
   await shot('06b-high-wave-disaster-glow');
   await page.locator('canvas').first().screenshot({path:'qa-output/06b-high-wave-disaster-glow-scene.png'});
   const restoreAfterGlow=await page.evaluate(()=>{
