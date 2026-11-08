@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.3.1';
-export const BUILD_ID='5.3-wind-ground-01';
+export const GAME_VERSION='5.4.0-rc.2';
+export const BUILD_ID='5.4-paulo-rc02';
