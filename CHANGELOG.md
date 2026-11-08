@@ -1,5 +1,15 @@
 # Dragon Defense — Development Changelog
 
+## Paulo v5.4 reusable rig extraction and pose driver (November 7–8)
+
+- **Verified previous checkpoint:** [browser QA #42442263143](https://github.com/erin6374/dragon-defense-play/actions/runs/42442263143) passed the prior isolated-lab geometry/banking build. Its genuine screenshots were inspected: the corrected longitudinal axis yields opposite left/right front banking silhouettes. The procedural model is still a blockout; this is not a finished asset.
+- Extracted the entire procedural anatomy and `applyPose(time,state,bankDirection)` from the standalone viewer into `src/dragon/paulo-rig.js` as `createPauloRig(THREE,{breathPreviewFactory})`. This module creates an **unparented scene group**, geometry and reusable poses with no DOM, renderer, camera or game-state ownership. `dragon-lab/paulo-lab.js` now imports the shared rig rather than duplicating model construction.
+- The factory allows the lab to inject **preview-only** fire/wind/gas effects; the default game-ready factory does not generate them, avoiding duplication of existing gameplay attack effects.
+- Added an idempotent `rig.dispose()` to detach the visual root and release each owned geometry and material once, supporting a reversible old-dragon fallback without lingering GPU buffers. Browser QA now constructs a **second detached rig** and verifies 12 poses, mirrored bank rolls/shoulders, 12 membrane panels, 7 tail segments, 24 instanced fangs, no preview breath, and repeat-safe resource disposal.
+- Added `src/dragon/paulo-pose-driver.js`, a pure simulation-to-visual timing adapter. It keeps wingbeat phase continuous through attack state changes, caps a single visual update at 50ms, freezes transforms on pause, and resets without changing game variables. Expanded QA and passed **six direct source smoke-test checks**; full browser/WebGL verification of the newest modules is pending.
+- Updated `dragon-lab/GAMEPLAY-INTEGRATION-NOTES.md` with the completed extraction and remaining gates. **No playable-game model swap, release package, production merge, or Building Explorer change.** Consolidated v5.4 remains gated on finished Paulo artwork, guarded integration, QA, Windows GPU benchmarks and Android device validation.
+
+
 ## Paulo v5.4 front-bank screenshot verification and framing guard (November 7)
 
 - Downloaded and directly inspected the actual [browser QA run #236](https://github.com/erin6374/dragon-defense-play/actions/runs/42438685499) screenshot artifact for `2abd8670`. The paired `14-paulo-bank-front-left.png` and `14-paulo-bank-front-right.png` now show opposite wing-up/wing-down roll instead of the previous back/underside pitching error. Run #236 passed. This accepts the **bank-axis correction** visually, not the final dragon asset or gameplay integration.
