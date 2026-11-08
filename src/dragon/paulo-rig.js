@@ -4,12 +4,12 @@
 // The isolated lab may inject preview-only breath effects; gameplay omits them.
 export function createPauloRig(THREE,{breathPreviewFactory=null}={}){
 const mat={
- armor:new THREE.MeshStandardMaterial({color:0x24272d,roughness:.83,metalness:.16}),
- plates:new THREE.MeshStandardMaterial({color:0x45434a,roughness:.74,metalness:.18}),
- red:new THREE.MeshStandardMaterial({color:0x9b2430,roughness:.69,side:THREE.DoubleSide}),
- membrane:new THREE.MeshStandardMaterial({color:0x7e1d2b,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.93}),
+ armor:new THREE.MeshStandardMaterial({color:0x343943,roughness:.83,metalness:.13,emissive:0x181d24,emissiveIntensity:.27}),
+ plates:new THREE.MeshStandardMaterial({color:0x58535f,roughness:.74,metalness:.13,emissive:0x2b2331,emissiveIntensity:.29}),
+ red:new THREE.MeshStandardMaterial({color:0xb43a4b,roughness:.69,side:THREE.DoubleSide,emissive:0x471520,emissiveIntensity:.26}),
+ membrane:new THREE.MeshStandardMaterial({color:0x973043,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.95,emissive:0x4f1927,emissiveIntensity:.26}),
  bronze:new THREE.MeshStandardMaterial({color:0xa67b4e,metalness:.47,roughness:.45}),
- eye:new THREE.MeshStandardMaterial({color:0xffc04c,emissive:0xa74404,emissiveIntensity:.5}),
+ eye:new THREE.MeshStandardMaterial({color:0xffcb64,emissive:0xbd5809,emissiveIntensity:.72}),
  mouth:new THREE.MeshStandardMaterial({color:0x160e14,roughness:.92}),
  ivory:new THREE.MeshStandardMaterial({color:0xe7d8b7,roughness:.68})
 };
