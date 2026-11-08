@@ -565,7 +565,10 @@ try {
     assert.ok(initial.wingAngles.length===2,'dragon has two articulated wing assemblies');
     const membrane=await lab.evaluate(()=>({panels:window.__PAULO_LAB_QA.membranePanels,
       vertices:window.__PAULO_LAB_QA.membraneVertices}));
-    assert.equal(membrane.panels,10,'two wings each have five membrane panels');
+    assert.equal(membrane.panels,12,'two wings each have proximal, middle and four outer membrane panels');
+    assert.deepEqual(await lab.evaluate(()=>window.__PAULO_LAB_QA.membraneRegions),
+      {proximal:2,outer:8,middle:2},
+      'each wing has a proximal patagium attached to the shoulder pivot');
     assert.equal(await lab.evaluate(()=>window.__PAULO_LAB_QA.armorPlateCount),66,
       'dragon dorsal scales share one preallocated instanced armor batch');
     assert.deepEqual(await lab.evaluate(()=>window.__PAULO_LAB_QA.fangCounts),[12,12],
@@ -576,8 +579,8 @@ try {
       'tail frustums overlap the next pivot without thin gaps');
     assert.ok(tailProfile.every((link,i)=>i===0||link.baseRadius<tailProfile[i-1].baseRadius),
       'tail smoothly tapers toward the tip');
-    assert.ok(membrane.vertices>=900,
-      'curved membrane panels are tessellated rather than single triangles');
+    assert.ok(membrane.vertices>=1092,
+      'all twelve curved membrane panels retain their tessellated geometry');
     await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('hover'));
     await lab.waitForTimeout(150);
     const deform=await lab.evaluate(()=>window.__PAULO_LAB_QA.membraneDeformation());
