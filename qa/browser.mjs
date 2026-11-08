@@ -88,6 +88,20 @@ assert.equal(detectMilitaryCollateral({x:14,y:.7,z:26},.7,[schoolCollider])?.typ
 assert.equal(detectMilitaryCollateral({x:14,y:20,z:26},.7,[schoolCollider]),null,'noncolliding flight path unaffected');
 assert.equal(detectMilitaryCollateral({x:100,y:.6,z:26},.7,[]),null,'offscreen floor does not cause damage');
 assert.equal(detectMilitaryCollateral({x:2,y:9,z:-2},.7,[{...schoolCollider,damage:1}]),null,'destroyed building not struck again');
+
+const sweptSchool=detectMilitaryCollateral({x:2,y:9,z:5},.8,[schoolCollider],{x:2,y:9,z:-25});
+assert.equal(sweptSchool?.type,'structure','long frame must not tunnel through school');
+assert.ok(Math.abs(sweptSchool.z-(-8.6-18*.5-.45))<.001,'swept building hit occurs at entry face');
+const sweptHome=detectMilitaryCollateral({x:24,y:7,z:6},.8,[homeCollider],{x:24,y:7,z:-23});
+assert.equal(sweptHome?.name,'rowhouse','fast rocket cannot tunnel through narrow rowhouse');
+const sweptRoad=detectMilitaryCollateral({x:14,y:-3,z:26},.8,[],{x:14,y:4,z:26});
+assert.equal(sweptRoad?.type,'road','fast downward rocket cannot skip road plane');
+assert.equal(sweptRoad?.y,.9,'road impact is clamped to visible road height');
+assert.equal(detectMilitaryCollateral({x:50,y:9,z:5},.8,[schoolCollider],{x:50,y:9,z:-25}),null,
+ 'parallel missile outside building footprint remains clear');
+assert.equal(detectMilitaryCollateral({x:14,y:-3,z:26},.2,[],{x:14,y:4,z:26}),null,
+ 'swept collision respects missile launch arming delay');
+
 const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
 for(const [signals,state] of [
