@@ -342,3 +342,8 @@ At start branch matched `4e7ecc055c2353ba71b5927fce11a76d5e7c6cb0` and [QA #303]
 ## Scheduled continuation — RC9c distant impact glow (November 8)
 
 At start development HEAD was `e793e38d4b3bdb8a1f6bcc72c025061fdc4a8b49` and exact-head [QA #304](https://github.com/erin6374/dragon-defense-play/actions/runs/42500182720) **passed**. Added a small screen-space sky glow for two distant Philadelphia disaster zones, with restrained wave/damage escalation and deterministic QA assertions. No additional draw calls or gameplay changes. **Inspect fresh RC9c exact-head browser QA and screenshots before certifying visual acceptance.** Real GPU FPS and licensed European Dragon binaries remain unverified; do not merge/deploy or touch main/Building Explorer.
+
+
+## Scheduled continuation — RC9c visible skyline glows (November 8, 2026)
+
+Previous exact-head [browser QA #305](https://github.com/erin6374/dragon-defense-play/actions/runs/42505013025) passed on `d0d519d`, but visual inspection found fire glows obscured by roofs (shader centers y=.16/.23). Moved centers to y=.49/.55 with broader falloff and restrained color; no extra draw calls, lights, geometry or gameplay changes. Added wave-15 rendered screenshots and wave-7 restoration to Playwright. **Fresh exact-head browser QA and screenshot inspection are required** before accepting the visual correction. Preserve PR #2 draft, main, Pages and Building Explorer. Licensed dragon binary and hardware FPS remain unverified.

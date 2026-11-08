@@ -753,6 +753,27 @@ try {
   assert.equal(skylineReset.result.fallActive,false,'restart resets skyline falling state');
   assert.equal(skylineReset.result.ruinVisible,false,'restart hides skyline rubble');
   report.skylineReset=skylineReset.result;
+  // High-wave disaster glow capture: a real rendered frame, not a shader
+  // intensity-only assertion. Restore wave 7 before collision QA resumes.
+  const highWaveGlow=await page.evaluate(()=>{
+    const qa=window.__DD_QA, started=qa.start(15);
+    if(!started.ok)return started;
+    return qa.qaSettleAtmosphere();
+  });
+  assert.ok(highWaveGlow.ok,highWaveGlow.error);
+  assert.equal(highWaveGlow.result.wave,15,'disaster-glow capture uses final wave');
+  const highWaveFrames=(await snap()).frameTimes.frames;
+  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>n,highWaveFrames);
+  report.highWaveDisasterGlow=highWaveGlow.result;
+  await shot('06b-high-wave-disaster-glow');
+  await page.locator('canvas').first().screenshot({path:'qa-output/06b-high-wave-disaster-glow-scene.png'});
+  const restoreAfterGlow=await page.evaluate(()=>{
+    const qa=window.__DD_QA,started=qa.start(7);
+    if(!started.ok)return started;
+    return qa.qaSettleAtmosphere();
+  });
+  assert.ok(restoreAfterGlow.ok,restoreAfterGlow.error);
+  assert.equal(restoreAfterGlow.result.wave,7);
   // A series of background meteor hits must be able to damage the distant
   // city independently; foreground school/neighborhood health is unaffected.
   const impactCascade=await page.evaluate(()=>{

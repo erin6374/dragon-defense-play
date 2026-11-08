@@ -35,12 +35,12 @@ export function createCinematicSky(THREE,scene){
  float star=(1.-smoothstep(.025,.20,length(st)))*step(.991,chance)*( .5+.5*hash(cell+5.));
  col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
  float sun=exp(-length((vUv-vec2(.25,.66))*vec2(aspect,1.))*32.);col+=vec3(.9,.55,.22)*sun*(1.-night)*(.3+dusk);
- // Two distant skyline impact glows, softened by haze and low enough to
- // remain behind architecture; no extra lights, sprites or draw calls.
- float impactWest=exp(-pow((vUv.x-.31)*9.5,2.)-pow((vUv.y-.16)*15.,2.));
- float impactEast=exp(-pow((vUv.x-.68)*6.8,2.)-pow((vUv.y-.23)*11.,2.));
+ // Distant skyline impact glows extend above the roofline instead of
+ // disappearing behind the foreground. Restrained radiance, no extra draw calls.
+ float impactWest=exp(-pow((vUv.x-.31)*9.5,2.)-pow((vUv.y-.49)*7.8,2.));
+ float impactEast=exp(-pow((vUv.x-.68)*6.8,2.)-pow((vUv.y-.55)*7.2,2.));
  float emberPulse=.80+.12*sin(time*.95)+.08*sin(time*1.73+2.);
- float distantFire=disaster*(impactWest*.30+impactEast*.48)*emberPulse*(.62+.38*night);
+ float distantFire=disaster*(impactWest*.34+impactEast*.43)*emberPulse*(.62+.38*night);
  col+=vec3(.90,.24,.08)*distantFire;
  gl_FragColor=vec4(col,1.);}`});
  const plane=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);plane.frustumCulled=false;plane.renderOrder=-1000;scene.add(plane);

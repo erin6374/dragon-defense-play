@@ -1,3 +1,9 @@
+## 2026-11-08 — RC9c skyline-glow visibility correction (QA pending)
+- Exact-head [QA #305](https://github.com/erin6374/dragon-defense-play/actions/runs/42505013025) passed for `d0d519d`; visual review found the two new fire glows largely obscured by foreground roofs at their original vUv heights (.16 and .23).
+- Raised and broadened both glows to y=.49/.55 in the existing full-screen sky shader, retaining restrained intensity and zero additional geometry, textures, lights or draw calls. The sky treatment is visual only; no gameplay or HUD logic changed.
+- Added a real rendered wave-15 browser screenshot (`06b-high-wave-disaster-glow-scene.png`) plus wave-state assertions and wave-7 restoration before the remaining skyline tests. This screenshot is an evidence capture, **not** proof of visual fidelity until inspected.
+- Version/build identity remains RC9c (5.4.0-rc.9.2); no release or production deployment. Verify fresh exact-head QA and inspect both game and skyline images before acceptance. Hardware GPU FPS and licensed dragon integration remain unverified.
+
 ## 2026-11-08 — RC9c: restrained skyline fire-glow atmosphere (new QA pending)
 - Confirmed RC9b exact-head [browser QA #304](https://github.com/erin6374/dragon-defense-play/actions/runs/42500182720) passed before editing; branch still matched e793e38.
 - Added two soft, distant orange impact glows to the existing full-screen sky shader. Their intensity gradually follows wave progression and skyline damage, with low-amplitude flicker; no new mesh, shadow light, texture, draw call, physics or collision change.
