@@ -3,6 +3,7 @@ import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep} from '../src/simulation/ground-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
+import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
@@ -78,6 +79,33 @@ for(const [signals,state] of [
 assert.equal(choosePauloBankDirection({horizontal:-1,facing:1}),-1);
 assert.equal(choosePauloBankDirection({horizontal:1,facing:-1}),1);
 assert.equal(choosePauloBankDirection({facing:-1}),-1);
+// The future game may choose attack poses, but must not transfer control of
+// simulation, the frame clock or cooldowns into the rig renderer.
+const poseCalls=[];
+const poseDriver=createPauloPoseDriver({applyPose:(t,p,d)=>poseCalls.push({t,p,d})});
+assert.deepEqual(poseDriver.snapshot(),
+  {pose:'hover',poseTime:0,animationTime:0,bankDirection:1});
+assert.equal(poseDriver.update(.016,{moving:true,horizontal:-1,facing:-1}),'flight');
+const phaseBeforeAttack=poseDriver.snapshot().animationTime;
+assert.equal(poseDriver.update(1,{windGust:true,horizontal:-1,facing:-1}),'wind');
+const chargingFrame=poseDriver.snapshot();
+assert.equal(chargingFrame.bankDirection,-1,'turning direction maps into rig orientation');
+assert.equal(chargingFrame.poseTime,0,'new attack begins at pose time zero');
+assert.ok(Math.abs(chargingFrame.animationTime-phaseBeforeAttack-.05)<1e-8,
+  'long game frame advances the rig by no more than 50ms');
+const callsBeforePause=poseCalls.length;
+assert.equal(poseDriver.update(1,{paused:true,gasAttack:true}),'wind');
+assert.equal(poseCalls.length,callsBeforePause,'pause does not touch rig transforms');
+assert.deepEqual(poseDriver.snapshot(),chargingFrame,'pause freezes pose and continuous phase');
+assert.equal(poseDriver.update(0,{stunned:true,facing:1}),'hit');
+assert.equal(poseDriver.snapshot().animationTime,chargingFrame.animationTime,
+  'zero-delta state transitions preserve continuous wingbeat phase');
+assert.throws(()=>poseDriver.update(-1,{}),/delta/);
+assert.throws(()=>poseDriver.update(Infinity,{}),/delta/);
+assert.equal(poseDriver.reset('idle'),'idle');
+assert.deepEqual(poseDriver.snapshot(),
+  {pose:'idle',poseTime:0,animationTime:0,bankDirection:1});
+assert.throws(()=>poseDriver.reset('unknown'),/state/);
 const report = {url: base.href, expected, errors: [], warnings: []};
 await mkdir('qa-output', {recursive: true});
 let browser, page;
