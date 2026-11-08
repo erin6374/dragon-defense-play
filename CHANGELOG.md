@@ -1,3 +1,7 @@
+## 2026-11-08 — Paulo retains free-flight position between waves (QA pending)
+- Removed unconditional `perchDragon(false)` from `newWave()`; ordinary wave transitions no longer teleport Paulo to the school roof. Initial game reset and explicit chapter settlement perches remain.
+- Added source-level browser QA assertions for the ordinary-wave function and initial reset. Requires exact-head browser QA and gameplay inspection; no real GPU performance claim.
+
 ## 2026-11-08 — RC9c high-wave QA toast timeout fix (new QA pending)
 - QA #308 failed because a chapter announcement toast never cleared while the QA atmosphere-settle routine was controlling the simulation; the test's 10-second wait timed out.
 - Record and clear only the screenshot DOM toast in Playwright instead of waiting for a gameplay timer; preserve game state, chapter logic and controls. Wave-15 screenshot remains subject to visual review after exact-head QA.
