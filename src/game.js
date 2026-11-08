@@ -1936,8 +1936,37 @@ if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  if(remaining>0&&wave<15){spawnTimer-=dt;if(spawnTimer<=0){spawnMeteor();remaining--;spawnTimer=Math.max(easyMode()?1.35:.48,(easyMode()?2.5:1.3)-wave*(easyMode()?.025:.045))*(.7+Math.random()*.5)/difficulty()}}else if(wave<15||meteors.length===0){between+=dt;const chapterBreak=(wave===5||wave===10||wave===14); if(chapterBreak&&between>2.6){beginChapterSettlement();} else if(!chapterBreak&&between>(wave<15?7:4.5)){if(wave>=15){winGame();}else{wave++;between=0;updateHud();newWave();}}}
 const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=shotScratchClosest;
 for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.position);s.mesh.position.addScaledVector(s.vel,dt);s.life-=dt;if(wave===15&&!s.hostile&&finalSquadron.intercept(s.mesh.position,1.7,pos=>groundFireball(pos.x,pos.y,pos.z,1.4))){s.life=0;score+=75;}
- if(!s.hostile&&!s.fireTarget){for(let mi=meteors.length-1;mi>=0;mi--){const m=meteors[mi];path.copy(s.mesh.position).sub(shotPrevious);const denom=Math.max(.00001,path.lengthSq());const t=THREE.MathUtils.clamp(shotScratchDelta.copy(m.mesh.position).sub(shotPrevious).dot(path)/denom,0,1);closest.copy(shotPrevious).addScaledVector(path,t);
- if(closest.distanceTo(m.mesh.position)<m.size*1.1+.95){m.hp-=easyMode()?99:Math.max(2,4.5-m.size);emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,30,.4);emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));if(m.hp<=0){fragmentMeteor(m);registerIntercept(m);score+=100+wave*10;sound('intercept');if(!m.boss&&!m.largeSplitter&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,2.2*m.size);remove(meteors,mi);updateHud()}s.life=0;break}
+ if(!s.hostile&&!s.fireTarget){
+  // Swept 3D first-contact selection: array order must not determine which
+  // meteor intercepts Paulo's fireball. A shot damages only the closest hit.
+  path.copy(s.mesh.position).sub(shotPrevious);
+  const travelSq=path.lengthSq();let hitIndex=-1,hitT=Infinity;
+  for(let mi=0;mi<meteors.length;mi++){
+   const m=meteors[mi],radius=m.size*1.1+.95;
+   shotScratchDelta.copy(shotPrevious).sub(m.mesh.position);
+   const c=shotScratchDelta.lengthSq()-radius*radius;
+   let t=0;
+   if(c>0){
+    if(travelSq<1e-10)continue;
+    const halfB=shotScratchDelta.dot(path),disc=halfB*halfB-travelSq*c;
+    if(disc<0)continue;
+    t=(-halfB-Math.sqrt(disc))/travelSq;
+    if(t<0||t>1)continue;
+   }
+   if(t<hitT){hitT=t;hitIndex=mi;}
+  }
+  if(hitIndex>=0){
+   const m=meteors[hitIndex];
+   m.hp-=easyMode()?99:Math.max(2,4.5-m.size);
+   emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,30,.4);
+   emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));
+   if(m.hp<=0){
+    fragmentMeteor(m);registerIntercept(m);score+=100+wave*10;sound('intercept');
+    if(!m.boss&&!m.largeSplitter&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,2.2*m.size);
+    remove(meteors,hitIndex);updateHud();
+   }
+   s.life=0;
+  }
  }}if(s.mesh.position.distanceTo(s.target)<1.2||s.life<=0){if(s.fireTarget&&schoolFire.includes(s.fireTarget)&&s.mesh.position.distanceTo(s.target)<1.2){s.fireTarget.suppression+=.045;if(s.fireTarget.suppression>=1){fireGroup.remove(s.fireTarget.root);schoolFire.splice(schoolFire.indexOf(s.fireTarget),1);}}
  if(s.hostile){if(s.mesh.position.distanceTo(dragon.position)<3.2){if(s.water){waterDisable=3.3;message('FIRE HOSE! BREATH DISABLED FOR 3 SECONDS');}else if(s.iceHelicopter)iceHit('ICE ELECTRICAL BEAM',true);else if(s.iceGround)iceHit('ICE GROUND PROJECTILE');else hurtDragon('POLICE FIRE');}}else if(!s.fireTarget){blast(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z);emitImpact(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,42,.45);}remove(shots,i)}}
 for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.fragmentGrace=Math.max(0,m.fragmentGrace-dt);if(m.grounded){m.ttl-=dt;m.mesh.rotation.y+=dt*.25;if(m.ttl<=0)remove(meteors,i);continue;}
