@@ -777,13 +777,12 @@ try {
   report.highWaveDisasterGlow=highWaveGlow.result;
   assert.equal(await page.locator('#cinematic-player').isHidden(),true,
     'high-wave screenshot captures gameplay, not an overlay');
-  // Dismissing the chapter cinematic does not dismiss the independent toast.
-  // Wait for the simulated 1.8s chapter announcement to expire so the
-  // skyline is actually visible in BOTH wave-15 visual QA screenshots.
+  // qaSettleAtmosphere advances the visual state without necessarily advancing
+  // the gameplay timer that expires the 1.8s chapter toast. Waiting on that
+  // timer timed out in exact-head QA #308. Clear only the screenshot's DOM
+  // announcement after recording its text; never modify game timer/state.
   report.highWaveDisasterGlow.toastBeforeWait=(await page.locator('#toast').textContent())?.trim()||'';
-  await page.waitForFunction(
-    ()=>document.getElementById('toast')?.textContent.trim()==='',
-    null,{timeout:10000,polling:100});
+  await page.evaluate(()=>{document.getElementById('toast').textContent='';});
   assert.equal((await page.locator('#toast').textContent())?.trim(),'',
     'wave-15 disaster-glow screenshot must have no chapter announcement');
   report.highWaveDisasterGlow.toastCleared=true;
