@@ -1,5 +1,13 @@
 # Dragon Defense — Development Changelog
 
+## Paulo gameplay animation selector — integration staging (November 7)
+
+- Added `src/dragon/paulo-animation-intent.js`, a **pure, side-effect-free, DOM/WebGL-independent** selector for the existing 12 Paulo pose names. It prioritizes stun/recovery, wind/gas, charging/fire, landing/banking, glide/flight and idle/hover, plus travel-sign-dependent banking. No in-game dragon is replaced or controlled by this module yet.
+- Added deterministic selector regression cases in `qa/browser.mjs`, including state priority, left/right direction, and exact correspondence with the standalone lab's pose names.
+- Added `dragon-lab/GAMEPLAY-INTEGRATION-NOTES.md`, documenting real hooks in `src/game.js` for movement, stun, wind, fire, gas, collision root and fallback; spells out a staged visual-only integration plan. Attack/collision behavior will remain owned by the original simulation.
+- This is **pre-integration infrastructure**, not proof of a completed new dragon. Lab wing-panel/browser QA, gameplay adapter tests and hardware performance require verification on the current branch head. The consolidated release plan remains `RELEASE-PLAN-v5.4.md`.
+
+
 ## Paulo v5.4 proximal wing silhouette pass (November 7)
 
 - Browser QA run `42428004854` passed the prior head-and-tail anatomy revision. I reviewed the actual front, side and top reference images: face and tapering tail render, but wing membrane coverage is concentrated near the tips, leaving the shoulder-to-elbow spans visually skeletal.
