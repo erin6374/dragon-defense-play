@@ -1,8 +1,8 @@
 {
-  "build": "5.4-paulo-rc02",
-  "version": "5.4.0-rc.2",
+  "build": "5.4-wind-skid-rc04",
+  "version": "5.4.0-rc.4",
   "gameplay_base": "5.2.3",
-  "scope": "Consolidated North Broad skyline, v5.3 wind and developer-only Paulo v5.4 rig preview",
+  "scope": "RC2-based preview: mass-dependent wind vehicle skids, roll, dust, and gradual AI recovery; Paulo optional",
   "new_gameplay_features": true,
-  "release_status": "development preview — legacy dragon default, Paulo optional, GPU and Android not verified"
+  "release_status": "experimental development RC4 — browser QA required; European Dragon asset not hosted"
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {groundWindWeight,groundWindStep} from '../src/simulation/ground-wind.js';
+import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -60,6 +60,23 @@ assert.equal(push(-10,20,1.2),0,'ground objects behind the dragon are not pushed
 assert.equal(push(55,20,1.2),0,'wind has finite reach');
 assert.equal(push(15,60,1.2),0,'ground objects far outside the cone are unaffected');
 assert.ok(push(15,20,1.2)>.001,'a nearby pedestrian receives a visible gentle push');
+
+const makeGustCar=(flags={})=>({root:{position:{x:12,z:20},rotation:{x:0,y:0}},laneZ:20,dir:1,speed:8,...flags});
+const windBike=makeGustCar({bike:true}),windSedan=makeGustCar(),windBus=makeGustCar({bus:true});
+const windMiss=makeGustCar();windMiss.root.position.z=60;
+assert.equal(hitVehicleWithWind(windMiss,5,0,20,1,0),false,'gust misses targets outside cone');
+for(const v of [windBike,windSedan,windBus])assert.equal(hitVehicleWithWind(v,5,0,20,1,0),true);
+assert.equal(hitVehicleWithWind(windSedan,5,0,20,1,0),false,'one impulse per target per gust');
+for(let i=0;i<40;i++)for(const v of [windBike,windSedan,windBus])advanceVehicleWind(v,.05);
+const windTravel=v=>v.root.position.x-12;
+assert.ok(windTravel(windBike)>windTravel(windSedan)*1.4,'bike skids farther than sedan');
+assert.ok(windTravel(windSedan)>windTravel(windBus)*2,'sedan skids farther than bus');
+assert.ok(windTravel(windSedan)>3,'sedan displacement exceeds old sub-unit nudge');
+assert.ok(Math.abs(windSedan.root.position.z-20)>.4,'car visibly skids sideways');
+assert.ok(Math.abs(windBus.root.position.z-20)<Math.abs(windSedan.root.position.z-20),'bus resists lateral wind');
+for(let i=0;i<200;i++)advanceVehicleWind(windSedan,.05);
+assert.ok(Math.abs(windSedan.root.rotation.x)<.001,'vehicle roll eventually settles');
+assert.ok(Number.isFinite(windSedan.root.position.x)&&Number.isFinite(windSedan.root.position.z),'wind positions remain finite');
 const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
 for(const [signals,state] of [
@@ -572,8 +589,8 @@ try {
   report.distantHelicopterPatrol=heliPatrol.result;
   const groundWind=await page.evaluate(()=>window.__DD_QA.stageGroundWind());
   assert.ok(groundWind.ok,groundWind.error);
-  assert.ok(groundWind.result.personX>groundWind.result.bikeX,
-   'pedestrian is pushed more than a lightweight bike');
+  assert.ok(groundWind.result.bikeX>groundWind.result.personX,
+   'motorcycle is displaced farther than a pedestrian');
   assert.ok(groundWind.result.bikeX>groundWind.result.busX,
    'lightweight bike is pushed more than a large bus');
   assert.ok(groundWind.result.busX>12,'large vehicle receives only a small nudge');

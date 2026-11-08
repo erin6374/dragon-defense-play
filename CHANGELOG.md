@@ -1,3 +1,10 @@
+## 2026-11-08 — v5.4.0 RC4: Dragon wind now visibly affects ground traffic
+- Changed vehicle wind from tiny capped translation to mass-dependent once-per-gust velocity, skid and post-gust inertia.
+- Added chassis roll/yaw, controlled tire dust and speed disturbance; bikes react most, sedans skid, buses resist.
+- Lane-following and overtaking briefly yield to the gust, followed by gradual traffic recovery. Road bounds cap sideways drift.
+- Reset vehicle rotation on spawn/reuse; preserved meteor, helicopter and pedestrian wind systems.
+- Added deterministic wind regression checks plus in-game QA assertions. European Dragon integration remains separate; production main unchanged.
+
 # Dragon Defense — Development Changelog
 
 ## RC2 exact-head QA and realistic Paulo asset audition handoff (November 8)
