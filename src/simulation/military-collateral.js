@@ -14,6 +14,19 @@ export function segmentSphereEntry(start,end,center,radius){
  return {t,x:start.x+dx*t,y:start.y+dy*t,z:start.z+dz*t};
 }
 
+// Within one collision class, resolve the earliest swept contact rather than
+// the first element in an arbitrary array. Caller retains shot > meteor > dragon
+// > collateral priority. Callbacks may be shared to avoid per-frame allocations.
+export function nearestSegmentSphereHit(start,end,targets,centerOf,radiusOf,isEligible){
+ let nearest=null;
+ for(const target of targets){
+  if(isEligible&&!isEligible(target))continue;
+  const contact=segmentSphereEntry(start,end,centerOf(target),radiusOf(target));
+  if(contact&&(!nearest||contact.t<nearest.contact.t))nearest={target,contact};
+ }
+ return nearest;
+}
+
 // Collision-only helper. Kept independent of Three.js for deterministic QA.
 // Geometry is an approximate gameplay footprint, not actual BIM mesh raycasting.
 // Sweep the missile's entire frame segment so fast rockets cannot tunnel through

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
-import {detectMilitaryCollateral,segmentSphereEntry} from '../src/simulation/military-collateral.js';
+import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from '../src/simulation/military-collateral.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {Script} from 'node:vm';
@@ -92,6 +92,22 @@ assert.equal(segmentSphereEntry(missileStart,missileStart,missileTarget,2),null,
  'stationary rocket outside target does not hit');
 assert.equal(segmentSphereEntry(missileStart,missileEnd,missileTarget,-1),null,
  'invalid collision radius cannot create a hit');
+
+// Within the same priority class, nearest physical contact wins regardless of
+// candidate array order; ineligible player projectiles cannot intercept rockets.
+const nearRocketTarget={id:'near',position:{x:-3,y:2,z:5},radius:1,active:true};
+const farRocketTarget={id:'far',position:{x:6,y:2,z:5},radius:1,active:true};
+const disabledRocketTarget={id:'disabled',position:{x:-8,y:2,z:5},radius:1,active:false};
+const pickRocketTarget=items=>nearestSegmentSphereHit(missileStart,missileEnd,items,
+ item=>item.position,item=>item.radius,item=>item.active);
+assert.equal(pickRocketTarget([farRocketTarget,nearRocketTarget])?.target.id,'near',
+ 'nearest rocket intercept wins even when candidate order is reversed');
+assert.equal(pickRocketTarget([disabledRocketTarget,farRocketTarget,nearRocketTarget])?.target.id,'near',
+ 'ineligible projectile does not block nearest active contact');
+assert.equal(pickRocketTarget([farRocketTarget,nearRocketTarget])?.contact.x,-4,
+ 'nearest rocket intercept retains swept entry coordinate');
+assert.equal(pickRocketTarget([{id:'miss',position:{x:0,y:8,z:5},radius:1,active:true}]),null,
+ 'no hit when every target misses the rocket path');
 
 // Missed government missiles now cause bounded physical collateral damage.
 const schoolCollider={name:'tech-freire-school',x:0,z:-8.6,w:27,d:18,h:28,damage:0};

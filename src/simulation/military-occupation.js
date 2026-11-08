@@ -1,6 +1,9 @@
 // Campaign Preview 4: chapter-three military occupation. All meshes and projectiles are owned here.
 import * as THREE from 'three';
-import {detectMilitaryCollateral,segmentSphereEntry} from './military-collateral.js';
+import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from './military-collateral.js';
+const shotCenter=shot=>shot.mesh.position,shotRadius=()=>1.8;
+const shotEligible=shot=>!shot.hostile&&!shot.fireTarget&&shot.life>0;
+const meteorCenter=meteor=>meteor.mesh.position,meteorRadius=meteor=>meteor.size+1;
 export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMeteorHit,onBlast,onMessage,onCollateral,getCollateralStructures}){
  const exhaustGeo=new THREE.SphereGeometry(.32,5,4);
  const exhaustMat=new THREE.MeshBasicMaterial({color:0x879096,transparent:true,opacity:.26,depthWrite:false});
@@ -64,12 +67,12 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
    let hit=false;
    // Keep established shot > meteor > dragon > collateral priority, but sweep
    // each target so low frame rates cannot let a rocket tunnel through it.
-   for(const shot of playerShots){if(shot.hostile||shot.fireTarget||shot.life<=0)continue;
-    const contact=segmentSphereEntry(previousPosition,m.mesh.position,shot.mesh.position,1.8);
-    if(contact){m.mesh.position.set(contact.x,contact.y,contact.z);shot.life=0;hit=true;break;}}
-   if(!hit)for(const meteor of meteors){
-    const contact=segmentSphereEntry(previousPosition,m.mesh.position,meteor.mesh.position,meteor.size+1);
-    if(contact){m.mesh.position.set(contact.x,contact.y,contact.z);meteor.hp=0;onMeteorHit(meteor);hit=true;break;}}
+   const shotHit=nearestSegmentSphereHit(previousPosition,m.mesh.position,playerShots,shotCenter,shotRadius,shotEligible);
+   if(shotHit){const {target:shot,contact}=shotHit;
+    m.mesh.position.set(contact.x,contact.y,contact.z);shot.life=0;hit=true;}
+   if(!hit){const meteorHit=nearestSegmentSphereHit(previousPosition,m.mesh.position,meteors,meteorCenter,meteorRadius);
+    if(meteorHit){const {target:meteor,contact}=meteorHit;
+     m.mesh.position.set(contact.x,contact.y,contact.z);meteor.hp=0;onMeteorHit(meteor);hit=true;}}
    if(!hit){const contact=segmentSphereEntry(previousPosition,m.mesh.position,dragon.position,2.2);
     if(contact){m.mesh.position.set(contact.x,contact.y,contact.z);onDragonHit(m.homing?'HOMING MISSILE':'MILITARY MISSILE');hit=true;}}
    // When Paulo evades, a military rocket can strike the neighborhood below.

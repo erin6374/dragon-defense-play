@@ -1,3 +1,8 @@
+## 2026-11-08 — RC5 follow-up: deterministic first contact within rocket target classes (new QA pending)
+- Exact-head [browser QA #289](https://github.com/erin6374/dragon-defense-play/actions/runs/42466717298) **passed** at `87ee68fd4c6408fadffeb05dd4b1afb007752e79`, including the prior swept rocket collision assertions and Windows preview packaging.
+- Audited the swept missile loops: when several player shots or meteors intersected a rocket's movement in one frame, the first array entry won even if another target was physically closer. Resolve the minimum swept contact time **within** each class, preserving established shot > meteor > dragon > collateral class priority and existing effects. Added deterministic reversed-order, ineligible, miss and contact-position assertions.
+- New commit requires fresh exact-head browser QA; no visual acceptance or hardware GPU FPS claim. Main, Pages deployment, Building Explorer and licensed European Dragon binaries unchanged.
+
 ## 2026-11-08 — RC5 follow-up: swept missile hits on active targets (new QA pending)
 - Exact-head browser QA [#288](https://github.com/erin6374/dragon-defense-play/actions/runs/42463054731) **passed** on `977d021648ec71f849e8cefd17536621a8afcff6`, including the previous school/road swept-collateral regression and Windows preview packaging. This confirms software QA, not GPU FPS or final visual acceptance.
 - Source audit identified the same frame-step tunneling risk in military missile contact with player shots, meteors and Paulo: each was tested only at the rocket's frame-end position. Added a pure swept segment/sphere helper, repositioning the rocket at contact while preserving the existing shot > meteor > dragon > collateral priority and effects.
