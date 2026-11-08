@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {groundWindWeight,groundWindStep,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
+import {groundWindWeight,groundWindStrength,hitVehicleWithWind,advanceVehicleWind} from '../src/simulation/ground-wind.js';
 import {detectMilitaryCollateral,segmentSphereEntry,nearestSegmentSphereHit} from '../src/simulation/military-collateral.js';
 import {slewSearchlightDirection} from '../src/simulation/military-searchlight.js';
 import {disasterSkyIntensity} from '../src/rendering/cinematic-environment.js';
@@ -78,14 +78,11 @@ assert.ok(pushWeights.bike>pushWeights.sedan&&pushWeights.sedan>pushWeights.van
  'wind pushes smaller ground vehicles further than heavier vehicles');
 assert.ok(pushWeights.fireTruck<=pushWeights.bus,
  'emergency fire trucks resist wind like other large vehicles');
-const push=(x,z,weight)=>groundWindStep(x,1,z,0,1,20,1,0,0,weight,.05);
-assert.ok(push(15,20,1.2)>push(15,20,pushWeights.bike)
- &&push(15,20,pushWeights.bike)>push(15,20,pushWeights.bus),
- 'pedestrians shift more than bikes, and buses shift least');
-assert.equal(push(-10,20,1.2),0,'ground objects behind the dragon are not pushed');
-assert.equal(push(55,20,1.2),0,'wind has finite reach');
-assert.equal(push(15,60,1.2),0,'ground objects far outside the cone are unaffected');
-assert.ok(push(15,20,1.2)>.001,'a nearby pedestrian receives a visible gentle push');
+const force=(x,z)=>groundWindStrength(x,1,z,0,1,20,1,0,0);
+assert.equal(force(-10,20),0,'ground objects behind the dragon are unaffected');
+assert.equal(force(65,20),0,'wind has finite reach');
+assert.equal(force(15,60),0,'ground objects far outside the cone are unaffected');
+assert.ok(force(15,20)>force(15,35),'gust is strongest near its center');
 
 const makeGustCar=(flags={})=>({root:{position:{x:12,z:20},rotation:{x:0,y:0}},laneZ:20,dir:1,speed:8,...flags});
 const windBike=makeGustCar({bike:true}),windSedan=makeGustCar(),windBus=makeGustCar({bus:true});
@@ -95,9 +92,9 @@ for(const v of [windBike,windSedan,windBus])assert.equal(hitVehicleWithWind(v,5,
 assert.equal(hitVehicleWithWind(windSedan,5,0,20,1,0),false,'one impulse per target per gust');
 for(let i=0;i<40;i++)for(const v of [windBike,windSedan,windBus])advanceVehicleWind(v,.05);
 const windTravel=v=>v.root.position.x-12;
-assert.ok(windTravel(windBike)>windTravel(windSedan)*1.4,'bike skids farther than sedan');
-assert.ok(windTravel(windSedan)>windTravel(windBus)*2,'sedan skids farther than bus');
-assert.ok(windTravel(windSedan)>3,'sedan displacement exceeds old sub-unit nudge');
+assert.ok(windTravel(windBike)>windTravel(windSedan),'bike skids farther than sedan');
+assert.ok(windTravel(windSedan)>windTravel(windBus),'sedan skids farther than bus');
+assert.ok(windTravel(windBus)>10,'heavy vehicles slide a visible distance');
 assert.ok(Math.abs(windSedan.root.position.z-20)>.4,'car visibly skids sideways');
 assert.ok(Math.abs(windBus.root.position.z-20)<Math.abs(windSedan.root.position.z-20),'bus resists lateral wind');
 for(let i=0;i<200;i++)advanceVehicleWind(windSedan,.05);
@@ -974,12 +971,15 @@ try {
   await page.evaluate(()=>window.__DD_QA.cinematicStage('quiet'));
   const groundWind=await page.evaluate(()=>window.__DD_QA.stageGroundWind());
   assert.ok(groundWind.ok,groundWind.error);
-  assert.ok(groundWind.result.bikeX>groundWind.result.personX,
-   'motorcycle is displaced farther than a pedestrian');
-  assert.ok(groundWind.result.bikeX>groundWind.result.busX,
-   'lightweight bike is pushed more than a large bus');
-  assert.ok(groundWind.result.busX>12,'large vehicle receives only a small nudge');
-  assert.ok(groundWind.result.personX<12.5,'pedestrian gust shift remains gentle');
+  assert.ok(groundWind.result.busX>19&&groundWind.result.truckX>20,
+    'oncoming heavy vehicles slide backward by multiple world units');
+  assert.ok(groundWind.result.carTilt>1,'sedan rocks onto its side');
+  assert.ok(groundWind.result.personX>20&&groundWind.result.personTilt>1.2,
+    'pedestrian falls and skids across the pavement');
+  assert.ok(groundWind.result.foliageBend>.25,'plants bend into the gust');
+  assert.ok(groundWind.result.carRecovered&&groundWind.result.personRecovered,
+    'wind reactions return to upright');
+  assert.ok(groundWind.result.statePreserved,'wind knockdown preserves score, health and wave');
   assert.ok(groundWind.result.dustInstances>0&&groundWind.result.dustInstances<=44,
    'visible bounded dust batch responds to the dragon gust');
   assert.ok(groundWind.result.litterInstances>0&&groundWind.result.litterInstances<=16,

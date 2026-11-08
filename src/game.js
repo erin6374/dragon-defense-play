@@ -14,7 +14,8 @@ import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js';
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
-import {groundWindStep,hitVehicleWithWind,advanceVehicleWind} from './simulation/ground-wind.js';
+import {hitVehicleWithWind,advanceVehicleWind,hitPedestrianWithWind,advancePedestrianWind} from './simulation/ground-wind.js';
+import {createWindPlanting} from './rendering/wind-planting.js';
 import {createPauloRig} from './dragon/paulo-rig.js';
 import {createPauloPoseDriver} from './dragon/paulo-pose-driver.js';
 import {createProfiler} from './rendering/profiler.js';
@@ -163,6 +164,7 @@ let cityExtensions={group:null,propsEstimate:0};
 try{cityExtensions=createCityExtensions({THREE,root:staticGroup,block,material});}
 catch(err){console.error('City scenery could not be initialized. Starting core game without it.',err);window.__DD_OPTIONAL_ERRORS=(window.__DD_OPTIONAL_ERRORS||[]).concat('City scenery: '+String(err));}
 const upgradedStreet=enhanceEnvironment(THREE,scene,staticGroup,neighborhood,visualBank);
+const updateWindPlanting=createWindPlanting(upgradedStreet.windTrees,neighborhood.foreground);
 const streetBatchStats=batchStaticStreetProps(staticGroup);console.info('Static street batching:',streetBatchStats);
 const cinematicWeather=createCinematicWeather(THREE,scene,{mobile:mobileVisual});
 // Voxel facade with ~0.30 world-unit cells. Individual instances can be hidden after impacts.
@@ -776,7 +778,7 @@ function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck
  beacon=root.userData.vehicleBeacon||null;
  const turnAt=!emergency&&!rearStreet&&Math.random()<.23?(dir>0?[-53,53][Math.floor(Math.random()*2)]:[53,-53][Math.floor(Math.random()*2)]):null;
  const laneChangeAt=!emergency&&!rearStreet&&Math.random()<.27?(-37+Math.random()*74):null;
- cars.push({rearStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
+ cars.push({rearStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
 }
 function recycleCar(car){if(!car||car.recycled)return;car.recycled=true;scene.remove(car.root);if(car.frozen)return;
  let list=vehiclePool.get(car.poolKey);if(!list){list=[];vehiclePool.set(car.poolKey,list);}if(list.length>=4)return;
@@ -915,7 +917,7 @@ function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolF
      c.laneZ=passing;c.overtakeUntil=elapsed+6;c.laneChangeTime=0;
    }
   }
-if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt;
+if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery>0?.18:1);
   if(c.root.userData.ladder)c.root.userData.ladder.rotation.z=THREE.MathUtils.lerp(c.root.userData.ladder.rotation.z,c.serviceStop?.35:0,Math.min(1,dt*.8));
   if(streetStop<=0&&obstruction&&obstruction.life>0){const laneZ=c.laneZ;c.root.position.z=THREE.MathUtils.lerp(c.root.position.z,laneZ+(c.dir>0?2:-2),Math.min(1,dt*1.2));}
   else if(!c.turnPath?.length){const laneZ=c.laneZ;const error=laneZ-c.root.position.z;const lateralStep=Math.min(1,dt*(c.windRecovery>0?.05:c.windSettle>0?.48:1.65));c.root.position.z+=error*lateralStep;vehicleYawTowards(c,(c.dir<0?Math.PI:0)+laneChangeYaw(error,c.dir,c.speed),dt);c.laneChangeTime=(c.laneChangeTime||0)+dt;}
@@ -1230,7 +1232,8 @@ function updateWorld(dt){
  if(performanceLab.isEnabled('pedestrians'))crowdTimer-=dt;if(performanceLab.isEnabled('pedestrians')&&crowdTimer<=0){spawnCrowd();crowdTimer=4.4;}
  for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>Math.abs(p.g.position.x-d.x)<d.r&&Math.abs(p.g.position.z-d.z)<d.r);
   if(threat){p.dx=p.g.position.x<threat.x?-1:1;p.life=Math.max(p.life,3)}
-  if(p.down>0){p.down-=dt;p.vy-=14*dt;p.g.position.y=Math.max(0,p.g.position.y+p.vy*dt);if(p.g.position.y===0)p.vy=0;p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,p.dx*1.25,Math.min(1,dt*7));}
+  if(advancePedestrianWind(p,dt)){animatePerson(p.g,p.walkCycle||0,false);}
+  else if(p.down>0){p.down-=dt;p.vy-=14*dt;p.g.position.y=Math.max(0,p.g.position.y+p.vy*dt);if(p.g.position.y===0)p.vy=0;p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,p.dx*1.25,Math.min(1,dt*7));}
   else{if(p.crossing){if(trafficLightRed||p.jaywalker||p.g.position.z>13&&p.g.position.z<35)p.g.position.z+=p.dz*dt*(threat?5:p.walkSpeed);if(p.g.position.z>40||p.g.position.z<9)p.life=0;}else p.g.position.x+=p.dx*dt*(threat?8:2+Math.sin(elapsed+p.phase));const distance=updatePedestrianPose(p,previousX,previousZ,dt);p.walkCycle=(p.walkCycle||0)+distance*4;animatePerson(p.g,p.walkCycle,distance>.0001);p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,0,Math.min(1,dt*8));}
   if(p.life<=0||Math.abs(p.g.position.x)>85){scene.remove(p.g);crowd.splice(i,1)} }
  for(let i=gasClouds.length-1;i>=0;i--){const c=gasClouds[i];c.life-=dt;c.age+=dt;
@@ -1361,8 +1364,8 @@ windVisual.visible=false;
 // no new mesh or material allocations when the dragon breathes.
 const windDustPool=new InstancedParticlePool({THREE,parent:scene,
  geometry:new THREE.PlaneGeometry(1,1),
- material:new THREE.MeshBasicMaterial({map:visualBank.images.dust,color:0xc1b5a2,
-  transparent:true,opacity:.36,depthWrite:false,side:THREE.DoubleSide}),
+ material:new THREE.MeshBasicMaterial({map:visualBank.images.dust,color:0xd6c2a5,
+  transparent:true,opacity:.52,depthWrite:false,side:THREE.DoubleSide}),
  capacity:44});
 const windLitterPool=new InstancedParticlePool({THREE,parent:scene,
  geometry:new THREE.BoxGeometry(.25,.08,.15),
@@ -1404,7 +1407,7 @@ const sharedShotGeometry=new THREE.IcosahedronGeometry(.34,1);
 function updateDragonWind(dt){
  windCooldown=Math.max(0,windCooldown-dt);gustTime=Math.max(0,gustTime-dt);windActive=gustTime>0;windVisual.visible=windActive;updateBreathMeter();
  cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
- if(!windActive){clearWindDebris();for(const c of cars)advanceVehicleWind(c,dt);}
+ if(!windActive){clearWindDebris();updateWindPlanting(dt);for(const c of cars)advanceVehicleWind(c,dt);}
  // While inhaling, Paulo visibly swells and leans back; gust is emitted on release.
  const inhaling=holdStart&&windCooldown<=0?Math.min(1,(performance.now()-holdStart)/850):0;
  dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,1+inhaling*.22,Math.min(1,dt*8));
@@ -1412,63 +1415,58 @@ function updateDragonWind(dt){
  const origin=gustOrigin,direction=gustDirection,progress=1-gustTime/.85;
  windVisual.position.copy(origin);windVisual.rotation.z=Math.atan2(direction.y,direction.x);windVisual.scale.set(1,1,1);
  for(const particle of windParticles){const t=(particle.seed+progress*.75)%1;
-  const spread=1.2+t*12.5,swirl=Math.sin(t*17+particle.phase+elapsed*9)*.65;
+  const spread=1.2+t*15,swirl=Math.sin(t*17+particle.phase+elapsed*9)*(1+t*2);
   particle.sprite.position.set(1+t*48,Math.cos(particle.phase)*spread*particle.spread+swirl,Math.sin(particle.phase)*spread*.55);
-  const radius=(.55+t*2.4)*(0.75+particle.spread*.45);particle.sprite.scale.set(radius*2.2,radius,1);
-  particle.sprite.material.opacity=(.07+.17*Math.sin(Math.PI*t)) * Math.min(1,gustTime*5);
+  const radius=(.55+t*3.2)*(0.75+particle.spread*.45);particle.sprite.scale.set(radius*2.2,radius,1);
+  particle.sprite.material.opacity=(.12+.26*Math.sin(Math.PI*t)) * Math.min(1,gustTime*5);
  }
  const rocketsDeflected=militaryOccupation.deflectWind(origin,direction,dt);
  if(rocketsDeflected.affected&&!gustMissileNotified){gustMissileNotified=true;message('PAULO DEFLECTS MILITARY ROCKETS!');}
  for(const m of meteors){if(m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<43&&across<5+along*.35){m.vel.addScaledVector(direction,dt*32/(1+(m.size||1)*.16));m.vel.y+=dt*8;}}
  for(const h of helicopters){if(h.crashing||!h.root)continue;const delta=h.root.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<48&&across<7+along*.35){h.root.position.addScaledVector(direction,dt*29);h.root.position.y+=dt*5;if(h.disorientTime<=0){h.disorientTime=5;h.contactTime=0;message('HELICOPTER CAUGHT IN WIND — LOSING CONTROL!');}h.evasion=Math.max(h.evasion,1);h.dodgeSide=direction.x>0?1:-1;}}
- // Ground targets receive a much gentler, mass-dependent push. Project
- // the gust onto street level so a dragon flying above the rooftops can still
- // move nearby traffic and pedestrians. Preserve their route/AI controllers.
+ // Project the gust onto street level, independent of the dragon’s altitude.
  let windX=direction.x,windZ=direction.z;
  const groundLen=Math.hypot(windX,windZ);
  if(groundLen<.15){windX=facing;windZ=0;}
  else {windX/=groundLen;windZ/=groundLen;}
- // A short impulse and sustained inertial skid; vehicle AI eases lane recovery.
+ const groundOrigin=windGroundOrigin.set(origin.x,0,origin.z);
+ // Move a rooftop gust’s street footprint to the curb.
+ if(groundOrigin.z>-12&&groundOrigin.z<12)groundOrigin.z=12;
+ applyStreetGust(dt,groundOrigin,windX,windZ,progress);
+ for(const fire of schoolFire){const delta=fire.root.position.clone().sub(origin),along=delta.dot(direction);if(along>0&&along<43&&delta.clone().addScaledVector(direction,-along).length()<8+along*.17)fire.suppression=Math.min(1,fire.suppression+dt*1.7);}
+}
+const windGroundOrigin=new THREE.Vector3();
+function applyStreetGust(dt,origin,dx,dz,progress,vehicles=cars,people=crowd){
  let vehiclesHit=0;
- for(const c of cars){
-  if(!c.root?.visible||!hitVehicleWithWind(c,gustId,origin.x,origin.z,windX,windZ))continue;
-  vehiclesHit++;
-  const tireDust=smokePuff(c.root.position.x,.7,c.root.position.z,1.2);
-  scene.add(tireDust);skyBursts.push({m:tireDust,life:.8,initialLife:.8,smoke:true});
+ for(const car of vehicles){
+  if(car.root?.visible&&hitVehicleWithWind(car,gustId,origin.x,origin.z,dx,dz))vehiclesHit++;
+  advanceVehicleWind(car,dt);
  }
- for(const c of cars)advanceVehicleWind(c,dt);
- if(vehiclesHit&&!gustRoadNotified){gustRoadNotified=true;message('DRAGON GALE — TRAFFIC SKIDDING!');}
- for(const p of crowd){
-  if(p.down>0||!p.g?.visible)continue;
-  const step=groundWindStep(p.g.position.x,1,p.g.position.z,origin.x,1,origin.z,windX,0,windZ,1.2,dt);
-  if(step<=0)continue;
-  if(p.windGustId!==gustId){p.windGustId=gustId;p.windTravel=0;}
-  const move=Math.min(step,Math.max(0,1.3-p.windTravel));
-  p.windTravel+=move;
-  p.g.position.x+=windX*move;
-  p.g.position.z+=windZ*move*.4;
-  p.g.rotation.z+=windX*move*.18;
- }
- // Low, windblown road dust and a few light scraps. Two instanced batches
- // follow the projected gust, never affecting collisions or health.
- const gustAge=1-gustTime/.85;
- const airFade=Math.max(0,Math.sin(gustAge*Math.PI));
+ if(vehicles===cars&&vehiclesHit&&!gustRoadNotified){gustRoadNotified=true;message('DRAGON GALE — TRAFFIC SKIDDING!');}
+ for(const person of people)hitPedestrianWithWind(person,gustId,origin.x,origin.z,dx,dz);
+ const pulse=Math.min(1,(1-progress)*4);
+ const foliageBend=updateWindPlanting(dt,origin,dx,dz,pulse*(.86+.14*Math.sin(progress*36)));
+ // Two instanced batches. Each band spirals around the direction of travel.
  windDustPool.begin();windLitterPool.begin();
- for(let i=0;i<38;i++){
-  const seed=i/38,phase=i*2.39996323;
-  const travel=(4+seed*35+gustAge*13)%45;
-  const side=Math.sin(phase)*(.6+travel*.14);
-  windDebrisPoint.set(origin.x+windX*travel-windZ*side,
-   .25+Math.abs(Math.sin(phase+gustAge*10))*.6,
-   origin.z+windZ*travel+windX*side);
-  windDustPool.add(windDebrisPoint,Math.max(.02,(.5+seed*1.7)*airFade));
+ for(let i=0;i<44;i++){
+  const seed=i/44,band=i%3;
+  const t=(seed+progress*(.55+band*.12))%1;
+  const travel=3+t*57;
+  const angle=travel*.24+band*2.094-progress*14;
+  const radius=2+t*13;
+  const side=Math.cos(angle)*radius;
+  const fade=pulse*Math.min(1,t*9,(1-t)*6);
+  windDebrisPoint.set(origin.x+dx*travel-dz*side,
+   .28+(1+Math.sin(angle))*radius*.29,
+   origin.z+dz*travel+dx*side);
+  windDustPool.add(windDebrisPoint,Math.max(.02,(1.35+t*4.6)*fade),angle);
   if(i%3===0){
-   windDebrisPoint.y=.14+Math.abs(Math.sin(gustAge*9+phase))*.4;
-   windLitterPool.add(windDebrisPoint,Math.max(.015,(.4+seed*.75)*airFade));
+   windDebrisPoint.y=.18+(1+Math.sin(angle+.9))*radius*.19;
+   windLitterPool.add(windDebrisPoint,Math.max(.02,(1.1+t*1.5)*fade),angle*3);
   }
  }
  windDustPool.end();windLitterPool.end();
- for(const fire of schoolFire){const delta=fire.root.position.clone().sub(origin),along=delta.dot(direction);if(along>0&&along<43&&delta.clone().addScaledVector(direction,-along).length()<8+along*.17)fire.suppression=Math.min(1,fire.suppression+dt*1.7);}
+ return foliageBend;
 }
 function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;pauloFirePoseUntil=elapsed+.26;sound('fire');const start=dragon.position.clone().add(new THREE.Vector3(facing*2.6,1.2,0)),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
 // Engine-independent gameplay timers; rendered shield is intentionally cosmetic.
@@ -1825,7 +1823,7 @@ let toastTimer=0;function message(t){document.getElementById('toast').textConten
 }
 function reset(){schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  for(const b of skyBursts){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose()}skyBursts.length=0;for(const m of distantStreaks)skyline.remove(m.sprite);distantStreaks.length=0;dangerZones.length=0;
- for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
+ for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
  if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
 function gameOver(){if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{document.getElementById('overlay').style.display='grid';showSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
@@ -2270,46 +2268,46 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
   stageGroundWind:()=>run('stageGroundWind',()=>{
-   // Exercise actual wind logic using temporary targets; preserve game state.
-   const before={gustTime,windCooldown,windActive,origin:gustOrigin.clone(),
-    direction:gustDirection.clone()};
-   const makeCar=(extra={})=>({root:new THREE.Group(),...extra});
-   const bike=makeCar({bike:true}),bus=makeCar({bus:true});
+   const makeCar=extra=>({root:new THREE.Group(),dir:-1,speed:7,laneZ:20,...extra});
+   const car=makeCar({}),bus=makeCar({bus:true}),truck=makeCar({truck:true});
    const pedestrian={g:new THREE.Group(),down:0};
-   bike.root.position.set(12,0,20);bus.root.position.set(12,0,20);
+   const vehicles=[car,bus,truck];
+   for(const v of vehicles)v.root.position.set(12,0,20);
    pedestrian.g.position.set(12,0,20);
-   cars.push(bike,bus);crowd.push(pedestrian);
+   const origin=new THREE.Vector3(0,0,20),direction=new THREE.Vector3(1,0,0);
+   const before={score,wave,hp};
+   const existingPuffs=skyBursts.splice(0);
    try{
-    gustId++;gustTime=.85;windCooldown=4;windActive=true;
-    gustOrigin.set(0,24,20);gustDirection.set(1,0,0);
-    updateDragonWind(.08);
-    // Real smoke-puff simulation, isolated from any ongoing background events.
-    const existingPuffs=skyBursts.splice(0);
+    let foliageBend=0,carTilt=0;
+    for(let i=0;i<12;i++){
+     foliageBend=Math.max(foliageBend,applyStreetGust(.05,origin,1,0,i/17,vehicles,[pedestrian]));
+     advancePedestrianWind(pedestrian,.05);
+     carTilt=Math.max(carTilt,Math.abs(car.root.rotation.x));
+    }
+    cinematicFX.setWind(new THREE.Vector3(0,24,20),direction,1);
     const testSmoke={m:{position:new THREE.Vector3(12,24,20),
      scale:new THREE.Vector3(1,1,1),material:{opacity:.58}},
      smoke:true,life:2,initialLife:2};
     skyBursts.push(testSmoke);
-    let smokeResult;
-    try{
-     updateSkyBursts(.08);
-     smokeResult={x:testSmoke.m.position.x,opacity:testSmoke.m.material.opacity};
-    }finally{
-     skyBursts.length=0;skyBursts.push(...existingPuffs);
+    updateSkyBursts(.08);
+    const personTilt=pedestrian.g.rotation.x,personX=pedestrian.g.position.x;
+    for(let i=0;i<80;i++){
+     advanceVehicleWind(car,.05);
+     advancePedestrianWind(pedestrian,.05);
     }
-    return {bikeX:bike.root.position.x,busX:bus.root.position.x,
-     personX:pedestrian.g.position.x,dustInstances:windDustPool.mesh.count,
-     litterInstances:windLitterPool.mesh.count,
+    return {busX:bus.root.position.x,truckX:truck.root.position.x,carTilt,
+     personX,personTilt,foliageBend,
+     personRecovered:pedestrian.windFall===0&&pedestrian.g.rotation.x===0,
+     carRecovered:car.windRecovery===0&&Math.abs(car.root.rotation.x)<.02,
+     statePreserved:score===before.score&&wave===before.wave&&hp===before.hp&&pedestrian.down===0,
+     dustInstances:windDustPool.mesh.count,litterInstances:windLitterPool.mesh.count,
      smokeWindStrength:cinematicFX.stats().windStrength,
-     puffX:smokeResult.x,puffOpacity:smokeResult.opacity};
+     puffX:testSmoke.m.position.x,puffOpacity:testSmoke.m.material.opacity};
    }finally{
-    cars.splice(cars.indexOf(bike),1);cars.splice(cars.indexOf(bus),1);
-    crowd.splice(crowd.indexOf(pedestrian),1);
-    gustTime=before.gustTime;windCooldown=before.windCooldown;
-    windActive=before.windActive;gustOrigin.copy(before.origin);
-    gustDirection.copy(before.direction);
-    windVisual.visible=windActive;
+    skyBursts.length=0;skyBursts.push(...existingPuffs);
     clearWindDebris();
-    cinematicFX.setWind(null,null,0);
+    updateWindPlanting(1);
+    cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
    }
   }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{

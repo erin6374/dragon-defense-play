@@ -2,6 +2,12 @@
 
 Updated November 7, 2026. Read this before changing code.
 
+## Street gale playtest
+
+On the feature branch, hold the primary fire control for at least 0.7 seconds, aim along Broad Street and release. Aim against approaching traffic to see buses and trucks slide backward. Try a gust from the school frontage to see the sidewalk planting bend and the dust spiral across the road. Tap to fire, and use the existing gas control independently. Wind recharges in four seconds.
+
+Street cone and impulse tuning live in `src/simulation/ground-wind.js`. The ground projection and the two debris pools are in `src/game.js`. `src/rendering/wind-planting.js` bends existing tree and shrub geometry and restores its rest pose after the gust. Use the browser QA run for the preview’s exact commit and download the artifact labeled `RC9c_Wind_Windows_Preview`.
+
 ## 1. Project overview and core concept
 
 **Tech Freire: Dragon Defense** is a browser action-defense game set around TECH Freire Charter School at 2221 North Broad Street, Philadelphia. The player controls a dragon, intercepts incoming meteors, protects the school and surrounding city, and progresses through waves and campaign chapters. Traffic, pedestrians, emergency vehicles, helicopters, fire, structural damage and building collapse animate the district. The current task is a major graphics overhaul, preserving existing gameplay and the separate Building Explorer project.

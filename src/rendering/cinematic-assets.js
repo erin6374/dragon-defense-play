@@ -1,3 +1,4 @@
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Dragon Defense 4.4 — coherent visual asset library, browser-native WebGL/PBR.
 // Original generated artwork, no third-party imagery, compatible with Unity texture export.
 export function createVisualMaterials(THREE){
@@ -214,13 +215,21 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  }
  const leafGeometry=new THREE.SphereGeometry(1,12,8),trunkMaterial=boxMaterial(THREE,0x65503b,.94,.01);
  const foliageMaterials=[0x354d33,0x496039,0x61764a].map(color=>boxMaterial(THREE,color,1,0));
- const leaves=foliageMaterials.map(m=>{const mesh=new THREE.InstancedMesh(leafGeometry,m,200);mesh.frustumCulled=false;scene.add(mesh);return mesh});const matrix=new THREE.Object3D();let leafIndex=[0,0,0];
+ const leaves=foliageMaterials.map(m=>{const mesh=new THREE.InstancedMesh(leafGeometry,m,200);mesh.frustumCulled=false;scene.add(mesh);return mesh});const matrix=new THREE.Object3D(),windTrees=[];const leafIndex=[0,0,0];
  for(const x of [-47,-27,28,46]){
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.09,.19,3.5,14),trunkMaterial);trunk.position.set(x,1.7,8.95);street.add(trunk);
-  for(let branch=0;branch<7;branch++){const angle=branch*2.4,end=new THREE.Vector3(x+Math.cos(angle)*1.1,3.1+branch*.15,8.95+Math.sin(angle)*.9),start=new THREE.Vector3(x,2.2,8.95),v=end.clone().sub(start);
-   const twig=new THREE.Mesh(new THREE.CylinderGeometry(.025,.065,v.length(),10),trunkMaterial);twig.position.copy(start.add(end).multiplyScalar(.5));twig.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());street.add(twig);
-   for(let j=0;j<18;j++){const a=j*2.399+branch,r=.3+Math.sqrt(j/18)*.75;matrix.position.set(end.x+Math.cos(a)*r,end.y+Math.sin(j*1.7)*.55,end.z+Math.sin(a)*r);matrix.scale.set(.26+(j%3)*.06,.18+(j%4)*.045,.27);matrix.rotation.set(j,branch,0);matrix.updateMatrix();const kind=(j+branch)%3;leaves[kind].setMatrixAt(leafIndex[kind]++,matrix.matrix)}
+  const root=new THREE.Group();root.position.set(x,-.05,8.95);street.add(root);
+  const instances=[],wood=[];
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.09,.19,3.5,14),trunkMaterial);trunk.position.y=1.75;wood.push(trunk);
+  for(let branch=0;branch<7;branch++){const angle=branch*2.4,end=new THREE.Vector3(Math.cos(angle)*1.1,3.15+branch*.15,Math.sin(angle)*.9),start=new THREE.Vector3(0,2.25,0),v=end.clone().sub(start);
+   const twig=new THREE.Mesh(new THREE.CylinderGeometry(.025,.065,v.length(),10),trunkMaterial);twig.position.copy(start.add(end).multiplyScalar(.5));twig.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());wood.push(twig);
+   for(let j=0;j<18;j++){const a=j*2.399+branch,r=.3+Math.sqrt(j/18)*.75;matrix.position.set(end.x+Math.cos(a)*r,end.y+Math.sin(j*1.7)*.55,end.z+Math.sin(a)*r);matrix.scale.set(.26+(j%3)*.06,.18+(j%4)*.045,.27);matrix.rotation.set(j,branch,0);matrix.updateMatrix();const kind=(j+branch)%3;instances.push({mesh:leaves[kind],index:leafIndex[kind]++,rest:matrix.matrix.clone()})}
   }
+  const woodParts=wood.map(mesh=>{mesh.updateMatrix();return mesh.geometry.applyMatrix4(mesh.matrix);});
+  root.add(new THREE.Mesh(mergeGeometries(woodParts),trunkMaterial));
+  for(const part of woodParts)part.dispose();
+  root.updateMatrix();
+  for(const leaf of instances)leaf.mesh.setMatrixAt(leaf.index,new THREE.Matrix4().multiplyMatrices(root.matrix,leaf.rest));
+  windTrees.push({root,instances});
  }
  for(let i=0;i<3;i++){leaves[i].count=leafIndex[i];leaves[i].instanceMatrix.needsUpdate=true}
  // Sidewall materials without modifying facade panel IDs or destruction dependencies.
@@ -241,7 +250,7 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
    else if([0xa9a8a0,0xb0a99d,0xb8b1a6].includes(o.material.color?.getHex())||o.material.userData?.pbrType==='limestone')o.material=bank.sidewalk;
   }
  });
- return {street,updated};
+ return {street,updated,windTrees};
 }
 
 // Weather layer: particle strip in the camera-visible street, with low fixed draw cost.

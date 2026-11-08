@@ -1,3 +1,8 @@
+## 2026-11-08 — Paulo’s street gale
+- Strengthened the held-and-released wind attack. Oncoming buses and trucks slide backward, passenger cars rock onto their sides, and pedestrians tumble, skid and get back up.
+- Street trees and foreground shrubs bend with the gust. Larger dust spirals and tumbling litter use the two existing instanced draw batches.
+- Wind falls are separate from blast injuries and ambulance rescue scoring. Added browser regression checks for displacement, tilt, recovery, foliage, particle limits and unchanged score, health and wave.
+
 ## 2026-11-08 — Nearest swept 3D meteor interception (QA pending)
 - Player fireballs now test the whole frame segment against meteor collision spheres and select the earliest 3D entry contact, rather than taking the first match in reverse meteor array order. Retains existing damage, shrapnel, scoring, fragment and blast effects.
 - Added source-level QA guard; exact-head browser QA and visual/gameplay verification still required. Does not yet apply to wind, gas or helicopters.
