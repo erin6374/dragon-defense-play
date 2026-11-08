@@ -1,3 +1,8 @@
+## 2026-11-08 — Runtime QA for ordinary-wave Paulo position (pending exact-head QA)
+- Added QA-only `advanceOrdinaryWave()` hook to advance a live non-chapter wave through the real `newWave()` path.
+- Browser regression starts wave 2, moves Paulo to (31,23,15), advances to wave 3 and asserts x/y/z world coordinates preserved; restores wave 1 before existing QA.
+- No gameplay changes, deployment or performance claims. Verify exact-head QA before acceptance.
+
 ## 2026-11-08 — Paulo retains free-flight position between waves (QA pending)
 - Removed unconditional `perchDragon(false)` from `newWave()`; ordinary wave transitions no longer teleport Paulo to the school roof. Initial game reset and explicit chapter settlement perches remain.
 - Added source-level browser QA assertions for the ordinary-wave function and initial reset. Requires exact-head browser QA and gameplay inspection; no real GPU performance claim.
