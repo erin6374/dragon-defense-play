@@ -736,7 +736,15 @@ try {
       rig.applyPose(.25,'fire',1);
       const writesGuarded=rig.jaw.rotation.z===jawAfterDispose;
       const secondCleanup=rig.dispose();
+      const membraneSample=rig.membranePanels[0].mesh.geometry;
+      const tint=membraneSample.getAttribute('color');
+      const tintRoot=tint?.getX(0),tintEdge=tint?.getX(6*13+6);
+      const tintCoverage=rig.membranePanels.every(p=>
+        p.mesh.material.vertexColors&&
+        p.mesh.geometry.getAttribute('color')?.count===
+        p.mesh.geometry.getAttribute('position').count);
       return {mounted,panels:rig.membranePanels.length,
+        tintRoot,tintEdge,tintCoverage,
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
@@ -755,6 +763,10 @@ try {
     assert.deepEqual(reusableRig.secondCleanup,{geometries:0,materials:0},
       'repeated cleanup is a no-op and cannot dispose resources twice');
     assert.equal(reusableRig.panels,12,'shared geometry retains every membrane');
+    assert.equal(reusableRig.tintCoverage,true,
+      'every Paulo membrane panel has a GPU vertex color for each position vertex');
+    assert.ok(reusableRig.tintEdge>reusableRig.tintRoot+.15,
+      'outer wing membranes are visibly brighter than the wing roots');
     assert.equal(reusableRig.tail,7,'shared geometry retains seven tail joints');
     assert.deepEqual(reusableRig.toothCount,[12,12],'shared geometry retains animated teeth');
     assert.equal(reusableRig.visits.length,12,'independent factory supports all animation states');
