@@ -32,6 +32,7 @@ const descriptions={
  flight:'Moderate wingbeats with a stretched torso, streamlined legs and tail.',
  glide:'Broad stable wings, minimal flapping, small wrist corrections and tail stabilization.',
  bank:'Asymmetric wing angles and a delayed head turn communicate a directional change.',
+ 'ground-turn':'Rear up on the hind legs, lift the forefeet and pivot toward the opposite direction before settling.',
  inhale:'Chest expands, head draws back, wings brace; anticipation before the gust.',
  wind:'Neck extends, jaws open, wings brace and the body recoils slightly during exhale.',
  fire:'Head thrusts forward, jaws open wider and the torso braces for sustained fire.',

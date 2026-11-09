@@ -1,3 +1,7 @@
+## Latest continuation — grounded Paulo direction reversal (November 9)
+
+QA #318 passed for `3ba3948` (https://github.com/erin6374/dragon-defense-play/actions/runs/42561480882). This continuation adds a distinct grounded `ground-turn` animation with hind-leg support, lifted forefeet, transient rear-up and mirrored torso/head pivot; it is visual-only and does not flip gameplay facing or hitboxes. The standalone dragon lab and browser QA cover the new pose and save a side-view screenshot. **Do not claim the new exact-head QA passed until the workflow completes.** Do not merge main, change production, or fabricate the licensed European Dragon asset.
+
 ## Latest continuation — QA #317 regression repair (November 8 late night)
 
 The latest head `2e67ecf` failed [browser QA #317](https://github.com/erin6374/dragon-defense-play/actions/runs/42556616944) in the Paulo lab at an outdated assertion requiring zero root pitch while the new coordinated bank deliberately introduces a shallow nose-down pitch. The failure occurred after gameplay tests and before the rest of the dragon-lab checks. A narrow test-only repair now asserts shallow symmetric bank pitch; the separate reusable-rig test continues to verify signed yaw/head lead and mirrored roll. **Do not label this fix verified until exact-head browser QA passes.** No changes to wind, gameplay, original/new toggle, licensed FBX status, or production.

@@ -217,30 +217,34 @@ let disposed=false;
 function applyPose(t,state,bankDirection=1,poseElapsed=t){
  if(disposed)return; // never update buffers after the fallback releases this rig
  const cycle=Math.sin(t*5),soft=Math.sin(t*2);
- const airborne=!['idle','land'].includes(state);
+ const airborne=!['idle','land','ground-turn'].includes(state);
  const power=state==='hover'?1:state==='takeoff'?1.25:state==='flight'?.6:state==='hit'?.85:state==='bank'?.48:.07;
  const bank=state==='bank'?.35*bankDirection:0;
  // Spread the wings and fan the outer panels to brake before touchdown.
  // This envelope shares the 0.6-second clock with the leg extension.
  const transition=Math.min(1,Math.max(0,poseElapsed/.6));
  const landingBrake=state==='land'?1-transition:0;
- root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
+ // A grounded reversal is a bounded 0.8s rear-up/pivot gesture. The game
+ // retains authority over the actual facing flip and collision geometry.
+ const groundTurn=state==='ground-turn'?
+  Math.sin(Math.PI*Math.min(1,Math.max(0,poseElapsed)/.8)):0;
+ root.position.y=(airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035)+groundTurn*.18;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
  root.rotation.x=bank*(.78+.22*Math.cos(t*.9));
  // Coordinated yaw and slight nose-down pitch make a banking turn read as
  // aerodynamic steering rather than an isolated body roll. Visual-only;
  // the gameplay parent still controls facing, physics and hitboxes.
- root.rotation.y=bank*.48;
+ root.rotation.y=bank*.48+groundTurn*bankDirection*.36;
  // Impact recoil decays from time IN THIS pose, not session time. Otherwise
  // a late-level hit would vanish because the global wingbeat clock is large.
  root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:
-  state==='bank'?-.09*Math.abs(bank)/.35:0;
+  state==='bank'?-.09*Math.abs(bank)/.35:state==='ground-turn'?groundTurn*.28:0;
  torso.scale.set(1,1+(state==='inhale'?.16:0)+soft*.015,1);
  chest.scale.set(1,1+(state==='inhale'?.19:state==='wind'?.10:0),1);
  neck.rotation.z=state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
  head.rotation.z=state==='wind'||state==='fire'?-.16:state==='gas'?.23:Math.sin(t*.9)*.035;
  // Paulo looks into the turn before the tail finishes steering behind him.
- head.rotation.y=state==='bank'?bank*.35:0;
+ head.rotation.y=state==='bank'?bank*.35:groundTurn*bankDirection*.25;
  jaw.rotation.z=['wind','fire','gas'].includes(state)?-.37:state==='inhale'?-.11:0;
  wings.forEach(({shoulder,elbow,wrist,side})=>{
   const phase=cycle*power;
@@ -250,13 +254,13 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   const braced=state==='wind'?.26:state==='inhale'?.15:0;
   const fireFold=state==='fire'?.25:0;
   shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24+braced+landingBrake*.10);
-  shoulder.rotation.y=side*(state==='land'?-.15-landingBrake*.26:state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
+  shoulder.rotation.y=side*(state==='ground-turn'?.45+groundTurn*.13:state==='land'?-.15-landingBrake*.26:state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
   elbow.rotation.x=side*(.12+phase*.22+braced*.65+landingBrake*.18);
   wrist.rotation.y=side*(state==='land'?-.06-landingBrake*.28:state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
  });
  tail.forEach((seg,i)=>{
   // The tail trails into the turn, rather than waving independently of yaw.
-  seg.rotation.y=Math.sin(t*1.7-i*.5)*.09+bank*(.22-i*.025);
+  seg.rotation.y=Math.sin(t*1.7-i*.5)*.09+bank*(.22-i*.025)+groundTurn*bankDirection*.13;
   seg.rotation.z=Math.sin(t*1.15-i*.35)*.045;
  });
  // Eagles draw their legs back into the body after takeoff. Paulo has four
@@ -267,9 +271,10 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   state==='takeoff'?transition:state==='land'?1-transition:
   state==='hover'?.28:airborne?.55:0;
  legs.forEach(({hip,knee,foot,fore})=>{
-  hip.rotation.z=-(fore?1.14:1.02)*tuck;
-  knee.rotation.z=-(fore?.56:.48)*tuck+(state==='land'?.2*(1-tuck):0);
-  foot.rotation.z=(fore?.64:.55)*tuck;
+  // Hind legs bear weight while the forelegs lift as Paulo rears up.
+  hip.rotation.z=-(fore?1.14:1.02)*tuck+(fore?.55:-.22)*groundTurn;
+  knee.rotation.z=-(fore?.56:.48)*tuck+(state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
+  foot.rotation.z=(fore?.64:.55)*tuck+(fore?.2:0)*groundTurn;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
  breathPreview.update(state,t);

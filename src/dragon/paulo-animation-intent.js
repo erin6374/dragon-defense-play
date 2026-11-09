@@ -3,7 +3,7 @@
 // controls, timers, health, hitboxes or gameplay side effects live here.
 // The laboratory and upcoming gameplay renderer must honor these state names.
 export const PAULO_POSES = Object.freeze([
-  'idle','hover','flight','glide','bank','inhale',
+  'idle','hover','flight','glide','bank','ground-turn','inhale',
   'wind','fire','gas','hit','land','takeoff'
 ]);
 
@@ -21,6 +21,8 @@ export function choosePauloPose(signals = {}) {
   if(signals.windCharging) return 'inhale';
   if(signals.fireAttack) return 'fire';
   if(signals.landing) return 'land';
+  // A grounded direction reversal uses a rear-up/pivot instead of an aerial bank.
+  if(signals.turning && (signals.perched || signals.active === false)) return 'ground-turn';
   if(signals.turning) return 'bank';
   if(signals.gliding) return 'glide';
   if(signals.perched || signals.active === false) return 'idle';

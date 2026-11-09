@@ -180,7 +180,7 @@ assert.equal(militaryWindImpulse({x:12,y:13,z:70},windOrigin,windAim,.05),null,'
 assert.equal(militaryWindImpulse({x:12,y:13,z:15},windOrigin,windAim,0),null,'paused game does not deflect missiles');
 const bounded=militaryWindImpulse({x:12,y:13,z:15},windOrigin,windAim,4);
 assert.ok(bounded.x<rocketWind.x*1.3,'a stalled frame cannot launch a rocket with unbounded energy');
-const expectedPauloPoses=['idle','hover','flight','glide','bank','inhale','wind','fire','gas','hit','land','takeoff'];
+const expectedPauloPoses=['idle','hover','flight','glide','bank','ground-turn','inhale','wind','fire','gas','hit','land','takeoff'];
 assert.deepEqual(PAULO_POSES,expectedPauloPoses);
 for(const [signals,state] of [
  [{stunned:true,windGust:true},'hit'],
@@ -191,6 +191,8 @@ for(const [signals,state] of [
  [{fireAttack:true,turning:true},'fire'],
  [{landing:true,turning:true},'land'],
  [{turning:true,moving:true},'bank'],
+ [{turning:true,perched:true},'ground-turn'],
+ [{turning:true,active:false},'ground-turn'],
  [{gliding:true,moving:true},'glide'],
  [{perched:true},'idle'],
  [{active:false},'idle'],
@@ -1151,6 +1153,16 @@ try {
       const sampleLegs=()=>rig.legs.map(({hip,knee,foot})=>({
         hip:hip.rotation.z,knee:knee.rotation.z,foot:foot.rotation.z
       }));
+      rig.applyPose(.75,'ground-turn',1,0);
+      const groundTurnStart={pitch:rig.root.rotation.z,yaw:rig.root.rotation.y};
+      rig.applyPose(.75,'ground-turn',1,.4);
+      const groundTurnRight={pitch:rig.root.rotation.z,yaw:rig.root.rotation.y,
+        rise:rig.root.position.y,headYaw:rig.head.rotation.y,legs:sampleLegs()};
+      rig.applyPose(.75,'ground-turn',-1,.4);
+      const groundTurnLeft={pitch:rig.root.rotation.z,yaw:rig.root.rotation.y,
+        headYaw:rig.head.rotation.y};
+      rig.applyPose(.75,'ground-turn',1,.9);
+      const groundTurnEnd={pitch:rig.root.rotation.z,yaw:rig.root.rotation.y};
       rig.applyPose(.75,'idle',1);
       const idleLegs=sampleLegs();
       rig.applyPose(.75,'hover',1);
@@ -1193,6 +1205,7 @@ try {
         breath:rig.breathPreview.snapshot(),visits,right,left,
         idleLegs,hoverLegs,flightLegs,takeoffStart,takeoffEnd,landingStart,landingEnd,
         landingWingStart,landingWingEnd,
+        groundTurnStart,groundTurnRight,groundTurnLeft,groundTurnEnd,
         lateHitRecoil,earlyHitRecoil,
         cleanup,detached,writesGuarded,secondCleanup};
     });
@@ -1214,7 +1227,7 @@ try {
       'outer wing membranes are visibly brighter than the wing roots');
     assert.equal(reusableRig.tail,7,'shared geometry retains seven tail joints');
     assert.deepEqual(reusableRig.toothCount,[12,12],'shared geometry retains animated teeth');
-    assert.equal(reusableRig.visits.length,12,'independent factory supports all animation states');
+    assert.equal(reusableRig.visits.length,13,'independent factory supports all animation states');
     assert.ok(reusableRig.visits.every(p=>Number.isFinite(p.jaw)&&Number.isFinite(p.chest)),
       'standalone rig produces finite jaw and chest transforms');
     assert.equal(reusableRig.breath.visibleEmitters,0,
@@ -1243,6 +1256,20 @@ try {
       Math.abs(wing.wristSweep)>Math.abs(reusableRig.landingWingEnd[i].wristSweep)+.1 &&
       Math.abs(wing.elbowLift-reusableRig.landingWingEnd[i].elbowLift)>.15),
       'landing flares both wing shoulders, elbows and wingtips before settling');
+    assert.ok(Math.abs(reusableRig.groundTurnStart.pitch)<1e-8 &&
+      Math.abs(reusableRig.groundTurnEnd.pitch)<1e-8 &&
+      reusableRig.groundTurnRight.pitch>.25 && reusableRig.groundTurnRight.rise>.1,
+      'grounded turn rears up on hind legs then returns to planted posture');
+    assert.ok(reusableRig.groundTurnRight.yaw>.3 && reusableRig.groundTurnLeft.yaw<-.3 &&
+      Math.abs(reusableRig.groundTurnRight.yaw+reusableRig.groundTurnLeft.yaw)<1e-8 &&
+      reusableRig.groundTurnRight.headYaw>.2 && reusableRig.groundTurnLeft.headYaw<-.2,
+      'grounded reversal pivots and looks toward either direction symmetrically');
+    assert.ok(reusableRig.groundTurnRight.legs.filter((leg,i)=>i%2===1).length===2 &&
+      reusableRig.groundTurnRight.legs[1].hip>.5 &&
+      reusableRig.groundTurnRight.legs[3].hip>.5 &&
+      reusableRig.groundTurnRight.legs[0].hip<-.2 &&
+      reusableRig.groundTurnRight.legs[2].hip<-.2,
+      'forelegs lift while both hind legs brace the ground turn');
     assert.ok(Math.abs(reusableRig.right.roll+reusableRig.left.roll)<.000001,
       'standalone rig mirrors longitudinal bank rotation');
     assert.ok(Math.abs(reusableRig.right.wings[0]+reusableRig.left.wings[1])<.000001,
@@ -1464,6 +1491,21 @@ try {
     assert.equal(landingFrame.cameraType,'orthographic','landing reference uses side orthographic view');
     await lab.screenshot({path:'qa-output/16-paulo-landing-airbrake-side.png'});
     report.pauloLandingAirbrakeReference=landingFrame.referenceFrame;
+    // Deterministic mid-pivot silhouette, independent of gameplay facing flips.
+    await lab.evaluate(()=>{
+      window.__PAULO_LAB_QA.setState('ground-turn');
+      const timeline=document.querySelector('#timeline');
+      timeline.value='0.4';timeline.dispatchEvent(new Event('input',{bubbles:true}));
+      const view=document.querySelector('#view');
+      view.value='side';view.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+    const groundTurnFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(groundTurnFrame.state,'ground-turn','grounded pivot reference uses the rear-up pose');
+    assert.ok(groundTurnFrame.rootPitch>.25,'grounded pivot reference visibly rears up');
+    assert.ok(groundTurnFrame.referenceFrame?.maxX<.95&&groundTurnFrame.referenceFrame?.maxY<.95,
+      'grounded pivot silhouette fits the side reference frame');
+    await lab.screenshot({path:'qa-output/17-paulo-ground-turn-side.png'});
+    report.pauloGroundTurnReference=groundTurnFrame.referenceFrame;
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};

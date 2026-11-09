@@ -1,3 +1,7 @@
+## Grounded Paulo turning checkpoint (November 9)
+
+Prior head `3ba3948` passed QA #318. Added `ground-turn` intent for perched/inactive direction changes, a 0.8s rear-up and directional pivot in the procedural rig, browser regression assertions and `17-paulo-ground-turn-side.png`. The gameplay parent retains control of facing/hitboxes; this animation only anticipates the reversal. New exact-head QA and visual review pending. The licensed European Dragon FBX is still not in GitHub. Production and Building Explorer unchanged.
+
 ## QA #317 banking-pitch regression repair (November 8 late night)
 
 The full browser job on `2e67ecf` failed at `qa/browser.mjs:1345` because the old bank-pose test asserted zero pitch, incompatible with the newly added deliberate shallow nose-down pitch. The repair changes only the browser assertion to require a small, direction-symmetric negative pitch; the existing yaw/head-lead/roll assertions remain. New exact-head QA is required before preview certification. No model binaries imported, no gameplay or production edits.
