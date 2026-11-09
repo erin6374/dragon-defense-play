@@ -139,6 +139,22 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
+ // Persistent fire is a preallocated billboard, not a skyscraper demolition effect.
+ // Each landmark reuses this single atlas; no new GPU resource is allocated per strike.
+ const fireCanvas=document.createElement('canvas');
+ fireCanvas.width=64;fireCanvas.height=96;
+ const fireCtx=fireCanvas.getContext('2d');
+ for(let i=0;i<5;i++){
+  const x=32+Math.sin(i*2.1)*6,y=78-i*14,r=18-i*2;
+  const grad=fireCtx.createRadialGradient(x,y,1,x,y,r);
+  grad.addColorStop(0,'rgba(255,240,151,.86)');
+  grad.addColorStop(.44,'rgba(255,114,26,.65)');
+  grad.addColorStop(1,'rgba(205,43,8,0)');
+  fireCtx.fillStyle=grad;fireCtx.fillRect(x-r,y-r,2*r,2*r);
+ }
+ const fireTexture=new THREE.CanvasTexture(fireCanvas);
+ fireTexture.colorSpace=THREE.SRGBColorSpace;
+ const fireMaterial=new THREE.SpriteMaterial({map:fireTexture,transparent:true,depthWrite:false,depthTest:true,opacity:.75,blending:THREE.AdditiveBlending});
  const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
@@ -281,6 +297,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // Smoke lives in stable skyline space rather than inheriting the tower's
   // shrinking/tilting collapse transform.
   group.add(smokeSprite);
+  const fireSprite=new THREE.Sprite(fireMaterial.clone());
+  fireSprite.name='landmark-persistent-fire-'+d.id;
+  fireSprite.visible=false;
+  fireSprite.position.set(g.position.x,d.h*.68,g.position.z+d.depth/2+.75);
+  fireSprite.scale.set(5,9,1);
+  group.add(fireSprite);
   const scorchSprite=new THREE.Sprite(scorchMaterial.clone());
   scorchSprite.name='landmark-facade-scorch-'+d.id;
   scorchSprite.visible=false;
@@ -289,7 +311,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   g.add(scorchSprite);
   const smokeOrigin=new THREE.Vector3(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
   towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
-   impactSprite,impactLocal:new THREE.Vector3(),smokeSprite,smokeOrigin,scorchSprite,
+   impactSprite,impactLocal:new THREE.Vector3(),smokeSprite,smokeOrigin,fireSprite,fireBaseWidth:0,scorchSprite,
    impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
@@ -310,7 +332,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   distantHelis.push({group:h,rotor,nav,seed:i*13.1,x0:-82+i*55,y0:45+(i%2)*18,speed:i===1?-1:1});
  }
  let time=-1,lastPhase=-1,damage=0;
- function strikeNearest(localX){
+ function strikeNearest(localX,intensity=0){
+  intensity=Math.max(0,Math.min(1,intensity));
   // The skyline's towers share this group's local coordinates. Snap a distant
   // streak to the nearest tower facade rather than exploding in empty sky.
   let selected=towers[0],distance=Infinity;
@@ -341,9 +364,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   tower.impactEnergy=1;
   // This is deliberately a small distant damage contribution: foreground
   // school and neighborhood health continue to use their existing simulation.
-  // Distant strikes are an independent disaster, not just a reaction to
-  // damage on the player's block. Repeated hits can eventually break a tower.
-  tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07);
+  // Repeated strikes scar and burn towers without deforming or collapsing them.
+  tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07+intensity*.04);
   // Smoke density and width depend only on accumulated strikes, not time.
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
@@ -354,7 +376,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  setDamage(damage); // Apply the new tower damage immediately, even in quiet scenes.
+  const flameWidth=(2.2+Math.min(1,tower.strikeDamage/.30)*2.5)*(1+intensity*1.45);
+  tower.fireBaseWidth=flameWidth;
+  tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.64,tower.smokeOrigin.z+.10);
+  tower.fireSprite.scale.set(flameWidth,flameWidth*1.7,1);
+  tower.fireSprite.material.opacity=Math.min(.95,.54+intensity*.28+tower.strikeDamage*.16);
+  tower.fireSprite.visible=true;
+  setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
   tower.scorchSprite.visible=true;
   const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
   tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
@@ -380,32 +408,18 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   farMat.color.setRGB(.91+twilight*.09,.95-twilight*.035,1-twilight*.12);
  }
  function setDamage(value){
+  // Artistic rule: Philadelphia's distant skyscrapers never collapse.
+  // Neighborhood health still changes explosion frequency, flames and smoke,
+  // but landmark height, transform and silhouette are always preserved.
   damage=Math.max(damage,Math.max(0,Math.min(1,value)));
-  towers.forEach((t,i)=>{
-   const threshold=.24+i*.077;
-   const collapse=Math.max(0,Math.min(1,(damage+t.strikeDamage-threshold)/.23));
-   if(Math.abs(t.collapse-collapse)<.02)return;
-   t.collapse=collapse;
-   // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
-   t.group.scale.y=1-collapse*.86;
-   if(i%3===0){
-    t.group.rotation.z=collapse*.10*(i%2?1:-1);
-    // The profile starts at y=0. Lift the rotated lower corner to ground
-    // instead of translating a tall intact facade below the street datum.
-    t.group.position.y=Math.abs(Math.sin(t.group.rotation.z))*t.def.w*.5;
-   }else t.group.position.y=0;
-   // The small instanced rubble is already settled at ground level. Large
-   // facade sections release once and fall over time in update(), independent
-   // of the tower's transform (no rigid-body allocation during the collapse).
-   t.ruin.visible=collapse>.18;
-   if(collapse>.18&&!t.fallActive){
-    t.fallActive=true;
-    t.fallSettled=false;
-    t.fallElapsed=0;
-   }
-   // Emission is derived in update() rather than repeatedly multiplied here.
-   // Damage updates must not accumulate artificial darkening each time.
-  });
+  for(const t of towers){
+   t.collapse=0;
+   t.group.scale.y=1;
+   t.group.rotation.z=0;
+   t.group.position.y=0;
+   t.ruin.visible=false;
+   t.fallActive=false;
+  }
  }
  function update(elapsed,darkness=0,dt=1/60){
   for(let i=0;i<beacons.length;i++){
@@ -448,6 +462,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     if(allGrounded)t.fallSettled=true;
    }
    if(t.strikeDamage>0){
+    const flamePulse=1+.10*Math.sin(elapsed*5.4+i*1.9);
+    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*1.7*(1+.06*Math.sin(elapsed*7.1+i)),1);
+    t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.13;
     // Only position changes over time; stable smoke size and opacity were set
     // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
@@ -463,7 +480,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
    }
    // Sustained, irregular electrical flicker signals damage across the distant
    // city without dynamic lights, added meshes, or per-frame allocations.
-   const broken=Math.min(1,t.collapse*2.5);
+   const broken=Math.min(1,t.strikeDamage*2.5);
    // Intact towers cannot flicker: skip the expensive sine/power pulse
    // until collapse begins. Damaged towers retain the exact prior formula.
    let unstable=1;
@@ -471,9 +488,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
     unstable=1-broken*(.50+.46*pulse);
    }
-   t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.collapse*.55)*unstable;
+   t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.strikeDamage*.30)*unstable;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallSettled=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallSettled=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.fireSprite.visible=false;t.fireSprite.material.opacity=0;t.fireBaseWidth=0;t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
