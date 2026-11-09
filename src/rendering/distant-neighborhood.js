@@ -339,13 +339,14 @@ export function createDistantNeighborhood({root,flameTexture}){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
    batches[home.tier].main.getMatrixAt(index,dummy.matrix);
+   const mainHeight=dummy.matrix.elements[5];
    const debris=rubbleBatches[home.tier],rubblePieces=[];
    for(let k=0;k<rubblePerBuilding;k++){
     debris.getMatrixAt(home.rubbleStart+k,dummy.matrix);
     const e=dummy.matrix.elements;
     rubblePieces.push({height:Math.hypot(e[4],e[5],e[6]),x:e[12],y:e[13],z:e[14]});
    }
-   return {damage:home.damage,fall:home.fall,height:dummy.matrix.elements[5],originalHeight:home.h,
+   return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     smoking:impactSmoke.has(home),burning:impactSmoke.has(home)};
   },
