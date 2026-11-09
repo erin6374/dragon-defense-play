@@ -1,3 +1,7 @@
+## Latest continuation — QA #317 regression repair (November 8 late night)
+
+The latest head `2e67ecf` failed [browser QA #317](https://github.com/erin6374/dragon-defense-play/actions/runs/42556616944) in the Paulo lab at an outdated assertion requiring zero root pitch while the new coordinated bank deliberately introduces a shallow nose-down pitch. The failure occurred after gameplay tests and before the rest of the dragon-lab checks. A narrow test-only repair now asserts shallow symmetric bank pitch; the separate reusable-rig test continues to verify signed yaw/head lead and mirrored roll. **Do not label this fix verified until exact-head browser QA passes.** No changes to wind, gameplay, original/new toggle, licensed FBX status, or production.
+
 ## Latest continuation — coordinated bank steering (November 8 late night)
 
 Previous commit `533ad4e` passed [browser QA #316](https://github.com/erin6374/dragon-defense-play/actions/runs/42550703490). The next narrow change adds visual-only signed body yaw, shallow nose-down pitch and head-leading yaw to the procedural Paulo banking pose, plus mirrored-turn regression assertions. Full browser QA for the new exact head is pending. No changes to gameplay movement, hitboxes, old/new model toggle or production. Ground rear-up turning and licensed European Dragon binary integration remain outstanding.

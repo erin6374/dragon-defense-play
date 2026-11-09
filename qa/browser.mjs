@@ -1342,8 +1342,9 @@ try {
     assert.ok(Math.abs(rightBank.rootRoll)>.05,'bank pose produces visible body roll');
     assert.ok(Math.abs(rightBank.rootRoll+leftBank.rootRoll)<.00001,
       'body roll reverses symmetrically for left/right bank');
-    assert.ok(Math.abs(rightBank.rootPitch)<.00001&&Math.abs(leftBank.rootPitch)<.00001,
-      'bank must not pitch the nose; longitudinal X is the roll axis');
+    assert.ok(rightBank.rootPitch<-.05&&leftBank.rootPitch<-.05&&
+      Math.abs(rightBank.rootPitch-leftBank.rootPitch)<.00001,
+      'bank keeps a symmetric shallow nose-down pitch; longitudinal X remains the roll axis');
     assert.ok(Math.abs(rightBank.wingAngles[0]+leftBank.wingAngles[1])<.00001&&
       Math.abs(rightBank.wingAngles[1]+leftBank.wingAngles[0])<.00001,
       'left and right wing shoulder poses mirror across banking directions');

@@ -1,3 +1,7 @@
+## QA #317 banking-pitch regression repair (November 8 late night)
+
+The full browser job on `2e67ecf` failed at `qa/browser.mjs:1345` because the old bank-pose test asserted zero pitch, incompatible with the newly added deliberate shallow nose-down pitch. The repair changes only the browser assertion to require a small, direction-symmetric negative pitch; the existing yaw/head-lead/roll assertions remain. New exact-head QA is required before preview certification. No model binaries imported, no gameplay or production edits.
+
 ## Latest coordinated bank steering checkpoint (November 8 late night)
 
 QA #316 passed for prior commit `533ad4e`. A new visual-only Paulo banking pass adds signed body yaw, a shallow nose-down pitch and head-leading yaw, with browser assertions for mirrored turns. New exact-head QA pending. Existing wind physics and original/new model toggle are preserved. Ground rear-up turning is still outstanding, as is integration of the licensed European Dragon asset. No real GPU validation or production changes.
