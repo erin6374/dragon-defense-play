@@ -1,9 +1,9 @@
 import {CROSS_STREETS, occupiesCrossStreet} from '../simulation/road-corridors.js';
 import * as THREE from 'three';
 
-// Eight-block eastward vista based on the supplied Google satellite view.
-// Block widths / lot positions are stylized estimates; no parcel GIS is implied.
-// Farther rows use instancing and facade silhouettes, not structural interiors.
+// Stylized North Philadelphia blocks. Philadelphia Historical Commission
+// nominations at 2101 and 2301 N Broad document rowhouse blocks, corner shops
+// and larger masonry buildings along the corridor. Lots here are illustrative.
 const STREET_AXIS=[
  {name:'N Park Ave',z:-88},{name:'N 13th St',z:-112},
  {name:'N Camac St',z:-143},{name:'N 12th St',z:-174},
@@ -17,7 +17,7 @@ const facades=[0x9a5c4a,0x6d423b,0xb7afa1,0xcac1b1,0x8a9192,0x8a674e,0xc0a38c,0x
 const distanceHaze=new THREE.Color(0x9daab4);
 function atmosphericFacade(hex,tier,row,lot){
  const c=new THREE.Color(hex);
- const haze=Math.min(.34,Math.max(0,tier)*.073);
+ const haze=Math.min(.48,Math.max(0,tier)*.085);
  c.lerp(distanceHaze,haze);
  // Slight deterministic tonal variation avoids identical distant houses.
  const variation=1+(((row*13+lot*7)%9)-4)*.012;
@@ -31,7 +31,8 @@ export function createDistantNeighborhood({root,flameTexture}){
   {name:'park-camac',min:-135,max:-87},
   {name:'camac-11th',min:-199,max:-135},
   {name:'11th-9th',min:-261,max:-199},
-  {name:'9th-8th',min:-326,max:-261}
+  {name:'9th-8th',min:-326,max:-261},
+  {name:'horizon',min:-520,max:-326}
  ];
  const cube=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
  const materials={
@@ -44,8 +45,8 @@ export function createDistantNeighborhood({root,flameTexture}){
   walk:new THREE.MeshLambertMaterial({color:0xaaa49a}),
   green:new THREE.MeshLambertMaterial({color:0x67785b}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(540,.2,353),materials.walk);
- base.position.set(0,-.63,-176.5);root.add(base);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(700,.2,532),materials.walk);
+ base.position.set(0,-.63,-266);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
@@ -81,24 +82,38 @@ export function createDistantNeighborhood({root,flameTexture}){
    }
  }
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
- const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311];
+ const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491];
+ for(const z of [-328,-362,-397,-435,-472,-510]){
+  street(0,z,440,8.5,slot(z));
+ }
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
-  for(let ix=0;ix<44;ix++){
-   const x=-161+ix*7.5+(row%2?2:0);
+  const horizon=tier===tiers.length-1;
+  const lots=horizon?56:44;
+  for(let ix=0;ix<lots;ix++){
+   const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate
    const vacant=(ix+row*7)%11===0 || (row===5&&ix>15&&ix<19);
    if(railGap||vacant){if((ix+row)%3===0)add(tier,'green',x,-.42,z,7.1,.05,11.5);continue;}
    const modern=(ix*5+row*3)%13===0;
    const commercial=(ix*7+row)%17===0;
-   const stories=modern?3:((ix+row)%4===0?3:2);
-   const h=(stories===2?7.3:10.7)+(ix%3)*.32;
-   const w=6.15+((ix+row)%3)*.28,d=10.1+((ix*2+row)%3)*.9;
+   const civic=(ix*11+row*3)%31===0;
+   const stories=civic?4:modern||commercial||(ix+row)%4===0?3:2;
+   const h=stories*(civic?4.0:commercial?3.95:3.52)+((ix*13+row*5)%7)*.19;
+   const w=civic?7.3:commercial?7:5.75+((ix+row)%4)*.44;
+   const d=civic?21:commercial?16:9+((ix*2+row)%5)*1.24;
    if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
    const color=facades[(ix*3+row*5)%facades.length];
    const home=registerBuilding(tier,x,z,w,h,d);
    addPart(home,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
    addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   if(horizon){
+    // At this distance, a parapet or stepped roof reads more clearly than windows.
+    if(civic||modern)addPart(home,'rooftop',x,h+.9,z-d*.15,w*.78,1.55,d*.62);
+    else addPart(home,'cornice',x,h+.27,z+d*.48,w+.12,.35,.33);
+    continue;
+   }
+   if(civic||commercial)addPart(home,'rooftop',x,h+.89,z-d*.16,w*.82,1.48,d*.68);
    // Small rooftop HVAC boxes and access housings give the distant rows a
    // varied architectural silhouette; all equipment shares one batch per tier.
    // Place equipment toward the rear, away from the front cornice.
