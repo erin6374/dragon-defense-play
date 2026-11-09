@@ -60,6 +60,8 @@ ell(head,mat.plates,[.82,-.08,0],[.57,.22,.31]);
 // Distinct reptilian muzzle: pronounced nasal bridge, protective brows and jaw.
 ell(head,mat.plates,[1.04,.075,0],[.37,.15,.28]);
 const jaw=pivot(head,[.55,-.22,0]);marker(jaw);
+// Animated muzzle socket follows the neck, head, banking and facing.
+const mouthAnchor=pivot(head,[1.39,-.11,0]);
 ell(jaw,mat.mouth,[.38,-.035,0],[.56,.105,.29]);
 ell(jaw,mat.armor,[.38,-.12,0],[.59,.14,.31]);
 for(const side of [-1,1]){
@@ -303,7 +305,7 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  }
  return {
   root,rigMarkers,wings,legs,tailProfile,membranePanels,plateIndex,
-  upperTeeth,lowerTeeth,breathPreview,head,jaw,neck,chest,
+  upperTeeth,lowerTeeth,breathPreview,head,jaw,mouthAnchor,neck,chest,
   applyPose,dispose,
   membraneDeformation(){
    const p=membranePanels[0],off=3*3*13+3*6+1;

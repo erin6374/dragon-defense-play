@@ -1,3 +1,10 @@
+## November 9 — RC9e breath-origin repair (exact-head QA pending)
+
+- Wind and fire now start at animated muzzle sockets for both legacy and Paulo preview models. The gust source and visible cone follow completed head, flight, turn and movement poses every frame rather than freezing at release.
+- Full 3D gust orientation matches gameplay direction; street-level dust remains intentional. No new draw calls or geometry for mouth sockets.
+- Browser QA samples legacy hover/turn and Paulo hover/flight/bank, asserting muzzle, physics source and visible cone coincide. RC9d meteor shatter retained. Version 5.4.0-rc.9.4 / 5.4-fireball-mouth-anchor-rc09e.
+- **Exact-head browser QA and preview verification required.** Main, production, Building Explorer and licensed European Dragon binaries unchanged.
+
 ## November 9 — Independent distant-fire sway (exact-head QA pending)
 
 - [QA #355](https://github.com/erin6374/dragon-defense-play/actions/runs/42627571793) **passed** for `8337b51`, including the corrected distant smoke-drift regression. The browser and Windows-preview artifact steps completed; the artifact screenshots have not been independently reviewed in this run.

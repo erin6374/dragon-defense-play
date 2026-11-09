@@ -66,6 +66,10 @@ assert.match(gameSource,/if\(t<hitT\)\{hitT=t;hitIndex=mi;\}/,
 assert.match(gameSource,/m\.hp-=fireballMeteorDamage\(m\)/,'direct hits use one-hit balance');
 assert.match(gameSource,/fireballMeteorDamage\(m,b\.playerFire,/,'player shockwaves use one-hit balance');
 assert.match(gameSource,/emitMeteorShrapnel\(m\.mesh\.position,/,'intercepts produce flaming shrapnel');
+assert.match(gameSource,/if\(windActive\)syncWindMouth\(\)/,'live gust refreshes mouth source each frame');
+assert.match(gameSource,/function releaseWind\(\)[\s\S]*?syncWindMouth\(\);gustTime=/,'gust starts at muzzle');
+assert.doesNotMatch(gameSource,/gustOrigin\.copy\(dragon\.position\)/,'gust cannot originate at body origin');
+assert.match(gameSource,/const start=getBreathMouthWorld\(new THREE\.Vector3\(\)\)/,'fireball starts at muzzle');
 assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'shockwave origin is tagged');
 // Paulo must not be teleported back to the roof at each ordinary wave.
 // Initial reset and chapter settlement retain their explicit perch behavior.
@@ -1179,6 +1183,28 @@ try {
   assert.ok(groundWind.result.puffOpacity>0&&groundWind.result.puffOpacity<.58,
    'wind disperses and slightly reduces smoke density');
   report.groundWind=groundWind.result;
+  const breath=await page.evaluate(()=>window.__DD_QA.stageBreathAnchor());
+  assert.ok(breath.ok,breath.error);
+  assert.deepEqual(breath.result.samples.map(s=>s.label),
+    ['legacy-hover','legacy-turn','paulo-hover','paulo-flight','paulo-turn']);
+  const breathDistance=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]));
+  for(const sample of breath.result.samples){
+    assert.ok(breathDistance(sample.mouth,sample.origin)<1e-5,
+      sample.label+' wind physics stays at animated muzzle');
+    assert.ok(breathDistance(sample.mouth,sample.visual)<1e-5,
+      sample.label+' visible cone stays connected to muzzle');
+    assert.ok(breathDistance(sample.direction,sample.visualForward)<1e-5,
+      sample.label+' full 3D cone follows gameplay direction');
+    assert.ok(breathDistance(sample.mouth,sample.dragon)>1,
+      sample.label+' muzzle is not ground/body origin');
+  }
+  assert.ok(breathDistance(breath.result.samples[0].mouth,breath.result.samples[1].mouth)>25,
+    'legacy muzzle follows flight displacement and turning');
+  assert.ok(breathDistance(breath.result.samples[2].mouth,breath.result.samples[3].mouth)>20,
+    'Paulo muzzle follows hover-to-flight displacement');
+  assert.ok(breathDistance(breath.result.samples[3].mouth,breath.result.samples[4].mouth)>1,
+    'Paulo muzzle follows head during banking turn');
+  report.breathOrigin=breath.result;
   const traffic=await page.evaluate(()=>window.__DD_QA.stageTrafficLighting());
   assert.ok(traffic.ok,traffic.error);
   assert.equal(traffic.result.dayVisible,false,'headlight road pool stays off during day');

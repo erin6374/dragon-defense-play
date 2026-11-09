@@ -1,8 +1,8 @@
 {
-  "build": "5.4-fireball-shatter-rc09d",
-  "version": "5.4.0-rc.9.3",
+  "build": "5.4-fireball-mouth-anchor-rc09e",
+  "version": "5.4.0-rc.9.4",
   "gameplay_base": "5.2.3",
-  "scope": "RC9d one-hit player fireball shockwaves and bounded meteor fragmentation; RC9c skyline retained",
+  "scope": "RC9e animated muzzle-anchored fire and gust, pose-aware browser regression; RC9d meteor shatter retained",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC9d — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
+  "release_status": "experimental development RC9e — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
 }

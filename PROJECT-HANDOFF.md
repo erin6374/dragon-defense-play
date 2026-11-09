@@ -1,3 +1,10 @@
+## November 9 — RC9e breath-origin repair (exact-head QA pending)
+
+- Wind and fire now start at animated muzzle sockets for both legacy and Paulo preview models. The gust source and visible cone follow completed head, flight, turn and movement poses every frame rather than freezing at release.
+- Full 3D gust orientation matches gameplay direction; street-level dust remains intentional. No new draw calls or geometry for mouth sockets.
+- Browser QA samples legacy hover/turn and Paulo hover/flight/bank, asserting muzzle, physics source and visible cone coincide. RC9d meteor shatter retained. Version 5.4.0-rc.9.4 / 5.4-fireball-mouth-anchor-rc09e.
+- **Exact-head browser QA and preview verification required.** Main, production, Building Explorer and licensed European Dragon binaries unchanged.
+
 ## November 9 — RC9d QA #358 legacy assertion repair (exact-head QA pending)
 
 [Browser QA #358](https://github.com/erin6374/dragon-defense-play/actions/runs/42654962237) failed at qa/browser.mjs:617 because the **old** test expected a large splitter to survive its first hit. That contradicts the newly requested one-hit fragmentation rule. Updated the browser assertion to require the first fireball to destroy the large rock and spawn at least three targetable medium fragments. No gameplay/rendering changes in this repair; new exact-head QA must pass before certification. Detached breath emitter fix remains next.

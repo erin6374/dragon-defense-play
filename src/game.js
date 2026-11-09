@@ -528,6 +528,8 @@ for(const sign of [-1,1]){
 }
 dragon.scale.set(1.14,1.14,1.14);
 dragon.scale.setScalar(1.20);
+// Legacy mouth socket follows the original visual snout's world transform.
+const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
 let dragonLeavingRoof=false;
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
@@ -545,6 +547,12 @@ const dragonVisuals=enhanceDragon(THREE,dragon,wings);
 // invulnerability and existing shock arcs continue to use the original root.
 const legacyDragonVisuals=dragon.children.map(object=>({object,visible:object.visible}));
 let pauloPreviewRig=null,pauloPoseDriver=null,pauloPreviewEnabled=false,pauloFirePoseUntil=0;
+// Use the active visual model's animated mouth, never a stale world emitter.
+const breathMouthScratch=new THREE.Vector3(),breathXAxis=new THREE.Vector3(1,0,0);
+function getBreathMouthWorld(out=breathMouthScratch){
+ const socket=pauloPreviewEnabled&&pauloPreviewRig?.mouthAnchor?pauloPreviewRig.mouthAnchor:legacyMouthAnchor;
+ return socket.getWorldPosition(out);
+}
 const pauloPreviewButton=document.querySelector('#paulo-toggle');
 // Public, visual-only comparison: the original dragon stays the default and
 // remains available as fallback. The new option is our procedural Paulo rig,
@@ -1509,9 +1517,18 @@ function updateBreathMeter(){const inhale=holdStart?Math.min(1,(performance.now(
  breathFill.style.width=Math.round(fraction*100)+'%';
  breathLabel.textContent=gustTime>0?'WIND GUST!':windCooldown>0?'BREATH RECHARGE '+Math.round(fraction*100)+'%':holdStart?'INHALING '+Math.round(inhale*100)+'%':'WIND READY — HOLD / RELEASE';
 }
+// The same live muzzle origin drives gust physics and the visible cone.
+function syncWindMouth(){
+ gustOrigin.copy(getBreathMouthWorld());
+ gustDirection.copy(pointer).sub(gustOrigin);
+ if(gustDirection.lengthSq()<.01)gustDirection.set(facing,0,0);
+ else gustDirection.normalize();
+ windVisual.position.copy(gustOrigin);
+ windVisual.quaternion.setFromUnitVectors(breathXAxis,gustDirection);
+}
 function gustCooldownReset(){windCooldown=4;gustId++;}
 function releaseWind(){if(!holdStart)return;const held=(performance.now()-holdStart)/1000;holdStart=0;if(held<.27){shoot();return;}if(held<.7||windCooldown>0||dragonStun>0||!active||paused){message(windCooldown>0?'WIND RECHARGING':'HOLD LONGER TO INHALE');return;}
- gustOrigin.copy(dragon.position);gustDirection.copy(pointer).sub(gustOrigin).normalize();if(gustDirection.lengthSq()<.1)gustDirection.set(facing,0,0);gustTime=.85;gustCooldownReset();gustRoadNotified=false;gustMissileNotified=false;windActive=true;sound('bonus');message('PAULO UNLEASHES A GALE!');}
+ syncWindMouth();gustTime=.85;gustCooldownReset();gustRoadNotified=false;gustMissileNotified=false;windActive=true;sound('bonus');message('PAULO UNLEASHES A GALE!');}
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;aim(e);if(e.button===2){e.preventDefault();gasAttack();return;}if(e.button!==0)return;holdStart=performance.now()});
 window.addEventListener('pointerup',()=>releaseWind());window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS)gasAttack();if(action===ACTIONS.DEBUG)profiler.toggle();});window.addEventListener('keyup',e=>{input.keyUp(e.code);if(e.code==='Space')holdStart=0;});window.addEventListener('blur',()=>input.clear());
@@ -1533,6 +1550,7 @@ if(mobileControls){
 const sharedShotGeometry=new THREE.IcosahedronGeometry(.34,1);
 function updateDragonWind(dt){
  windCooldown=Math.max(0,windCooldown-dt);gustTime=Math.max(0,gustTime-dt);windActive=gustTime>0;windVisual.visible=windActive;updateBreathMeter();
+ if(windActive)syncWindMouth();
  cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
  if(!windActive){clearWindDebris();updateWindPlanting(dt);for(const c of cars)advanceVehicleWind(c,dt);}
  // While inhaling, Paulo visibly swells and leans back; gust is emitted on release.
@@ -1540,7 +1558,7 @@ function updateDragonWind(dt){
  dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,1+inhaling*.22,Math.min(1,dt*8));
  if(!windActive)return;
  const origin=gustOrigin,direction=gustDirection,progress=1-gustTime/.85;
- windVisual.position.copy(origin);windVisual.rotation.z=Math.atan2(direction.y,direction.x);windVisual.scale.set(1,1,1);
+ windVisual.scale.set(1,1,1);
  for(const particle of windParticles){const t=(particle.seed+progress*.75)%1;
   const spread=1.2+t*15,swirl=Math.sin(t*17+particle.phase+elapsed*9)*(1+t*2);
   particle.sprite.position.set(1+t*48,Math.cos(particle.phase)*spread*particle.spread+swirl,Math.sin(particle.phase)*spread*.55);
@@ -1595,7 +1613,7 @@ function applyStreetGust(dt,origin,dx,dz,progress,vehicles=cars,people=crowd){
  windDustPool.end();windLitterPool.end();
  return foliageBend;
 }
-function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;pauloFirePoseUntil=elapsed+.26;sound('fire');const start=dragon.position.clone().add(new THREE.Vector3(facing*2.6,1.2,0)),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
+function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:.19);sessionStats.shots++;pauloFirePoseUntil=elapsed+.26;sound('fire');const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();const mesh=new THREE.Mesh(sharedShotGeometry,mats.fire);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(35),target,life:3.8})}
 // Engine-independent gameplay timers; rendered shield is intentionally cosmetic.
 const shieldMesh=new THREE.Mesh(new THREE.SphereGeometry(1,32,18,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x65d9ff,transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false}));
 shieldMesh.visible=false;scene.add(shieldMesh);
@@ -2091,7 +2109,7 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  return;
 }
 elapsed+=dt;if(updateChapterSettlement(dt))return;if(schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
- if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateDragonWind(dt);updateMeteorRadar(dt);
+ if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
  dragonMeteorTimer-=dt;if(wave>3&&wave<15&&dragonMeteorTimer<=0&&(!rallyLoop||remaining>0)){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
@@ -2126,6 +2144,8 @@ pauloPoseDriver?.update(dt,{
  turning:turnTime>0,moving:move!==0,rising:rise!==0,
  perched:!dragonLeavingRoof,horizontal:move,facing
 });
+// Wind samples the finished movement and head pose, not the previous frame.
+updateDragonWind(dt);
 updateExplosionLights(dt);
 if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  updateWaveProgress(dt);
@@ -2486,6 +2506,43 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
    return {fallElapsed:t.fallElapsed,slabY:t.slabs.map(s=>s.position.y),
     groundY:t.slabs.map(s=>s.userData.groundY)};
+  }),
+  stageBreathAnchor:()=>run('stageBreathAnchor',()=>{
+   const before={position:dragon.position.clone(),scale:dragon.scale.clone(),
+    rotation:dragon.rotation.clone(),aim:pointer.clone(),preview:pauloPreviewEnabled,
+    origin:gustOrigin.clone(),direction:gustDirection.clone(),visualPosition:windVisual.position.clone(),
+    visualRotation:windVisual.quaternion.clone(),visualVisible:windVisual.visible};
+   const samples=[];
+   const sample=label=>{
+    syncWindMouth();
+    samples.push({label,model:pauloPreviewEnabled?'paulo':'legacy',
+     dragon:dragon.position.toArray(),mouth:getBreathMouthWorld(new THREE.Vector3()).toArray(),
+     origin:gustOrigin.toArray(),visual:windVisual.position.toArray(),
+     direction:gustDirection.toArray(),
+     visualForward:breathXAxis.clone().applyQuaternion(windVisual.quaternion).toArray()});
+   };
+   try{
+    pointer.set(75,40,0);
+    setPauloPreview(false);
+    dragon.position.set(-20,12,15);dragon.rotation.set(0,0,0);dragon.scale.set(1.2,1,1.2);
+    sample('legacy-hover');
+    dragon.position.set(24,30,15);dragon.rotation.set(.17,.15,-.2);dragon.scale.x=-1.2;
+    sample('legacy-turn');
+    if(!setPauloPreview(true))throw Error('Paulo preview rig unavailable');
+    dragon.position.set(-12,20,15);dragon.rotation.set(.1,0,.05);dragon.scale.x=1.2;
+    pauloPreviewRig.applyPose(.35,'hover',1,.2);sample('paulo-hover');
+    dragon.position.set(12,38,15);dragon.rotation.set(.15,.1,.08);
+    pauloPreviewRig.applyPose(.85,'flight',1,.35);sample('paulo-flight');
+    dragon.scale.x=-1.2;dragon.rotation.set(.25,-.3,-.25);
+    pauloPreviewRig.applyPose(1.1,'bank',-1,.2);sample('paulo-turn');
+    return {samples};
+   }finally{
+    setPauloPreview(before.preview);
+    dragon.position.copy(before.position);dragon.scale.copy(before.scale);dragon.rotation.copy(before.rotation);
+    pointer.copy(before.aim);gustOrigin.copy(before.origin);gustDirection.copy(before.direction);
+    windVisual.position.copy(before.visualPosition);windVisual.quaternion.copy(before.visualRotation);
+    windVisual.visible=before.visualVisible;
+   }
   }),
   stageGroundWind:()=>run('stageGroundWind',()=>{
    const makeCar=extra=>({root:new THREE.Group(),dir:-1,speed:7,laneZ:20,...extra});
