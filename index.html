@@ -44,8 +44,8 @@
 <style id="desktop-alert-legibility">
 /* Keep the wave banner below the interception status on desktop. */
 @media (min-width:851px) {
-  /* The top HUD extends below 88px at 1024x576: never cover lives/health. */
-  #power-status { top:96px!important; }
+  /* Leave clearance below the full HUD, including Windows font metrics. */
+  #power-status { top:100px!important; }
   #toast { top:144px!important; }
   #hunter-warning { top:187px!important; }
 }
@@ -61,7 +61,7 @@
   #model-status { top:103px!important; width:min(45vw,280px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #campaign-chapter-label { top:124px!important; left:6px!important; font-size:10px!important; padding:3px 5px!important; max-width:50vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #toast { top:157px!important; max-width:56vw; text-align:center; font-size:clamp(15px,2.5vw,21px); line-height:1.15; overflow-wrap:break-word; }
-  #hunter-warning { top:194px!important; max-width:56vw; text-align:center; font-size:14px!important; }
+  #hunter-warning { top:191px!important; max-width:56vw; text-align:center; font-size:14px!important; }
 }
 @media (max-width:520px) {
   #hud > div { padding:2px!important; font-size:8px; }
