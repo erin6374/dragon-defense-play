@@ -1,3 +1,8 @@
+## 2026-11-08 — Restore in-game dragon model comparison (QA pending)
+- The original/experimental procedural Paulo model toggle is now visible in the normal full HUD, not gated behind `?paulo=1` or QA mode. Original dragon remains the default and is restored on toggle-off or preview-rig initialization failure. Gameplay root, attacks, score and physics are unchanged.
+- Button labels distinguish the procedural Paulo preview from the **not-yet-integrated licensed European Dragon FBX**. QA exercises real button clicks and confirms original fallback.
+- Cinematic HUD still hides low-priority buttons; switch to full HUD (H) to access the model toggle. Latest exact-head browser QA/screenshots pending. Flight leg-tuck, banked eagle-style turning and perched rear-up turning remain planned, not implemented.
+
 ## 2026-11-08 — Paulo’s street gale
 - Strengthened the held-and-released wind attack. Oncoming buses and trucks slide backward, passenger cars rock onto their sides, and pedestrians tumble, skid and get back up.
 - Street trees and foreground shrubs bend with the gust. Larger dust spirals and tumbling litter use the two existing instanced draw batches.
