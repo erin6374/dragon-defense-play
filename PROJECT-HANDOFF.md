@@ -1,3 +1,10 @@
+## November 9 — GitHub Actions incident; restore exact-head QA provenance (pending)
+
+- The current head `b2cc5bd` has [QA #364](https://github.com/erin6374/dragon-defense-play/actions/runs/42673421697) failed with **zero jobs**; the workflow file blob is identical to the one that passed [QA #362](https://github.com/erin6374/dragon-defense-play/actions/runs/42665399029). A retry of failed jobs returned HTTP 403: "This workflow run cannot be retried." No browser test ran in #364.
+- [GitHub's November 9 Actions/Checks API incident](https://www.githubstatus.com/) began 18:12 UTC and was mitigated at 18:43 UTC; this is consistent with the pre-job failures but does not conclusively establish their cause.
+- Reinstated the exact-PR-head checkout, explicit SHA guard **before** browser QA, and version-neutral Windows development artifact with `PREVIEW-BUILD.txt` provenance and packaging SHA guard. This is an isolated PR workflow, **not** a public Pages `/preview/` deployment. No game logic, production, main, or Building Explorer changed.
+- Require a successful new Actions run, artifact manifest inspection and screenshots before calling this commit verified. Real GPU FPS and Windows launcher execution remain unverified.
+
 ## November 9 — Restore known-good browser workflow after pre-job QA #363 failure
 
 - [QA #363](https://github.com/erin6374/dragon-defense-play/actions/runs/42673039831) failed before creating any job (GitHub returned zero jobs/logs), after the workflow-file provenance experiment. The cause is not exposed by the available Actions job API; **do not claim a game regression**.

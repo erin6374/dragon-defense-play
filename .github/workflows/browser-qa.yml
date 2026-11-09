@@ -15,6 +15,17 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Test the PR's actual head, not GitHub's synthetic PR merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact PR head checkout
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "Checked out: $actual"
+          echo "Expected:    $EXPECTED_HEAD_SHA"
+          test "$actual" = "$EXPECTED_HEAD_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -37,12 +48,17 @@ jobs:
 
       - name: Package playable Windows development preview
         if: success()
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import shutil
+          import json
+          import os
+          import subprocess
           source = Path('.')
-          target = Path('dist/DragonDefense_v5.4.0_RC9c_Wind_Windows_Preview')
+          target = Path('dist/DragonDefense_Development_Preview')
           target.mkdir(parents=True, exist_ok=True)
           ignored = {'.git', '.github', 'qa', 'qa-output', 'dist', 'node_modules', '.vscode', '__pycache__'}
           for entry in source.iterdir():
@@ -59,12 +75,21 @@ jobs:
           missing = [name for name in required if not (target / name).is_file()]
           if missing:
               raise SystemExit('Missing preview files: ' + ', '.join(missing))
+          tested_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          if tested_sha != os.environ['EXPECTED_HEAD_SHA']:
+              raise SystemExit('Preview commit mismatch: ' + tested_sha)
+          info = json.loads((target / 'build-info.json').read_text(encoding='utf-8'))
+          (target / 'PREVIEW-BUILD.txt').write_text(
+              f"Tested commit: {tested_sha}\nVersion: {info['version']}\nBuild: {info['build']}\n"
+              f"Browser QA: https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}\n"
+              'Development preview only; no production or Pages deployment.\n',
+              encoding='utf-8')
           print('Packaged playable files:', sum(1 for p in target.rglob('*') if p.is_file()))
           PY
       - name: Downloadable Dragon Defense Windows preview
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: DragonDefense_v5.4.0_RC9c_Wind_Windows_Preview
-          path: dist/DragonDefense_v5.4.0_RC9c_Wind_Windows_Preview/
+          name: DragonDefense_Development_Preview
+          path: dist/DragonDefense_Development_Preview/
           retention-days: 30
