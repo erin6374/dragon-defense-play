@@ -1658,6 +1658,7 @@ try {
     return qa.stageRallyImpactWarning();
    });
    assert.ok(impact.ok,impact.error);
+   assert.equal(impact.result.startingScore,0,'selecting a later wave in Rally does not pay a clear bonus');
    assert.equal(impact.result.marked.visible,true);
    assert.deepEqual(impact.result.marked.position.slice(0,2),impact.result.target.slice(0,2));
    assert.ok(Math.abs(impact.result.marked.eta-2.8)<.001);
@@ -1674,6 +1675,7 @@ try {
     assert.equal(sample.result.beforeAdvance,2);
     assert.equal(sample.result.afterAdvance,3);
     assert.equal(sample.result.queueCleared,true);
+    assert.ok(sample.result.score>0,'clearing a Rally wave still pays for saved foreground buildings');
    }
    const [saved,spent]=recovery.map(sample=>sample.result);
    assert.equal(saved.charge,40);

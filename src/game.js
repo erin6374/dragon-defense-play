@@ -1330,7 +1330,7 @@ const waveStats=[];
 // Rolling frame-time samples for actual playtest comparisons; samples are bounded.
 const playtestFrameMs=[];let peakDrawCalls=0;const stallEvents=[];
 function playtestPercentile(p){if(!playtestFrameMs.length)return null;const sorted=[...playtestFrameMs].sort((a,b)=>a-b);return +(sorted[Math.min(sorted.length-1,Math.floor((sorted.length-1)*p))]).toFixed(1);}
-function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,difficulty:document.getElementById('difficulty')?.value||'normal',graphics:visualPreset,durationSeconds:Math.round(elapsed),wave,score,schoolHealth:hp,dragonLives,...sessionStats,accuracy:sessionStats.shots?+(sessionStats.intercepts/sessionStats.shots).toFixed(3):0,waves:waveStats,performance:{bimBatch:window.__DD_BIM_BATCH||null,averageFPS:sessionStats.frameTimeTotal?+(sessionStats.frames/sessionStats.frameTimeTotal).toFixed(1):null,p95FrameMs:playtestPercentile(.95),p99FrameMs:playtestPercentile(.99),peakDrawCalls,sampleCount:playtestFrameMs.length,
+function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:rallyRecoveryChoice?'rally-recovery':rallyLoop?'rally':'standard',difficulty:document.getElementById('difficulty')?.value||'normal',graphics:visualPreset,durationSeconds:Math.round(elapsed),wave,score,schoolHealth:hp,dragonLives,...sessionStats,accuracy:sessionStats.shots?+(sessionStats.intercepts/sessionStats.shots).toFixed(3):0,waves:waveStats,performance:{bimBatch:window.__DD_BIM_BATCH||null,averageFPS:sessionStats.frameTimeTotal?+(sessionStats.frames/sessionStats.frameTimeTotal).toFixed(1):null,p95FrameMs:playtestPercentile(.95),p99FrameMs:playtestPercentile(.99),peakDrawCalls,sampleCount:playtestFrameMs.length,
   staticStreetBatch:streetBatchStats,cityExtensionProps:cityExtensions.propsEstimate,parkedCars:parkedCars.length,neighborhoodBatches:neighborhood.batchStats,skyline:skylineBackdrop.getStats(),vehiclePool:vehiclePoolStats,meteorAssets:rockStats,blastPool:blastStats,
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
@@ -1435,7 +1435,7 @@ function updateMeteorRadar(dt){
  c.beginPath();c.arc(80,68,27,0,Math.PI*2);c.stroke();
  c.beginPath();c.moveTo(27,68);c.lineTo(133,68);c.moveTo(80,15);c.lineTo(80,121);c.stroke();
  c.fillStyle='#9be8f0';c.font='bold 10px sans-serif';
- c.fillText(warning?warning.label+' IMPACT':'INCOMING RADAR',7,12);
+ c.fillText(warning?warning.label+' IMPACT':rallyLoop?'RALLY RADAR':'INCOMING RADAR',7,12);
  if(warning)c.fillText(Math.max(1,Math.ceil(warning.eta))+'s',139,12);
  c.fillStyle='#4ff5b3';c.fillRect(77,65,6,6);
  for(const meteor of meteors){
@@ -1994,7 +1994,7 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
  // and a fresh game explicitly manage the roof perch separately.
  // Frozen emergency responders remain until this wave ends.
  for(let i=cars.length-1;i>=0;i--)if(cars[i].frozen){recycleCar(cars[i]);cars.splice(i,1)}
- updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);waveStats.push({wave,startedAt:Math.round(elapsed),scoreAtStart:score});if(wave>1){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05).length;
+ updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);waveStats.push({wave,startedAt:Math.round(elapsed),scoreAtStart:score});if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
  stormTimer=0;remaining=wave>=15?0:waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:.7;if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
@@ -2713,6 +2713,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   }),
   stageRallyImpactWarning:()=>run('stageRallyImpactWarning',()=>{
    if(!impactMarker)throw Error('Rally preview is required');
+   const startingScore=score;
    spawnMeteor(()=>.8);
    const meteor=meteors.at(-1);
    meteor.target.set(0,13,schoolBounds.max.z-.4);
@@ -2721,7 +2722,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    updateMeteorRadar(.2);
    const marked={visible:impactMarker.visible,position:impactMarker.position.toArray(),
     eta:selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings)?.eta};
-   return {marked,target:meteor.target.toArray()};
+   return {marked,target:meteor.target.toArray(),startingScore};
   }),
   stageRallyRecovery:(buy)=>run('stageRallyRecovery',()=>{
    if(!rallyRecoveryChoice)throw Error('Rally recovery choice preview is required');
@@ -2739,7 +2740,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const beforeAdvance=wave;
    updateWaveProgress(.2);
    return {offer,queued,charge,earlyShield,beforeAdvance,afterAdvance:wave,
-    shieldSeconds:Math.max(0,schoolShieldUntil-elapsed),queueCleared:!rallyShieldQueued};
+    shieldSeconds:Math.max(0,schoolShieldUntil-elapsed),queueCleared:!rallyShieldQueued,score};
   }),
   spawnMeteor:()=>run('spawnMeteor',()=>{spawnMeteor();return snap()}),
   cinematicStage:(mode)=>run('cinematicStage',()=>{remaining=0;between=-600;helicopterTimer=600;
