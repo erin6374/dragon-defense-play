@@ -1,8 +1,8 @@
 {
-  "build": "5.4-skyfall-rc10",
-  "version": "5.4.0-rc.10",
+  "build": "5.4-north-philly-rc11",
+  "version": "5.4.0-rc.11",
   "gameplay_base": "5.2.3",
-  "scope": "One more screen of sky, authored opening waves and a destructible North Philadelphia horizon",
+  "scope": "Standing cinematic skyline; health-dependent flaming tower strikes; expanded North Broad rowhouse horizon with trees and slow-motion airborne destruction LOD",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC10 — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
+  "release_status": "experimental RC11 — new exact-head browser QA and screenshot inspection required; European Dragon binaries not hosted"
 }
