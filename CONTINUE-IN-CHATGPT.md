@@ -1,3 +1,7 @@
+## November 9 — Paulo flight silhouette
+
+Browser QA [#335](https://github.com/erin6374/dragon-defense-play/actions/runs/42567760521) passed for baseline `9f04c7e`, which contains the grounded turn. The [earlier run for `a1c3b4d`](https://github.com/erin6374/dragon-defense-play/actions/runs/42567301859) was canceled. This pass deepens the four-leg tuck in the shared rig. Compare `15-paulo-flight-tucked-side.png` and `18-paulo-glide-tucked-side.png` from the browser QA artifact for the current commit. Check that run before sharing its playable preview.
+
 ## Latest continuation — grounded Paulo direction reversal (November 9)
 
 QA #318 passed for `3ba3948` (https://github.com/erin6374/dragon-defense-play/actions/runs/42561480882). This continuation adds a distinct grounded `ground-turn` animation with hind-leg support, lifted forefeet, transient rear-up and mirrored torso/head pivot; it is visual-only and does not flip gameplay facing or hitboxes. The standalone dragon lab and browser QA cover the new pose and save a side-view screenshot. **Do not claim the new exact-head QA passed until the workflow completes.** Do not merge main, change production, or fabricate the licensed European Dragon asset.

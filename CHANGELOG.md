@@ -1,3 +1,9 @@
+## November 9 — Paulo flight silhouette
+
+- Paulo draws all four claws closer to his belly during flight, glide and bank. The deeper fold blends into the existing takeoff and landing transitions and starts above the hover tuck.
+- Browser QA measures claw-tip height relative to the torso and captures side views of flight and glide.
+- The desktop interception status and compact hostile-aircraft warning have more clearance from the full HUD and menu at Windows browser font sizes.
+
 ## November 9 — Neighborhood-driven distant meteor escalation
 - Distant meteor streaks and skyline strike cadence now scale with average foreground building damage (capped multiplier 2.15), in addition to chapter progression. Source-level QA guard added. Exact-head browser QA pending; no claim of visually tested release.
 

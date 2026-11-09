@@ -1,3 +1,7 @@
+## Paulo flight silhouette checkpoint (November 9)
+
+The shared procedural rig in `src/dragon/paulo-rig.js` folds the knees further and sweeps the hips back as the legs approach full tuck. The existing hover pose and 0.6-second takeoff and landing windows are preserved. The browser suite checks the position of all four claw tips in torso space and saves side-view flight and glide captures. Use the browser QA run for the exact commit when packaging a preview.
+
 ## Grounded Paulo turning checkpoint (November 9)
 
 Prior head `3ba3948` passed QA #318. Added `ground-turn` intent for perched/inactive direction changes, a 0.8s rear-up and directional pivot in the procedural rig, browser regression assertions and `17-paulo-ground-turn-side.png`. The gameplay parent retains control of facing/hitboxes; this animation only anticipates the reversal. New exact-head QA and visual review pending. The licensed European Dragon FBX is still not in GitHub. Production and Building Explorer unchanged.

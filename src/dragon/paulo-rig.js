@@ -272,9 +272,12 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   state==='hover'?.28:airborne?.55:0;
  legs.forEach(({hip,knee,foot,fore})=>{
   // Hind legs bear weight while the forelegs lift as Paulo rears up.
-  hip.rotation.z=-(fore?1.14:1.02)*tuck+(fore?.55:-.22)*groundTurn;
-  knee.rotation.z=-(fore?.56:.48)*tuck+(state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
-  foot.rotation.z=(fore?.64:.55)*tuck+(fore?.2:0)*groundTurn;
+  // Deepen the full fold so the claws follow the belly instead of hanging down.
+  // Keep the original hover posture and ease into the deeper fold after it.
+  const flightFold=Math.max(0,(tuck-.28)/.72);
+  hip.rotation.z=-(fore?1.14:1.02)*tuck-(fore?.29:.19)*flightFold+(fore?.55:-.22)*groundTurn;
+  knee.rotation.z=-(fore?.56:.48)*tuck-(fore?.38:.56)*flightFold+(state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
+  foot.rotation.z=(fore?.64:.55)*tuck-(fore?.49:.45)*flightFold+(fore?.2:0)*groundTurn;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
  breathPreview.update(state,t);

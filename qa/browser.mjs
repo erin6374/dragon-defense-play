@@ -1153,7 +1153,9 @@ try {
         shoulderSweep:shoulder.rotation.y,elbowLift:elbow.rotation.x,wristSweep:wrist.rotation.y
       }));
       const sampleLegs=()=>rig.legs.map(({hip,knee,foot})=>({
-        hip:hip.rotation.z,knee:knee.rotation.z,foot:foot.rotation.z
+        hip:hip.rotation.z,knee:knee.rotation.z,foot:foot.rotation.z,
+        // The center claw cone extends 0.155 along +X from its center at 0.53.
+        clawY:hip.parent.worldToLocal(foot.localToWorld(new THREE.Vector3(.685,-.07,0))).y
       }));
       rig.applyPose(.75,'ground-turn',1,0);
       const groundTurnStart={pitch:rig.root.rotation.z,yaw:rig.root.rotation.y};
@@ -1171,6 +1173,10 @@ try {
       const hoverLegs=sampleLegs();
       rig.applyPose(.75,'flight',1);
       const flightLegs=sampleLegs();
+      rig.applyPose(.75,'glide',1);
+      const glideLegs=sampleLegs();
+      rig.applyPose(.75,'bank',-1);
+      const bankLegs=sampleLegs();
       rig.applyPose(.75,'takeoff',1,0);
       const takeoffStart=sampleLegs();
       rig.applyPose(.75,'takeoff',1,.75);
@@ -1205,7 +1211,7 @@ try {
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
-        idleLegs,hoverLegs,flightLegs,takeoffStart,takeoffEnd,landingStart,landingEnd,
+        idleLegs,hoverLegs,flightLegs,glideLegs,bankLegs,takeoffStart,takeoffEnd,landingStart,landingEnd,
         landingWingStart,landingWingEnd,
         groundTurnStart,groundTurnRight,groundTurnLeft,groundTurnEnd,
         lateHitRecoil,earlyHitRecoil,
@@ -1237,8 +1243,12 @@ try {
     assert.equal(reusableRig.flightLegs.length,4,'all four dragon legs are articulated');
     assert.ok(reusableRig.flightLegs.every((leg,i)=>
       leg.hip<reusableRig.idleLegs[i].hip-.9 &&
-      leg.knee<reusableRig.idleLegs[i].knee-.4 && leg.foot>.4),
-      'forward flight tucks all four legs rearward and folds the claws');
+      leg.knee<reusableRig.idleLegs[i].knee-.4),
+      'forward flight tucks all four legs rearward');
+    for(const legs of [reusableRig.flightLegs,reusableRig.glideLegs,reusableRig.bankLegs]){
+      assert.ok(legs.every(leg=>leg.clawY> -1.15),
+        'all four claw tips stay near the belly in torso space during flight, glide and bank');
+    }
     assert.ok(reusableRig.hoverLegs.every((leg,i)=>
       leg.hip>reusableRig.flightLegs[i].hip &&
       leg.hip<reusableRig.idleLegs[i].hip),
@@ -1482,6 +1492,8 @@ try {
       'flight tuck silhouette fits the side reference frame');
     await lab.screenshot({path:'qa-output/15-paulo-flight-tucked-side.png'});
     report.pauloFlightTuckReference=tuckedFrame.referenceFrame;
+    await lab.evaluate(()=>window.__PAULO_LAB_QA.setState('glide'));
+    await lab.screenshot({path:'qa-output/18-paulo-glide-tucked-side.png'});
     // Matched deterministic landing pose captures the temporary wing flare.
     await lab.evaluate(()=>{
       window.__PAULO_LAB_QA.setState('land');
