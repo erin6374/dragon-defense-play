@@ -620,6 +620,8 @@ try {
     const {incoming,layers,heldDuringSplit,advancedTo,skyLift,skyScreenHeight,intact,damaged}=sample.result;
     const plan=openingMeteorWave(index+1);
     assert.equal(incoming.length,plan.count);
+    assert.ok(incoming.every(m=>m.fissuredMaterial===(index>=2)),
+      'extra-large flaming roots use fissured lava material instead of flat emissive material');
     assert.ok(incoming.every(m=>m.size===plan.size&&m.kind===plan.kind&&m.falling&&m.offscreen&&!m.boss),
       'opening roots are falling, wholly above the extended camera and use regular interception rules');
     assert.deepEqual(layers.map(layer=>layer.length),[2,6,18,0].map(count=>count*plan.count));

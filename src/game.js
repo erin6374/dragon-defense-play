@@ -1714,7 +1714,8 @@ function spawnMeteor(random=Math.random,opening=null){
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random);
  const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-45,45);
  const mesh=createPlayableRock(size);
- if(fastImpact||opening?.kind==='flaming')mesh.material=fastImpactMaterial;
+ if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
+ else if(fastImpact)mesh.material=fastImpactMaterial;
  else if(kind==='molten')mesh.material=moltenMaterial;
  mesh.position.set(x,meteorEntryHeight(target.z-3,size,65+random()*12),target.z-3);scene.add(mesh);
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
@@ -2752,7 +2753,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    updateWaveProgress(10);
    updateWaveProgress(10);
    const incoming=meteors.map(m=>({size:m.size,kind:m.kind,falling:m.vel.y<0,boss:!!m.boss,
-    offscreen:m.mesh.position.clone().add(new THREE.Vector3(0,-m.size*1.4,0)).project(view).y>1}));
+    offscreen:m.mesh.position.clone().add(new THREE.Vector3(0,-m.size*1.4,0)).project(view).y>1,
+     fissuredMaterial:m.mesh.material===moltenMaterial}));
    let png=null;
    if(wave===4){
     // Capture the live renderer with the real wave composition after entry.
