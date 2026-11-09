@@ -1,6 +1,9 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC2 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC9e WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged developer release candidate; original dragon remains default.
+Status: unmerged RC9e developer release candidate; original dragon remains default.
+Fireball balance: small rocks die in one fireball/shockwave contact; medium split into three small, large into three medium.
+Wind and fire effects now track the active dragon model's animated mouth during hover, flight and turns.
+Browser QA #362 passed on a42f7bd; newer commits require their own QA.
 Base game v5.2.3 / North Broad graphics / wind gameplay v5.3.1 / Paulo v5.4 design.
 
 WINDOWS PREREQUISITES

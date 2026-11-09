@@ -1,3 +1,9 @@
+## November 9 — Restore known-good browser workflow after pre-job QA #363 failure
+
+- [QA #363](https://github.com/erin6374/dragon-defense-play/actions/runs/42673039831) failed before creating any job (GitHub returned zero jobs/logs), after the workflow-file provenance experiment. The cause is not exposed by the available Actions job API; **do not claim a game regression**.
+- Restore the exact browser workflow file that passed QA #362. Separately correct stale Windows launcher title and readme from RC2 to RC9e, and document the implemented meteor and muzzle changes. This leaves game logic untouched and does not modify Pages or production.
+- The experimental exact-head checkout/preview manifest changes are **not active** after this rollback. A new PR-head QA run is required; public `/preview/` remains unavailable without an isolated deployment configuration.
+
 ## November 9 — Exact-head QA checkout and preview provenance (QA pending)
 
 - Browser QA now checks out the pull request's actual head SHA instead of GitHub's synthetic PR merge commit; `workflow_dispatch` and reusable calls fall back to `github.sha`.
