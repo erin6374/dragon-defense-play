@@ -1,3 +1,7 @@
+## November 9 — Rubble silhouette revision pending exact-head QA
+
+[QA #348](https://github.com/erin6374/dragon-defense-play/actions/runs/42602631839) passed on `26cffc2`, including collapse and restart assertions. The artifact's `06d` image still looked like a flattened slab. The latest development revision narrows the folded roof and staggers three taller wall fragments in the existing instanced batch, with stricter browser checks. Verify the latest branch commit's GitHub Actions result and inspect `06c`/`06d` before certifying. No production or Building Explorer changes, no European Dragon FBX import, no real GPU FPS claim.
+
 ## November 9 — Distant roof collapse silhouette (exact-head QA pending)
 
 - [QA #347](https://github.com/erin6374/dragon-defense-play/actions/runs/42594805121) passed for `3c5f374`. Visual inspection of `06d-distant-building-rubble.png` showed the intact full-size black roof masking the three new facade fragments.
