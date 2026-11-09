@@ -93,7 +93,7 @@ function meteorEntryHeight(z,size,minimum){
  const skyTop=streetView.y+skyCameraLift(dragon.position.y)+depth*Math.tan(halfFov-pitch);
  return Math.max(minimum,skyTop+size*1.6+4);
 }
-const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,650),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
+const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1250),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
 scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:120});scene.add(sun);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
@@ -145,7 +145,7 @@ let lightningCooldown=5;
 function updateNight(dt){
  const targetPhase=dayPhase(wave);let phaseDelta=targetPhase-displayedPhase;if(phaseDelta<-.5)phaseDelta+=1;if(phaseDelta>.5)phaseDelta-=1;
  const blend=1-Math.exp(-dt*.45);displayedPhase=(displayedPhase+phaseDelta*blend+1)%1;displayedDarkness+=(dayDarkness(wave)-displayedDarkness)*blend;
- const darkness=displayedDarkness;schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.15+darkness*.06;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00175+darkness*.00035;cinematicSky.setPhase(displayedPhase,darkness,dt,disasterSkyIntensity(wave,skylineDamage));neighborhood.setAtmosphere(displayedPhase,darkness);
+ const darkness=displayedDarkness;schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.15+darkness*.06;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00105+darkness*.00020;cinematicSky.setPhase(displayedPhase,darkness,dt,disasterSkyIntensity(wave,skylineDamage));neighborhood.setAtmosphere(displayedPhase,darkness);
  // Distant building haze is now handled by the skyline materials and fog;
  // do not allocate an unused color blend in this per-frame path.
  // Architectural texture preserves facade detail while distance haze stays subtle.
@@ -687,7 +687,9 @@ const starGroup=new THREE.Group();celestial.add(starGroup);
 const clouds=new THREE.Group();celestial.add(clouds);
 const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.add(skyline);
  // Keep the distant towers behind the neighborhood and let perspective set their apparent scale.
- skyline.position.set(0,-15,-349);skyline.scale.set(1.72,1.03,1.15);
+ // Deliberately fictionalized landmark alignment: keep the skyline visible,
+ // but entirely behind the expanded North Philadelphia rowhouse horizon.
+ skyline.position.set(0,-15,-740);skyline.scale.set(3.25,2.10,1.15);
  const skylineFires=[];let skylineDamage=0;
  const skylineBackdrop=createPhiladelphiaSkyline(skyline);
  const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
@@ -1131,6 +1133,8 @@ const distantStreaks=[];let distantTimer=3;
 let backgroundDamageTimer=2.5;
 // One soft, desaturated atmospheric sprite per meteor. No black geometric scribbles.
 const distantVisual=createDistantMeteorVisual(THREE);
+const flamingDistantMeteorMaterial=distantVisual.material.clone();
+flamingDistantMeteorMaterial.color.setHex(0xff7134);
 function neighborhoodHealth(){
  const buildings=neighborhood.targetBuildings;
  return Math.round((1-buildings.reduce((sum,b)=>sum+b.damage,0)/Math.max(1,buildings.length))*100);
@@ -1184,7 +1188,9 @@ function updateDistantMeteors(dt){
  const foregroundBuildings=neighborhood.targetBuildings.filter(b=>!b.background);
  const damageFraction=foregroundBuildings.length
   ?foregroundBuildings.reduce((sum,b)=>sum+THREE.MathUtils.clamp(b.damage,0,1),0)/foregroundBuildings.length:0;
- const chapterRamp=(wave===15?1.85:(.65+waveProgress*1.55))*(1+damageFraction*1.15);
+ const health=neighborhoodHealth();
+ const skylineCrisis=health<20?2:health<50?1:0;
+ const chapterRamp=(wave===15?1.85:(.65+waveProgress*1.55))*(1+damageFraction*1.15)*(1+skylineCrisis*.45);
  skylineEventTimer-=dt;
  if(skylineEventTimer<=0){skylineEventTimer=Math.max(.35,(2.65-wave*.06)/chapterRamp)+Math.random()*.85;
   const targetX=(Math.random()-.5)*128;
@@ -1196,11 +1202,12 @@ function updateDistantMeteors(dt){
  const streakCap=Math.min(58,Math.round(18+wave*2+waveProgress*18+(wave===15?8:0)));
  if(distantTimer<=0&&distantStreaks.length<streakCap){
   distantTimer=Math.max(.06,(.78/(1+wave*.18))/chapterRamp)+Math.random()*.18;
-  const sprite=new THREE.Sprite(distantVisual.material);
+  const flaming=skylineCrisis>0&&Math.random()<(skylineCrisis===2?.91:.67);
+  const sprite=new THREE.Sprite(flaming?flamingDistantMeteorMaterial:distantVisual.material);
   const x=(Math.random()-.5)*220,y=56+Math.random()*44;
   sprite.position.set(x,y,15);const size=2.1+Math.random()*1.4;
   sprite.scale.set(size,7.5+Math.random()*5.5,1);skyline.add(sprite);
-  distantStreaks.push({sprite,life:5.2,v:16+Math.random()*14+waveProgress*5,impact:Math.random()<(.58+waveProgress*.25),waveProgress});
+  distantStreaks.push({sprite,life:5.2,v:(16+Math.random()*14+waveProgress*5)*(flaming?skylineCrisis===2?2.6:1.9:1),impact:flaming||Math.random()<(.58+waveProgress*.25),flaming,waveProgress});
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
   if(s.landing){
@@ -1223,9 +1230,14 @@ function updateDistantMeteors(dt){
    if(s.sprite.position.y<36&&s.impact){
     const pos=s.sprite.position;
     skyline.updateWorldMatrix(true,false);
-    const impact=skylineBackdrop.strikeNearest(pos.x)||skyline.localToWorld(pos.clone());
-    cinematicSkyExplosion(impact.x,impact.y,impact.z);
-    if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(impact.x+(Math.random()-.5)*11,impact.y+2,impact.z);
+    const impact=skylineBackdrop.strikeNearest(pos.x,1-health/100)||skyline.localToWorld(pos.clone());
+    const baseEffects=backgroundImpactEffects(health);
+    const towerEffects={...baseEffects,scale:baseEffects.scale*(s.flaming?skylineCrisis===2?2.2:1.55:1)};
+    cinematicSkyExplosion(impact.x,impact.y,impact.z,towerEffects);
+    // Below 20% health, a meteor visually punches through the facade:
+    // a second lower burst and sustained tower fire without toppling the landmark.
+    if(s.flaming&&skylineCrisis===2)cinematicSkyExplosion(impact.x+(Math.random()-.5)*3,impact.y-13,impact.z,towerEffects);
+    else if(Math.random()<.22+s.waveProgress*.28)cinematicSkyExplosion(impact.x+(Math.random()-.5)*11,impact.y+2,impact.z,towerEffects);
     s.life=0;
    }
   }
