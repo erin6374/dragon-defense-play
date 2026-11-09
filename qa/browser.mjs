@@ -24,6 +24,8 @@ const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
+assert.match(gameSource,/const damageFraction=foregroundBuildings\.length/, 'distant catastrophe derives intensity from neighborhood destruction');
+assert.match(gameSource,/1\+damageFraction\*1\.15/, 'background disaster intensity increases with actual neighborhood damage');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
