@@ -49,7 +49,7 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  // The vacant lot between the brownstone and the modern apartments is visible from Broad.
  b(nearStatic,25.6,-.47,-6.9,3.15,.14,14.6,mat(0x77745c));
  const foreground=addForegroundPlanting(THREE,nearStatic);
- const longRange=createDistantNeighborhood({root:g});
+ const longRange=createDistantNeighborhood({root:g,flameTexture:visualBank.images.flame});
  const city=createStructuralCity(THREE,scene,visualBank);
  const school=populateCity(city);
  city.finalize();const buildings=city.buildings.filter(b=>!b.school);

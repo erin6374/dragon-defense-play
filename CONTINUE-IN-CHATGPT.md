@@ -1,3 +1,7 @@
+## November 9 — Foreground street and zero-health background barrage
+
+The batteries now stage between the inner Broad Street lanes. All foreground meteor classes are shootable. Near and far background buildings are targets for visible falling meteors. The same neighborhood health calculation drives the gauge and the barrage, with faster volleys, major structural damage, and fire and smoke as the gauge empties. Check `zeroBlockBackgroundDamage`, `meteorShootability`, and `militaryPlacement` in the exact-head browser report. Paulo animation remains paused.
+
 ## November 9 — Foreground meteor classes
 
 Paulo animation is paused at `58ac48b`. The current focus is the gameplay and cinematic checklist in [PR #2](https://github.com/erin6374/dragon-defense-play/pull/2#issuecomment-6732992679). The long-range rows now retain rubble after strikes. The wave-13 placement audit records all three battery hulls against buildings and street clearances. The existing coordinates are retained pending a specific relocation target.

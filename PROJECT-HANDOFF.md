@@ -1,3 +1,7 @@
+## Street-center deployment and neighborhood barrage (November 9)
+
+Military vehicles stage at Broad Street world Z=24, between the inner lane centers at Z=20 and Z=27. The player can shoot every foreground meteor, including the fast flaming subtype. Scenic meteors can hit the structural back blocks and the instanced far rows. Near-empty block health raises strike cadence, volley size and strength. Use `06e-zero-block-background-fire.png` for the zero-gauge collapse and fire capture. Restart clears the falling streaks, rubble, fire and smoke.
+
 ## Distant city collapse checkpoint (November 9)
 
 The long-range city in `src/rendering/distant-neighborhood.js` records which instances belong to each building, including fringe buildings. Distant strikes accumulate damage on the nearest eligible building. A fall compresses the shell, drops and tilts its roof slab, and lowers the smoke toward the rubble. Existing facade batches are reused, eight falls may be active at once, and impact and ambient smoke share a 28-sprite cap. Restart restores the original instance transforms. Compare `06c-distant-building-before.png` and `06d-distant-building-rubble.png` from the exact-head QA artifact.

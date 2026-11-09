@@ -567,10 +567,17 @@ try {
     'the large splitter takes multiple hits and produces fragments');
   assert.equal(fastImpact.fastImpact,true);
   assert.ok(fastImpact.speed>flaming.speed*1.5,'the fast impact class is faster than ordinary flaming meteors');
-  assert.equal(fastImpact.removed,false);
-  assert.equal(fastImpact.finalHP,fastImpact.initialHP,'fire and nearby blasts leave fast impact meteors intact');
-  assert.ok(fastImpact.removedOnImpact&&fastImpact.schoolStrikes>0,
+  assert.ok(fastImpact.removed&&fastImpact.firstHitHP<fastImpact.initialHP,
+    'the fast flaming foreground meteor is also destroyable by fire');
+  const unopposedFastImpact=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    const started=qa.start(4);
+    return started.ok?qa.stageMeteorShootability(.34,false,true):started;
+  });
+  assert.ok(unopposedFastImpact.ok,unopposedFastImpact.error);
+  assert.ok(unopposedFastImpact.result.removedOnImpact&&unopposedFastImpact.result.schoolStrikes>0,
     'the fast impact meteor still damages the school and is removed after hitting it');
+  report.meteorShootability.unopposedFastImpact=unopposedFastImpact.result;
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
   const before = await snap();
@@ -848,6 +855,18 @@ try {
   assert.ok(restoredBackground.damage===0&&!restoredBackground.smoking&&Math.abs(restoredBackground.height-backgroundIntact.height)<.001,
     'restart restores the far building instance and removes its impact smoke');
   report.distantBuildingCollapse={id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,restored:restoredBackground};
+  const zeroBlock=await page.evaluate(()=>window.__DD_QA.stageZeroBlockMeteorDamage());
+  assert.ok(zeroBlock.ok,zeroBlock.error);
+  assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
+  assert.equal(zeroBlock.result.incoming,3,'an empty gauge launches a heavier background barrage');
+  assert.equal(zeroBlock.result.nearDamage,1,'a meteor also finishes the heavily damaged nearer background building');
+  assert.ok(zeroBlock.result.afterImpact.falling>=1&&zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.smoke>=1,
+    'visible meteor landings cause major building damage, fire and smoke at zero block health');
+  assert.equal(zeroBlock.result.settled.falling,0,'the distant rubble settles');
+  const {png:zeroBlockPng,...zeroBlockReport}=zeroBlock.result;
+  assert.match(zeroBlockPng,/^data:image\/png;base64,/);
+  await writeFile('qa-output/06e-zero-block-background-fire.png',Buffer.from(zeroBlockPng.split(',')[1],'base64'));
+  report.zeroBlockBackgroundDamage=zeroBlockReport;
   }
   // High-wave disaster glow capture: a real rendered frame, not a shader
   // intensity-only assertion. Restore wave 7 before collision QA resumes.
@@ -1034,7 +1053,8 @@ try {
   for(const footprint of batteryStage.result.footprints){
    assert.ok(!footprint.buildingOverlap&&!footprint.crossStreetOverlap,
     'battery hull clears the building and cross-street footprints');
-   assert.ok(footprint.maxZ<9.8,'battery hull stays behind the Broad Street sidewalk and traffic lanes');
+   assert.ok(footprint.minZ>21.5&&footprint.maxZ<25.5,
+    'battery hull sits on the street center line between the inner traffic lanes');
   }
   report.militaryPlacement=batteryStage.result.footprints;
   const stageNight=await page.evaluate(()=>window.__DD_QA.qaSettleAtmosphere());

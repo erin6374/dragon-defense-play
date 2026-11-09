@@ -1,3 +1,9 @@
+## November 9 — Street-center batteries and neighborhood meteor barrage
+
+- Military batteries deploy on the Broad Street center line, between the two inner civilian lanes.
+- Every foreground meteor, including the fast flaming impact class, can be destroyed. Fast impacts still damage structures when they land.
+- Background meteors descend onto actual near and far buildings. As the neighborhood gauge empties, larger volleys cause collapses with persistent fire and smoke. The barrage can continue behind the end screen at zero neighborhood health.
+
 ## November 9 — Physical collapse in the distant city rows
 
 - Some distant strikes now land on actual background buildings. Repeated strikes collapse the instanced building and leave a low shell, tilted roof slab, and smoke until restart.

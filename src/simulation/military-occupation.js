@@ -35,7 +35,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  let spawnClock=0,enabled=false,collateralNotice=0;
  function box(root,mat,x,y,z,w,h,d){const mesh=new THREE.Mesh(cube,mat);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);root.add(mesh);return mesh;}
  function deploy(x,advanced=false){
-  const root=new THREE.Group();root.position.set(x,0,advanced?3.4:3.1);
+  const root=new THREE.Group();root.position.set(x,-.36,24);
   const hull=box(root,hullMat,0,1.1,0,advanced?6:5.4,1.5,2.7);
   box(root,steel,0,2.1,0,3.1,.8,2.2);
   for(const xx of [-1.75,1.75])for(const zz of [-1,1]){

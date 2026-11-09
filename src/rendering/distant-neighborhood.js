@@ -25,7 +25,7 @@ function atmosphericFacade(hex,tier,row,lot){
 }
 function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};}
 const rand=seeded(1221237);
-export function createDistantNeighborhood({root}){
+export function createDistantNeighborhood({root,flameTexture}){
  const tiers=[
   {name:'outside-playable-block',min:-87,max:0},
   {name:'park-camac',min:-135,max:-87},
@@ -180,20 +180,33 @@ export function createDistantNeighborhood({root}){
  const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
  smokeTexture.colorSpace=THREE.SRGBColorSpace;
  const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
+ const fireMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffa357,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
  const damageMarkers=[],impactSmoke=new Map();
  const damaged=new Set(),falling=new Set();
+ let fireTime=0;
  function addImpactSmoke(home){
   if(impactSmoke.has(home))return;
   if(impactSmoke.size===28){
    const oldest=impactSmoke.keys().next().value;
-   impactSmoke.get(oldest).removeFromParent();impactSmoke.delete(oldest);
+   const {puff,flame}=impactSmoke.get(oldest);
+   puff.removeFromParent();flame.removeFromParent();impactSmoke.delete(oldest);
   }
   if(damageMarkers.length+impactSmoke.size===28)damageMarkers.pop().removeFromParent();
   const puff=new THREE.Sprite(smokeMat);
   const size=Math.min(5,home.w*.54);
-  puff.position.set(home.x,home.h+size*.65,home.z);
-  puff.scale.set(size,size*1.9,1);
-  groups[home.tier].add(puff);impactSmoke.set(home,puff);
+  const flame=new THREE.Sprite(fireMat);
+  puff.scale.set(size*1.5,size*2.8,1);
+  flame.scale.set(size*.9,size*1.15,1);
+  groups[home.tier??0].add(puff,flame);
+  impactSmoke.set(home,{puff,flame});
+  positionImpactEffects(home,1-(home.fall??home.damage)**2*.84);
+ }
+ function positionImpactEffects(home,heightScale){
+  const effects=impactSmoke.get(home);
+  if(!effects)return;
+  const height=home.h*heightScale;
+  effects.puff.position.set(home.x,height+effects.puff.scale.x*.85,home.z);
+  effects.flame.position.set(home.x,height+effects.flame.scale.x*.34,home.z+home.d*.34);
  }
  function applyFall(home){
   const progress=home.fall*home.fall;
@@ -210,25 +223,35 @@ export function createDistantNeighborhood({root}){
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
   }
-  const puff=impactSmoke.get(home);
-  if(puff)puff.position.y=home.h*heightScale+puff.scale.x*.65;
+  positionImpactEffects(home,heightScale);
  }
- function strike(x,z,strength){
-  if(falling.size>=8)return null;
+ function targetAt(x,z){
   let nearest=null,nearestSq=Infinity;
   for(const home of buildingDefs){
    if(home.damage>=1)continue;
    const distance=(home.x-x)**2+(home.z-z)**2;
    if(distance<nearestSq){nearest=home;nearestSq=distance;}
   }
-  if(!nearest)return null;
-  nearest.damage=Math.min(1,nearest.damage+strength);
-  damaged.add(nearest);
-  addImpactSmoke(nearest);
-  if(nearest.damage===1)falling.add(nearest);
-  return {id:nearest.id,x:nearest.x,y:nearest.h,z:nearest.z};
+  return nearest?{id:nearest.id,x:nearest.x,y:nearest.h,z:nearest.z}:null;
+ }
+ function strikeTarget(id,strength){
+  const home=buildingDefs[id];
+  if(!home||home.damage>=1||falling.size>=8)return false;
+  home.damage=Math.min(1,home.damage+strength);
+  damaged.add(home);
+  addImpactSmoke(home);
+  if(home.damage===1)falling.add(home);
+  return true;
+ }
+ function strike(x,z,strength){
+  const target=targetAt(x,z);
+  return target&&strikeTarget(target.id,strength)?target:null;
  }
  function update(dt){
+  if(impactSmoke.size){
+   fireTime+=dt;
+   fireMat.opacity=.82+.16*Math.sin(fireTime*13)*Math.cos(fireTime*4);
+  }
   for(const home of falling){
    home.fall=Math.min(1,home.fall+dt/1.1);
    applyFall(home);
@@ -236,11 +259,11 @@ export function createDistantNeighborhood({root}){
   }
  }
  function restore(){
-  for(const puff of impactSmoke.values())puff.removeFromParent();
+  for(const {puff,flame} of impactSmoke.values()){puff.removeFromParent();flame.removeFromParent();}
   for(const puff of damageMarkers)puff.removeFromParent();
   impactSmoke.clear();damageMarkers.length=0;
   for(const home of damaged){home.damage=home.fall=0;applyFall(home);}
-  damaged.clear();falling.clear();
+  damaged.clear();falling.clear();fireTime=0;
  }
  function setHealth(health){
   const damage=Math.max(0,Math.min(1,1-health/100));
@@ -257,16 +280,22 @@ export function createDistantNeighborhood({root}){
  }
  return {
   root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:STREET_AXIS.map(s=>s.name),
-  setHealth,strike,update,restore,setVisible(on){base.visible=on;for(const t of tiers)t.group.visible=on},
+  setHealth,targetAt,strikeTarget,strike,update,restore,
+  burnBackgroundBuilding(home){
+   addImpactSmoke(home);
+   positionImpactEffects(home,1-home.damage**2*.84);
+  },
+  setVisible(on){base.visible=on;for(const t of tiers)t.group.visible=on},
   buildingState(id){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
    batches[home.tier].main.getMatrixAt(index,dummy.matrix);
    return {damage:home.damage,fall:home.fall,height:dummy.matrix.elements[5],originalHeight:home.h,
-    smoking:impactSmoke.has(home)};
+    smoking:impactSmoke.has(home),burning:impactSmoke.has(home)};
   },
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
-   smoke:damageMarkers.length+impactSmoke.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
+   smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
+   falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
    crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
  };
 }
