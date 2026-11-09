@@ -1,3 +1,9 @@
+## November 9 — Distant collapse silhouette refinement (QA pending)
+
+- [Browser QA #348](https://github.com/erin6374/dragon-defense-play/actions/runs/42602631839) passed for previous head `26cffc2`; downloaded artifact showed no browser errors/warnings and confirmed roof fold, three facade fragments, and restart restoration. Its rendered collapsed building still looked like a broad smooth slab.
+- Narrow visual revision: reduced the settled roof footprint further and made the existing three instanced wall fragments narrower, taller, more staggered, and more steeply tilted. No new geometry, draw calls, spawn points, collision changes, or per-frame allocations.
+- Tightened browser assertions for the roof footprint and taller facade fragments. Exact-head browser QA and new `06d-distant-building-rubble.png` inspection pending. Real GPU FPS remains unverified.
+
 ## November 9 — Distant roof collapse silhouette (exact-head QA pending)
 
 - [QA #347](https://github.com/erin6374/dragon-defense-play/actions/runs/42594805121) passed for `3c5f374`. Visual inspection of `06d-distant-building-rubble.png` showed the intact full-size black roof masking the three new facade fragments.
