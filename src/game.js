@@ -1105,7 +1105,12 @@ function updateDistantMeteors(dt){
  const nextChapterStart=CAMPAIGN_CHAPTERS[chapterIndex+1]?.start||16;
  const waveSpan=Math.max(1,nextChapterStart-chapter.start);
  const waveProgress=THREE.MathUtils.clamp((wave-chapter.start)/waveSpan,0,1);
- const chapterRamp=wave===15?1.85:(.65+waveProgress*1.55);
+ // Distant disaster intensity follows the player's actual neighborhood damage
+ // as well as chapter progression; capped to preserve foreground readability.
+ const foregroundBuildings=neighborhood.targetBuildings.filter(b=>!b.background);
+ const damageFraction=foregroundBuildings.length
+  ?foregroundBuildings.reduce((sum,b)=>sum+THREE.MathUtils.clamp(b.damage,0,1),0)/foregroundBuildings.length:0;
+ const chapterRamp=(wave===15?1.85:(.65+waveProgress*1.55))*(1+damageFraction*1.15);
  skylineEventTimer-=dt;
  if(skylineEventTimer<=0){skylineEventTimer=Math.max(.35,(2.65-wave*.06)/chapterRamp)+Math.random()*.85;
   const targetX=(Math.random()-.5)*128;
