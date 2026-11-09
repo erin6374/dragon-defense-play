@@ -1,3 +1,6 @@
+## November 9 — Neighborhood-driven distant meteor escalation
+- Distant meteor streaks and skyline strike cadence now scale with average foreground building damage (capped multiplier 2.15), in addition to chapter progression. Source-level QA guard added. Exact-head browser QA pending; no claim of visually tested release.
+
 ## 2026-11-09 — Paulo grounded rear-up turn (exact-head QA pending)
 - QA #318 passed for `3ba3948` ([run](https://github.com/erin6374/dragon-defense-play/actions/runs/42561480882)). Added a distinct `ground-turn` animation intent when Paulo turns while perched or inactive; airborne turns still bank. The shared procedural rig now briefly rears up, raises forelegs, braces hind legs, pivots its torso and head toward the requested direction, then settles over 0.8 seconds. Actual facing and hitboxes remain game-controlled; the visual yaw is deliberately transient, not a second gameplay-facing controller.
 - The dragon lab exposes the new pose, browser QA checks directional symmetry and leg articulation, and `17-paulo-ground-turn-side.png` captures the mid-pivot silhouette. **New exact-head browser QA and visual review are pending.** Original/new toggle and licensed European Dragon asset status unchanged; no production or Building Explorer changes.
