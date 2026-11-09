@@ -162,6 +162,35 @@ export function createDistantNeighborhood({root,flameTexture}){
    g.add(mesh);drawCalls++;
   }
  }
+ // Reuse one instanced facade-debris batch per distance tier. The zero-scale
+ // instances cost no per-building draw calls and remain hidden until a collapse.
+ // A stable slot per home makes restart deterministic and avoids allocating
+ // meshes or geometry when meteors land.
+ const rubblePerBuilding=3;
+ const rubbleBatches=tiers.map((tier,ti)=>{
+  const homes=buildingDefs.filter(home=>home.tier===ti);
+  const mesh=new THREE.InstancedMesh(cube,materials.main,homes.length*rubblePerBuilding);
+  mesh.name='distance-'+tier.name+'-facade-debris';
+  mesh.frustumCulled=false; // zero-scale startup bounds must not cull later rubble
+  mesh.visible=false;
+  for(let j=0;j<homes.length;j++){
+   const home=homes[j];
+   home.rubbleStart=j*rubblePerBuilding;
+   const facade=home.parts.find(part=>part.type==='main');
+   const facadeColor=instances[ti].main[facade.index].color;
+   for(let k=0;k<rubblePerBuilding;k++){
+    const slot=home.rubbleStart+k;
+    dummy.position.set(home.x,-.6,home.z);
+    dummy.rotation.set(0,0,0);dummy.scale.set(0,0,0);dummy.updateMatrix();
+    mesh.setMatrixAt(slot,dummy.matrix);
+    mesh.setColorAt(slot,new THREE.Color(facadeColor??0x8b8c86).multiplyScalar(.68+k*.09));
+   }
+  }
+  mesh.instanceMatrix.needsUpdate=true;
+  if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  groups[ti].add(mesh);drawCalls++;
+  return mesh;
+ });
  // Shared translucent smoke atlas replaces obvious rigid black cones. A single
  // billboard per damaged building retains the original 28-marker visual budget.
  // The texture is constructed once; no per-frame canvas or material allocations.
@@ -223,6 +252,25 @@ export function createDistantNeighborhood({root,flameTexture}){
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
   }
+  // Three irregular, tinted wall fragments break the flat-pancake silhouette.
+  // The pieces descend from the damaged facade and settle within the lot;
+  // there is no per-frame allocation or new draw call for each collapsed home.
+  const debris=rubbleBatches[home.tier];
+  const visibility=Math.min(1,home.fall*4);
+  const widths=[.46,.32,.53],heights=[.17,.23,.12],depths=[.31,.27,.37];
+  const offsetsX=[-.23,.27,.02],offsetsZ=[.18,-.19,-.25];
+  for(let k=0;k<rubblePerBuilding;k++){
+   const w=home.w*widths[k]*visibility;
+   const h=home.h*heights[k]*visibility;
+   const d=home.d*depths[k]*visibility;
+   const y=(h*.5+.06)*visibility+(1-home.fall)*home.h*.42;
+   dummy.position.set(home.x+home.w*offsetsX[k],y,home.z+home.d*offsetsZ[k]);
+   dummy.rotation.set(0,[.14,-.28,.35][k]*home.fall,[.18,-.22,.12][k]*home.fall);
+   dummy.scale.set(w,h,d);dummy.updateMatrix();
+   debris.setMatrixAt(home.rubbleStart+k,dummy.matrix);
+  }
+  debris.instanceMatrix.needsUpdate=true;
+  if(home.fall>0)debris.visible=true;
   positionImpactEffects(home,heightScale);
  }
  function targetAt(x,z){
@@ -263,6 +311,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const puff of damageMarkers)puff.removeFromParent();
   impactSmoke.clear();damageMarkers.length=0;
   for(const home of damaged){home.damage=home.fall=0;applyFall(home);}
+  for(const debris of rubbleBatches)debris.visible=false;
   damaged.clear();falling.clear();fireTime=0;
  }
  function setHealth(health){
@@ -290,11 +339,19 @@ export function createDistantNeighborhood({root,flameTexture}){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
    batches[home.tier].main.getMatrixAt(index,dummy.matrix);
+   const debris=rubbleBatches[home.tier],rubblePieces=[];
+   for(let k=0;k<rubblePerBuilding;k++){
+    debris.getMatrixAt(home.rubbleStart+k,dummy.matrix);
+    const e=dummy.matrix.elements;
+    rubblePieces.push({height:Math.hypot(e[4],e[5],e[6]),x:e[12],y:e[13],z:e[14]});
+   }
    return {damage:home.damage,fall:home.fall,height:dummy.matrix.elements[5],originalHeight:home.h,
+    rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     smoking:impactSmoke.has(home),burning:impactSmoke.has(home)};
   },
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
+   rubbleBatches:rubbleBatches.length,rubbleCapacity:buildingDefs.length*rubblePerBuilding,
    falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
    crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
  };

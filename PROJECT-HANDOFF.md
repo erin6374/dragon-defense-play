@@ -1,3 +1,7 @@
+## November 9 — Distant facade debris checkpoint (QA pending)
+
+Distant collapse now uses three instanced wall fragments per building to break up the flat slab silhouette. One shared rubble mesh per distance tier is hidden until needed, and restart clears all fragments. Inspect `06c-distant-building-before.png` and `06d-distant-building-rubble.png` in the exact-head QA artifact; compare actual draw calls and confirm the pieces read as rubble rather than flying blocks. The source-level change does not alter building placement, collision or gameplay. **Do not claim this visual pass certified until exact-head browser QA succeeds.**
+
 ## Street-center deployment and neighborhood barrage (November 9)
 
 Military vehicles stage at Broad Street world Z=24, between the inner lane centers at Z=20 and Z=27. The player can shoot every foreground meteor, including the fast flaming subtype. Scenic meteors can hit the structural back blocks and the instanced far rows. Near-empty block health raises strike cadence, volley size and strength. Use `06e-zero-block-background-fire.png` for the zero-gauge collapse and fire capture. Restart clears the falling streaks, rubble, fire and smoke.

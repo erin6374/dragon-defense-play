@@ -1,3 +1,7 @@
+## November 9 — Distant facade debris checkpoint (QA pending)
+
+Distant collapse now uses three instanced wall fragments per building to break up the flat slab silhouette. One shared rubble mesh per distance tier is hidden until needed, and restart clears all fragments. Inspect `06c-distant-building-before.png` and `06d-distant-building-rubble.png` in the exact-head QA artifact; compare actual draw calls and confirm the pieces read as rubble rather than flying blocks. The source-level change does not alter building placement, collision or gameplay. **Do not claim this visual pass certified until exact-head browser QA succeeds.**
+
 ## November 9 — Foreground street and zero-health background barrage
 
 The batteries now stage between the inner Broad Street lanes. All foreground meteor classes are shootable. Near and far background buildings are targets for visible falling meteors. The same neighborhood health calculation drives the gauge and the barrage, with faster volleys, major structural damage, and fire and smoke as the gauge empties. Check `zeroBlockBackgroundDamage`, `meteorShootability`, and `militaryPlacement` in the exact-head browser report. Paulo animation remains paused.

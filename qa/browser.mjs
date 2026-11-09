@@ -866,12 +866,19 @@ try {
   assert.ok(backgroundCollapse.ok,backgroundCollapse.error);
   const {id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,
     before:beforeCollapse,after:afterCollapse}=backgroundCollapse.result;
+  assert.equal(backgroundIntact.rubbleCount,0,'an intact distant building has no visible facade debris');
   assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
     'the first distant hit creates smoke while the building stays standing');
   assert.ok(backgroundFalling.fall>0&&backgroundFalling.fall<1&&backgroundFalling.height<backgroundIntact.height,
     'repeated hits animate the actual instanced building down toward the ground');
   assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
     'the collapsed shell persists as low rubble with smoke');
+  assert.ok(backgroundFalling.rubbleCount>0,'falling distant facades release visible debris');
+  assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
+  assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
+    'settled facade fragments are finite and near the ground');
+  assert.ok(new Set(backgroundSettled.rubblePieces.map(piece=>piece.x.toFixed(2))).size>1,
+    'collapsed facade pieces have different horizontal offsets');
   for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],['06d-distant-building-rubble',afterCollapse]]){
     assert.match(png,/^data:image\/png;base64,/);
     await writeFile('qa-output/'+filename+'.png',Buffer.from(png.split(',')[1],'base64'));
@@ -882,6 +889,7 @@ try {
     if(!started.ok)throw Error(started.error);
     return qa.distantBuildingState(id);
   },id);
+  assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
   assert.ok(restoredBackground.damage===0&&!restoredBackground.smoking&&Math.abs(restoredBackground.height-backgroundIntact.height)<.001,
     'restart restores the far building instance and removes its impact smoke');
   report.distantBuildingCollapse={id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,restored:restoredBackground};

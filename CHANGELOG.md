@@ -1,3 +1,8 @@
+## November 9 — Instanced distant facade debris (QA pending)
+
+- Distant buildings now release three asymmetrical, facade-tinted wall fragments while collapsing, which settle beside the low shell and tilted roof. Debris uses one preallocated InstancedMesh per distance tier (five potential extra draw calls, zero new per-impact meshes), with deterministic slots and no ongoing animation after settling.
+- The debris batches stay hidden before a collapse and are hidden again on restart. Browser QA checks intact/falling/settled/restarted debris counts, grounded fragment positions and variation, alongside the existing before/after screenshots. **Exact-head browser QA and visual inspection remain pending.** No gameplay damage, building coordinates, licensed FBX, main or Building Explorer changes.
+
 ## Gameplay experiment — Rally waves
 
 - Rally highlights one incoming meteor on the radar, shows its intended destination and estimated impact time, and rings the impact site in the scene.
