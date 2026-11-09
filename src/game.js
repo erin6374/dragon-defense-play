@@ -1052,6 +1052,14 @@ function iceHit(reason,helicopter=false){
 }
 function hurtDragon(reason){if(dragonStun>0||blockShield>0||invulnerable>0||!active)return;dragonLives--;invulnerable=2.2;emitImpact(dragon.position.x,dragon.position.y,dragon.position.z,90,.6);sound('crash');message(reason+' · DRAGON LIVES '+dragonLives);if(dragonLives<=0)gameOver();}
 function activateBlock(){
+ if(rallyRecoveryOpen()){
+  if(!rallyShieldQueued&&blockCharge>=25){
+   blockCharge-=25;
+   rallyShieldQueued=true;
+   updateBlockButton();
+  }
+  return;
+ }
  if(!active||paused||blockCharge<100||blockScene>0)return;
  blockCharge=0;blockScene=10;blockShield=10;schoolShieldUntil=Math.max(schoolShieldUntil,elapsed+10);
  if(wave<=5){
@@ -1064,7 +1072,23 @@ function activateBlock(){
  }else{militaryOccupation.suppress(10);message('CALL THE BLOCK — NEIGHBORHOOD PROTECTION!');}
  updateBlockButton();updateHud();
 }
-function updateBlockButton(){const b=document.getElementById('call-block');if(!b)return;b.disabled=blockCharge<100||!active||paused;b.textContent=blockScene>0?'🛡 BLOCK RESPONDING':`📣 CALL THE BLOCK ${Math.floor(blockCharge)}%`;}
+function rallyRecoveryOpen(){
+ return rallyRecoveryChoice&&active&&!paused&&remaining===0&&between>0&&wave<15&&
+  !isChapterEnd(wave)&&!meteors.some(m=>!m.grounded);
+}
+function updateBlockButton(){
+ const b=document.getElementById('call-block');
+ if(!b)return;
+ if(rallyRecoveryOpen()){
+  b.disabled=rallyShieldQueued||blockCharge<25;
+  b.textContent=rallyShieldQueued?'SHIELD QUEUED':`BUY SHIELD 25% · ${Math.floor(blockCharge)}%`;
+  b.title='Spend 25 support for nine seconds of school protection at the next wave';
+  return;
+ }
+ if(rallyRecoveryChoice)b.title='Chapter-specific neighborhood intervention';
+ b.disabled=blockCharge<100||!active||paused;
+ b.textContent=blockScene>0?'🛡 BLOCK RESPONDING':`📣 CALL THE BLOCK ${Math.floor(blockCharge)}%`;
+}
 document.getElementById('call-block')?.addEventListener('click',activateBlock);
 
 // Chapter 3 uses independently managed military units; no changes to civilian vehicle pools.
@@ -1320,7 +1344,10 @@ const hunterWarnings=[];
 function warnHunter(){const el=document.getElementById('hunter-warning');if(el){el.textContent='⚠ FLAMING METEOR INBOUND — DODGE OR INTERCEPT';el.style.opacity='1';setTimeout(()=>{el.style.opacity='0'},1800)}}
 
 let score=0,hp=100,wave=1,active=false,paused=false,spawnTimer=0,remaining=0,between=0,stormTimer=0,elapsed=0,shake=0,cooldown=0;
-const rallyLoop=new URLSearchParams(location.search).get('loop')==='rally';
+const loopOptions=new URLSearchParams(location.search);
+const rallyLoop=loopOptions.get('loop')==='rally';
+const rallyRecoveryChoice=rallyLoop&&loopOptions.get('recovery')==='choice';
+let rallyShieldQueued=false;
 const impactMarker=rallyLoop?new THREE.Mesh(new THREE.RingGeometry(1.08,1.45,32),
  new THREE.MeshBasicMaterial({color:0xffbc67,transparent:true,opacity:.85,depthTest:false,depthWrite:false})):null;
 if(impactMarker){impactMarker.visible=false;impactMarker.renderOrder=20;scene.add(impactMarker);}
@@ -1916,8 +1943,9 @@ function updateChapterSettlement(dt){
 }
 function updateHud(){document.getElementById('score').textContent=score.toLocaleString();document.getElementById('wave').textContent=wave;const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent='CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title;document.getElementById('hp').textContent=hp+'%';document.getElementById('healthbar').style.width=hp+'%';updateNeighborhoodGauge();document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);}
 let toastTimer=0;function message(t){document.getElementById('toast').textContent=t;toastTimer=1.8}
+function isChapterEnd(wave){return wave===5||wave===10||wave===14;}
 function updateWaveProgress(dt,rally=rallyLoop){
- const chapterEnd=wave===5||wave===10||wave===14;
+ const chapterEnd=isChapterEnd(wave);
  if(wave<15){
   if(!rally){
    stormTimer-=dt;
@@ -1946,10 +1974,16 @@ function updateWaveProgress(dt,rally=rallyLoop){
   if(between>2.6)beginChapterSettlement();
   return;
  }
- const recovery=wave===15?4.5:rally?4:7;
+ const recovery=wave===15?4.5:rally&&!rallyRecoveryChoice?4:7;
  if(between>recovery){
   if(wave===15){winGame();return;}
   wave++;between=0;updateHud();newWave();
+  if(rallyShieldQueued){
+   rallyShieldQueued=false;
+   schoolShieldUntil=Math.max(schoolShieldUntil,elapsed+9);
+   updateBlockButton();updatePowerHud();
+   message('SCHOOL SHIELD ACTIVE — 9s');
+  }
  }else if(rally&&wave<15&&(previous===0||Math.floor(between)>Math.floor(previous))){
   message('WAVE CLEAR — NEXT WAVE IN '+Math.max(1,Math.ceil(recovery-between))+'s');
  }
@@ -1964,7 +1998,7 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
  stormTimer=0;remaining=wave>=15?0:waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:.7;if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
-function reset(){schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
+function reset(){rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  for(const b of skyBursts){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose()}skyBursts.length=0;for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
  if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
@@ -2688,6 +2722,24 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const marked={visible:impactMarker.visible,position:impactMarker.position.toArray(),
     eta:selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings)?.eta};
    return {marked,target:meteor.target.toArray()};
+  }),
+  stageRallyRecovery:(buy)=>run('stageRallyRecovery',()=>{
+   if(!rallyRecoveryChoice)throw Error('Rally recovery choice preview is required');
+   remaining=0;
+   blockCharge=40;
+   updateWaveProgress(.1);
+   updateBlockButton();
+   const button=document.getElementById('call-block');
+   const offer={text:button.textContent,enabled:!button.disabled};
+   if(buy){button.click();activateBlock();}
+   const queued=rallyShieldQueued;
+   const charge=blockCharge;
+   const earlyShield=schoolShieldUntil>elapsed;
+   updateWaveProgress(6.8);
+   const beforeAdvance=wave;
+   updateWaveProgress(.2);
+   return {offer,queued,charge,earlyShield,beforeAdvance,afterAdvance:wave,
+    shieldSeconds:Math.max(0,schoolShieldUntil-elapsed),queueCleared:!rallyShieldQueued};
   }),
   spawnMeteor:()=>run('spawnMeteor',()=>{spawnMeteor();return snap()}),
   cinematicStage:(mode)=>run('cinematicStage',()=>{remaining=0;between=-600;helicopterTimer=600;

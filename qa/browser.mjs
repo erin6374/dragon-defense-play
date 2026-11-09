@@ -1647,6 +1647,43 @@ try {
       poses,initial,fire,wind,gas,errors:labErrors};
   }finally{await lab.close();}
 
+  const rallyPreview=await browser.newPage({viewport:{width:1024,height:576},serviceWorkers:'block'});
+  try{
+   await rallyPreview.goto(new URL('?qa=1&loop=rally&recovery=choice',base));
+   await rallyPreview.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
+   const impact=await rallyPreview.evaluate(()=>{
+    const qa=window.__DD_QA;
+    qa.start(2);
+    return qa.stageRallyImpactWarning();
+   });
+   assert.ok(impact.ok,impact.error);
+   assert.equal(impact.result.marked.visible,true);
+   assert.deepEqual(impact.result.marked.position.slice(0,2),impact.result.target.slice(0,2));
+   assert.ok(Math.abs(impact.result.marked.eta-2.8)<.001);
+   await rallyPreview.screenshot({path:'qa-output/19-rally-impact-warning.png'});
+   const recovery=await rallyPreview.evaluate(()=>{
+    const qa=window.__DD_QA;
+    return [false,true].map(buy=>{qa.start(2);return qa.stageRallyRecovery(buy);});
+   });
+   for(const sample of recovery){
+    assert.ok(sample.ok,sample.error);
+    assert.equal(sample.result.offer.enabled,true);
+    assert.match(sample.result.offer.text,/BUY SHIELD 25%/);
+    assert.equal(sample.result.earlyShield,false);
+    assert.equal(sample.result.beforeAdvance,2);
+    assert.equal(sample.result.afterAdvance,3);
+    assert.equal(sample.result.queueCleared,true);
+   }
+   const [saved,spent]=recovery.map(sample=>sample.result);
+   assert.equal(saved.charge,40);
+   assert.equal(saved.shieldSeconds,0);
+   assert.equal(spent.charge,15);
+   assert.equal(spent.queued,true);
+   assert.equal(spent.shieldSeconds,9);
+   report.rallyImpactWarning=impact.result;
+   report.rallyRecovery={saved,spent};
+  }finally{await rallyPreview.close();}
+
 } catch (error) {
   report.failure = String(error.stack ?? error);
   await page?.screenshot({path: 'qa-output/failure.png', timeout: 10000}).catch(() => {});
