@@ -876,9 +876,13 @@ try {
   assert.ok(backgroundFalling.rubbleCount>0,'falling distant facades release visible debris');
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
-  assert.ok(Math.abs(backgroundFalling.smokePosition[0]-backgroundIntact.smokePosition[0])>.01
-    &&Math.abs(backgroundSettled.smokePosition[0]-backgroundFalling.smokePosition[0])>.01,
-    'distant impact smoke drifts over time instead of remaining static');
+  // The plume uses a sine-wave drift: a snapshot near its turning point can
+  // have almost no movement over one interval, even though it visibly moves
+  // across the complete staged collapse. Test the sampled range instead.
+  const smokeXs=[backgroundIntact,backgroundFalling,backgroundSettled].map(s=>s.smokePosition[0]);
+  const smokeDriftRange=Math.max(...smokeXs)-Math.min(...smokeXs);
+  assert.ok(smokeXs.every(Number.isFinite)&&smokeDriftRange>.05&&smokeDriftRange<4,
+    'distant impact smoke moves over the staged collapse without teleporting');
   assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
