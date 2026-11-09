@@ -35,6 +35,8 @@
 
 ## Gameplay experiment — Rally waves
 
+- The radar shows a recap during the Rally break with player interceptions and school and block health lost that wave. The clear snapshot also appears in the session export.
+
 - Rally highlights one incoming meteor on the radar, shows its intended destination and estimated impact time, and rings the impact site in the scene.
 - Add `&recovery=choice` to Rally for a seven-second ordinary-wave break. Spend 25 support to queue a nine-second school shield for the next wave, or save the charge for Call the Block.
 - Rally pays the block-saved bonus for foreground buildings after completed waves. Starting at a later wave begins at zero score. Session exports identify the loop variant.

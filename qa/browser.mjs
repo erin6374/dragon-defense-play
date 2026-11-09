@@ -1726,6 +1726,19 @@ try {
    assert.equal(spent.shieldSeconds,9);
    report.rallyImpactWarning=impact.result;
    report.rallyRecovery={saved,spent};
+   const recap=await rallyPreview.evaluate(()=>{
+    const qa=window.__DD_QA;
+    qa.start(2);
+    return qa.stageRallyRecap();
+   });
+   assert.ok(recap.ok,recap.error);
+   assert.ok(recap.result.expectedBlockLoss>0);
+   assert.deepEqual(recap.result.recap,{wave:2,intercepts:2,schoolLost:7,blockLost:recap.result.expectedBlockLoss});
+   assert.equal(recap.result.unchanged,true,'the wave result stays fixed after the clear');
+   await rallyPreview.screenshot({path:'qa-output/20-rally-wave-recap.png'});
+   const restarted=await rallyPreview.evaluate(()=>window.__DD_QA.start(2));
+   assert.ok(restarted.ok,restarted.error);
+   report.rallyRecap=recap.result.recap;
   }finally{await rallyPreview.close();}
 
 } catch (error) {

@@ -1415,6 +1415,14 @@ function updateEffects(dt){
 }
 const meteors=[],shots=[],blasts=[],debris=[];
 const radarCanvas=document.createElement('canvas');radarCanvas.id='incoming-radar';radarCanvas.width=160;radarCanvas.height=130;radarCanvas.style.cssText='position:fixed;right:14px;bottom:14px;width:160px;height:130px;z-index:22;pointer-events:none;border:1px solid #6ac6c6;background:#031e2ac9;border-radius:8px';document.body.appendChild(radarCanvas);const radarCtx=radarCanvas.getContext('2d');let radarTick=0;
+function drawRallyRecap(c,recap){
+ c.fillStyle='#9be8f0';c.font='bold 11px sans-serif';
+ c.fillText('WAVE '+recap.wave+' DEFENDED',10,20);
+ c.fillStyle='#e8f4fa';c.font='13px sans-serif';
+ c.fillText('Interceptions: '+recap.intercepts,10,49);
+ c.fillText('School: '+(recap.schoolLost?'−'+recap.schoolLost+' pts':'held'),10,76);
+ c.fillText('Block: '+(recap.blockLost?'−'+recap.blockLost+' pts':'held'),10,103);
+}
 function updateMeteorRadar(dt){
  radarTick-=dt;
  if(radarTick>0)return;
@@ -1430,6 +1438,11 @@ function updateMeteorRadar(dt){
  }
  const c=radarCtx;
  c.clearRect(0,0,160,130);
+ const recap=rallyLoop&&between>0?waveStats.at(-1)?.rallyResult:null;
+ if(recap&&!warning){
+  drawRallyRecap(c,recap);
+  return;
+ }
  c.strokeStyle='#3b777a';c.lineWidth=1;
  c.beginPath();c.arc(80,68,53,0,Math.PI*2);c.stroke();
  c.beginPath();c.arc(80,68,27,0,Math.PI*2);c.stroke();
@@ -1944,6 +1957,14 @@ function updateChapterSettlement(dt){
 function updateHud(){document.getElementById('score').textContent=score.toLocaleString();document.getElementById('wave').textContent=wave;const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent='CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title;document.getElementById('hp').textContent=hp+'%';document.getElementById('healthbar').style.width=hp+'%';updateNeighborhoodGauge();document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);}
 let toastTimer=0;function message(t){document.getElementById('toast').textContent=t;toastTimer=1.8}
 function isChapterEnd(wave){return wave===5||wave===10||wave===14;}
+function recordRallyClear(){
+ const entry=waveStats.at(-1);
+ if(!entry?.rallyStart||entry.rallyResult)return;
+ const start=entry.rallyStart;
+ entry.rallyResult={wave,intercepts:sessionStats.intercepts-start.intercepts,
+  schoolLost:Math.max(0,start.schoolHealth-hp),
+  blockLost:Math.max(0,start.blockHealth-neighborhoodHealth())};
+}
 function updateWaveProgress(dt,rally=rallyLoop){
  const chapterEnd=isChapterEnd(wave);
  if(wave<15){
@@ -1969,6 +1990,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   }
  }else if(meteors.length>0)return;
  const previous=between;
+ if(rally&&wave<15&&previous===0)recordRallyClear();
  between+=dt;
  if(chapterEnd){
   if(between>2.6)beginChapterSettlement();
@@ -1994,7 +2016,11 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
  // and a fresh game explicitly manage the roof perch separately.
  // Frozen emergency responders remain until this wave ends.
  for(let i=cars.length-1;i>=0;i--)if(cars[i].frozen){recycleCar(cars[i]);cars.splice(i,1)}
- updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);waveStats.push({wave,startedAt:Math.round(elapsed),scoreAtStart:score});if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
+ updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);
+ const entry={wave,startedAt:Math.round(elapsed),scoreAtStart:score};
+ if(rallyLoop)entry.rallyStart={intercepts:sessionStats.intercepts,schoolHealth:hp,blockHealth:neighborhoodHealth()};
+ waveStats.push(entry);
+ if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
  stormTimer=0;remaining=wave>=15?0:waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:.7;if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
@@ -2741,6 +2767,22 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    updateWaveProgress(.2);
    return {offer,queued,charge,earlyShield,beforeAdvance,afterAdvance:wave,
     shieldSeconds:Math.max(0,schoolShieldUntil-elapsed),queueCleared:!rallyShieldQueued,score};
+  }),
+  stageRallyRecap:()=>run('stageRallyRecap',()=>{
+   if(!rallyLoop)throw Error('Rally preview is required');
+   remaining=0;
+   registerIntercept({});
+   registerIntercept({});
+   hp-=7;
+   for(const building of neighborhood.targetBuildings.slice(0,3))building.damage=.5;
+   updateHud();
+   updateWaveProgress(.1);
+   const recap=waveStats.at(-1).rallyResult;
+   const expectedBlockLoss=100-neighborhoodHealth();
+   updateMeteorRadar(.2);
+   hp-=2;
+   updateWaveProgress(.1);
+   return {recap,expectedBlockLoss,unchanged:recap===waveStats.at(-1).rallyResult};
   }),
   spawnMeteor:()=>run('spawnMeteor',()=>{spawnMeteor();return snap()}),
   cinematicStage:(mode)=>run('cinematicStage',()=>{remaining=0;between=-600;helicopterTimer=600;
