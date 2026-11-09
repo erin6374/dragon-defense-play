@@ -227,13 +227,20 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
  root.rotation.x=bank*(.78+.22*Math.cos(t*.9));
+ // Coordinated yaw and slight nose-down pitch make a banking turn read as
+ // aerodynamic steering rather than an isolated body roll. Visual-only;
+ // the gameplay parent still controls facing, physics and hitboxes.
+ root.rotation.y=bank*.48;
  // Impact recoil decays from time IN THIS pose, not session time. Otherwise
  // a late-level hit would vanish because the global wingbeat clock is large.
- root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:0;
+ root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:
+  state==='bank'?-.09*Math.abs(bank)/.35:0;
  torso.scale.set(1,1+(state==='inhale'?.16:0)+soft*.015,1);
  chest.scale.set(1,1+(state==='inhale'?.19:state==='wind'?.10:0),1);
  neck.rotation.z=state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
  head.rotation.z=state==='wind'||state==='fire'?-.16:state==='gas'?.23:Math.sin(t*.9)*.035;
+ // Paulo looks into the turn before the tail finishes steering behind him.
+ head.rotation.y=state==='bank'?bank*.35:0;
  jaw.rotation.z=['wind','fire','gas'].includes(state)?-.37:state==='inhale'?-.11:0;
  wings.forEach(({shoulder,elbow,wrist,side})=>{
   const phase=cycle*power;

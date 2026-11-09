@@ -1138,10 +1138,12 @@ try {
         return {name,jaw:rig.jaw.rotation.z,chest:rig.chest.scale.y};
       });
       rig.applyPose(.75,'bank',1);
-      const right={roll:rig.root.rotation.x,
+      const right={roll:rig.root.rotation.x,yaw:rig.root.rotation.y,
+        pitch:rig.root.rotation.z,headYaw:rig.head.rotation.y,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
       rig.applyPose(.75,'bank',-1);
-      const left={roll:rig.root.rotation.x,
+      const left={roll:rig.root.rotation.x,yaw:rig.root.rotation.y,
+        pitch:rig.root.rotation.z,headYaw:rig.head.rotation.y,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
       const sampleWings=()=>rig.wings.map(({shoulder,elbow,wrist})=>({
         shoulderSweep:shoulder.rotation.y,elbowLift:elbow.rotation.x,wristSweep:wrist.rotation.y
@@ -1245,6 +1247,15 @@ try {
       'standalone rig mirrors longitudinal bank rotation');
     assert.ok(Math.abs(reusableRig.right.wings[0]+reusableRig.left.wings[1])<.000001,
       'standalone rig mirrors opposite shoulder angles');
+    assert.ok(reusableRig.right.yaw>.12&&reusableRig.left.yaw<-.12 &&
+      Math.abs(reusableRig.right.yaw+reusableRig.left.yaw)<1e-8,
+      'eagle-inspired turn yaws into the selected bank direction');
+    assert.ok(reusableRig.right.headYaw>.08&&reusableRig.left.headYaw<-.08 &&
+      Math.abs(reusableRig.right.headYaw+reusableRig.left.headYaw)<1e-8,
+      'head looks into each turn and mirrors across directions');
+    assert.ok(reusableRig.right.pitch<-.05&&
+      Math.abs(reusableRig.right.pitch-reusableRig.left.pitch)<1e-8,
+      'both banking directions use a shallow nose-down steering pitch');
     report.pauloReusableRig={panels:reusableRig.panels,joints:reusableRig.joints,
       tail:reusableRig.tail,poses:reusableRig.visits.length};
     assert.equal(await lab.evaluate(()=>window.__PAULO_LAB_QA.armorPlateCount),66,

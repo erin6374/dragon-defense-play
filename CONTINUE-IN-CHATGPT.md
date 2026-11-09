@@ -1,3 +1,7 @@
+## Latest continuation — coordinated bank steering (November 8 late night)
+
+Previous commit `533ad4e` passed [browser QA #316](https://github.com/erin6374/dragon-defense-play/actions/runs/42550703490). The next narrow change adds visual-only signed body yaw, shallow nose-down pitch and head-leading yaw to the procedural Paulo banking pose, plus mirrored-turn regression assertions. Full browser QA for the new exact head is pending. No changes to gameplay movement, hitboxes, old/new model toggle or production. Ground rear-up turning and licensed European Dragon binary integration remain outstanding.
+
 # Dragon Defense — carry-over bookmark
 
 ## Latest continuation — landing airbrake (November 8 night)

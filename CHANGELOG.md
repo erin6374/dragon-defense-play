@@ -1,3 +1,7 @@
+## 2026-11-08 — Paulo coordinated banking yaw and head lead (exact-head QA pending)
+- Procedural Paulo now combines signed longitudinal bank roll with a directional body yaw, shallow nose-down pitch and head-leading yaw. The existing asymmetric wing articulation and tail steering remain. This is a visual-only change to the shared rig, preserving simulation-controlled facing, movement, hitboxes and attacks.
+- Browser regression assertions check mirrored yaw/head lead and the symmetric pitch in both bank directions; existing orthographic bank screenshots remain the visual evidence. Prior commit `533ad4e` passed [QA #316](https://github.com/erin6374/dragon-defense-play/actions/runs/42550703490); this new head requires its own QA. Ground rear-up/pivot turning remains outstanding. No licensed European Dragon FBX or real-GPU FPS verification.
+
 ## 2026-11-08 — Paulo landing airbrake flare (exact-head QA pending)
 - Procedural Paulo now spreads both wing shoulders, elbows and wingtips at the start of the landing pose, then relaxes the flare over the existing 0.6-second leg-extension interval. This is a visual-only eagle-inspired braking silhouette; it does not alter flight controls, hitboxes, or the original-model fallback.
 - Browser QA adds landing-wing joint assertions and `16-paulo-landing-airbrake-side.png` alongside the existing tucked-flight screenshot. Exact-head QA and hardware GPU FPS are not yet verified. The licensed European Dragon FBX remains unavailable in the repository.

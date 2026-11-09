@@ -1,3 +1,7 @@
+## Latest coordinated bank steering checkpoint (November 8 late night)
+
+QA #316 passed for prior commit `533ad4e`. A new visual-only Paulo banking pass adds signed body yaw, a shallow nose-down pitch and head-leading yaw, with browser assertions for mirrored turns. New exact-head QA pending. Existing wind physics and original/new model toggle are preserved. Ground rear-up turning is still outstanding, as is integration of the licensed European Dragon asset. No real GPU validation or production changes.
+
 # Dragon Defense — Project Handoff
 
 ## Latest landing airbrake checkpoint (November 8 night)
