@@ -543,11 +543,11 @@ const dragonVisuals=enhanceDragon(THREE,dragon,wings);
 const legacyDragonVisuals=dragon.children.map(object=>({object,visible:object.visible}));
 let pauloPreviewRig=null,pauloPoseDriver=null,pauloPreviewEnabled=false,pauloFirePoseUntil=0;
 const pauloPreviewButton=document.querySelector('#paulo-toggle');
-const pauloPreviewAllowed=new URLSearchParams(location.search).get('paulo')==='1'||
-  new URLSearchParams(location.search).get('qa')==='1';
-if(pauloPreviewButton)pauloPreviewButton.hidden=!pauloPreviewAllowed;
+// Public, visual-only comparison: the original dragon stays the default and
+// remains available as fallback. The new option is our procedural Paulo rig,
+// NOT the separately licensed European Dragon FBX (asset not yet integrated).
+if(pauloPreviewButton)pauloPreviewButton.hidden=false;
 function setPauloPreview(enabled){
- if(!pauloPreviewAllowed)return false;
  if(!!enabled===pauloPreviewEnabled)return pauloPreviewEnabled;
  if(enabled){
   let candidate=null;
@@ -577,13 +577,13 @@ function setPauloPreview(enabled){
   for(const item of legacyDragonVisuals)item.object.visible=item.visible;
  }
  if(pauloPreviewButton){
-  pauloPreviewButton.textContent=pauloPreviewEnabled?'🐉 Original Dragon':'🐉 Try Paulo';
+  pauloPreviewButton.textContent=pauloPreviewEnabled?'🐉 Model: Paulo Preview':'🐉 Model: Original';
   pauloPreviewButton.setAttribute('aria-pressed',String(pauloPreviewEnabled));
  }
  return pauloPreviewEnabled;
 }
 pauloPreviewButton?.addEventListener('click',()=>setPauloPreview(!pauloPreviewEnabled));
-if(pauloPreviewAllowed)window.__DD_PAULO_PREVIEW={
+if(new URLSearchParams(location.search).get('qa')==='1')window.__DD_PAULO_PREVIEW={
  setEnabled:setPauloPreview,
  snapshot:()=>({
   enabled:pauloPreviewEnabled,
