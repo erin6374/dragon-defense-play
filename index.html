@@ -45,9 +45,9 @@
 /* Keep the wave banner below the interception status on desktop. */
 @media (min-width:851px) {
   /* Leave clearance below the full HUD, including Windows font metrics. */
-  #power-status { top:100px!important; }
-  #toast { top:144px!important; }
-  #hunter-warning { top:187px!important; }
+  #power-status { top:120px!important; }
+  #toast { top:166px!important; }
+  #hunter-warning { top:208px!important; }
 }
 </style>
 <style id="compact-hud-legibility">
@@ -121,7 +121,7 @@ body.cinematic-hud #wind-meter{bottom:9px!important;left:9px!important;min-width
 </style><style id="radar-safe-area-css">
 /* Full desktop controls require a radar-free bottom command strip. */
 @media (min-width:851px) and (pointer:fine) {
- body:not(.cinematic-hud) #incoming-radar {top:104px!important;bottom:auto!important;}
+ body:not(.cinematic-hud) #incoming-radar {top:120px!important;bottom:auto!important;}
 }
 /* Compact/coarse-pointer HUD: keep radar above FIRE/GAS and lower menus. */
 @media (max-width:850px), (pointer:coarse) {

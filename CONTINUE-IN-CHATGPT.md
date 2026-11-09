@@ -1,3 +1,7 @@
+## November 9 — RC9e browser QA #361 full HUD clearance repair
+
+[Browser QA #361](https://github.com/erin6374/dragon-defense-play/actions/runs/42664814978) reached the live 1024×576 UI and found the radar at top 104 while the health HUD ended at 107; the test requires an 8px gap. The existing desktop power-status banner also started at 100, within the health HUD. Raised the radar to 120, moved the power banner to 120, the wave toast to 166 and hunter warning to 208, retaining compact-screen rules. No gameplay/rig changes. **New exact-head QA pending.**
+
 ## November 9 — RC9e QA #360 static assertion scope repair
 
 [Browser QA #360](https://github.com/erin6374/dragon-defense-play/actions/runs/42664690651) failed before browser startup: a new global text assertion forbade `gustOrigin.copy(dragon.position)` anywhere in game.js, but two existing synthetic QA staging helpers intentionally initialize their test gust at the body position. Production `releaseWind` and active-frame wind use the new `syncWindMouth` source. Removed the overbroad global assertion; retained positive source checks and live pose-aware browser assertions. **Exact-head QA pending**; no gameplay change in this repair.
