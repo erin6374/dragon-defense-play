@@ -877,11 +877,13 @@ try {
   assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
-  assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.65
-    &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.72
+  assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.49
+    &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.60
     &&backgroundSettled.roof.tilt>.3
     &&backgroundSettled.roof.x>backgroundIntact.roof.x+.5,
     'settled roof folds, shifts and tilts instead of covering debris as a full-size slab');
+  assert.ok(backgroundSettled.rubblePieces.some(piece=>piece.height>backgroundSettled.height*1.5),
+    'some wall fragments remain taller than the low collapsed shell');
   assert.ok(new Set(backgroundSettled.rubblePieces.map(piece=>piece.x.toFixed(2))).size>1,
     'collapsed facade pieces have different horizontal offsets');
   for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],['06d-distant-building-rubble',afterCollapse]]){
