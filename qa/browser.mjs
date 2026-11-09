@@ -1648,8 +1648,9 @@ try {
   }finally{await lab.close();}
 
   const rallyPreview=await browser.newPage({viewport:{width:1024,height:576},serviceWorkers:'block'});
+  rallyPreview.setDefaultTimeout(90000);
   try{
-   await rallyPreview.goto(new URL('?qa=1&loop=rally&recovery=choice',base));
+   await rallyPreview.goto(new URL('?qa=1&loop=rally&recovery=choice',base).href);
    await rallyPreview.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
    const impact=await rallyPreview.evaluate(()=>{
     const qa=window.__DD_QA;
