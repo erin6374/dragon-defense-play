@@ -1,3 +1,7 @@
+## November 9 — RC9e QA #360 static assertion scope repair
+
+[Browser QA #360](https://github.com/erin6374/dragon-defense-play/actions/runs/42664690651) failed before browser startup: a new global text assertion forbade `gustOrigin.copy(dragon.position)` anywhere in game.js, but two existing synthetic QA staging helpers intentionally initialize their test gust at the body position. Production `releaseWind` and active-frame wind use the new `syncWindMouth` source. Removed the overbroad global assertion; retained positive source checks and live pose-aware browser assertions. **Exact-head QA pending**; no gameplay change in this repair.
+
 ## November 9 — RC9e breath-origin repair (exact-head QA pending)
 
 - Wind and fire now start at animated muzzle sockets for both legacy and Paulo preview models. The gust source and visible cone follow completed head, flight, turn and movement poses every frame rather than freezing at release.

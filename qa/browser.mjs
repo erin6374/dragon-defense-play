@@ -68,7 +68,6 @@ assert.match(gameSource,/fireballMeteorDamage\(m,b\.playerFire,/,'player shockwa
 assert.match(gameSource,/emitMeteorShrapnel\(m\.mesh\.position,/,'intercepts produce flaming shrapnel');
 assert.match(gameSource,/if\(windActive\)syncWindMouth\(\)/,'live gust refreshes mouth source each frame');
 assert.match(gameSource,/function releaseWind\(\)[\s\S]*?syncWindMouth\(\);gustTime=/,'gust starts at muzzle');
-assert.doesNotMatch(gameSource,/gustOrigin\.copy\(dragon\.position\)/,'gust cannot originate at body origin');
 assert.match(gameSource,/const start=getBreathMouthWorld\(new THREE\.Vector3\(\)\)/,'fireball starts at muzzle');
 assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'shockwave origin is tagged');
 // Paulo must not be teleported back to the roof at each ordinary wave.
