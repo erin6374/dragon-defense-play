@@ -248,11 +248,11 @@ export function createDistantNeighborhood({root,flameTexture}){
    // A full-size flat black roof hid the new wall fragments in the settled
    // screenshot. Fold the roof inward and cant it over the debris instead.
    // These are existing instance transforms: no new mesh or draw call.
-   const roofFootprint=roof?1-progress*.40:1;
+   const roofFootprint=roof?1-progress*.58:1;
    dummy.position.set(part.x+(roof?progress*home.w*.24:0),part.y*heightScale,
     part.z+(roof?progress*home.d*.09:0));
    dummy.scale.set(part.w*trimScale*roofFootprint,part.h*heightScale*trimScale,
-    part.d*trimScale*(roof?1-progress*.32:1));
+    part.d*trimScale*(roof?1-progress*.46:1));
    dummy.rotation.set(roof?progress*.10:0,0,roof?progress*.39:0);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
@@ -263,15 +263,15 @@ export function createDistantNeighborhood({root,flameTexture}){
   // there is no per-frame allocation or new draw call for each collapsed home.
   const debris=rubbleBatches[home.tier];
   const visibility=Math.min(1,home.fall*4);
-  const widths=[.46,.32,.53],heights=[.17,.23,.12],depths=[.31,.27,.37];
-  const offsetsX=[-.23,.27,.02],offsetsZ=[.18,-.19,-.25];
+  const widths=[.29,.21,.37],heights=[.24,.32,.19],depths=[.25,.22,.28];
+  const offsetsX=[-.29,.31,.04],offsetsZ=[.21,-.23,-.29];
   for(let k=0;k<rubblePerBuilding;k++){
    const w=home.w*widths[k]*visibility;
    const h=home.h*heights[k]*visibility;
    const d=home.d*depths[k]*visibility;
    const y=(h*.5+.06)*visibility+(1-home.fall)*home.h*.42;
    dummy.position.set(home.x+home.w*offsetsX[k],y,home.z+home.d*offsetsZ[k]);
-   dummy.rotation.set(0,[.14,-.28,.35][k]*home.fall,[.18,-.22,.12][k]*home.fall);
+   dummy.rotation.set(0,[.31,-.48,.42][k]*home.fall,[.27,-.34,.21][k]*home.fall);
    dummy.scale.set(w,h,d);dummy.updateMatrix();
    debris.setMatrixAt(home.rubbleStart+k,dummy.matrix);
   }
