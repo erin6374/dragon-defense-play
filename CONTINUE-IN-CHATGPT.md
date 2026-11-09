@@ -1,5 +1,9 @@
 # Dragon Defense — carry-over bookmark
 
+## Latest continuation — landing airbrake (November 8 night)
+
+Prior commit `82a8f4d` passed [browser QA #315](https://github.com/erin6374/dragon-defense-play/actions/runs/42545115434), with both Windows preview and browser QA artifacts available. This continuation adds a visual-only eagle-inspired landing wing flare to the procedural Paulo rig, matching the existing 0.6-second leg extension; adds wing joint assertions and a deterministic side-view landing screenshot. Exact-head QA for this change is **pending** until the new GitHub Actions run completes. The original/new procedural toggle remains; the licensed European Dragon binary is not present. Do not claim real GPU FPS or merge production. Ground rear-up/pivot turning is still outstanding.
+
 ## Latest continuation — procedural Paulo flight tuck (November 8 evening)
 
 The branch's prior checkpoint `94c391c` passed [QA #314](https://github.com/erin6374/dragon-defense-play/actions/runs/42540166276) and includes the restored public old/new model toggle. This continuation changes **only the procedural Paulo visual rig and browser regression coverage**: flight/glide/bank fold four legs rearward, hover partially tucks, takeoff/landing use a 0.6-second transition, bank maintains signed roll and tail steering. QA adds joint-angle assertions and `15-paulo-flight-tucked-side.png`. **The exact new-head QA is pending until GitHub Actions reports success.** No licensed European Dragon FBX, ground rear-up turn, or hardware GPU verification. Production main and Building Explorer untouched.

@@ -1,3 +1,7 @@
+## 2026-11-08 — Paulo landing airbrake flare (exact-head QA pending)
+- Procedural Paulo now spreads both wing shoulders, elbows and wingtips at the start of the landing pose, then relaxes the flare over the existing 0.6-second leg-extension interval. This is a visual-only eagle-inspired braking silhouette; it does not alter flight controls, hitboxes, or the original-model fallback.
+- Browser QA adds landing-wing joint assertions and `16-paulo-landing-airbrake-side.png` alongside the existing tucked-flight screenshot. Exact-head QA and hardware GPU FPS are not yet verified. The licensed European Dragon FBX remains unavailable in the repository.
+
 ## 2026-11-08 — Paulo aerodynamic leg-tuck pass (exact-head QA pending)
 - The shared procedural Paulo rig now folds all four legs rearward under the torso in flight, glide and bank poses; hover keeps a partial tuck. Takeoff folds and landing extends the legs over a 0.6-second pose envelope. Feet articulate with the knees rather than dangling in a standing pose.
 - Banking now maintains a consistent directional body roll and adds coordinated tail steering. This is visual-only and preserves gameplay hitboxes, attacks, timing and original-model fallback. Ground rear-up/pivot turns and the licensed European Dragon FBX remain **not implemented**.

@@ -1143,6 +1143,9 @@ try {
       rig.applyPose(.75,'bank',-1);
       const left={roll:rig.root.rotation.x,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
+      const sampleWings=()=>rig.wings.map(({shoulder,elbow,wrist})=>({
+        shoulderSweep:shoulder.rotation.y,elbowLift:elbow.rotation.x,wristSweep:wrist.rotation.y
+      }));
       const sampleLegs=()=>rig.legs.map(({hip,knee,foot})=>({
         hip:hip.rotation.z,knee:knee.rotation.z,foot:foot.rotation.z
       }));
@@ -1157,9 +1160,9 @@ try {
       rig.applyPose(.75,'takeoff',1,.75);
       const takeoffEnd=sampleLegs();
       rig.applyPose(.75,'land',1,0);
-      const landingStart=sampleLegs();
+      const landingStart=sampleLegs(),landingWingStart=sampleWings();
       rig.applyPose(.75,'land',1,.75);
-      const landingEnd=sampleLegs();
+      const landingEnd=sampleLegs(),landingWingEnd=sampleWings();
       // A late-game hit must recoil exactly as visibly as an early hit;
       // global wingbeat time is intentionally much larger in the first call.
       rig.applyPose(120,'hit',1,.10);
@@ -1187,6 +1190,7 @@ try {
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
         idleLegs,hoverLegs,flightLegs,takeoffStart,takeoffEnd,landingStart,landingEnd,
+        landingWingStart,landingWingEnd,
         lateHitRecoil,earlyHitRecoil,
         cleanup,detached,writesGuarded,secondCleanup};
     });
@@ -1232,6 +1236,11 @@ try {
       reusableRig.landingEnd.every((leg,i)=>
       Math.abs(leg.hip-reusableRig.idleLegs[i].hip)<1e-8),
       'landing extends legs before touchdown');
+    assert.ok(reusableRig.landingWingStart.every((wing,i)=>
+      Math.abs(wing.shoulderSweep)>Math.abs(reusableRig.landingWingEnd[i].shoulderSweep)+.2 &&
+      Math.abs(wing.wristSweep)>Math.abs(reusableRig.landingWingEnd[i].wristSweep)+.1 &&
+      Math.abs(wing.elbowLift-reusableRig.landingWingEnd[i].elbowLift)>.15),
+      'landing flares both wing shoulders, elbows and wingtips before settling');
     assert.ok(Math.abs(reusableRig.right.roll+reusableRig.left.roll)<.000001,
       'standalone rig mirrors longitudinal bank rotation');
     assert.ok(Math.abs(reusableRig.right.wings[0]+reusableRig.left.wings[1])<.000001,
@@ -1432,6 +1441,17 @@ try {
       'flight tuck silhouette fits the side reference frame');
     await lab.screenshot({path:'qa-output/15-paulo-flight-tucked-side.png'});
     report.pauloFlightTuckReference=tuckedFrame.referenceFrame;
+    // Matched deterministic landing pose captures the temporary wing flare.
+    await lab.evaluate(()=>{
+      window.__PAULO_LAB_QA.setState('land');
+      const timeline=document.querySelector('#timeline');
+      timeline.value='0.12';timeline.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    const landingFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(landingFrame.state,'land','landing airbrake screenshot uses landing pose');
+    assert.equal(landingFrame.cameraType,'orthographic','landing reference uses side orthographic view');
+    await lab.screenshot({path:'qa-output/16-paulo-landing-airbrake-side.png'});
+    report.pauloLandingAirbrakeReference=landingFrame.referenceFrame;
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};

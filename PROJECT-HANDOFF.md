@@ -1,5 +1,9 @@
 # Dragon Defense — Project Handoff
 
+## Latest landing airbrake checkpoint (November 8 night)
+
+QA #315 passed for commit `82a8f4d` and produced a Windows preview and browser QA artifact. The next change adds an eagle-inspired landing wing flare to the procedural Paulo rig, with joint assertions and a new screenshot. Exact-head QA is pending. Ground rear-up turning and the licensed European Dragon binary remain outstanding. Do not touch main or Building Explorer.
+
 ## Current animation checkpoint (November 8)
 
 The procedural Paulo visual rig has a new eagle-inspired leg-tuck pass (flight/glide/bank fully tucked; hover partly tucked; takeoff/landing transitions), signed bank roll and tail steering. Exact-head browser QA is pending. The licensed European Dragon binary has **not** been imported. Original/new procedural toggle is already public and QA #314 passed before this change. Ground rear-up turning remains a separate animation task. See `CONTINUE-IN-CHATGPT.md` and `CHANGELOG.md` for commit status.

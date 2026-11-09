@@ -220,6 +220,10 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  const airborne=!['idle','land'].includes(state);
  const power=state==='hover'?1:state==='takeoff'?1.25:state==='flight'?.6:state==='hit'?.85:state==='bank'?.48:.07;
  const bank=state==='bank'?.35*bankDirection:0;
+ // Spread the wings and fan the outer panels to brake before touchdown.
+ // This envelope shares the 0.6-second clock with the leg extension.
+ const transition=Math.min(1,Math.max(0,poseElapsed/.6));
+ const landingBrake=state==='land'?1-transition:0;
  root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
  root.rotation.x=bank*(.78+.22*Math.cos(t*.9));
@@ -235,12 +239,13 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   const phase=cycle*power;
   // Brace the wings during exhale; fire keeps a narrower, more aerodynamic
   // profile. Bank favors the outside wing and partially folds the inside.
+  // Landing starts with a broad, eagle-like airbrake flare, then folds toward rest.
   const braced=state==='wind'?.26:state==='inhale'?.15:0;
   const fireFold=state==='fire'?.25:0;
-  shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24+braced);
-  shoulder.rotation.y=side*(state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
-  elbow.rotation.x=side*(.12+phase*.22+braced*.65);
-  wrist.rotation.y=side*(state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
+  shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24+braced+landingBrake*.10);
+  shoulder.rotation.y=side*(state==='land'?-.15-landingBrake*.26:state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
+  elbow.rotation.x=side*(.12+phase*.22+braced*.65+landingBrake*.18);
+  wrist.rotation.y=side*(state==='land'?-.06-landingBrake*.28:state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
  });
  tail.forEach((seg,i)=>{
   // The tail trails into the turn, rather than waving independently of yaw.
@@ -251,7 +256,6 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  // articulated legs, so both pairs fold rearward beneath the belly in forward
  // flight; hovering keeps a softer partial tuck. The takeoff and landing
  // envelopes avoid snapping straight between the planted and flight poses.
- const transition=Math.min(1,Math.max(0,poseElapsed/.6));
  const tuck=state==='flight'||state==='glide'||state==='bank'?1:
   state==='takeoff'?transition:state==='land'?1-transition:
   state==='hover'?.28:airborne?.55:0;
