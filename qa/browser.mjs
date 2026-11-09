@@ -531,6 +531,21 @@ try {
     Math.abs(wavePosition.result.after.dragon[axis]-wavePosition.result.before.dragon[axis])<.00001,
     'ordinary wave preserves Paulo '+axis+' world coordinate');
   report.ordinaryWaveDragonPosition=wavePosition.result;
+  const rally=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    const started=qa.start(2);
+    return started.ok?qa.stageRallyLoop():started;
+  });
+  assert.ok(rally.ok,rally.error);
+  assert.deepEqual(rally.result.held,{wave:2,between:0,count:1},
+    'Rally waits for airborne threats without adding unscheduled meteors');
+  assert.equal(rally.result.earned,6,'a live interception earns neighborhood support');
+  assert.equal(rally.result.afterExcluded,6,'fragments and grounded rocks earn no support');
+  assert.equal(rally.result.capped,100,'support respects the existing meter cap');
+  assert.match(rally.result.countdown,/NEXT WAVE IN 4s/);
+  assert.equal(rally.result.beforeAdvance,2);
+  assert.equal(rally.result.afterAdvance,3,'Rally gives a four-second break once the air is clear');
+  report.rallyLoop=rally.result;
   const distantCadence=await page.evaluate(()=>{
     const qa=window.__DD_QA;
     return [false,true].map(damaged=>{
