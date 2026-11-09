@@ -1,3 +1,8 @@
+## November 9 — Sharper distant rubble (exact-head QA pending)
+
+- Baseline [QA #348](https://github.com/erin6374/dragon-defense-play/actions/runs/42602631839) **passed** for `26cffc2`; report `errors=[]`, `warnings=[]`, with intact/settled/restart geometry verified. Visual inspection of `06d-distant-building-rubble.png` found the roof fold worked but the collapsed form remained slab-like.
+- Next narrow revision reduces the roof footprint and staggers the same three taller/narrower wall fragments. Browser QA now asserts a smaller roof and a fragment taller than the settled shell. Inspect exact-head `06c` and `06d` screenshots before certifying; do not claim real GPU 60 FPS or deploy manually.
+
 ## November 9 — Distant roof collapse silhouette (exact-head QA pending)
 
 - [QA #347](https://github.com/erin6374/dragon-defense-play/actions/runs/42594805121) passed for `3c5f374`. Visual inspection of `06d-distant-building-rubble.png` showed the intact full-size black roof masking the three new facade fragments.
