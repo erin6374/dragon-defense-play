@@ -1,3 +1,16 @@
+## November 9 — v5.4.0-rc.11 North Broad cinematic neighborhood revision
+
+**User-approved visual direction:** The real North Philadelphia low-rise neighborhood is the geographic/architectural reference; the distant Philadelphia landmark skyline is intentionally fictionalized for cinematic readability.
+
+- **Standing skyline:** Removed gameplay-triggered tower shrink, shear and rubble. Repeated skyline impacts retain the original tower height/silhouette; smoke, scorch, flickering windows and now preallocated persistent flame billboards convey damage instead.
+- **Threshold-driven disaster:** Below 50% neighborhood health, faster flaming skyline meteors enter the background strike mix. Below 20%, additional high-energy pass-through bursts and more intense tower flames simulate the catastrophic phase. Uses the existing neighborhood-health calculation, independent of player-hit health.
+- **Perspective:** Shifted landmark skyline behind the extended residential horizon (z=-740), rescaled to remain recognizable and intentionally visible; adjusted camera far plane and atmospheric haze to preserve depth.
+- **North Broad reference pass:** Wider, denser rows extend to z=-565, with mixed two-to-four-story masonry/rowhouse masses, roof structures, instanced rear-yard and vacant-lot trees, and full-frame neighborhood coverage. Layout remains an approximate artistic reconstruction based on supplied Google Earth angles, not surveyed parcel geometry.
+- **Multi-LOD housing debris:** Preallocated instanced roof and masonry fragments: 9/8/7/6/5/4 per building across six distance tiers. Chunks rise above rooflines on independent-looking arcs, rotate, spread, and settle into persistent grounded rubble. Distant collapse takes 1.35–2.70 seconds, progressively slower than foreground collapse. Partial hits bend roof and weaken trim before final collapse.
+- **Performance safeguards:** No per-impact mesh/geometry allocation for the distant building fragments; foliage and debris share tier-level instancing, with deterministic index slots and restart cleanup.
+- **QA update:** Skyline tests now assert standing tower silhouettes and fire persistence rather than collapse. Distant-building tests probe lofted debris, slower timing, and restart. **Source committed; exact-head browser QA and visual screenshot/hardware review must pass before a release is claimed.**
+- Production main and the separate Building Explorer were not modified.
+
 ## November 9 — Skyfall development candidate (RC10)
 
 - Added a full screen of vertical camera travel above the previous flight ceiling. Existing movement and attack inputs carry into the upper sky.
