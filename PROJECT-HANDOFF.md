@@ -1,3 +1,7 @@
+## Distant disaster cadence checkpoint (November 9)
+
+The distant meteor and background damage timers are reset with the rest of the game. The browser fixture stages intact and heavily damaged foreground buildings at the same wave and checks that the actual scheduler spawns streaks more frequently and shortens the interval between skyline strikes. The fixture restarts the game before ordinary QA resumes.
+
 ## Paulo flight silhouette checkpoint (November 9)
 
 The shared procedural rig in `src/dragon/paulo-rig.js` folds the knees further and sweeps the hips back as the legs approach full tuck. The existing hover pose and 0.6-second takeoff and landing windows are preserved. The browser suite checks the position of all four claw tips in torso space and saves side-view flight and glide captures. Use the browser QA run for the exact commit when packaging a preview.

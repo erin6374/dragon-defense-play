@@ -1,3 +1,7 @@
+## November 9 — Distant disaster cadence verification
+
+Baseline `58ac48b` passed [browser QA #336](https://github.com/erin6374/dragon-defense-play/actions/runs/42569616250). The next checkpoint covers neighborhood-driven distant meteor escalation at runtime and resets carried-over timers on restart. The browser report records the intact and damaged intervals under `distantMeteorCadence`. See the exact commit's QA run for verification.
+
 ## November 9 — Paulo flight silhouette
 
 Browser QA [#335](https://github.com/erin6374/dragon-defense-play/actions/runs/42567760521) passed for baseline `9f04c7e`, which contains the grounded turn. The [earlier run for `a1c3b4d`](https://github.com/erin6374/dragon-defense-play/actions/runs/42567301859) was canceled. This pass deepens the four-leg tuck in the shared rig. Compare `15-paulo-flight-tucked-side.png` and `18-paulo-glide-tucked-side.png` from the browser QA artifact for the current commit. Check that run before sharing its playable preview.

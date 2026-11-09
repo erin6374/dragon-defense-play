@@ -24,8 +24,6 @@ const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
-assert.match(gameSource,/const damageFraction=foregroundBuildings\.length/, 'distant catastrophe derives intensity from neighborhood destruction');
-assert.match(gameSource,/1\+damageFraction\*1\.15/, 'background disaster intensity increases with actual neighborhood damage');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
@@ -533,6 +531,23 @@ try {
     Math.abs(wavePosition.result.after.dragon[axis]-wavePosition.result.before.dragon[axis])<.00001,
     'ordinary wave preserves Paulo '+axis+' world coordinate');
   report.ordinaryWaveDragonPosition=wavePosition.result;
+  const distantCadence=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    return [false,true].map(damaged=>{
+      const started=qa.start(1);
+      return started.ok?qa.stageDistantMeteorCadence(damaged):started;
+    });
+  });
+  for(const sample of distantCadence){
+    assert.ok(sample.ok,sample.error);
+    assert.deepEqual(sample.result.before,{streak:3,strike:3,background:2.5,count:0},
+      'restart restores the distant disaster timers and clears existing streaks');
+    assert.equal(sample.result.after.count,1,'the production update spawns a distant meteor streak');
+  }
+  const [intactCadence,damagedCadence]=distantCadence.map(sample=>sample.result.after);
+  assert.ok(damagedCadence.streak<intactCadence.streak && damagedCadence.strike<intactCadence.strike,
+    'at the same wave, foreground destruction accelerates distant meteors and skyline strikes');
+  report.distantMeteorCadence={intact:intactCadence,damaged:damagedCadence};
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
   const before = await snap();

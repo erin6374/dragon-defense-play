@@ -1,3 +1,8 @@
+## November 9 — Distant disaster restart and browser coverage
+
+- Restart resets distant meteor and background damage timers along with existing streak and skyline cleanup.
+- Browser QA drives the live distant meteor scheduler at wave 1 with intact and damaged foreground buildings, then checks that restart clears active streaks and restores the timers.
+
 ## November 9 — Paulo flight silhouette
 
 - Paulo draws all four claws closer to his belly during flight, glide and bank. The deeper fold blends into the existing takeoff and landing transitions and starts above the hover tuck.
