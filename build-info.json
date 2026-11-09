@@ -1,8 +1,8 @@
 {
-  "build": "5.4-disaster-horizon-rc09c",
-  "version": "5.4.0-rc.9.2",
+  "build": "5.4-fireball-shatter-rc09d",
+  "version": "5.4.0-rc.9.3",
   "gameplay_base": "5.2.3",
-  "scope": "RC9c screen-space distant skyline impact glow with wave/damage escalation; RC9b radar clearance retained",
+  "scope": "RC9d one-hit player fireball shockwaves and bounded meteor fragmentation; RC9c skyline retained",
   "new_gameplay_features": true,
-  "release_status": "experimental development RC9c — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
+  "release_status": "experimental development RC9d — exact-head browser QA and screenshot review required; European Dragon assets not hosted"
 }

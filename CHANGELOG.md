@@ -1,3 +1,9 @@
+## November 9 — RC9d fireball shatter (exact-head QA pending)
+
+- One player fireball contact, direct or peripheral shockwave, defeats ordinary meteors. Medium meteors split into three small rocks, large meteors into three medium rocks, small meteors disappear. Final boss remains multi-hit; explicitly indestructible flags stay immune; non-player shockwaves retain original damage.
+- Flaming impact shrapnel uses existing instanced particle pools. Fragmentation is capped at two generations and 48 simultaneous rocks; new fragments inherit a brief blast grace. Reuses cached rock meshes and materials.
+- Version 5.4.0-rc.9.3 / 5.4-fireball-shatter-rc09d; deterministic QA assertions added. **Exact-head browser QA and preview verification still required.** Detached dragon breath remains next priority. No production, main, Building Explorer, or licensed FBX changes.
+
 ## November 9 — Independent distant-fire sway (exact-head QA pending)
 
 - [QA #355](https://github.com/erin6374/dragon-defense-play/actions/runs/42627571793) **passed** for `8337b51`, including the corrected distant smoke-drift regression. The browser and Windows-preview artifact steps completed; the artifact screenshots have not been independently reviewed in this run.

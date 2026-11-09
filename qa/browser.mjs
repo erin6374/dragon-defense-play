@@ -9,7 +9,24 @@ import {militaryWindImpulse} from '../src/simulation/military-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {selectMeteorWarning} from '../src/simulation/meteor-warning.js';
+import {fireballMeteorDamage,meteorSplitPlan,MAX_PLAYABLE_METEORS} from '../src/simulation/fireball-balance.js';
 import {Script} from 'node:vm';
+
+// Exact class rules for direct fireballs and peripheral player shockwaves.
+for(const hp of [1,2,8,30])for(const size of [.55,.95,1.3,2.4])
+ assert.ok(fireballMeteorDamage({size,hp})>=hp,'player fire defeats ordinary meteor on one contact');
+assert.equal(fireballMeteorDamage({size:2,hp:8,indestructible:true}),0);
+assert.equal(fireballMeteorDamage({size:8,hp:65,boss:true}),5);
+assert.equal(fireballMeteorDamage({size:.6,hp:4},false,.7),.7);
+assert.deepEqual(meteorSplitPlan({size:.7},0),{count:0,size:0});
+const mediumSplit=meteorSplitPlan({size:1.4},0),largeSplit=meteorSplitPlan({size:2.4},0);
+assert.equal(mediumSplit.count,3);
+assert.ok(mediumSplit.size<1.1,'medium splits into small');
+assert.equal(largeSplit.count,3);
+assert.ok(largeSplit.size>=1.1&&largeSplit.size<1.8,'large splits into medium');
+assert.equal(meteorSplitPlan({size:2.4,generation:2},0).count,0);
+assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS).count,0);
+assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS-1).count,1);
 
 const warningSchool={x:0,z:-8,w:26,d:18};
 const warningNeighbor={x:20,z:-7,w:7,d:14};
@@ -46,6 +63,10 @@ assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=
 assert.match(gameSource,/if\(t<hitT\)\{hitT=t;hitIndex=mi;\}/,
   'player fireball chooses nearest valid collision time');
 
+assert.match(gameSource,/m\.hp-=fireballMeteorDamage\(m\)/,'direct hits use one-hit balance');
+assert.match(gameSource,/fireballMeteorDamage\(m,b\.playerFire,/,'player shockwaves use one-hit balance');
+assert.match(gameSource,/emitMeteorShrapnel\(m\.mesh\.position,/,'intercepts produce flaming shrapnel');
+assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'shockwave origin is tagged');
 // Paulo must not be teleported back to the roof at each ordinary wave.
 // Initial reset and chapter settlement retain their explicit perch behavior.
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
