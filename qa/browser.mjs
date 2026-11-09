@@ -883,6 +883,16 @@ try {
   const smokeDriftRange=Math.max(...smokeXs)-Math.min(...smokeXs);
   assert.ok(smokeXs.every(Number.isFinite)&&smokeDriftRange>.05&&smokeDriftRange<4,
     'distant impact smoke moves over the staged collapse without teleporting');
+  // Per-building flames sway and flicker within their original billboard budget.
+  // Check bounded positions at each staged state, not a phase-sensitive delta.
+  const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
+  assert.ok(fireStates.every(s=>s.flamePosition?.every(Number.isFinite)
+    &&Number.isFinite(s.flameHeight)&&s.flameHeight>0
+    &&Math.abs(s.flamePosition[0]-s.smokePosition[0])<4),
+    'distant fire billboards remain finite and anchored near their smoke');
+  assert.ok(fireStates.every(s=>s.flameHeight/backgroundIntact.flameHeight>.75
+    &&s.flameHeight/backgroundIntact.flameHeight<1.25),
+    'distant fire flicker remains bounded during collapse');
   assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
@@ -907,6 +917,8 @@ try {
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
   assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
+  assert.equal(restoredBackground.flamePosition,null,'restart clears distant fire sprites');
+  assert.equal(restoredBackground.flameHeight,null,'restart clears distant fire animation state');
   assert.ok(Math.abs(restoredBackground.roof.width-backgroundIntact.roof.width)<.001
     &&Math.abs(restoredBackground.roof.depth-backgroundIntact.roof.depth)<.001
     &&Math.abs(restoredBackground.roof.tilt)<.001,

@@ -227,7 +227,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   puff.scale.set(size*1.5,size*2.8,1);
   flame.scale.set(size*.9,size*1.15,1);
   groups[home.tier??0].add(puff,flame);
-  impactSmoke.set(home,{puff,flame});
+  impactSmoke.set(home,{puff,flame,baseFlameHeight:flame.scale.y});
   positionImpactEffects(home,1-(home.fall??home.damage)**2*.84);
  }
  function positionImpactEffects(home,heightScale){
@@ -318,6 +318,11 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const [home,effects] of impactSmoke){
    effects.puff.position.x=home.x+Math.sin(fireTime*.66+home.id*.37)*effects.puff.scale.x*.18;
    effects.puff.position.y=effects.basePuffY+Math.sin(fireTime*.42+home.id*.29)*effects.puff.scale.y*.07;
+   // Give each existing flame billboard a small, independently phased sway
+   // and height flicker; no new sprites, textures or per-frame allocations.
+   const phase=fireTime*6.8+home.id*.57;
+   effects.flame.position.x=home.x+Math.sin(phase)*effects.flame.scale.x*.12;
+   effects.flame.scale.y=effects.baseFlameHeight*(.91+.09*Math.sin(phase*1.6));
   }
  }
  function restore(){
@@ -369,6 +374,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     smokePosition:smoke?[smoke.puff.position.x,smoke.puff.position.y]:null,
+    flamePosition:smoke?[smoke.flame.position.x,smoke.flame.position.y]:null,
+    flameHeight:smoke?smoke.flame.scale.y:null,
     smoking:!!smoke,burning:!!smoke};
   },
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
