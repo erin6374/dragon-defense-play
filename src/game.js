@@ -5,6 +5,7 @@ import {createCinematicEffects} from './rendering/cinematic-effects.js';
 import {impactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
 import {updatePedestrianPose} from './simulation/pedestrian-motion.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
+import {selectMeteorWarning} from './simulation/meteor-warning.js';
 import {occupiesCrossStreet} from './simulation/road-corridors.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
@@ -1320,6 +1321,9 @@ function warnHunter(){const el=document.getElementById('hunter-warning');if(el){
 
 let score=0,hp=100,wave=1,active=false,paused=false,spawnTimer=0,remaining=0,between=0,stormTimer=0,elapsed=0,shake=0,cooldown=0;
 const rallyLoop=new URLSearchParams(location.search).get('loop')==='rally';
+const impactMarker=rallyLoop?new THREE.Mesh(new THREE.RingGeometry(1.08,1.45,32),
+ new THREE.MeshBasicMaterial({color:0xffbc67,transparent:true,opacity:.85,depthTest:false,depthWrite:false})):null;
+if(impactMarker){impactMarker.visible=false;impactMarker.renderOrder=20;scene.add(impactMarker);}
 const effects=new THREE.Group();scene.add(effects);
 const effectObjects=[];
 const sharedTrailGeometry=new THREE.IcosahedronGeometry(1,0);
@@ -1384,7 +1388,41 @@ function updateEffects(dt){
 }
 const meteors=[],shots=[],blasts=[],debris=[];
 const radarCanvas=document.createElement('canvas');radarCanvas.id='incoming-radar';radarCanvas.width=160;radarCanvas.height=130;radarCanvas.style.cssText='position:fixed;right:14px;bottom:14px;width:160px;height:130px;z-index:22;pointer-events:none;border:1px solid #6ac6c6;background:#031e2ac9;border-radius:8px';document.body.appendChild(radarCanvas);const radarCtx=radarCanvas.getContext('2d');let radarTick=0;
-function updateMeteorRadar(dt){radarTick-=dt;if(radarTick>0)return;radarTick=.1;const c=radarCtx;c.clearRect(0,0,160,130);c.strokeStyle='#3b777a';c.lineWidth=1;c.beginPath();c.arc(80,68,53,0,Math.PI*2);c.stroke();c.beginPath();c.arc(80,68,27,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(27,68);c.lineTo(133,68);c.moveTo(80,15);c.lineTo(80,121);c.stroke();c.fillStyle='#9be8f0';c.font='bold 10px sans-serif';c.fillText('INCOMING RADAR',7,12);c.fillStyle='#4ff5b3';c.fillRect(77,65,6,6);for(const m of meteors){if(m.grounded)continue;const x=80+THREE.MathUtils.clamp((m.mesh.position.x-dragon.position.x)*.75,-51,51),y=68-THREE.MathUtils.clamp((m.mesh.position.y-dragon.position.y)*.75,-51,51);c.fillStyle=m.burning?'#ff7a32':'#ffcf56';c.beginPath();c.arc(x,y,m.boss?4:2.7,0,Math.PI*2);c.fill();}}
+function updateMeteorRadar(dt){
+ radarTick-=dt;
+ if(radarTick>0)return;
+ radarTick=.1;
+ const warning=impactMarker?selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings):null;
+ if(impactMarker){
+  impactMarker.visible=Boolean(warning);
+  if(warning){
+   impactMarker.position.copy(warning.target);
+   impactMarker.position.z+=.2;
+   impactMarker.material.color.set(warning.eta<=2?0xff765d:0xffbc67);
+  }
+ }
+ const c=radarCtx;
+ c.clearRect(0,0,160,130);
+ c.strokeStyle='#3b777a';c.lineWidth=1;
+ c.beginPath();c.arc(80,68,53,0,Math.PI*2);c.stroke();
+ c.beginPath();c.arc(80,68,27,0,Math.PI*2);c.stroke();
+ c.beginPath();c.moveTo(27,68);c.lineTo(133,68);c.moveTo(80,15);c.lineTo(80,121);c.stroke();
+ c.fillStyle='#9be8f0';c.font='bold 10px sans-serif';
+ c.fillText(warning?warning.label+' IMPACT':'INCOMING RADAR',7,12);
+ if(warning)c.fillText(Math.max(1,Math.ceil(warning.eta))+'s',139,12);
+ c.fillStyle='#4ff5b3';c.fillRect(77,65,6,6);
+ for(const meteor of meteors){
+  if(meteor.grounded)continue;
+  const x=80+THREE.MathUtils.clamp((meteor.mesh.position.x-dragon.position.x)*.75,-51,51);
+  const y=68-THREE.MathUtils.clamp((meteor.mesh.position.y-dragon.position.y)*.75,-51,51);
+  c.fillStyle=meteor.burning?'#ff7a32':'#ffcf56';
+  c.beginPath();c.arc(x,y,meteor.boss?4:2.7,0,Math.PI*2);c.fill();
+  if(warning?.meteor===meteor){
+   c.strokeStyle='#fff2ce';
+   c.beginPath();c.arc(x,y,6,0,Math.PI*2);c.stroke();
+  }
+ }
+}
 let bossSpawned=false,bossDefeated=false;let dragonMeteorTimer=8;const input=createInputState();
 const difficulty=()=>({easy:.38,normal:1,hard:1.55}[document.getElementById('difficulty')?.value]||1);
 const easyMode=()=>document.getElementById('difficulty')?.value==='easy';
@@ -1917,6 +1955,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
  }
 }
 function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
+ if(impactMarker)impactMarker.visible=false;
  // Ordinary waves preserve Paulo's free-flight position. Chapter transitions
  // and a fresh game explicitly manage the roof perch separately.
  // Frozen emergency responders remain until this wave ends.
@@ -1990,6 +2029,7 @@ document.getElementById('settings-btn').onclick=()=>{active=false;document.getEl
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start').onclick=safelyStart;document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
 function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+ if(!active&&impactMarker)impactMarker.visible=false;
  if(!paused&&neighborhoodHealth()===0&&performanceLab.isEnabled('backgroundMeteors')){
   updateSkyBursts(dt);updateDistantMeteors(dt);escalateBackgroundNeighborhood(dt);
  }
@@ -2636,6 +2676,18 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const beforeAdvance=wave;
    updateWaveProgress(.2,true);
    return {held,earned,afterExcluded,capped,countdown,beforeAdvance,afterAdvance:wave};
+  }),
+  stageRallyImpactWarning:()=>run('stageRallyImpactWarning',()=>{
+   if(!impactMarker)throw Error('Rally preview is required');
+   spawnMeteor(()=>.8);
+   const meteor=meteors.at(-1);
+   meteor.target.set(0,13,schoolBounds.max.z-.4);
+   meteor.mesh.position.copy(meteor.target).add(new THREE.Vector3(0,28,0));
+   meteor.vel.set(0,-10,0);
+   updateMeteorRadar(.2);
+   const marked={visible:impactMarker.visible,position:impactMarker.position.toArray(),
+    eta:selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings)?.eta};
+   return {marked,target:meteor.target.toArray()};
   }),
   spawnMeteor:()=>run('spawnMeteor',()=>{spawnMeteor();return snap()}),
   cinematicStage:(mode)=>run('cinematicStage',()=>{remaining=0;between=-600;helicopterTimer=600;

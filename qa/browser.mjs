@@ -8,7 +8,22 @@ import {disasterSkyIntensity} from '../src/rendering/cinematic-environment.js';
 import {militaryWindImpulse} from '../src/simulation/military-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
+import {selectMeteorWarning} from '../src/simulation/meteor-warning.js';
 import {Script} from 'node:vm';
+
+const warningSchool={x:0,z:-8,w:26,d:18};
+const warningNeighbor={x:20,z:-7,w:7,d:14};
+const warningMeteor=(target,y,flags={})=>({target,mesh:{position:{y}},vel:{y:-10},...flags});
+const schoolThreat=warningMeteor({x:0,y:12,z:0},42);
+const blockThreat=warningMeteor({x:20,y:10,z:0},34);
+const streetThreat=warningMeteor({x:0,y:1,z:24},19);
+assert.equal(selectMeteorWarning([streetThreat,blockThreat,schoolThreat],warningSchool,[warningNeighbor]).meteor,schoolThreat);
+assert.equal(selectMeteorWarning([blockThreat],warningSchool,[warningNeighbor]).label,'BLOCK');
+assert.equal(selectMeteorWarning([streetThreat],warningSchool,[]).label,'STREET');
+assert.equal(selectMeteorWarning([
+  {...schoolThreat,grounded:true},{...schoolThreat,fragment:true},{...schoolThreat,dragonHunter:true},
+  {...schoolThreat,vel:{y:1}},warningMeteor(schoolThreat.target,100)
+],warningSchool,[]),null);
 
 // Distant disaster glow must build gradually without exceeding a bounded
 // shader uniform; this test is deterministic and does not claim GPU FPS.

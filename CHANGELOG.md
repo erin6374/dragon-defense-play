@@ -1,5 +1,7 @@
 ## Gameplay experiment — Rally waves
 
+- Rally highlights one incoming meteor on the radar, shows its intended destination and estimated impact time, and rings the impact site in the scene.
+
 - Opt in with `?loop=rally`. Scheduled foreground waves end after their airborne meteors resolve, followed by a four-second countdown on ordinary waves. Existing chapter transitions still apply.
 - Player interceptions of live, intact meteors add six points to Call the Block. Use the same wave and difficulty to compare standard and Rally play.
 
