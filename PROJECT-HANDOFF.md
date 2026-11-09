@@ -1,3 +1,9 @@
+## November 9 — Distant roof collapse silhouette (exact-head QA pending)
+
+- [QA #347](https://github.com/erin6374/dragon-defense-play/actions/runs/42594805121) passed for `3c5f374`. Visual inspection of `06d-distant-building-rubble.png` showed the intact full-size black roof masking the three new facade fragments.
+- During collapse the existing instanced roof now contracts in width/depth, shifts sideways, and cants into the debris; the intact and restart transforms remain unchanged. No new geometry, draw calls, coordinates, gameplay hitboxes or per-frame allocations.
+- Browser QA now checks roof width, depth, tilt and restart alongside the existing rubble screenshot. **New exact-head QA and screenshot review required before certification.** Real GPU performance unverified.
+
 ## November 9 — Distant facade debris checkpoint (QA pending)
 
 Distant collapse now uses three instanced wall fragments per building to break up the flat slab silhouette. One shared rubble mesh per distance tier is hidden until needed, and restart clears all fragments. Inspect `06c-distant-building-before.png` and `06d-distant-building-rubble.png` in the exact-head QA artifact; compare actual draw calls and confirm the pieces read as rubble rather than flying blocks. The source-level change does not alter building placement, collision or gameplay. **Do not claim this visual pass certified until exact-head browser QA succeeds.**

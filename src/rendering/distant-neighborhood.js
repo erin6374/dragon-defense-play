@@ -243,11 +243,17 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const {type,index} of home.parts){
    const part=instances[home.tier][type][index];
    const mesh=batches[home.tier][type];
-   const trim=type!=='main'&&type!=='roof';
+   const roof=type==='roof',trim=type!=='main'&&!roof;
    const trimScale=trim?Math.max(.001,1-progress):1;
-   dummy.position.set(part.x+(type==='roof'?progress*.5:0),part.y*heightScale,part.z);
-   dummy.scale.set(part.w*trimScale,part.h*heightScale*trimScale,part.d*trimScale);
-   dummy.rotation.set(0,0,type==='roof'?progress*.08:0);
+   // A full-size flat black roof hid the new wall fragments in the settled
+   // screenshot. Fold the roof inward and cant it over the debris instead.
+   // These are existing instance transforms: no new mesh or draw call.
+   const roofFootprint=roof?1-progress*.40:1;
+   dummy.position.set(part.x+(roof?progress*home.w*.24:0),part.y*heightScale,
+    part.z+(roof?progress*home.d*.09:0));
+   dummy.scale.set(part.w*trimScale*roofFootprint,part.h*heightScale*trimScale,
+    part.d*trimScale*(roof?1-progress*.32:1));
+   dummy.rotation.set(roof?progress*.10:0,0,roof?progress*.39:0);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
@@ -346,7 +352,12 @@ export function createDistantNeighborhood({root,flameTexture}){
     const e=dummy.matrix.elements;
     rubblePieces.push({height:Math.hypot(e[4],e[5],e[6]),x:e[12],y:e[13],z:e[14]});
    }
-   return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,
+   const roofPart=home.parts.find(part=>part.type==='roof');
+   batches[home.tier].roof.getMatrixAt(roofPart.index,dummy.matrix);
+   const re=dummy.matrix.elements;
+   const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
+    tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
+   return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     smoking:impactSmoke.has(home),burning:impactSmoke.has(home)};
   },

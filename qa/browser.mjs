@@ -877,6 +877,11 @@ try {
   assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
+  assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.65
+    &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.72
+    &&backgroundSettled.roof.tilt>.3
+    &&backgroundSettled.roof.x>backgroundIntact.roof.x+.5,
+    'settled roof folds, shifts and tilts instead of covering debris as a full-size slab');
   assert.ok(new Set(backgroundSettled.rubblePieces.map(piece=>piece.x.toFixed(2))).size>1,
     'collapsed facade pieces have different horizontal offsets');
   for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],['06d-distant-building-rubble',afterCollapse]]){
@@ -890,6 +895,10 @@ try {
     return qa.distantBuildingState(id);
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
+  assert.ok(Math.abs(restoredBackground.roof.width-backgroundIntact.roof.width)<.001
+    &&Math.abs(restoredBackground.roof.depth-backgroundIntact.roof.depth)<.001
+    &&Math.abs(restoredBackground.roof.tilt)<.001,
+    'restart restores the original level, full-size roof');
   assert.ok(restoredBackground.damage===0&&!restoredBackground.smoking&&Math.abs(restoredBackground.height-backgroundIntact.height)<.001,
     'restart restores the far building instance and removes its impact smoke');
   report.distantBuildingCollapse={id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,restored:restoredBackground};
