@@ -1003,7 +1003,24 @@ try {
   await page.locator('canvas').first().screenshot({path:'qa-output/07-night-scene.png'});
   assert.deepEqual(report.errors, []);
   assert.deepEqual(report.warnings, [], 'preview must not produce WebGL/material console warnings');
-  // Developer-only visual preview must mount Paulo without moving the
+  // Public model switch must be discoverable without a ?paulo=1 URL flag.
+  // Exercise the actual button in addition to the existing QA-only rig hook.
+  const pauloToggle=page.locator('#paulo-toggle');
+  assert.equal(await pauloToggle.getAttribute('hidden'),null,
+    'model comparison button is available to ordinary players');
+  if(await page.evaluate(()=>document.body.classList.contains('cinematic-hud')))
+    await page.locator('#cinema-hud-toggle').click();
+  assert.equal(await pauloToggle.isVisible(),true,
+    'model comparison button is visible in full HUD');
+  await pauloToggle.click();
+  assert.equal(await pauloToggle.getAttribute('aria-pressed'),'true',
+    'visible button activates the new procedural Paulo preview');
+  assert.equal(await page.evaluate(()=>window.__DD_PAULO_PREVIEW.snapshot().enabled),true);
+  await pauloToggle.click();
+  assert.equal(await pauloToggle.getAttribute('aria-pressed'),'false',
+    'visible button restores the original dragon');
+  assert.equal(await page.evaluate(()=>window.__DD_PAULO_PREVIEW.snapshot().enabled),false);
+  // Visual-only model preview must mount Paulo without moving the
   // authoritative dragon entity or altering score, health, wave or cooldowns.
   const pauloPreviewStart=await page.evaluate(()=>{
     const visual=window.__DD_PAULO_PREVIEW;
