@@ -1,3 +1,7 @@
+## November 9 — RC9d QA #358 legacy assertion repair (exact-head QA pending)
+
+[Browser QA #358](https://github.com/erin6374/dragon-defense-play/actions/runs/42654962237) failed at qa/browser.mjs:617 because the **old** test expected a large splitter to survive its first hit. That contradicts the newly requested one-hit fragmentation rule. Updated the browser assertion to require the first fireball to destroy the large rock and spawn at least three targetable medium fragments. No gameplay/rendering changes in this repair; new exact-head QA must pass before certification. Detached breath emitter fix remains next.
+
 ## November 9 — RC9d fireball shatter (exact-head QA pending)
 
 - One player fireball contact, direct or peripheral shockwave, defeats ordinary meteors. Medium meteors split into three small rocks, large meteors into three medium rocks, small meteors disappear. Final boss remains multi-hit; explicitly indestructible flags stay immune; non-player shockwaves retain original damage.

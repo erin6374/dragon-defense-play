@@ -614,8 +614,8 @@ try {
     assert.equal(ordinary.fastImpact,false);
     assert.equal(ordinary.removed,true,'ordinary '+ordinary.kind+' meteor is destroyable by fire');
   }
-  assert.ok(splitter.splitter && splitter.firstHitHP>0 && splitter.firstHitHP<splitter.initialHP && splitter.fragments>0,
-    'the large splitter takes multiple hits and produces fragments');
+  assert.ok(splitter.splitter && splitter.firstHitHP<=0 && splitter.removed && splitter.fragments>=3,
+    'one player fireball destroys the large rock and releases several medium fragments');
   assert.equal(fastImpact.fastImpact,true);
   assert.ok(fastImpact.speed>flaming.speed*1.5,'the fast impact class is faster than ordinary flaming meteors');
   assert.ok(fastImpact.removed&&fastImpact.firstHitHP<fastImpact.initialHP,
