@@ -1143,6 +1143,23 @@ try {
       rig.applyPose(.75,'bank',-1);
       const left={roll:rig.root.rotation.x,
         wings:rig.wings.map(w=>w.shoulder.rotation.x)};
+      const sampleLegs=()=>rig.legs.map(({hip,knee,foot})=>({
+        hip:hip.rotation.z,knee:knee.rotation.z,foot:foot.rotation.z
+      }));
+      rig.applyPose(.75,'idle',1);
+      const idleLegs=sampleLegs();
+      rig.applyPose(.75,'hover',1);
+      const hoverLegs=sampleLegs();
+      rig.applyPose(.75,'flight',1);
+      const flightLegs=sampleLegs();
+      rig.applyPose(.75,'takeoff',1,0);
+      const takeoffStart=sampleLegs();
+      rig.applyPose(.75,'takeoff',1,.75);
+      const takeoffEnd=sampleLegs();
+      rig.applyPose(.75,'land',1,0);
+      const landingStart=sampleLegs();
+      rig.applyPose(.75,'land',1,.75);
+      const landingEnd=sampleLegs();
       // A late-game hit must recoil exactly as visibly as an early hit;
       // global wingbeat time is intentionally much larger in the first call.
       rig.applyPose(120,'hit',1,.10);
@@ -1169,6 +1186,7 @@ try {
         joints:rig.rigMarkers.length,tail:rig.tailProfile.length,
         toothCount:[rig.upperTeeth.count,rig.lowerTeeth.count],
         breath:rig.breathPreview.snapshot(),visits,right,left,
+        idleLegs,hoverLegs,flightLegs,takeoffStart,takeoffEnd,landingStart,landingEnd,
         lateHitRecoil,earlyHitRecoil,
         cleanup,detached,writesGuarded,secondCleanup};
     });
@@ -1195,6 +1213,25 @@ try {
       'standalone rig produces finite jaw and chest transforms');
     assert.equal(reusableRig.breath.visibleEmitters,0,
       'gameplay factory does not instantiate laboratory-only breath particles');
+    assert.equal(reusableRig.flightLegs.length,4,'all four dragon legs are articulated');
+    assert.ok(reusableRig.flightLegs.every((leg,i)=>
+      leg.hip<reusableRig.idleLegs[i].hip-.9 &&
+      leg.knee<reusableRig.idleLegs[i].knee-.4 && leg.foot>.4),
+      'forward flight tucks all four legs rearward and folds the claws');
+    assert.ok(reusableRig.hoverLegs.every((leg,i)=>
+      leg.hip>reusableRig.flightLegs[i].hip &&
+      leg.hip<reusableRig.idleLegs[i].hip),
+      'hover retains a partial leg tuck between flight and planted poses');
+    assert.ok(reusableRig.takeoffStart.every((leg,i)=>
+      Math.abs(leg.hip-reusableRig.idleLegs[i].hip)<1e-8) &&
+      reusableRig.takeoffEnd.every((leg,i)=>
+      Math.abs(leg.hip-reusableRig.flightLegs[i].hip)<1e-8),
+      'takeoff folds legs over the first 0.6 seconds');
+    assert.ok(reusableRig.landingStart.every((leg,i)=>
+      Math.abs(leg.hip-reusableRig.flightLegs[i].hip)<1e-8) &&
+      reusableRig.landingEnd.every((leg,i)=>
+      Math.abs(leg.hip-reusableRig.idleLegs[i].hip)<1e-8),
+      'landing extends legs before touchdown');
     assert.ok(Math.abs(reusableRig.right.roll+reusableRig.left.roll)<.000001,
       'standalone rig mirrors longitudinal bank rotation');
     assert.ok(Math.abs(reusableRig.right.wings[0]+reusableRig.left.wings[1])<.000001,
@@ -1380,6 +1417,21 @@ try {
     assert.ok(Math.abs(bankRightFrame.maxX-bankLeftFrame.maxX)<.025 &&
       Math.abs(bankRightFrame.maxY-bankLeftFrame.maxY)<.04,
       'matched front-bank reference framing must remain comparable');
+    // A deterministic side-view frame lets reviewers judge the tucked feet,
+    // not merely pass joint-angle assertions.
+    await lab.evaluate(()=>{
+      window.__PAULO_LAB_QA.setState('flight');
+      const timeline=document.querySelector('#timeline');
+      timeline.value='0.75';timeline.dispatchEvent(new Event('input',{bubbles:true}));
+      const view=document.querySelector('#view');
+      view.value='side';view.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+    const tuckedFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    assert.equal(tuckedFrame.cameraType,'orthographic','flight tuck reference uses side orthographic view');
+    assert.ok(tuckedFrame.referenceFrame?.maxX<.90&&tuckedFrame.referenceFrame?.maxY<.90,
+      'flight tuck silhouette fits the side reference frame');
+    await lab.screenshot({path:'qa-output/15-paulo-flight-tucked-side.png'});
+    report.pauloFlightTuckReference=tuckedFrame.referenceFrame;
     assert.deepEqual(labErrors,[],'dragon lab has no JavaScript exceptions');
     report.pauloLab={jointCount:await lab.evaluate(()=>window.__PAULO_LAB_QA.jointCount),
       poses,initial,fire,wind,gas,errors:labErrors};

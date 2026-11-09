@@ -1,5 +1,10 @@
 # Dragon Defense — carry-over bookmark
 
+## Latest continuation — procedural Paulo flight tuck (November 8 evening)
+
+The branch's prior checkpoint `94c391c` passed [QA #314](https://github.com/erin6374/dragon-defense-play/actions/runs/42540166276) and includes the restored public old/new model toggle. This continuation changes **only the procedural Paulo visual rig and browser regression coverage**: flight/glide/bank fold four legs rearward, hover partially tucks, takeoff/landing use a 0.6-second transition, bank maintains signed roll and tail steering. QA adds joint-angle assertions and `15-paulo-flight-tucked-side.png`. **The exact new-head QA is pending until GitHub Actions reports success.** No licensed European Dragon FBX, ground rear-up turn, or hardware GPU verification. Production main and Building Explorer untouched.
+
+
 ## Latest continuation — reusable Paulo rig and pose driver (November 7–8)
 
 **Do not redo the extraction or merge the release prematurely.** As of this handoff the development branch contains these unmerged changes:

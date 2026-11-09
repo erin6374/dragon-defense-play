@@ -119,7 +119,7 @@ for(const side of [-1,1])for(const fore of [false,true]){
  const foot=pivot(knee,[.28,-.76,0]);marker(foot);
  ell(foot,mat.armor,[.18,-.04,0],[.44,.17,.27]);
  for(let c=-1;c<=1;c++)part(foot,cone,mat.bronze,[.53,-.07,c*.18],[.09,.31,.09],[0,0,-Math.PI/2]);
- legs.push({hip,knee,fore,side});
+ legs.push({hip,knee,foot,fore,side});
 }
 function bone(parent,start,end,radius,material){
  const a=new THREE.Vector3(...start),b=new THREE.Vector3(...end);
@@ -222,7 +222,7 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  const bank=state==='bank'?.35*bankDirection:0;
  root.position.y=airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
- root.rotation.x=bank*Math.sin(t*1.2);
+ root.rotation.x=bank*(.78+.22*Math.cos(t*.9));
  // Impact recoil decays from time IN THIS pose, not session time. Otherwise
  // a late-level hit would vanish because the global wingbeat clock is large.
  root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:0;
@@ -242,10 +242,23 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   elbow.rotation.x=side*(.12+phase*.22+braced*.65);
   wrist.rotation.y=side*(state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
  });
- tail.forEach((seg,i)=>{seg.rotation.y=Math.sin(t*1.7-i*.5)*.09;seg.rotation.z=Math.sin(t*1.15-i*.35)*.045;});
- legs.forEach(({hip,knee,fore,side})=>{
-  hip.rotation.z=airborne?(fore?-.22:.35):0;
-  knee.rotation.z=state==='land'?.28:airborne?-.25:0;
+ tail.forEach((seg,i)=>{
+  // The tail trails into the turn, rather than waving independently of yaw.
+  seg.rotation.y=Math.sin(t*1.7-i*.5)*.09+bank*(.22-i*.025);
+  seg.rotation.z=Math.sin(t*1.15-i*.35)*.045;
+ });
+ // Eagles draw their legs back into the body after takeoff. Paulo has four
+ // articulated legs, so both pairs fold rearward beneath the belly in forward
+ // flight; hovering keeps a softer partial tuck. The takeoff and landing
+ // envelopes avoid snapping straight between the planted and flight poses.
+ const transition=Math.min(1,Math.max(0,poseElapsed/.6));
+ const tuck=state==='flight'||state==='glide'||state==='bank'?1:
+  state==='takeoff'?transition:state==='land'?1-transition:
+  state==='hover'?.28:airborne?.55:0;
+ legs.forEach(({hip,knee,foot,fore})=>{
+  hip.rotation.z=-(fore?1.14:1.02)*tuck;
+  knee.rotation.z=-(fore?.56:.48)*tuck+(state==='land'?.2*(1-tuck):0);
+  foot.rotation.z=(fore?.64:.55)*tuck;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
  breathPreview.update(state,t);
@@ -270,7 +283,7 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   return {geometries:geometries.size,materials:materials.size};
  }
  return {
-  root,rigMarkers,wings,tailProfile,membranePanels,plateIndex,
+  root,rigMarkers,wings,legs,tailProfile,membranePanels,plateIndex,
   upperTeeth,lowerTeeth,breathPreview,head,jaw,neck,chest,
   applyPose,dispose,
   membraneDeformation(){

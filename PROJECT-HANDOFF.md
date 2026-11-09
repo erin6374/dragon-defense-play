@@ -1,5 +1,10 @@
 # Dragon Defense — Project Handoff
 
+## Current animation checkpoint (November 8)
+
+The procedural Paulo visual rig has a new eagle-inspired leg-tuck pass (flight/glide/bank fully tucked; hover partly tucked; takeoff/landing transitions), signed bank roll and tail steering. Exact-head browser QA is pending. The licensed European Dragon binary has **not** been imported. Original/new procedural toggle is already public and QA #314 passed before this change. Ground rear-up turning remains a separate animation task. See `CONTINUE-IN-CHATGPT.md` and `CHANGELOG.md` for commit status.
+
+
 Updated November 7, 2026. Read this before changing code.
 
 ## Street gale playtest

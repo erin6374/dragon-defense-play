@@ -1,3 +1,8 @@
+## 2026-11-08 — Paulo aerodynamic leg-tuck pass (exact-head QA pending)
+- The shared procedural Paulo rig now folds all four legs rearward under the torso in flight, glide and bank poses; hover keeps a partial tuck. Takeoff folds and landing extends the legs over a 0.6-second pose envelope. Feet articulate with the knees rather than dangling in a standing pose.
+- Banking now maintains a consistent directional body roll and adds coordinated tail steering. This is visual-only and preserves gameplay hitboxes, attacks, timing and original-model fallback. Ground rear-up/pivot turns and the licensed European Dragon FBX remain **not implemented**.
+- Browser QA exercises all four legs through idle, hover, flight, takeoff and landing, and captures a deterministic side-view flight silhouette. QA and Windows GPU performance must be verified at the exact new commit before claiming acceptance.
+
 ## 2026-11-08 — Restore in-game dragon model comparison (QA pending)
 - The original/experimental procedural Paulo model toggle is now visible in the normal full HUD, not gated behind `?paulo=1` or QA mode. Original dragon remains the default and is restored on toggle-off or preview-rig initialization failure. Gameplay root, attacks, score and physics are unchanged.
 - Button labels distinguish the procedural Paulo preview from the **not-yet-integrated licensed European Dragon FBX**. QA exercises real button clicks and confirms original fallback.
