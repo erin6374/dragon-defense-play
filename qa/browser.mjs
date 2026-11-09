@@ -9,8 +9,9 @@ import {militaryWindImpulse} from '../src/simulation/military-wind.js';
 import {PAULO_POSES,choosePauloPose,choosePauloBankDirection} from '../src/dragon/paulo-animation-intent.js';
 import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {selectMeteorWarning} from '../src/simulation/meteor-warning.js';
-import {fireballMeteorDamage,meteorSplitPlan,MAX_PLAYABLE_METEORS} from '../src/simulation/fireball-balance.js';
+import {fireballMeteorDamage,meteorSplitPlan,MAX_PLAYABLE_METEORS,openingMeteorWave} from '../src/simulation/fireball-balance.js';
 import {Script} from 'node:vm';
+import {impactProfile} from '../src/simulation/impact-profiles.js';
 
 // Exact class rules for direct fireballs and peripheral player shockwaves.
 for(const hp of [1,2,8,30])for(const size of [.55,.95,1.3,2.4])
@@ -28,6 +29,11 @@ assert.equal(meteorSplitPlan({size:2.4,generation:2},0).count,0);
 assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS).count,0);
 assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS-1).count,1);
 
+assert.deepEqual([1,2,3,4,5,15].map(w=>openingMeteorWave(w)?.count??null),[1,2,1,2,null,null]);
+for(const size of [.8,1.65,3.2]){
+ const stone=impactProfile(size,'stone'),molten=impactProfile(size,'molten');
+ assert.ok(molten.strength>stone.strength&&molten.radius>stone.radius&&molten.fire>stone.fire);
+}
 const warningSchool={x:0,z:-8,w:26,d:18};
 const warningNeighbor={x:20,z:-7,w:7,d:14};
 const warningMeteor=(target,y,flags={})=>({target,mesh:{position:{y}},vel:{y:-10},...flags});
@@ -602,6 +608,36 @@ try {
   assert.ok(damagedCadence.streak<intactCadence.streak && damagedCadence.strike<intactCadence.strike,
     'at the same wave, foreground destruction accelerates distant meteors and skyline strikes');
   report.distantMeteorCadence={intact:intactCadence,damaged:damagedCadence};
+  const openingWaves=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    return [1,2,3,4].map(w=>{
+      const started=qa.start(w);
+      return started.ok?qa.stageOpeningWave():started;
+    });
+  });
+  for(const [index,sample] of openingWaves.entries()){
+    assert.ok(sample.ok,sample.error);
+    const {incoming,layers,heldDuringSplit,advancedTo,skyLift,skyScreenHeight,intact,damaged}=sample.result;
+    const plan=openingMeteorWave(index+1);
+    assert.equal(incoming.length,plan.count);
+    assert.ok(incoming.every(m=>m.size===plan.size&&m.kind===plan.kind&&m.falling&&m.offscreen&&!m.boss),
+      'opening roots are falling, wholly above the extended camera and use regular interception rules');
+    assert.deepEqual(layers.map(layer=>layer.length),[2,6,18,0].map(count=>count*plan.count));
+    for(const [layerIndex,layer] of layers.slice(0,3).entries()){
+      assert.ok(layer.every(m=>m.generation===layerIndex+1&&m.falling&&m.kind===(index<2?'stone':'molten')));
+      const larger=layerIndex===0?incoming:layers[layerIndex-1];
+      assert.ok(Math.max(...layer.map(m=>m.size))<Math.min(...larger.map(m=>m.size)));
+    }
+    assert.ok(heldDuringSplit);
+    assert.ok(sample.result.hitRoof&&sample.result.hitGround);
+    assert.equal(advancedTo,index+2);
+    assert.ok(Math.abs(skyLift-skyScreenHeight)<.001);
+    for(const key of ['fireChance','mushroomChance','scale'])assert.ok(damaged[key]>intact[key]);
+  }
+  const skyfallCapture=openingWaves[3].result.png;
+  assert.match(skyfallCapture,/^data:image\/png;base64,/);
+  await writeFile('qa-output/02f-skyfall-wave-4.png',Buffer.from(skyfallCapture.split(',')[1],'base64'));
+  report.openingWaves=openingWaves.map(({result:{png,...result}})=>result);
   const shootability=await page.evaluate(()=>{
     const qa=window.__DD_QA;
     return [[.05,false],[.2,false],[.44,false],[.8,true],[.34,false]].map(([roll,edge])=>{

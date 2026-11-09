@@ -1,3 +1,10 @@
+## November 9 — Skyfall development candidate (RC10)
+
+- Added a full screen of vertical camera travel above the previous flight ceiling. Existing movement and attack inputs carry into the upper sky.
+- Opening waves launch one, two, one and two meteors respectively. Waves 1–2 use size-8 stone roots. Waves 3–4 use size-11 flaming roots that split into molten descendants with stronger ground effects. A hit starts a two-way split, followed by two three-way generations. Waves wait for the last airborne descendant. Later wave rules and the final boss retain their existing pacing and damage model.
+- Background meteors hit independently starting in wave 1. A falling neighborhood gauge makes strikes more frequent and gives them larger fireballs and more mushroom plumes.
+- Extended the instanced distant neighborhood toward the horizon. Low rowhouses, taller commercial facades and occasional larger masonry silhouettes use simplified destructible shells. References include the Philadelphia Historical Commission nominations for [2101–07 North Broad](https://www.phila.gov/media/20211119091954/2101-07-N-Broad-St-nomination.pdf) and [2301–07 North Broad](https://www.phila.gov/media/20190401093021/2301-03-N-Broad-St-nomination.pdf).
+
 ## November 9 — RC9e breath-origin repair (exact-head QA pending)
 
 - Wind and fire now start at animated muzzle sockets for both legacy and Paulo preview models. The gust source and visible cone follow completed head, flight, turn and movement poses every frame rather than freezing at release.
