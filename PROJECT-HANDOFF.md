@@ -1,3 +1,7 @@
+## Foreground meteor class checkpoint (November 9)
+
+The `fastImpact` spawn flag is separate from the ordinary flaming material and the dragon-hunter behavior. Direct fireball and blast damage check the flag. Fast impact meteors use existing foreground targets and damage handling, plus the existing capped ember pool. Distant skyline sprites live outside the playable meteor list.
+
 ## Distant disaster cadence checkpoint (November 9)
 
 The distant meteor and background damage timers are reset with the rest of the game. The browser fixture stages intact and heavily damaged foreground buildings at the same wave and checks that the actual scheduler spawns streaks more frequently and shortens the interval between skyline strikes. The fixture restarts the game before ordinary QA resumes.

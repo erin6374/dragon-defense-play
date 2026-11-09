@@ -1,3 +1,9 @@
+## November 9 — Foreground meteor classes
+
+Paulo animation is paused at `58ac48b`. The current focus is the gameplay and cinematic checklist in [PR #2](https://github.com/erin6374/dragon-defense-play/pull/2#issuecomment-6732992679). Long-range background collapse and military placement are still open.
+
+Ordinary rocks remain shootable regardless of material, size, or location. The new fast impact subtype appears from wave 4, survives fire and blast damage, and uses the existing foreground impact path. Distant streaks now have a cool core. Look for `meteorShootability` in the exact-head browser QA report.
+
 ## November 9 — Distant disaster cadence verification
 
 Baseline `58ac48b` passed [browser QA #336](https://github.com/erin6374/dragon-defense-play/actions/runs/42569616250). The next checkpoint covers neighborhood-driven distant meteor escalation at runtime and resets carried-over timers on restart. The browser report records the intact and damaged intervals under `distantMeteorCadence`. See the exact commit's QA run for verification.

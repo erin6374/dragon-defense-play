@@ -1,3 +1,9 @@
+## November 9 — Foreground impact meteor distinction
+
+- Ordinary foreground meteors, including molten and flaming rocks and large splitters, remain interceptable. An occasional faster, bright orange impact meteor appears from wave 4, aims at foreground targets, and survives player fire and blast damage.
+- The fast impact class leaves a denser ember trail using existing particle limits. Distant skyline streaks have a cooler core and retain their atmospheric tail.
+- Browser QA stages the actual spawn and fire paths for the different classes, including an ordinary meteor near the edge of the playable area.
+
 ## November 9 — Distant disaster restart and browser coverage
 
 - Restart resets distant meteor and background damage timers along with existing streak and skyline cleanup.

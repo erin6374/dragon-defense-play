@@ -548,6 +548,29 @@ try {
   assert.ok(damagedCadence.streak<intactCadence.streak && damagedCadence.strike<intactCadence.strike,
     'at the same wave, foreground destruction accelerates distant meteors and skyline strikes');
   report.distantMeteorCadence={intact:intactCadence,damaged:damagedCadence};
+  const shootability=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    return [[.05,false],[.2,false],[.44,false],[.8,true],[.34,false]].map(([roll,edge])=>{
+      const started=qa.start(4);
+      return started.ok?qa.stageMeteorShootability(roll,edge):started;
+    });
+  });
+  for(const sample of shootability)assert.ok(sample.ok,sample.error);
+  const [splitter,molten,flaming,edgeStone,fastImpact]=shootability.map(sample=>sample.result);
+  report.meteorShootability={splitter,molten,flaming,edgeStone,fastImpact};
+  assert.deepEqual([splitter.kind,molten.kind,flaming.kind,edgeStone.kind],['iron','molten','flaming','stone']);
+  for(const ordinary of [splitter,molten,flaming,edgeStone]){
+    assert.equal(ordinary.fastImpact,false);
+    assert.equal(ordinary.removed,true,'ordinary '+ordinary.kind+' meteor is destroyable by fire');
+  }
+  assert.ok(splitter.splitter && splitter.firstHitHP>0 && splitter.firstHitHP<splitter.initialHP && splitter.fragments>0,
+    'the large splitter takes multiple hits and produces fragments');
+  assert.equal(fastImpact.fastImpact,true);
+  assert.ok(fastImpact.speed>flaming.speed*1.5,'the fast impact class is faster than ordinary flaming meteors');
+  assert.equal(fastImpact.removed,false);
+  assert.equal(fastImpact.finalHP,fastImpact.initialHP,'fire and nearby blasts leave fast impact meteors intact');
+  assert.ok(fastImpact.removedOnImpact&&fastImpact.schoolStrikes>0,
+    'the fast impact meteor still damages the school and is removed after hitting it');
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
   const before = await snap();
