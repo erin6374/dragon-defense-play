@@ -1,3 +1,10 @@
+## November 9 — Physical collapse in the distant city rows
+
+- Some distant strikes now land on actual background buildings. Repeated strikes collapse the instanced building and leave a low shell, tilted roof slab, and smoke until restart.
+- Collapse reuses the existing facade batches and caps concurrent falls at eight. Impact and ambient smoke share the existing 28-marker limit.
+- Browser QA captures the same building before and after collapse and verifies its rendered height, smoke, and restart behavior.
+- The wave-13 placement check measures all three military battery hulls against the existing buildings, cross streets, and Broad Street sidewalk. A canvas-only screenshot shows the positions without the HUD.
+
 ## November 9 — Foreground impact meteor distinction
 
 - Ordinary foreground meteors, including molten and flaming rocks and large splitters, remain interceptable. An occasional faster, bright orange impact meteor appears from wave 4, aims at foreground targets, and survives player fire and blast damage.

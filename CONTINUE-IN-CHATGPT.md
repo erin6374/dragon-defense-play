@@ -1,6 +1,6 @@
 ## November 9 — Foreground meteor classes
 
-Paulo animation is paused at `58ac48b`. The current focus is the gameplay and cinematic checklist in [PR #2](https://github.com/erin6374/dragon-defense-play/pull/2#issuecomment-6732992679). Long-range background collapse and military placement are still open.
+Paulo animation is paused at `58ac48b`. The current focus is the gameplay and cinematic checklist in [PR #2](https://github.com/erin6374/dragon-defense-play/pull/2#issuecomment-6732992679). The long-range rows now retain rubble after strikes. The wave-13 placement audit records all three battery hulls against buildings and street clearances. The existing coordinates are retained pending a specific relocation target.
 
 Ordinary rocks remain shootable regardless of material, size, or location. The new fast impact subtype appears from wave 4, survives fire and blast damage, and uses the existing foreground impact path. Distant streaks now have a cool core. Look for `meteorShootability` in the exact-head browser QA report.
 

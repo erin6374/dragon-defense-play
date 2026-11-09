@@ -36,7 +36,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  function box(root,mat,x,y,z,w,h,d){const mesh=new THREE.Mesh(cube,mat);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);root.add(mesh);return mesh;}
  function deploy(x,advanced=false){
   const root=new THREE.Group();root.position.set(x,0,advanced?3.4:3.1);
-  box(root,hullMat,0,1.1,0,advanced?6:5.4,1.5,2.7);
+  const hull=box(root,hullMat,0,1.1,0,advanced?6:5.4,1.5,2.7);
   box(root,steel,0,2.1,0,3.1,.8,2.2);
   for(const xx of [-1.75,1.75])for(const zz of [-1,1]){
    const wheel=new THREE.Mesh(ball,steel);wheel.position.set(xx,.65,zz);wheel.scale.set(.72,.72,.28);root.add(wheel);
@@ -51,7 +51,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   searchlight.scale.set(1,12,1);root.add(searchlight);
   const searchLens=new THREE.Mesh(ball,searchlightLensMat);
   searchLens.scale.setScalar(.18);searchLens.position.set(0,3.52,0);root.add(searchLens);
-  scene.add(root);vehicles.push({root,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0,
+  scene.add(root);vehicles.push({root,hull,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0,
    searchlight,searchDir:new THREE.Vector3(0,1,0),searchTarget:new THREE.Vector3(0,1,0),searchClock:0});
   return root;
  }
@@ -142,6 +142,11 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  }
  function windRocketStates(){return missiles.map(m=>({position:m.mesh.position.toArray(),velocity:m.vel.toArray(),disruptTime:m.disruptTime||0,homing:m.homing}));}
  return {update,reset,suppress,deflectWind,stageWindRocket,windRocketStates,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
+  footprints:()=>vehicles.map(({root,hull})=>{
+   root.updateWorldMatrix(true,false);
+   const {min,max}=new THREE.Box3().setFromObject(hull);
+   return {minX:min.x,maxX:max.x,minZ:min.z,maxZ:max.z};
+  }),
   searchlightStates:()=>vehicles.map(v=>({x:v.root.position.x,visible:v.searchlight.visible,length:+v.searchlight.scale.y.toFixed(2),
    direction:v.searchDir.toArray(),targetDot:+v.searchDir.dot(v.searchTarget).toFixed(4)}))};
 }

@@ -1,3 +1,9 @@
+## Distant city collapse checkpoint (November 9)
+
+The long-range city in `src/rendering/distant-neighborhood.js` records which instances belong to each building, including fringe buildings. Distant strikes accumulate damage on the nearest eligible building. A fall compresses the shell, drops and tilts its roof slab, and lowers the smoke toward the rubble. Existing facade batches are reused, eight falls may be active at once, and impact and ambient smoke share a 28-sprite cap. Restart restores the original instance transforms. Compare `06c-distant-building-before.png` and `06d-distant-building-rubble.png` from the exact-head QA artifact.
+
+The wave-13 military placement audit measures the real hull footprints against the building bounds, cross streets, and Broad Street sidewalk. Use `militaryPlacement` in the browser report and `07a-military-placement-scene.png` for a view without HUD overlays. Placement remains at the existing sites until a relocation target is defined.
+
 ## Foreground meteor class checkpoint (November 9)
 
 The `fastImpact` spawn flag is separate from the ordinary flaming material and the dragon-hunter behavior. Direct fireball and blast damage check the flag. Fast impact meteors use existing foreground targets and damage handling, plus the existing capped ember pool. Distant skyline sprites live outside the playable meteor list.

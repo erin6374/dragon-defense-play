@@ -51,6 +51,16 @@ export function createDistantNeighborhood({root}){
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
+ function registerBuilding(tier,x,z,w,h,d){
+  const home={id:buildingDefs.length,tier,x,z,w,h,d,parts:[],damage:0,fall:0};
+  buildingDefs.push(home);
+  return home;
+ }
+ function addPart(home,type,x,y,z,w,h,d,color=null){
+  const index=instances[home.tier][type].length;
+  home.parts.push({type,index});
+  add(home.tier,type,x,y,z,w,h,d,color);
+ }
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
  function street(x,z,w,d,tier){add(tier,'road',x,-.44,z,w,.12,d);}
  // Residential grid has open lots, rear yards, crossing streets and the railway/civic gap.
@@ -86,30 +96,30 @@ export function createDistantNeighborhood({root}){
    const w=6.15+((ix+row)%3)*.28,d=10.1+((ix*2+row)%3)*.9;
    if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
    const color=facades[(ix*3+row*5)%facades.length];
-   const home={x,y:h/2,z,w,h,d,stories,tier,damage:0,row,ix};buildingDefs.push(home);
-   add(tier,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
-   add(tier,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   const home=registerBuilding(tier,x,z,w,h,d);
+   addPart(home,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
+   addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18);
    // Small rooftop HVAC boxes and access housings give the distant rows a
    // varied architectural silhouette; all equipment shares one batch per tier.
    // Place equipment toward the rear, away from the front cornice.
    if((ix+row*3)%5===0){
     const unitW=modern?1.4:1.1;
-    add(tier,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
+    addPart(home,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
    }
    if((ix*7+row)%23===0){
-    add(tier,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
+    addPart(home,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
    }
-   if(!modern)add(tier,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
-   else add(tier,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
+   if(!modern)addPart(home,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
+   else addPart(home,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
     for(const bay of [-1,1]){
      const yy=(floor+.55)*h/stories;const wx=x+bay*w*.24;
-     add(tier,'window',wx,yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
+     addPart(home,'window',wx,yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
     }
    }
    // Door and occasional stoop, no separate draw call per home.
-   if((ix+row)%3===0)add(tier,'cornice',x-w*.24,.18,z+d/2+.62,w*.35,.24,1.12);
-   if(commercial)add(tier,'window',x,1.4,z+d/2+.10,w*.78,2.15,.07);
+   if((ix+row)%3===0)addPart(home,'cornice',x-w*.24,.18,z+d/2+.62,w*.35,.24,1.12);
+   if(commercial)addPart(home,'window',x,1.4,z+d/2+.10,w*.78,2.15,.07);
   }
  }
  // The east-side blocks beyond the playable frontage are visible at the pan limits.
@@ -121,23 +131,27 @@ export function createDistantNeighborhood({root}){
     const x=side*(70+i*9.4);
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
-    add(0,'main',x,h/2,z,8.2,h,14,color);
-    add(0,'roof',x,h+.14,z,8.5,.28,14.2);
+    const home=registerBuilding(0,x,z,8.2,h,14);
+    addPart(home,'main',x,h/2,z,8.2,h,14,color);
+    addPart(home,'roof',x,h+.14,z,8.5,.28,14.2);
     for(const floor of [1,2,3]){
-     for(const dx of [-1.75,1.75])add(0,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
+     for(const dx of [-1.75,1.75])addPart(home,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
     }
    }
   }
  }
- add(0,'main',72,2.7,-12,20,5.4,19,0x85847a);
- add(0,'roof',72,5.5,-12,20.4,.2,19.2);
+ const civic=registerBuilding(0,72,-12,20,5.4,19);
+ addPart(civic,'main',72,2.7,-12,20,5.4,19,0x85847a);
+ addPart(civic,'roof',72,5.5,-12,20.4,.2,19.2);
  add(0,'green',68,-.40,-.8,13,.08,4.6);
  let drawCalls=0;
+ const batches=tiers.map(()=>({}));
  for(let ti=0;ti<tiers.length;ti++){
   const g=groups[ti],entries=instances[ti];
   for(const key of Object.keys(entries)){
    const arr=entries[key];if(!arr.length)continue;
    const mesh=new THREE.InstancedMesh(cube,materials[key],arr.length);
+   batches[ti][key]=mesh;
    mesh.name='distance-'+tiers[ti].name+'-'+key;
    for(let i=0;i<arr.length;i++){
     const a=arr[i];dummy.position.set(a.x,a.y,a.z);dummy.scale.set(a.w,a.h,a.d);dummy.rotation.set(0,0,0);dummy.updateMatrix();
@@ -166,10 +180,71 @@ export function createDistantNeighborhood({root}){
  const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
  smokeTexture.colorSpace=THREE.SRGBColorSpace;
  const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
- const damageMarkers=[];
+ const damageMarkers=[],impactSmoke=new Map();
+ const damaged=new Set(),falling=new Set();
+ function addImpactSmoke(home){
+  if(impactSmoke.has(home))return;
+  if(impactSmoke.size===28){
+   const oldest=impactSmoke.keys().next().value;
+   impactSmoke.get(oldest).removeFromParent();impactSmoke.delete(oldest);
+  }
+  if(damageMarkers.length+impactSmoke.size===28)damageMarkers.pop().removeFromParent();
+  const puff=new THREE.Sprite(smokeMat);
+  const size=Math.min(5,home.w*.54);
+  puff.position.set(home.x,home.h+size*.65,home.z);
+  puff.scale.set(size,size*1.9,1);
+  groups[home.tier].add(puff);impactSmoke.set(home,puff);
+ }
+ function applyFall(home){
+  const progress=home.fall*home.fall;
+  const heightScale=1-progress*.84;
+  for(const {type,index} of home.parts){
+   const part=instances[home.tier][type][index];
+   const mesh=batches[home.tier][type];
+   const trim=type!=='main'&&type!=='roof';
+   const trimScale=trim?Math.max(.001,1-progress):1;
+   dummy.position.set(part.x+(type==='roof'?progress*.5:0),part.y*heightScale,part.z);
+   dummy.scale.set(part.w*trimScale,part.h*heightScale*trimScale,part.d*trimScale);
+   dummy.rotation.set(0,0,type==='roof'?progress*.08:0);
+   dummy.updateMatrix();
+   mesh.setMatrixAt(index,dummy.matrix);
+   mesh.instanceMatrix.needsUpdate=true;
+  }
+  const puff=impactSmoke.get(home);
+  if(puff)puff.position.y=home.h*heightScale+puff.scale.x*.65;
+ }
+ function strike(x,z,strength){
+  if(falling.size>=8)return null;
+  let nearest=null,nearestSq=Infinity;
+  for(const home of buildingDefs){
+   if(home.damage>=1)continue;
+   const distance=(home.x-x)**2+(home.z-z)**2;
+   if(distance<nearestSq){nearest=home;nearestSq=distance;}
+  }
+  if(!nearest)return null;
+  nearest.damage=Math.min(1,nearest.damage+strength);
+  damaged.add(nearest);
+  addImpactSmoke(nearest);
+  if(nearest.damage===1)falling.add(nearest);
+  return {id:nearest.id,x:nearest.x,y:nearest.h,z:nearest.z};
+ }
+ function update(dt){
+  for(const home of falling){
+   home.fall=Math.min(1,home.fall+dt/1.1);
+   applyFall(home);
+   if(home.fall===1)falling.delete(home);
+  }
+ }
+ function restore(){
+  for(const puff of impactSmoke.values())puff.removeFromParent();
+  for(const puff of damageMarkers)puff.removeFromParent();
+  impactSmoke.clear();damageMarkers.length=0;
+  for(const home of damaged){home.damage=home.fall=0;applyFall(home);}
+  damaged.clear();falling.clear();
+ }
  function setHealth(health){
   const damage=Math.max(0,Math.min(1,1-health/100));
-  const targetCount=Math.min(28,Math.floor(damage*28));
+  const targetCount=Math.min(28-impactSmoke.size,Math.floor(damage*28));
   while(damageMarkers.length<targetCount){
    const b=buildingDefs[(damageMarkers.length*41+23)%buildingDefs.length];
    const puff=new THREE.Sprite(smokeMat);
@@ -182,7 +257,16 @@ export function createDistantNeighborhood({root}){
  }
  return {
   root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:STREET_AXIS.map(s=>s.name),
-  setHealth,setVisible(on){base.visible=on;for(const t of tiers)t.group.visible=on},
-  stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),smoke:damageMarkers.length,crossStreetNames:CROSS_STREETS.map(s=>s.name),crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
+  setHealth,strike,update,restore,setVisible(on){base.visible=on;for(const t of tiers)t.group.visible=on},
+  buildingState(id){
+   const home=buildingDefs[id];
+   const {index}=home.parts[0];
+   batches[home.tier].main.getMatrixAt(index,dummy.matrix);
+   return {damage:home.damage,fall:home.fall,height:dummy.matrix.elements[5],originalHeight:home.h,
+    smoking:impactSmoke.has(home)};
+  },
+  stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
+   smoke:damageMarkers.length+impactSmoke.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
+   crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
  };
 }

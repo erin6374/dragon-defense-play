@@ -824,6 +824,31 @@ try {
   assert.equal(skylineReset.result.fallActive,false,'restart resets skyline falling state');
   assert.equal(skylineReset.result.ruinVisible,false,'restart hides skyline rubble');
   report.skylineReset=skylineReset.result;
+  {
+  const backgroundCollapse=await page.evaluate(()=>window.__DD_QA.stageDistantBuildingCollapse());
+  assert.ok(backgroundCollapse.ok,backgroundCollapse.error);
+  const {id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,
+    before:beforeCollapse,after:afterCollapse}=backgroundCollapse.result;
+  assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
+    'the first distant hit creates smoke while the building stays standing');
+  assert.ok(backgroundFalling.fall>0&&backgroundFalling.fall<1&&backgroundFalling.height<backgroundIntact.height,
+    'repeated hits animate the actual instanced building down toward the ground');
+  assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
+    'the collapsed shell persists as low rubble with smoke');
+  for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],['06d-distant-building-rubble',afterCollapse]]){
+    assert.match(png,/^data:image\/png;base64,/);
+    await writeFile('qa-output/'+filename+'.png',Buffer.from(png.split(',')[1],'base64'));
+  }
+  const restoredBackground=await page.evaluate(id=>{
+    const qa=window.__DD_QA;
+    const started=qa.start(7);
+    if(!started.ok)throw Error(started.error);
+    return qa.distantBuildingState(id);
+  },id);
+  assert.ok(restoredBackground.damage===0&&!restoredBackground.smoking&&Math.abs(restoredBackground.height-backgroundIntact.height)<.001,
+    'restart restores the far building instance and removes its impact smoke');
+  report.distantBuildingCollapse={id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,restored:restoredBackground};
+  }
   // High-wave disaster glow capture: a real rendered frame, not a shader
   // intensity-only assertion. Restore wave 7 before collision QA resumes.
   const highWaveGlow=await page.evaluate(()=>{
@@ -1005,9 +1030,18 @@ try {
    assert.ok(beam.direction.every(Number.isFinite),'tracking does not create invalid transforms');
   }
   report.militarySearchlights=batteryStage.result.states;
+  assert.equal(batteryStage.result.footprints.length,3,'audit includes the wave-13 homing battery');
+  for(const footprint of batteryStage.result.footprints){
+   assert.ok(!footprint.buildingOverlap&&!footprint.crossStreetOverlap,
+    'battery hull clears the building and cross-street footprints');
+   assert.ok(footprint.maxZ<9.8,'battery hull stays behind the Broad Street sidewalk and traffic lanes');
+  }
+  report.militaryPlacement=batteryStage.result.footprints;
   const stageNight=await page.evaluate(()=>window.__DD_QA.qaSettleAtmosphere());
   assert.ok(stageNight.ok,stageNight.error);
   await page.screenshot({path:'qa-output/07-military-searchlights.png'});
+  assert.match(batteryStage.result.png,/^data:image\/png;base64,/);
+  await writeFile('qa-output/07a-military-placement-scene.png',Buffer.from(batteryStage.result.png.split(',')[1],'base64'));
   const restoreStage=await page.evaluate(()=>window.__DD_QA.start(7));
   assert.ok(restoreStage.ok,restoreStage.error);
   await page.evaluate(()=>window.__DD_QA.cinematicStage('quiet'));

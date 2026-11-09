@@ -5,6 +5,7 @@ import {createCinematicEffects} from './rendering/cinematic-effects.js';
 import {impactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
 import {updatePedestrianPose} from './simulation/pedestrian-motion.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
+import {occupiesCrossStreet} from './simulation/road-corridors.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
@@ -1115,8 +1116,15 @@ function updateDistantMeteors(dt){
  if(skylineEventTimer<=0){skylineEventTimer=Math.max(.35,(2.65-wave*.06)/chapterRamp)+Math.random()*.85;
   const targetX=(Math.random()-.5)*128;
   const targetY=18+Math.random()*18+(chapterRamp-1)*3;
-  cinematicSkyExplosion(targetX,targetY,-155);
-  if(Math.random()<.35+.38*waveProgress)cinematicSkyExplosion(targetX+(Math.random()-.5)*24,targetY+4+Math.random()*8,-155);
+  const distantHome=(wave>=5||damageFraction>.15)&&Math.random()<.45
+   ?neighborhood.longRange.strike(targetX*2.5,-10-305*Math.random()**2,.46+damageFraction*.42):null;
+  if(distantHome){
+   const impact=neighborhood.longRange.root.localToWorld(new THREE.Vector3(distantHome.x,distantHome.y,distantHome.z));
+   cinematicSkyExplosion(impact.x,impact.y,impact.z);
+  }else{
+   cinematicSkyExplosion(targetX,targetY,-155);
+   if(Math.random()<.35+.38*waveProgress)cinematicSkyExplosion(targetX+(Math.random()-.5)*24,targetY+4+Math.random()*8,-155);
+  }
  }
  distantTimer-=dt;
  const streakCap=Math.min(58,Math.round(18+wave*2+waveProgress*18+(wave===15?8:0)));
@@ -2194,6 +2202,28 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    }finally{skylineBackdrop.update(elapsed,displayedDarkness,0);}
    return {landmark:tower.def.id,collapse:tower.collapse,samples};
   }),
+  stageDistantBuildingCollapse:()=>run('stageDistantBuildingCollapse',()=>{
+   const district=neighborhood.longRange;
+   const impact=district.strike(0,-100,.36);
+   if(!impact)throw Error('Expected an intact distant building');
+   const target=district.root.localToWorld(new THREE.Vector3(impact.x,impact.y*.42,impact.z));
+   const camera=new THREE.PerspectiveCamera(41,renderer.domElement.width/renderer.domElement.height,.1,500);
+   camera.position.copy(target).add(new THREE.Vector3(4,12,25));
+   camera.lookAt(target);
+   const capture=()=>{
+    renderer.render(scene,camera);
+    return renderer.domElement.toDataURL('image/png');
+   };
+   const intact=district.buildingState(impact.id),before=capture();
+   district.strike(impact.x,impact.z,.36);
+   district.strike(impact.x,impact.z,.36);
+   district.update(.55);
+   const falling=district.buildingState(impact.id);
+   district.update(.55);
+   const settled=district.buildingState(impact.id),after=capture();
+   return {id:impact.id,intact,falling,settled,before,after};
+  }),
+  distantBuildingState:id=>neighborhood.longRange.buildingState(id),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
    // Advance only the cosmetic skyline animation to sample long sessions.
    // Restore the live frame even if a helicopter is unexpectedly missing.
@@ -2397,10 +2427,18 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   }),
   labStageMilitarySearchlights:()=>run('labStageMilitarySearchlights',()=>{
    if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;
-   wave=11;dragon.position.set(0,18,15);militaryOccupation.reset();
+   wave=13;dragon.position.set(0,18,15);militaryOccupation.reset();updateHud();
    // No missiles are fired during this 1.5s visual-only staged aim test.
    for(let i=0;i<90;i++)militaryOccupation.update(1/60,[],[]);
-   return {states:militaryOccupation.searchlightStates(),counts:militaryOccupation.counts(),snapshot:snap()};
+   const footprints=militaryOccupation.footprints().map(bounds=>{
+    const {minX,maxX,minZ,maxZ}=bounds;
+    const buildingOverlap=neighborhood.city.buildings.some(b=>
+     minX<b.x+b.w/2&&maxX>b.x-b.w/2&&minZ<b.front&&maxZ>b.z-b.d/2);
+    return {...bounds,buildingOverlap,crossStreetOverlap:occupiesCrossStreet((minX+maxX)/2,maxX-minX)};
+   });
+   renderer.render(scene,camera);
+   return {states:militaryOccupation.searchlightStates(),counts:militaryOccupation.counts(),footprints,snapshot:snap(),
+    png:renderer.domElement.toDataURL('image/png')};
   }),
   labStageWind:()=>run('labStageWind',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;wave=6;dragon.position.set(-3,13,15);facing=1;helicopterTimer=600;spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('Unable to spawn test helicopter');h.root.position.set(9,13,15);h.disorientTime=0;gustOrigin.copy(dragon.position);gustDirection.set(1,0,0);gustTime=.85;windCooldown=4;windActive=true;return {description:'Production dragon wind will strike a helicopter and induce 5s disorientation',snapshot:snap()};}),
   labStageIce:()=>run('labStageIce',()=>{if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;wave=6;dragon.position.set(0,13,15);helicopterTimer=600;spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('Unable to spawn ICE helicopter');h.root.position.set(10,13,15);h.role='ice';h.disorientTime=0;h.iceCooldown=0;h.contactTime=0;return {description:'Continuous 17-unit beam; uninterrupted 3s contact required',snapshot:snap()};}),
