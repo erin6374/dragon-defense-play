@@ -825,98 +825,58 @@ try {
   report.landmarkImpact = towerImpact.result;
   await shot('06-landmark-strike');
   await skylineShot('06-skyline-strike');
-  const skylineCollapse=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
-  assert.ok(skylineCollapse.ok,skylineCollapse.error);
-  assert.ok(skylineCollapse.result.collapse>0,'skyscraper collapse advances');
-  assert.equal(skylineCollapse.result.smokeParentStable,true,'smoke remains outside collapse transform');
-  assert.equal(skylineCollapse.result.flashParentStable,true,
-   'meteor flash stays outside collapse transform');
+  // Skyline art rule: even a catastrophic strike NEVER collapses a landmark.
+  // Repeated hits leave smoke, fire and scorch while the silhouette survives.
+  const standingTower=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
+  assert.ok(standingTower.ok,standingTower.error);
+  assert.equal(standingTower.result.collapse,0,'skyline remains upright at full damage');
+  assert.equal(standingTower.result.towerScaleY,1,'damaged skyscraper retains full height');
+  assert.equal(standingTower.result.ruinVisible,false,'no distant skyscraper demolition rubble');
+  assert.equal(standingTower.result.fallActive,false,'skyscraper falling animation never starts');
+  assert.equal(standingTower.result.smokeVisible,true,'smoke survives severe distant hits');
+  assert.equal(standingTower.result.fireVisible,true,'fire burns on a standing skyscraper');
+  assert.equal(standingTower.result.smokeParentStable,true,'persistent smoke lives in world space');
+  assert.equal(standingTower.result.flashParentStable,true,'impact flash has stable parent');
   for(let i=0;i<3;i++){
-   assert.ok(Number.isFinite(skylineCollapse.result.flashWorldBefore[i])&&
-     Number.isFinite(skylineCollapse.result.flashWorldAfter[i]),
-     'meteor flash world position remains finite across structural collapse');
-   assert.ok(Math.abs(skylineCollapse.result.flashWorldAfter[i]-
-     skylineCollapse.result.flashWorldBefore[i])<1e-5,
-     'meteor flash remains fixed at the contact point while tower shrinks');
+   assert.ok(Math.abs(standingTower.result.flashWorldAfter[i]-
+     standingTower.result.flashWorldBefore[i])<1e-5,
+     'meteor contact point does not move when health damage increases');
+   assert.ok(Math.abs(standingTower.result.smokeWorldAfter[i]-
+     standingTower.result.smokeWorldBefore[i])<1e-5,
+     'tower smoke anchor remains fixed when health damage increases');
   }
-  assert.equal(skylineCollapse.result.smokeVisible,true,'smoke persists during structural collapse');
-  for(let i=0;i<3;i++){
-   assert.ok(Number.isFinite(skylineCollapse.result.smokeWorldBefore[i])&&
-     Number.isFinite(skylineCollapse.result.smokeWorldAfter[i]),
-     'smoke world position remains finite across structural collapse');
-   assert.ok(Math.abs(skylineCollapse.result.smokeWorldAfter[i]-
-     skylineCollapse.result.smokeWorldBefore[i])<1e-5,
-     'smoke stays anchored in skyline world space during tower shrink');
-  }
-  for(let i=0;i<3;i++)assert.ok(Math.abs(skylineCollapse.result.smokeWorldScale[i]-towerImpact.result.smokeWorldScale[i])<.001,'smoke world scale does not shrink with tower');
+  for(let i=0;i<3;i++)assert.ok(
+   Math.abs(standingTower.result.smokeWorldScale[i]-towerImpact.result.smokeWorldScale[i])<.001,
+   'smoke retains scale as skyline damage grows');
   const damagedEmission=await page.evaluate(()=>window.__DD_QA.sampleSkylineEmissive());
   assert.ok(damagedEmission.ok,damagedEmission.error);
-  assert.ok(damagedEmission.result.collapse>0,'damaged skyline tower has structural collapse');
-  const damagedValues=damagedEmission.result.samples.map(s=>s.emissive);
-  assert.ok(damagedValues.every(Number.isFinite),'damaged skyline emission stays finite');
+  assert.equal(damagedEmission.result.collapse,0,'distant electrical damage never reduces tower height');
+  const damagedValues=damagedEmission.result.samples.map(v=>v.emissive);
+  assert.ok(damagedValues.every(Number.isFinite),'damaged standing tower emission finite');
   assert.ok(Math.max(...damagedValues)-Math.min(...damagedValues)>.002,
-   'damaged tower retains irregular electrical flicker');
+   'repeated meteor strikes cause bounded electrical flicker');
   report.damagedSkylineEmission=damagedEmission.result;
-  assert.equal(skylineCollapse.result.ruinVisible,true,'skyscraper rubble remains rendered');
-  assert.equal(skylineCollapse.result.rubbleDetached,true,'rubble stays outside animated tower group');
-  assert.equal(skylineCollapse.result.rubbleGroundY,0,'rubble stays grounded');
-  assert.equal(skylineCollapse.result.slabs,3,'three persistent facade slabs per skyline tower');
-  assert.deepEqual(skylineCollapse.result.slabMaterialGroups,[2,2,2],'one opaque side group and one textured front group per slab');
-  assert.deepEqual(skylineCollapse.result.slabFaceMaterialCounts,[2,2,2],'facade fragment material array uses two finishes');
-  assert.deepEqual(skylineCollapse.result.slabIndexCounts,[36,36,36],'optimized geometry retains all six faces');
-  assert.ok(skylineCollapse.result.slabY.every(v=>v>=0),'fallen facade slabs stay above ground');
-  assert.equal(skylineCollapse.result.fallActive,true,'facade fall simulation is triggered');
-  for(let i=0;i<skylineCollapse.result.slabY.length;i++){
-   assert.ok(Math.abs(skylineCollapse.result.slabY[i]-skylineCollapse.result.slabReleaseY[i])<.001,
-    'facade section begins at its release height, not at the ground');
-   assert.ok(skylineCollapse.result.slabY[i]>skylineCollapse.result.slabGroundY[i],
-    'facade section has a positive falling distance');
-  }
-  await skylineShot('06-skyline-release');
-  const falling=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(.45));
-  assert.ok(falling.ok,falling.error);
-  assert.ok(falling.result.slabY.some((v,i)=>v>falling.result.groundY[i]+.01),'facade sections visibly pass through a falling state');
-  await skylineShot('06-skyline-falling');
-  const settledSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
-  assert.ok(settledSkyline.ok,settledSkyline.error);
-  for(let i=0;i<settledSkyline.result.slabY.length;i++)
-   assert.ok(Math.abs(settledSkyline.result.slabY[i]-settledSkyline.result.groundY[i])<.001,'facade section settles onto ground');
-  const smokeBeforeIdle=await page.evaluate(()=>window.__DD_QA.skylineFallState());
-  assert.ok(smokeBeforeIdle.ok,smokeBeforeIdle.error);
-  assert.ok(smokeBeforeIdle.result.smokeWorldPosition.every(Number.isFinite),
-   'persistent smoke has a finite world position after debris settles');
-  await skylineShot('06-skyline-rubble');
-  // Once all slabs reach their supported ground poses, subsequent frames
-  // should not continue recomputing transforms for motionless rubble.
-  const idleSkyline=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(2));
-  assert.ok(idleSkyline.ok,idleSkyline.error);
-  assert.equal(idleSkyline.result.fallElapsed,settledSkyline.result.fallElapsed,
-   'settled skyline fall simulation stops advancing elapsed time');
-  assert.deepEqual(idleSkyline.result.slabY,settledSkyline.result.slabY,
-   'settled skyline rubble remains fixed on the ground');
-  // A short impact flash should be gone after the simulated collapse,
-  // but persistent smoke, scorch and rubble should still be visible.
+  report.skylineStanding=standingTower.result;
+  await skylineShot('06-skyline-standing-fire');
+  const beforeIdle=await page.evaluate(()=>window.__DD_QA.skylineFallState());
+  const aftermathStep=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
+  assert.ok(aftermathStep.ok,aftermathStep.error);
+  assert.equal(aftermathStep.result.fallElapsed,0,'no skyscraper collapse timeline runs');
   const aftermath=await page.evaluate(()=>window.__DD_QA.skylineFallState());
   assert.ok(aftermath.ok,aftermath.error);
-  assert.equal(aftermath.result.impactVisible,false,
-   'short-lived skyline flash expires after several seconds');
-  assert.equal(aftermath.result.smokeVisible,true,
-   'impact smoke persists after the flash expires');
-  assert.ok(aftermath.result.smokeWorldPosition.every(Number.isFinite),
-   'persistent smoke position remains finite over time');
+  assert.equal(aftermath.result.towerScaleY,1,'tower stays standing through the aftermath');
+  assert.equal(aftermath.result.ruinVisible,false,'tower has no fallen facade panels');
+  assert.equal(aftermath.result.impactVisible,false,'short impact flash expires');
+  assert.equal(aftermath.result.fireVisible,true,'persistent skyscraper fires survive flash');
+  assert.equal(aftermath.result.smokeVisible,true,'persistent smoke survives flash');
+  assert.equal(aftermath.result.scorchVisible,true,'facade scorch survives flash');
   const smokeMotion=Math.hypot(...aftermath.result.smokeWorldPosition.map((v,i)=>
-   v-smokeBeforeIdle.result.smokeWorldPosition[i]));
-  assert.ok(smokeMotion>.001&&smokeMotion<4,
-   'smoke drifts gently but does not teleport after the flash expires');
-  assert.equal(aftermath.result.scorchVisible,true,
-   'facade scorch persists after the flash expires');
-  assert.equal(aftermath.result.ruinVisible,true,
-   'collapsed skyscraper rubble persists after the flash expires');
+   v-beforeIdle.result.smokeWorldPosition[i]));
+  assert.ok(smokeMotion>.001&&smokeMotion<4,'tower smoke drifts without teleporting');
   report.skylineAftermath=aftermath.result;
-  report.skylineCollapse={...skylineCollapse.result,falling:falling.result,settled:settledSkyline.result,idle:idleSkyline.result};
   await skylineShot('06-skyline-smoke-aftermath');
   report.skylineDetailCamera=await skylineShot('06-skyline-close-aftermath',true);
-  await shot('06-landmark-collapse');
+  await shot('06-landmark-standing');
   await page.evaluate(()=>{window.__DD_QA.start(7);window.__DD_QA.cinematicStage('quiet');return window.__DD_QA.qaSettleAtmosphere();});
   const skylineReset=await page.evaluate(()=>window.__DD_QA.skylineFallState());
   assert.ok(skylineReset.ok,skylineReset.error);
@@ -955,7 +915,9 @@ try {
   assert.ok(fireStates.every(s=>s.flameHeight/backgroundIntact.flameHeight>.75
     &&s.flameHeight/backgroundIntact.flameHeight<1.25),
     'distant fire flicker remains bounded during collapse');
-  assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
+  assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
+  assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');
+  assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
   assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.49
@@ -1096,7 +1058,7 @@ try {
     'cinematic explosion remains anchored to pre-collapse contact point on strike '+(i+1));
    if(distance(hit.post,hit.expectedPre)>.1)movedFacade=true;
   }
-  assert.equal(movedFacade,true,'cascade includes a facade transform that would displace a late explosion');
+  assert.equal(movedFacade,false,'repeated impacts never deform or displace skyscraper facades');
   for(let i=1;i<impactCascade.result.smokeSamples.length;i++){
    const before=impactCascade.result.smokeSamples[i-1];
    const after=impactCascade.result.smokeSamples[i];
@@ -1105,8 +1067,8 @@ try {
   }
   assert.ok(impactCascade.result.smokeSamples[1].scale>impactCascade.result.smokeSamples[0].scale,
    'additional impact visibly thickens plume');
-  assert.equal(impactCascade.result.fallActive,true,'repeated skyline hits start tower breakup');
-  assert.equal(impactCascade.result.ruinVisible,true,'repeated skyline hits reveal persistent debris');
+  assert.equal(impactCascade.result.fallActive,false,'repeated strikes never trigger skyscraper collapse');
+  assert.equal(impactCascade.result.ruinVisible,false,'skyscraper rubble stays disabled despite severe damage');
   assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');
   report.skylineImpactCascade=impactCascade.result;
   await skylineShot('06-skyline-impact-cascade');
@@ -1127,6 +1089,7 @@ try {
   assert.equal(afterCascadeRestart.result.ruinVisible,false,'restart removes tower rubble');
   assert.equal(afterCascadeRestart.result.impactVisible,false,'restart clears meteor flash');
   assert.equal(afterCascadeRestart.result.smokeVisible,false,'restart clears persistent impact smoke');
+  assert.equal(afterCascadeRestart.result.fireVisible,false,'restart extinguishes distant skyscraper fires');
   assert.equal(afterCascadeRestart.result.scorchVisible,false,'restart clears facade scorch');
   report.skylineAfterCascadeRestart=afterCascadeRestart.result;
   await skylineShot('06-skyline-after-restart');
