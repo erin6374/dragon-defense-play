@@ -2470,9 +2470,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const intact=district.buildingState(impact.id),before=capture();
    district.strike(impact.x,impact.z,.36);
    district.strike(impact.x,impact.z,.36);
-   district.update(.55);
+   district.update(.68);
    const falling=district.buildingState(impact.id);
-   district.update(.55);
+   district.update(3.0);
    const settled=district.buildingState(impact.id),after=capture();
    return {id:impact.id,intact,falling,settled,before,after};
   }),
@@ -2516,6 +2516,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     flashScaleImmediately,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    fireVisible:t.fireSprite.visible,fireOpacity:t.fireSprite.material.opacity,
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
     smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
@@ -2538,6 +2539,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
     smokeVisible:t.smokeSprite.visible,
+    fireVisible:t.fireSprite.visible,
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
     smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
@@ -2553,6 +2555,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
     strikeDamage:t.strikeDamage,collapse:t.collapse,towerScaleY:t.group.scale.y,
     impactVisible:t.impactSprite.visible,smokeVisible:t.smokeSprite.visible,
+    fireVisible:t.fireSprite.visible,
     smokeWorldPosition:t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,
     slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
@@ -2851,7 +2854,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const incoming=distantStreaks.filter(streak=>streak.landing);
    updateDistantMeteors(.83);
    const afterImpact=district.stats();
-   district.update(1.1);
+   district.update(3.3);
    const point=incoming.find(streak=>streak.landing.far).landing.point;
    const camera=new THREE.PerspectiveCamera(52,renderer.domElement.width/renderer.domElement.height,.1,500);
    camera.position.copy(point).add(new THREE.Vector3(4,14,28));
