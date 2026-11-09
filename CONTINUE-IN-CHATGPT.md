@@ -1,3 +1,9 @@
+## November 9 — Exact-head QA checkout and preview provenance (QA pending)
+
+- Browser QA now checks out the pull request's actual head SHA instead of GitHub's synthetic PR merge commit; `workflow_dispatch` and reusable calls fall back to `github.sha`.
+- The QA-gated downloadable Windows development artifact uses a version-neutral name and contains `PREVIEW-BUILD.txt` with exact tested commit, `build-info.json` version/build, and Actions run link. Packaging rejects a mismatch between checked-out SHA and expected head.
+- **No public `/preview/` Pages deployment was created**, and production remains untouched. New exact-head browser QA and artifact verification are required before claiming this workflow revision is certified.
+
 ## November 9 — RC9e browser QA #361 full HUD clearance repair
 
 [Browser QA #361](https://github.com/erin6374/dragon-defense-play/actions/runs/42664814978) reached the live 1024×576 UI and found the radar at top 104 while the health HUD ended at 107; the test requires an 8px gap. The existing desktop power-status banner also started at 100, within the health HUD. Raised the radar to 120, moved the power banner to 120, the wave toast to 166 and hunter warning to 208, retaining compact-screen rules. No gameplay/rig changes. **New exact-head QA pending.**
