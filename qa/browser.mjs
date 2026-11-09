@@ -874,6 +874,11 @@ try {
   assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
     'the collapsed shell persists as low rubble with smoke');
   assert.ok(backgroundFalling.rubbleCount>0,'falling distant facades release visible debris');
+  assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
+    'distant impact smoke stays visible throughout collapse');
+  assert.ok(Math.abs(backgroundFalling.smokePosition[0]-backgroundIntact.smokePosition[0])>.01
+    &&Math.abs(backgroundSettled.smokePosition[0]-backgroundFalling.smokePosition[0])>.01,
+    'distant impact smoke drifts over time instead of remaining static');
   assert.equal(backgroundSettled.rubbleCount,3,'three facade fragments remain after distant collapse');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
@@ -897,6 +902,7 @@ try {
     return qa.distantBuildingState(id);
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
+  assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
   assert.ok(Math.abs(restoredBackground.roof.width-backgroundIntact.roof.width)<.001
     &&Math.abs(restoredBackground.roof.depth-backgroundIntact.roof.depth)<.001
     &&Math.abs(restoredBackground.roof.tilt)<.001,

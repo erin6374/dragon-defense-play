@@ -235,6 +235,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   if(!effects)return;
   const height=home.h*heightScale;
   effects.puff.position.set(home.x,height+effects.puff.scale.x*.85,home.z);
+  effects.basePuffY=effects.puff.position.y;
   effects.flame.position.set(home.x,height+effects.flame.scale.x*.34,home.z+home.d*.34);
  }
  function applyFall(home){
@@ -311,6 +312,13 @@ export function createDistantNeighborhood({root,flameTexture}){
    applyFall(home);
    if(home.fall===1)falling.delete(home);
   }
+  // Reuse the existing impact smoke sprites (28-marker cap). Gentle lateral
+  // drift and lift suggest a hot plume without extra draw calls or meshes.
+  // Anchor to the latest building height after the collapse update above.
+  for(const [home,effects] of impactSmoke){
+   effects.puff.position.x=home.x+Math.sin(fireTime*.66+home.id*.37)*effects.puff.scale.x*.18;
+   effects.puff.position.y=effects.basePuffY+Math.sin(fireTime*.42+home.id*.29)*effects.puff.scale.y*.07;
+  }
  }
  function restore(){
   for(const {puff,flame} of impactSmoke.values()){puff.removeFromParent();flame.removeFromParent();}
@@ -357,9 +365,11 @@ export function createDistantNeighborhood({root,flameTexture}){
    const re=dummy.matrix.elements;
    const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
     tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
+   const smoke=impactSmoke.get(home);
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
-    smoking:impactSmoke.has(home),burning:impactSmoke.has(home)};
+    smokePosition:smoke?[smoke.puff.position.x,smoke.puff.position.y]:null,
+    smoking:!!smoke,burning:!!smoke};
   },
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,

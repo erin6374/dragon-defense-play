@@ -1,3 +1,9 @@
+## November 9 — Animated distant impact smoke (exact-head QA pending)
+
+- [QA #353](https://github.com/erin6374/dragon-defense-play/actions/runs/42608999174) **passed** on `c2b7e16`, with no browser errors or warnings. Inspected `06d-distant-building-rubble.png`: the folded roof and three tilted facade pieces are visible; the simplified block shapes remain a future art target.
+- The existing distant impact smoke sprite now drifts sideways and bobs over damaged/collapsing buildings. Uses the current 28-marker cap with no new sprites, textures, geometry, draw calls, hitbox changes, or per-frame allocations.
+- Browser QA now checks plume movement across collapse frames and complete removal on restart. Exact-head QA and screenshot review required before release; real-GPU 60 FPS remains unverified.
+
 ## November 9 — Sharper distant rubble (exact-head QA pending)
 
 - Baseline [QA #348](https://github.com/erin6374/dragon-defense-play/actions/runs/42602631839) **passed** for `26cffc2`; report `errors=[]`, `warnings=[]`, with intact/settled/restart geometry verified. Visual inspection of `06d-distant-building-rubble.png` found the roof fold worked but the collapsed form remained slab-like.
