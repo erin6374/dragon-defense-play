@@ -1,3 +1,9 @@
+## November 10 — motion-observed meteor plume adjustment (candidate, exact-head QA pending)
+
+- Reviewed the five actual five-second gameplay videos from independent motion QA #5 (commit `52176a4b`). The dragon's sail-like wing silhouette, narrowly anchored skyline fire, broad road gust dust, and opaque meteor smoke shafts remain visible issues. Time-coded findings and fixed/untested statuses are in `qa/MOTION-VISUAL-REVIEW.md`.
+- Changed only the appearance of **burning meteor exhaust**: the cinematic fire renderer now uses 3 flames and 4 smaller, dimmer smoke puffs per meteor, instead of the structure-fire pattern of 5 flames and 10 large soot sprites. Shorter advected smoke keeps descending fragments visible without black columns swallowing the horizon. Structural/house fires are unaffected; all existing instanced GPU budgets, physics, Skyfall waves, collisions and damage stay intact.
+- Next independent video run must demonstrate the improvement; this source edit is **not yet visually verified**. Existing five-clip QA harness, offline frame-step player, main game, separate Building Explorer, and intentionally standing skyline remain unchanged.
+
 ## November 10 — RC19 skyline smoke and fire readability pass (exact-head QA pending)
 
 - Increased the existing one-sprite-per-landmark flame's base width and vertical reach so active tower fires remain legible in the focused real-renderer close-up.
