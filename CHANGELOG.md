@@ -1,3 +1,13 @@
+## November 10 — v5.4.0-rc.16 GPU particle destruction pass
+
+- **Art direction:** Distant rowhouse destruction now combines fewer, smaller structural chunks with a large number of screen-facing masonry flecks, so it resembles a chaotic material breakup instead of several rectangular blocks.
+- **GPU particle pools:** One pooled `THREE.Points` system for large flecks and another for fine masonry dust/specks. Both share an irregular, transparent particle texture and vertex colors matched to the impacted brick façade. Two additional draw calls only while active, rather than meshes per particle.
+- **Strict active budget:** Eight concurrent collapse slots. Across all eight slots the two preallocated buffers hold **656 particles total** (128 large + 528 small). Per-house particle LOD near-to-far: large `16/14/12/10/8/6`, small `66/56/48/38/30/22`.
+- **Reduced bulky geometry:** Persistent structural chunks per house now `10/9/8/7/6/5` by distance tier; remaining chunks are narrower. Floor slab LOD is `4/4/3/3/2/1` and smaller façade panel LOD is `4/4/3/3/2/2`. The larger physical rubble survives the impact; GPU particles dissipate as the home settles. This deliberately preserves the performance-oriented LOD approach.
+- **Simulation and QA:** Particle movement follows the existing intentionally slower background collapse timeline. Deterministic browser QA asserts large/small particles appear, pool slots release after settlement, restart clears all particles, and each particle class is batched. No new collision or gameplay physics added.
+- **Scope:** RC15 molten structural damage, standing distant skyscrapers, background health thresholds, North Broad reference-driven scenery, dragon controls and Skyfall meteor waves preserved. Separate Building Explorer and released main untouched.
+- **Release gate:** Source changes require passing exact-head browser QA, inspected airborne/settled screenshots, and Windows GPU playtesting before final visual acceptance.
+
 ## November 9 — v5.4.0-rc.15 opening molten structural force
 
 - **Molten fragment correction:** Wave-3/4 molten descendants now apply their existing +35% heat multiplier to school structural damage and nearby buildings, not just ground fireballs, craters and vehicles. The normal molten impact profile remains intact; other meteor classes and the final boss retain their previous damage behavior.
