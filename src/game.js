@@ -2434,14 +2434,26 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   }),
   captureSkyline:(detail=false)=>run('captureSkyline',()=>{
    const centerX=skyline.position.x;
-   // Wide shows the skyline in its city context; close places the diagnostic
-   // camera between near residential blocks and the skyline to reveal debris
-   // that those blocks otherwise obscure. Neither modifies the gameplay view.
-   qaSkylineCamera.position.set(centerX,detail?51:62,skyline.position.z+(detail?35:165));
-   qaSkylineCamera.lookAt(centerX,detail?30:39,skyline.position.z);
+   // The full city shot retains the intended skyline scale. A focused fire
+   // shot must aim at the *world-space impact*, not the tower's lower floors;
+   // the old close-up cut every major flame off above the screenshot.
+   skyline.updateMatrixWorld(true);
+   const tower=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+   const fireWorld=tower?.fireSprite.getWorldPosition(new THREE.Vector3())??new THREE.Vector3(centerX,60,skyline.position.z);
+   if(detail){
+    qaSkylineCamera.position.set(fireWorld.x,fireWorld.y+12,skyline.position.z+35);
+    qaSkylineCamera.lookAt(fireWorld.x,fireWorld.y,skyline.position.z);
+   }else{
+    qaSkylineCamera.position.set(centerX,62,skyline.position.z+165);
+    qaSkylineCamera.lookAt(centerX,39,skyline.position.z);
+   }
    qaSkylineCamera.updateProjectionMatrix();
+   qaSkylineCamera.updateMatrixWorld(true);
+   const fireNdc=fireWorld.clone().project(qaSkylineCamera);
    renderer.render(scene,qaSkylineCamera);
    return {png:renderer.domElement.toDataURL('image/png'),detail,
+    fireVisible:!!tower?.fireSprite.visible,
+    fireNdc:fireNdc.toArray(),
     camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
     skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
   }),
