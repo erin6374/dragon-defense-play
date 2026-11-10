@@ -561,6 +561,9 @@ export function createDistantNeighborhood({root,flameTexture}){
   home.emberSlot=slot;emberSlots[slot]=home;activeEmberFires++;
   emberCloud.visible=backgroundVisible;
   tongueMesh.visible=backgroundVisible;
+  // Initial impact capture can render before the next simulation tick.
+  // Populate the pooled vents immediately so no hidden/ground-zero frames leak.
+  updateFireTongues();
  }
  function updateFireEmbers(){
   if(!activeEmberFires)return;
