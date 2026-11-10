@@ -1,3 +1,12 @@
+## November 10 — v5.4.0-rc.20 footage-driven Paulo flight refinement
+
+- Compared five deterministic gameplay MP4s with the prior baseline. Verified the meteor-only lighter soot treatment removes skyline-obscuring black columns while retaining identifiable flaming meteors; the previous smoke pillars were too intense and now the smoke may be slightly understated at range.
+- **Paulo wing art:** Reworked the procedural membranes toward darker desaturated leather, with deeper scalloped spaces between finger bones, greater 3D camber and lower emissive color intensity; the same existing membrane batches and vertices are reused, with no new draw calls or collider changes.
+- **Animation:** Shoulder, elbow and wrist now use time-lagged wing strokes, producing more credible flex and recovery than perfectly synchronized triangular sails. During bank, the inside wing folds more and the outside maintains spread. Upper and lower legs fold farther toward the belly in sustained forward flight. Existing dragon toggle and hitboxes are unchanged.
+- **Video QA:** Close-up Paulo clip now records actual shoulder/elbow/wrist and leg angles and checks for nonrigid phase separation, visible wing stroke and tucked legs. Full exact-head five-video capture, in-motion visual review and browser regression must pass before release acceptance.
+- **Preserved:** RC19 turbulence flame/smoke system, RC18 embers, fine debris, original dragon option, Skyfall waves, cinematic background and intentionally standing skyline, main and Building Explorer.
+- **Scope:** This is a visual-art/kinematics prototype, not a professionally skin-weighted avian wing rig. Real GPU FPS still needs a Windows playtest.
+
 ## November 10 — motion-observed meteor plume adjustment (candidate, exact-head QA pending)
 
 - Reviewed the five actual five-second gameplay videos from independent motion QA #5 (commit `52176a4b`). The dragon's sail-like wing silhouette, narrowly anchored skyline fire, broad road gust dust, and opaque meteor smoke shafts remain visible issues. Time-coded findings and fixed/untested statuses are in `qa/MOTION-VISUAL-REVIEW.md`.
