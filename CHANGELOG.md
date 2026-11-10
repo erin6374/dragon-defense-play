@@ -1,3 +1,12 @@
+## November 10 — v5.4.0-rc.19 realistic fluid-fire and smoke visual overhaul
+
+- Replaced globally shared static orange flame bitmap and separate painted geometric flame tongues with an animated, deterministic, noise-advected combustion texture. Heat varies from a yellow-white core to irregular amber/red wisps, with a contour that changes shape over time rather than simply stretching.
+- Smoke uses a second moving, eroded turbulence atlas instead of flat unchanging discs. Existing world-space drift, tint and suppression behavior remain.
+- Reused the two streaming textures across the entire renderer: school/foreground fires, dragon/cinematic effects, vehicle/meteor effects, background rowhouses, health-driven burning rooftops and standing Philadelphia skyscrapers.
+- Each atlas is created once: 128x192 fire updated at most 12 times per second, 96x128 smoke updated at most seven. No new per-fire textures, lights, geometric shards or draw calls. Existing pooled embers, damage effects and skyline escalation retain their caps.
+- Added exact-frame QA for actual animated flame changes, texture sharing and limited atlas size. Full exact-head browser QA, screenshot visual comparison and Windows hardware FPS are still required before acceptance.
+- This is a plausible procedural 2.5D fire approximation, not a photoreal fluid simulation. All meteor gameplay, North Broad reference setting, deliberately distant upright skyline, and separate Building Explorer are preserved. Production main untouched.
+
 ## November 10 — v5.4.0-rc.18 distant inferno / cinematic fire overhaul
 
 - **House fires:** Replaced the dim, single blurred orange billboard with one shared 128×192 generated fire atlas featuring layered irregular orange-red flame tongues, a yellow-white core and ground-level glow. Enlarged house flames and deepened/tallened the existing smoke plume. Fire flicker and sway remain tied to the slow background destruction timeline and continue after debris settles.
