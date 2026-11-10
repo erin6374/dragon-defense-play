@@ -891,6 +891,21 @@ try {
   assert.equal(backgroundIntact.rubbleCount,0,'an intact distant building has no visible facade debris');
   assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
     'the first distant hit creates smoke while the building stays standing');
+  assert.equal(backgroundIntact.visibleFloors,0,
+    'intact distant rowhouses do not render exposed interiors');
+  assert.equal(backgroundIntact.visibleFracturePanels,0,
+    'undamaged facades do not display broken wall fragments');
+  assert.ok(backgroundFalling.visibleFloors>=2 &&
+    backgroundFalling.floorElevations.every(Number.isFinite),
+    'mid-distance building exposes multiple bounded interior floor slabs while collapsing');
+  assert.ok(backgroundFalling.visibleFracturePanels>=1 &&
+    backgroundFalling.fracturePanelHeights.every(h=>Number.isFinite(h)&&h>.1),
+    'failing distant masonry opens into recognizable broken wall panels');
+  assert.ok(backgroundSettled.visibleFloors>=1 &&
+    backgroundSettled.floorElevations.every(y=>y>=0&&y<backgroundIntact.originalHeight*.25),
+    'damaged floor layers compress into the grounded remaining shell');
+  assert.ok(backgroundSettled.visibleFracturePanels>=1,
+    'standing masonry shards remain visible among settled rubble');
   assert.ok(backgroundFalling.fall>0&&backgroundFalling.fall<1&&backgroundFalling.height<backgroundIntact.height,
     'repeated hits animate the actual instanced building down toward the ground');
   assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
@@ -946,6 +961,8 @@ try {
     return qa.distantBuildingState(id);
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
+  assert.equal(restoredBackground.visibleFloors,0,'restart hides exposed interior slabs');
+  assert.equal(restoredBackground.visibleFracturePanels,0,'restart closes broken facade geometry');
   assert.equal(restoredBackground.dustVisible,false,'restart clears any active dust burst');
   assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
   assert.equal(restoredBackground.flamePosition,null,'restart clears distant fire sprites');
