@@ -325,6 +325,22 @@ try {
   await page.waitForFunction(() => window.__DD_QA?.snap().frameTimes.frames >= 2 &&
     window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
   report.startup = await snap();
+  const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
+  assert.ok(fluidFire.ok,fluidFire.error);
+  assert.deepEqual(fluidFire.result.metrics.fireSize,[128,192],
+    'realistic fire texture has full 128x192 flow detail');
+  assert.deepEqual(fluidFire.result.metrics.smokeSize,[96,128],
+    'smoke uses a separately advected 96x128 turbulence map');
+  assert.equal(fluidFire.result.metrics.textures,2,'fire and smoke use exactly two reusable streaming atlases');
+  assert.equal(fluidFire.result.checksumChanged,true,
+    'flame structure actually changes with time rather than stretching a painted silhouette');
+  assert.equal(fluidFire.result.sharedFlameTexture,true,
+    'cinematic effects use the same animated fire atlas');
+  assert.equal(fluidFire.result.fluidSkylineMaterial,true,
+    'all distant standing skyscraper fires share the animated fire atlas');
+  assert.ok(fluidFire.result.metrics.fireFrame>=fluidFire.result.initial.fireFrame+2,
+    'time-stepped fire texture updates without allocating a new GPU map');
+  report.fluidFire=fluidFire.result;
   assert.equal(report.startup.version, expected.version);
   assert.equal(report.startup.build, expected.build);
   assert.ok(report.startup.scene.drawCalls > 0);
