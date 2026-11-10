@@ -647,6 +647,32 @@ try {
   assert.match(skyfallCapture,/^data:image\/png;base64,/);
   await writeFile('qa-output/02f-skyfall-wave-4.png',Buffer.from(skyfallCapture.split(',')[1],'base64'));
   report.openingWaves=openingWaves.map(({result:{png,...result}})=>result);
+  // These tests fire a real player projectile through update(), rather than
+  // invoking fragmentMeteor() directly; the second small rock is outside the shot.
+  const liveInterceptions=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    return [[.7,true],[1.4,false],[2.4,false]].map(([size,fringe])=>{
+      const started=qa.start(size>2?3:1);
+      return started.ok?qa.stagePlayerInterception(size,fringe):started;
+    });
+  });
+  for(const sample of liveInterceptions)assert.ok(sample.ok,sample.error);
+  const [smallHit,mediumHit,largeHit]=liveInterceptions.map(sample=>sample.result);
+  for(const hit of [smallHit,mediumHit,largeHit]){
+    assert.equal(hit.playerShots,1,'one real dragon fireball fired');
+    assert.ok(hit.directRemoved,'one direct fireball destroys the target');
+    assert.ok(hit.shrapnel>0,'real player hits produce flaming debris');
+  }
+  assert.equal(smallHit.fragments.length,0,'small meteor vanishes after one direct hit');
+  assert.equal(smallHit.fringeRemoved,true,
+    'nearby small meteor dies from peripheral player shockwave without direct shot contact');
+  assert.equal(mediumHit.fragments.length,3,'medium splits into several small rocks');
+  assert.ok(mediumHit.fragments.every(m=>m.size<1.1&&m.opening),
+    'medium children remain shootable small opening-wave rocks');
+  assert.equal(largeHit.fragments.length,3,'large splits into several medium rocks');
+  assert.ok(largeHit.fragments.every(m=>m.size>=1.1&&m.size<1.8&&m.kind==='molten'&&m.burning),
+    'flaming opening root releases molten medium fragments');
+  report.playerInterceptions={small:smallHit,medium:mediumHit,large:largeHit};
   const moltenStructure=await page.evaluate(()=>{
     const qa=window.__DD_QA;
     const started=qa.start(3);

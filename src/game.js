@@ -2837,6 +2837,48 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const moltenSchool=schoolDamage-beforeHot;
    return {ordinaryPressure,moltenPressure,ordinarySchool,moltenSchool,heat:openingMoltenHeat(hot)};
   }),
+  // Actual player shoot() -> swept projectile -> shockwave -> fragmentation.
+  // Isolate targets so staged waves cannot obscure a missed peripheral hit.
+  stagePlayerInterception:(size=.7,withFringe=false)=>run('stagePlayerInterception',()=>{
+   for(let i=meteors.length-1;i>=0;i--)remove(meteors,i);
+   for(let i=shots.length-1;i>=0;i--)remove(shots,i);
+   for(let i=blasts.length-1;i>=0;i--)remove(blasts,i);
+   remaining=0;between=99;dragonMeteorTimer=999;helicopterTimer=999;
+   dragon.position.set(0,27,15);dragonLeavingRoof=true;facing=1;
+   dragon.scale.x=1;dragon.rotation.set(0,0,0);dragon.updateMatrixWorld(true);
+   const mouth=getBreathMouthWorld(new THREE.Vector3());
+   const priorAim=pointer.clone();
+   const mesh=createPlayableRock(size);
+   mesh.position.copy(mouth).add(new THREE.Vector3(6,0,0));
+   if(size>2)mesh.material=moltenMaterial;
+   scene.add(mesh);
+   const root={mesh,target:mesh.position.clone(),vel:new THREE.Vector3(),
+    trail:1,hp:Math.ceil(size*3),size,kind:size>2?'flaming':'stone',
+    opening:true,largeSplitter:true,burning:size>2,damage:1};
+   meteors.push(root);
+   let fringe=null;
+   if(withFringe){
+    const fringeMesh=createPlayableRock(.65);
+    fringeMesh.position.copy(mesh.position).add(new THREE.Vector3(0,3.1,0));
+    scene.add(fringeMesh);
+    fringe={mesh:fringeMesh,target:fringeMesh.position.clone(),vel:new THREE.Vector3(),
+     trail:1,hp:3,size:.65,kind:'stone',opening:true,damage:1};
+    meteors.push(fringe);
+   }
+   const shrapnelBefore=impactParticles.filter(p=>p.shrapnel).length;
+   const shotsBefore=sessionStats.shots;
+   pointer.copy(mouth).add(new THREE.Vector3(20,0,0));
+   try{
+    cooldown=0;shoot();update(.22);
+    for(let i=0;i<4&&fringe&&meteors.includes(fringe);i++)update(.13);
+    return {size,playerShots:sessionStats.shots-shotsBefore,
+     directRemoved:!meteors.includes(root),
+     fringeRemoved:fringe?!meteors.includes(fringe):null,
+     fragments:meteors.filter(m=>m.fragment&&m.generation===1).map(m=>({
+      size:m.size,kind:m.kind,opening:!!m.opening,burning:!!m.burning})),
+     shrapnel:impactParticles.filter(p=>p.shrapnel).length-shrapnelBefore};
+   }finally{pointer.copy(priorAim);}
+  }),
   stageMeteorShootability:(roll,edge=false,allowImpact=false)=>run('stageMeteorShootability',()=>{
    spawnMeteor(()=>roll);
    const meteor=meteors.at(-1);
