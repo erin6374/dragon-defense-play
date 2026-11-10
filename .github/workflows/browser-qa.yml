@@ -25,9 +25,15 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
+      - name: Install video encoder
+        run: |
+          python3 -m venv "$RUNNER_TEMP/motion-encoder"
+          "$RUNNER_TEMP/motion-encoder/bin/pip" install imageio-ffmpeg==0.8.1
+          encoder="$("$RUNNER_TEMP/motion-encoder/bin/python" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          echo "QA_FFMPEG=$encoder" >> "$GITHUB_ENV"
       - name: Capture fixed-step gameplay video
         run: |
-          ffmpeg -version
+          "$QA_FFMPEG" -version
           python3 -m http.server 8765 --bind 127.0.0.1 &
           for attempt in {1..20}; do
             if curl -fsS http://127.0.0.1:8765/build-info.json >/dev/null; then break; fi
