@@ -1,8 +1,8 @@
 {
-  "build": "5.4-paulo-flight-art-rc20",
-  "version": "5.4.0-rc.20",
+  "build": "5.4-skyline-fire-regions-rc21",
+  "version": "5.4.0-rc.21",
   "gameplay_base": "5.2.3",
-  "scope": "Video-observed Paulo wing/leg art: darker leather membranes, deeper scallops, three-joint lagged wing beats, bank asymmetry and stronger flight tuck; controlled meteor exhaust retained",
+  "scope": "MOT-03: two additional preallocated facade-attached flame and smoke regions per skyline landmark; staggered burn floors, independent convection and fixed two-draw-call pool. RC20 Paulo flight and all meteor gameplay preserved.",
   "new_gameplay_features": true,
-  "release_status": "RC20 development candidate — exact-head browser and motion QA required; production unchanged"
+  "release_status": "RC21 development candidate — exact-head browser and independent motion QA plus authorized Pages seven-file comparison required; production unchanged"
 }
