@@ -377,10 +377,10 @@ export function createDistantNeighborhood({root,flameTexture}){
   const dust=home.dust;
   if(dust?.home===home){
    const sweep=Math.sin(Math.PI*home.fall);
-   const width=home.w*(.85+home.fall*2.1);
+   const width=home.w*(1.05+home.fall*2.45);
    dust.sprite.position.set(home.x+Math.sin(home.id*1.9)*home.w*.08,
-    1.15+home.h*.15*sweep,home.z+home.d*.32);
-   dust.sprite.scale.set(width,width*.63,1);
+    1.15+home.h*.15*sweep,home.z+home.d*.68);
+   dust.sprite.scale.set(width,width*.74,1);
    dust.sprite.material.opacity=.52*(1-home.fall*.56);
   }
   positionImpactEffects(home,heightScale);
