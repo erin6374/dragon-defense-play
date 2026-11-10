@@ -2471,10 +2471,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    district.strike(impact.x,impact.z,.36);
    district.strike(impact.x,impact.z,.36);
    district.update(.68);
-   const falling=district.buildingState(impact.id);
+   const falling=district.buildingState(impact.id),flight=capture();
    district.update(3.0);
    const settled=district.buildingState(impact.id),after=capture();
-   return {id:impact.id,intact,falling,settled,before,after};
+   return {id:impact.id,intact,falling,settled,before,flight,after};
   }),
   distantBuildingState:id=>neighborhood.longRange.buildingState(id),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
