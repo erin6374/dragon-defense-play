@@ -72,6 +72,12 @@ const gameSource = await readFile('src/game.js', 'utf8');
 const skylineSource = await readFile('src/rendering/philadelphia-geometry-skyline.js', 'utf8');
 assert.match(skylineSource,/smokeOrigin\.y\+t\.smokeSprite\.scale\.y\*\.15/,
  'persistent landmark plume is lifted above its fixed impact anchor without new sprites');
+assert.match(skylineSource,/SECONDARY_BURN_SITES_PER_TOWER=2/,
+ 'skyscraper combustion adds exactly two preallocated secondary sites per tower');
+assert.match(skylineSource,/secondaryFire=new THREE.InstancedMesh/,
+ 'secondary flames are pooled in one fixed instanced draw call');
+assert.match(skylineSource,/secondarySmoke=new THREE.InstancedMesh/,
+ 'secondary smoke is pooled in one fixed instanced draw call');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
@@ -886,6 +892,21 @@ try {
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
+  assert.equal(towerImpact.result.secondaryBurnSites.length,2,
+    'two additional facade-attached burn regions are tracked per landmark');
+  assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>1&&
+    site.position.every(Number.isFinite)),'both independent facade burns ignite on first impact');
+  assert.ok(Math.abs(towerImpact.result.secondaryBurnSites[0].position[1]-
+    towerImpact.result.secondaryBurnSites[1].position[1])>towerImpact.result.fireSize[0],
+    'independent tower flames occupy vertically separated damaged floors');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondaryFireInstances,18,
+    'all nine landmarks share an 18-instance secondary flame pool');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondarySmokeInstances,18,
+    'all nine landmarks share an 18-instance secondary smoke pool');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondaryDrawCalls,2,
+    'additional skyline combustion requires only two fixed draw calls');
+  assert.equal(towerImpact.result.skylineBurnBudget.activeBurnSites,2,
+    'first impact activates only the selected tower secondary regions');
   assert.ok(towerImpact.result.fireSize[0]>5.0&&
     towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
