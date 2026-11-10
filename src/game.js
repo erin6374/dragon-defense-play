@@ -3264,7 +3264,14 @@ if(motionQA){
    if(meteor)state.meteors=meteors.map(m=>({y:m.mesh.position.y,generation:m.generation||0}));
    if(scenario==='dragon')state.flight={x:dragon.position.x,y:dragon.position.y,
     heading:dragon.rotation.y,model:pauloPreviewEnabled?'paulo':'legacy',
-    pose:pauloPoseDriver?.snapshot()?.pose??null};
+    pose:pauloPoseDriver?.snapshot()?.pose??null,
+    // Renderer-side visual-only kinematics for motion QA; no collision or
+    // gameplay state is changed. Real wings must move at distinct phases.
+    wingJoints:pauloPreviewRig?.wings.map(({side,shoulder,elbow,wrist})=>({
+     side,shoulder:shoulder.rotation.x,elbow:elbow.rotation.x,
+     wrist:wrist.rotation.x,spread:wrist.rotation.y})),
+    tuckedLegs:pauloPreviewRig?.legs.map(({hip,knee})=>({
+     hip:hip.rotation.z,knee:knee.rotation.z}))};
    if(house){
     const {damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning}=district.buildingState(house.id);
     state.house={damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning};
