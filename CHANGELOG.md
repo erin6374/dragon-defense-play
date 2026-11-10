@@ -1,3 +1,12 @@
+## November 9 — v5.4.0-rc.12 long-range structural destruction polish
+
+- **Irregular debris geometry:** All six distant destruction tiers now share a single precomputed chipped-masonry geometry in their InstancedMeshes rather than perfect rectangular chunks. Brick/roof color variation and the existing parabolic launches remain. No new per-hit GPU geometry allocations or debris draw-call batches.
+- **LOD detail:** Near-to-far pieces per building are now 12, 11, 10, 8, 7 and 6. A mix of large wall sections, black roofing, and small shards yields a more broken silhouette while remaining batched by distance.
+- **Dust:** Added an eight-slot, scene-preallocated pool of tan dust billboards. Each building that fully fails gets a low expanding cloud, which fades after the collapse and clears on restart. Simultaneous active clouds cannot exceed eight; dust shares the already-initialized smoke atlas.
+- **Visual QA:** A dedicated `06c2-distant-building-debris-flight.png` frame now captures airborne chunks and dust. Browser regression assertions check visibility during fracture, full fade afterward and restart cleanup.
+- **Preserved:** RC11's independent standing skyline, 50%/20% meteor escalation, deliberately fictionalized distant towers, expanded North Broad tree cover, existing gameplay and controls, and the separate Building Explorer.
+- **Status:** Source-level edits and preview labels committed to draft PR #2. Require passing full browser QA, inspect screenshots and test Windows GPU before calling this a final release. Production `main` not changed.
+
 ## November 9 — v5.4.0-rc.11 North Broad cinematic neighborhood revision
 
 **User-approved visual direction:** The real North Philadelphia low-rise neighborhood is the geographic/architectural reference; the distant Philadelphia landmark skyline is intentionally fictionalized for cinematic readability.
