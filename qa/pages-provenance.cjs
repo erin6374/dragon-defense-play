@@ -33,8 +33,8 @@ async function main(){
  const repo=process.env.GITHUB_REPOSITORY||'erin6374/dragon-defense-play';
  const pageRoot=(process.env.PAGE_URL||'https://erin6374.github.io/dragon-defense-play/').replace(/\/?$/,'/');
  const mainRoot='https://raw.githubusercontent.com/'+repo+'/main/';
- const lastVerified=process.env.LAST_VERIFIED_PREVIEW_SHA||'5b4fecfb9eb56901e9134ffcaefc655f36a9ae33';
- const changedPreviewPaths=new Set(['src/game.js','src/rendering/philadelphia-geometry-skyline.js']);
+ const lastVerified=process.env.LAST_VERIFIED_PREVIEW_SHA||'b9b4beb3a334de198ff7329bba948f48ae850340';
+ const classifiedPreviewPaths=new Set(['build-info.json','index.html','src/game.js','src/rendering/philadelphia-geometry-skyline.js']);
  const paths=[
   ['preview/build-info.json','local','build-info.json'],
   ['preview/index.html','local','index.html'],
@@ -60,7 +60,7 @@ async function main(){
     const expected=source==='local'?await readFile(path):(await get(mainRoot+path+'?provenance='+run)).bytes;
     const diff=compare(expected,live.bytes);
     Object.assign(record,{expectedBytes:expected.length,expectedSha256:sha(expected),matched:live.status===200&&diff.match,firstMismatchByte:diff.firstMismatch});
-    if(source==='local'&&changedPreviewPaths.has(path)){
+    if(source==='local'&&classifiedPreviewPaths.has(path)){
      try{
       const prior=await get('https://raw.githubusercontent.com/'+repo+'/'+lastVerified+'/'+path+'?provenance='+run);
       if(prior.status===200){
