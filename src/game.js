@@ -2518,6 +2518,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     flashScaleImmediately,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
     fireVisible:t.fireSprite.visible,fireOpacity:t.fireSprite.material.opacity,
+    fireSize:t.fireSprite.scale.toArray(),
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
     smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
