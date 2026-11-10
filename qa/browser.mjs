@@ -862,6 +862,12 @@ try {
   assert.equal(towerImpact.result.smokeVisibleImmediately,true,
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
+  assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
+  assert.ok(towerImpact.result.fireSize[0]>3.5&&
+    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.9,
+    'skyscraper impact produces a tall, dramatic pillar of persistent flames');
+  assert.ok(towerImpact.result.fireOpacity>.58,
+    'skyscraper fire has a bright, readable core');
   assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
   assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');
   assert.ok(towerImpact.result.smokeWorldScale.every(v=>v>0),'intact smoke has nonzero world scale');
@@ -1002,6 +1008,20 @@ try {
   // Per-building flames sway and flicker within their original billboard budget.
   // Check bounded positions at each staged state, not a phase-sensitive delta.
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
+  assert.ok(fireStates.every(f=>f.flameHeight>backgroundIntact.originalHeight*.48),
+    'distant building fires remain tall and readable through collapse');
+  assert.ok(fireStates.every(f=>f.flameWidth>1&&f.smokeHeight>f.flameHeight),
+    'bright flame body is backed by a taller smoke plume');
+  assert.ok(fireStates.every(f=>f.activeEmbers===10),
+    'persistent fires emit the same bounded, rising ember group through collapse');
+  assert.equal(flightBudget.fireEmberDrawCalls,1,
+    'all active rooftop embers use one GPU Points batch');
+  assert.equal(flightBudget.fireEmberCapacity,280,
+    'one shared 280-slot spark buffer is sufficient for all 28 fires');
+  assert.equal(flightBudget.activeFireEmbers,10,
+    'one damaged house uses just ten hot ember points');
+  assert.deepEqual(flightBudget.blazeAtlasSize,[128,192],
+    'house fires share one bright two-tone 128x192 flame atlas');
   assert.ok(fireStates.every(s=>s.flamePosition?.every(Number.isFinite)
     &&Number.isFinite(s.flameHeight)&&s.flameHeight>0
     &&Math.abs(s.flamePosition[0]-s.smokePosition[0])<4),
@@ -1046,6 +1066,7 @@ try {
   assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
   assert.equal(restoredBackground.flamePosition,null,'restart clears distant fire sprites');
   assert.equal(restoredBackground.flameHeight,null,'restart clears distant fire animation state');
+  assert.equal(restoredBackground.activeEmbers,0,'restart removes rooftop ember particles');
   assert.ok(Math.abs(restoredBackground.roof.width-backgroundIntact.roof.width)<.001
     &&Math.abs(restoredBackground.roof.depth-backgroundIntact.roof.depth)<.001
     &&Math.abs(restoredBackground.roof.tilt)<.001,
