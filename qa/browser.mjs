@@ -915,15 +915,16 @@ try {
     'dominant tower flame is bounded while two independent facade fires stay readable');
   // smokeWorldScale is in WORLD units; the distant skyline group scales X by
   // 3.25. RC23 limits local width to 14.8, or 48.1 world units at full strike.
-  assert.ok(towerImpact.result.smokeOpacity<.80 &&
+  assert.ok(towerImpact.result.smokeOpacity<.62 &&
     towerImpact.result.smokeWorldScale[0]<49.0,
     'the central plume stays below RC23 world-space width/opacity caps');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
-  assert.ok(towerImpact.result.smokeOpacity>.68,'landmark smoke is dense enough to read against the dusk sky');
-  assert.ok(towerImpact.result.smokeColor<0x454545,'landmark smoke uses a dark ash tint');
+  assert.ok(towerImpact.result.smokeOpacity>.46,'central smoke stays visible without obscuring independent facade plumes');
+  assert.ok(towerImpact.result.smokeColor>0x808080&&towerImpact.result.smokeColor<0xa0a0a0,
+    'central skyline smoke uses a softer gray tint instead of one dark soot blot');
   assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
-    towerImpact.result.smokeWorldScale[1]>30 &&
+    towerImpact.result.smokeWorldScale[1]>24 &&
     towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,
     'landmark smoke is wider and rises above the visible fire without new geometry');
   assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');
@@ -1088,6 +1089,11 @@ try {
     &&f.tonguePositions.every(p=>p.every(Number.isFinite))
     &&Math.abs(f.tonguePositions[0][0]-f.tonguePositions[1][0])>f.flameWidth*.25),
     'two independently placed flame vents stay separated throughout collapse');
+  assert.ok(fireStates.every(f=>f.ventSmokePositions.length===2
+    &&f.ventSmokePositions.every(p=>p.every(Number.isFinite)&&p[1]>0)),
+    'each window flame has its own finite rising smoke plume');
+  assert.ok(backgroundIntact.tonguePositions.every(p=>p[1]<backgroundIntact.originalHeight*1.05),
+    'flame roots occupy upper-floor windows rather than floating above the roof');
   assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<backgroundIntact.originalHeight*.55),
     'surviving flame vents remain low on settled rubble');
   assert.ok(fireStates.every(f=>f.flameWidth>1&&f.smokeHeight>f.flameHeight),
@@ -1102,6 +1108,12 @@ try {
     'all secondary fire vents share one fixed instanced draw call');
   assert.equal(flightBudget.fireTongueCapacity,56,
     'two bounded secondary vents are reserved for each of 28 fires');
+  assert.equal(flightBudget.fireVentSmokeCapacity,56,
+    'all 28 burning houses share exactly 56 fixed smoke quads');
+  assert.equal(flightBudget.fireVentSmokeDrawCalls,1,
+    'window smoke uses only one new fixed instanced draw call');
+  assert.equal(flightBudget.activeFireVentSmoke,2,
+    'one burning house has two independently rising smoke origins');
   assert.equal(flightBudget.activeFireTongues,2,
     'one burning house has exactly two pooled secondary vents');
   assert.equal(flightBudget.activeFireEmbers,10,

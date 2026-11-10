@@ -98,7 +98,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
  // this avoids the previous static circles and extra local smoke texture.
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
-  color:0x343941,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+  color:0x89949c,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -167,7 +167,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   new THREE.MeshBasicMaterial({map:flameTexture,transparent:true,opacity:.78,
    depthWrite:false,depthTest:true,side:THREE.DoubleSide}),defs.length*SECONDARY_BURN_SITES_PER_TOWER);
  const secondarySmoke=new THREE.InstancedMesh(secondaryPlane,
-  new THREE.MeshBasicMaterial({map:smokeAtlas,color:0x343941,transparent:true,opacity:.53,
+  new THREE.MeshBasicMaterial({map:smokeAtlas,color:0xc1c7ca,transparent:true,opacity:.58,
    depthWrite:false,depthTest:true,side:THREE.DoubleSide}),defs.length*SECONDARY_BURN_SITES_PER_TOWER);
  secondaryFire.name='landmark-secondary-fire-pool';
  secondarySmoke.name='landmark-secondary-smoke-pool';
@@ -385,11 +385,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=12.9+smokeIntensity*1.9;
+  const smokeWidth=11.4+smokeIntensity*1.4;
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.28,1);
   // Lift the existing plume above the combustion core; do not add sprites.
   tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
-  tower.smokeSprite.material.opacity=Math.min(.78,.69+smokeIntensity*.09);
+  tower.smokeSprite.material.opacity=Math.min(.58,.48+smokeIntensity*.10);
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;

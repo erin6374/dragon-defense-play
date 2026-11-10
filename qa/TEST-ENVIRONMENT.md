@@ -28,3 +28,7 @@ This file is the authoritative setup reference for new ChatGPT sessions. Always 
 ## Concurrency
 
 Before any edit, recheck live branch head, PR comments and running workflows. Stage source changes off the exact expected SHA and fast-forward the target branch only through an expected-SHA compare-and-swap lease; on mismatch, stop, inspect and reconcile rather than overwriting concurrent work.
+
+## RC24 smoke pool
+
+RC24 adds one fixed InstancedMesh for 56 window-level rowhouse smoke quads using the existing dust atlas. Browser QA must verify capacity 56, one draw call, independent smoke positions, and window-height flame origins. Compare the five exact-head MP4 clips to verified RC23 before visual acceptance.

@@ -483,7 +483,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   }
   dustGeometry.attributes.position.needsUpdate=true;
  }
- const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
+ const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.53,depthWrite:false,depthTest:true});
  // One physically suggestive, flowing, rate-limited atlas serves ALL fires.
  // The generated noise field is updated globally, not a static flame silhouette.
  const fireMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffffff,
@@ -536,6 +536,19 @@ export function createDistantNeighborhood({root,flameTexture}){
   dummy.updateMatrix();tongueMesh.setMatrixAt(i,dummy.matrix);
  }
  tongueMesh.visible=false;root.add(tongueMesh);drawCalls++;
+ // Independent pale window smoke shares the already loaded soft dust atlas.
+ // All 56 instances are preallocated, with one fixed draw call.
+ const ventSmokeMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),
+  new THREE.MeshBasicMaterial({map:dustTexture,color:0xc5cbd0,transparent:true,
+   opacity:.43,depthWrite:false,depthTest:true,side:THREE.DoubleSide}),TONGUE_CAP);
+ ventSmokeMesh.name='pooled-background-window-smoke';
+ ventSmokeMesh.frustumCulled=false;
+ ventSmokeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+ for(let i=0;i<TONGUE_CAP;i++){
+  dummy.position.set(0,-10000,0);dummy.rotation.set(0,0,0);dummy.scale.set(0,0,0);
+  dummy.updateMatrix();ventSmokeMesh.setMatrixAt(i,dummy.matrix);
+ }
+ ventSmokeMesh.visible=false;root.add(ventSmokeMesh);drawCalls++;
  const emberSlots=Array(FIRE_CAP).fill(null);
  let activeEmberFires=0;
  function releaseEmbers(home){
@@ -550,10 +563,13 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(let k=0;k<TONGUES_PER_FIRE;k++){
    dummy.position.set(0,-10000,0);dummy.rotation.set(0,0,0);dummy.scale.set(0,0,0);
    dummy.updateMatrix();tongueMesh.setMatrixAt(slot*TONGUES_PER_FIRE+k,dummy.matrix);
+   ventSmokeMesh.setMatrixAt(slot*TONGUES_PER_FIRE+k,dummy.matrix);
   }
   tongueMesh.instanceMatrix.needsUpdate=true;
+  ventSmokeMesh.instanceMatrix.needsUpdate=true;
   emberCloud.visible=backgroundVisible&&activeEmberFires>0;
   tongueMesh.visible=backgroundVisible&&activeEmberFires>0;
+  ventSmokeMesh.visible=backgroundVisible&&activeEmberFires>0;
  }
  function addEmbers(home){
   const slot=emberSlots.indexOf(null);
@@ -561,6 +577,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   home.emberSlot=slot;emberSlots[slot]=home;activeEmberFires++;
   emberCloud.visible=backgroundVisible;
   tongueMesh.visible=backgroundVisible;
+  ventSmokeMesh.visible=backgroundVisible;
   // Initial impact capture can render before the next simulation tick.
   // Populate the pooled vents immediately so no hidden/ground-zero frames leak.
   updateFireTongues();
@@ -571,7 +588,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    const home=emberSlots[slot];
    if(!home)continue;
    const h=home.h*(1-home.fall*home.fall*.84);
-   const baseY=h+Math.min(5,home.w*.54)*.22;
+   const rubble=THREE.MathUtils.smoothstep(home.fall||0,.42,.98);
+   const baseY=h*(.72-.40*rubble)+.35*rubble;
    for(let k=0;k<EMBER_PER_FIRE;k++){
     const j=(slot*EMBER_PER_FIRE+k)*3;
     const age=(fireTime*(.57+(k%4)*.11)+k*.137+home.id*.043)%1;
@@ -588,25 +606,39 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(let slot=0;slot<FIRE_CAP;slot++){
    const home=emberSlots[slot];if(!home)continue;
    const fall=home.fall||0;
-   const rubble=THREE.MathUtils.smoothstep(fall,.48,.98);
+   const rubble=THREE.MathUtils.smoothstep(fall,.42,.98);
    const roofY=home.h*(1-fall*fall*.84);
-   // As the wall disappears, independent vents spread over rubble instead
-   // of one full-height flame billboard descending intact to the pavement.
-   const baseY=Math.max(.35,roofY*(1-rubble*.68)+.35*rubble);
+   // Flames emerge at upper-floor windows, not above the roof. When the
+   // facade collapses, move origins smoothly to separated rubble hot spots.
+   const windowY=roofY*(.71+.04*Math.sin(home.id*.37));
+   const rubbleY=Math.max(.35,roofY*.32+.35);
+   const baseY=windowY*(1-rubble)+rubbleY*rubble;
    const size=Math.min(5,home.w*.54);
    for(let k=0;k<TONGUES_PER_FIRE;k++){
     const side=k===0?-1:1;
     const phase=fireTime*(6.3+k*1.4)+home.id*.73+k*2.4;
-    const height=size*(.90+.42*(1-rubble))*(.86+.16*Math.sin(phase));
-    const width=size*(.56+.08*Math.sin(phase*.73));
-    dummy.position.set(home.x+side*home.w*(.20+.14*rubble)+Math.sin(phase*.56)*home.w*.045,
-     baseY+height*.45,home.z+home.d*(.53+.05*k));
+    const height=size*(.94+.20*(1-rubble))*(.86+.16*Math.sin(phase));
+    const width=size*(.43+.06*Math.sin(phase*.73));
+    const x=home.x+side*home.w*(.27+.08*rubble)+Math.sin(phase*.56)*home.w*.035;
+    const y=baseY+height*.34+side*home.h*.025*(1-rubble);
+    const z=home.z+home.d*(.56+.04*k);
+    dummy.position.set(x,y,z);
     dummy.rotation.set(0,0,Math.sin(phase*.61)*.11);
     dummy.scale.set(width,height,1);dummy.updateMatrix();
     tongueMesh.setMatrixAt(slot*TONGUES_PER_FIRE+k,dummy.matrix);
+    // Smoke rises, drifts, expands and shrinks to zero at the cycle seam.
+    const age=(fireTime*(.14+.025*k)+home.id*.131+k*.42)%1;
+    const fade=Math.max(.001,Math.sin(Math.PI*age));
+    dummy.position.set(x+Math.sin(fireTime*.39+home.id+k)*size*.18+age*size*.18,
+     baseY+height*.75+age*size*2.35,z-.06);
+    dummy.rotation.set(0,0,Math.sin(fireTime*.23+home.id+k)*.10);
+    dummy.scale.set(size*(.72+age*.55)*fade,size*(1.05+age*1.10)*fade,1);
+    dummy.updateMatrix();
+    ventSmokeMesh.setMatrixAt(slot*TONGUES_PER_FIRE+k,dummy.matrix);
    }
   }
   tongueMesh.instanceMatrix.needsUpdate=true;
+  ventSmokeMesh.instanceMatrix.needsUpdate=true;
  }
 
  // Eight translucent dust sheets, pooled and allocated at scene creation.
@@ -669,9 +701,9 @@ export function createDistantNeighborhood({root,flameTexture}){
   const effects=impactSmoke.get(home);
   if(!effects)return;
   const height=home.h*heightScale;
-  effects.puff.position.set(home.x,height+effects.puff.scale.y*.25,home.z);
+  effects.puff.position.set(home.x,height*.72+effects.puff.scale.y*.25,home.z);
   effects.basePuffY=effects.puff.position.y;
-  effects.flame.position.set(home.x,height+effects.flame.scale.y*.31,home.z+home.d*.54);
+  effects.flame.position.set(home.x,height*.68+effects.flame.scale.y*.31,home.z+home.d*.57);
  }
  function applyFall(home){
   const progress=home.fall*home.fall;
@@ -831,18 +863,18 @@ export function createDistantNeighborhood({root,flameTexture}){
    const rubble=THREE.MathUtils.smoothstep(home.fall,.50,.96);
    const roofY=home.h*(1-home.fall*home.fall*.84);
    const smokePhase=fireTime*.72+home.id*.41;
-   effects.puff.scale.x=effects.basePuffWidth*(1+.45*rubble)*(.91+.12*Math.sin(smokePhase));
-   effects.puff.scale.y=effects.basePuffHeight*(1-.40*rubble)*(.91+.09*Math.sin(smokePhase*.73+1.1));
+   effects.puff.scale.x=effects.basePuffWidth*(.70+.45*rubble)*(.91+.12*Math.sin(smokePhase));
+   effects.puff.scale.y=effects.basePuffHeight*(.72-.25*rubble)*(.91+.09*Math.sin(smokePhase*.73+1.1));
    effects.puff.position.x=home.x+Math.sin(smokePhase)*effects.puff.scale.x*.18;
    effects.puff.position.z=home.z+Math.sin(smokePhase*.47)*home.d*.035;
-   effects.puff.position.y=roofY+effects.puff.scale.y*.25
+   effects.puff.position.y=roofY*(.72-.40*rubble)+.35*rubble+effects.puff.scale.y*.25
     +Math.sin(fireTime*.42+home.id*.29)*effects.puff.scale.y*.07;
    const phase=fireTime*6.8+home.id*.57;
    effects.flame.visible=rubble<.98;
    effects.flame.scale.x=effects.baseFlameWidth*(1-.25*rubble);
    effects.flame.scale.y=effects.baseFlameHeight*(.96+.12*Math.sin(phase*1.6))*(1-.63*rubble);
    effects.flame.position.x=home.x+Math.sin(phase)*effects.flame.scale.x*.14;
-   effects.flame.position.y=roofY+effects.flame.scale.y*.31;
+   effects.flame.position.y=roofY*(.68-.40*rubble)+.35*rubble+effects.flame.scale.y*.31;
   }
   updateFireEmbers();
   updateFireTongues();
@@ -904,7 +936,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    for(const pool of particlePools)pool.mesh.visible=on&&activeParticleSlots>0;
    dustPoints.visible=on&&collapseDust.some(s=>s.home&&s.home.fall<1);
    emberCloud.visible=on&&activeEmberFires>0;
-   tongueMesh.visible=on&&activeEmberFires>0},
+   tongueMesh.visible=on&&activeEmberFires>0;
+   ventSmokeMesh.visible=on&&activeEmberFires>0},
   buildingState(id){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
@@ -931,11 +964,13 @@ export function createDistantNeighborhood({root,flameTexture}){
    const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
     tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
    const smoke=impactSmoke.get(home);
-   const tonguePositions=[];
+   const tonguePositions=[],ventSmokePositions=[];
    if(smoke&&home.emberSlot!==undefined)for(let k=0;k<TONGUES_PER_FIRE;k++){
     tongueMesh.getMatrixAt(home.emberSlot*TONGUES_PER_FIRE+k,dummy.matrix);
     const e=dummy.matrix.elements;
     tonguePositions.push([e[12],e[13],e[14]]);
+    ventSmokeMesh.getMatrixAt(home.emberSlot*TONGUES_PER_FIRE+k,dummy.matrix);
+    const se=dummy.matrix.elements;ventSmokePositions.push([se[12],se[13],se[14]]);
    }
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
@@ -952,7 +987,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     flamePosition:smoke?[smoke.flame.position.x,smoke.flame.position.y]:null,
     flameHeight:smoke?smoke.flame.scale.y:null,
     flameWidth:smoke?smoke.flame.scale.x:null,
-    primaryFlameVisible:smoke?smoke.flame.visible:false,tonguePositions,
+    primaryFlameVisible:smoke?smoke.flame.visible:false,tonguePositions,ventSmokePositions,
     smokeHeight:smoke?smoke.puff.scale.y:null,
     activeEmbers:home.emberSlot===undefined?0:EMBER_PER_FIRE,
     smoking:!!smoke,burning:!!smoke};
@@ -961,6 +996,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    fireEmberCapacity:EMBER_CAP,fireEmberDrawCalls:1,activeEmberFires,
    fireTongueCapacity:TONGUE_CAP,fireTongueDrawCalls:1,activeFireTongues:activeEmberFires*TONGUES_PER_FIRE,
+   fireVentSmokeCapacity:TONGUE_CAP,fireVentSmokeDrawCalls:1,activeFireVentSmoke:activeEmberFires*TONGUES_PER_FIRE,
    activeFireEmbers:activeEmberFires*EMBER_PER_FIRE,blazeAtlasSize:[128,192],
    ambientRooftopFires:damageMarkers.filter(puff=>!!puff.userData.ambientFlame).length,
    rubbleBatches:rubbleBatches.length,rubbleCapacity:buildingDefs.reduce((sum,b)=>sum+b.rubbleCount,0),
