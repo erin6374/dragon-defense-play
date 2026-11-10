@@ -1,18 +1,12 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC19 WINDOWS DEVELOPMENT PREVIEW
-==================================================================
-Status: unmerged RC19 development candidate; exact-head browser QA required.
-
-RC19 replaces the old static orange fire artwork with shared animated,
-noise-advected combustion. Flames have variable hot yellow-white centers,
-amber/red edges and turbulent silhouettes instead of triangles. Smoke is
-animated separately. The shared atlas now drives school fires, dragon and
-meteor flame effects, distant houses, vehicles and standing skyscrapers.
-There are only TWO streaming textures: fire 128x192 at up to 12 Hz and smoke
-96x128 at up to 7 Hz. RC18 pooled embers and gameplay rules are retained.
-
-This is a 2.5D procedural approximation, not true 3D volumetric physics.
-Windows GPU performance is not verified. Production and Building Explorer
-were not changed.
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC20 DEVELOPMENT PREVIEW
+================================================================
+Video-driven graphics candidate. Paulo now has unsynchronized shoulder/elbow/
+wrist motion, folding inner wing on banks, deeper scalloped leathery membranes
+with 3D camber and less vivid pink, plus more tightly tucked legs in flight.
+The standing city skyline and the smoke-lightening for meteors remain.
+Full browser QA, five motion videos and visual inspection are required
+before treating RC20 as a verified release. Production main and the
+Building Explorer remain unchanged. GPU hardware frame rate is not verified.
 
 WINDOWS PREREQUISITES
 - Python 3 must be installed and available as `py -3` or `python`.
