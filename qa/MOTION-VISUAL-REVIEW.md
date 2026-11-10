@@ -1,5 +1,41 @@
 # Dragon Defense — motion-based graphics review
 
+## November 10 — verified five-clip motion review (new baseline)
+
+**Exact observed commit:** `52176a4b1d02608e1e714f4d4785bd225183b62c`. The independent
+[Motion review #5](https://github.com/erin6374/dragon-defense-play/actions/runs/42855689843)
+and [browser QA #450](https://github.com/erin6374/dragon-defense-play/actions/runs/42855689599)
+both passed, with four original scenarios **plus the new close-up dragon**.
+The video report records 100 frames per 5-second clip, 960×540 at 20fps,
+and zero scenario errors. Contact sheets were assembled from sixteen
+time-spaced frames per clip and full 100-frame recordings were recovered.
+
+**Observations from moving footage (not inferred from single screenshots):**
+
+| ID | Time | Clip | Evidence / next decision |
+| --- | --- | --- | --- |
+| MOT-08 | 0.00–4.80 s | `dragon.mp4` | Paulo remains readable at close range, but the membrane wings look like two large red triangular sails throughout turns, rather than articulating like large bird wings. Side-to-side direction changes move the body but don't produce convincing banking/feathered wing-shape changes. Its legs still look conspicuous below the body in flight. **Open visual art issue**; inspect shoulder/elbow/wrist sweep and leg tuck in rig before modifying. |
+| MOT-09 | 0.60–2.56 s | `houses.mp4` | The building fire still reads as a narrow bright-yellow roof column even after the recent source-level secondary vent work. After collapse (3.20–4.80s) two small ground flames remain, which is an improvement over a single large descending torch but still doesn't look like a distributed rubble fire. **Partially improved, not resolved.** |
+| MOT-10 | 0.96–4.80 s | `skyline.mp4` | The Comcast-side fire appears as a very similar narrow vertical patch throughout two impacts, with smoke behind it. The tower correctly stays intact; fire needs more attachment points and richer rising soot. |
+| MOT-11 | 1.28–3.52 s | `skyfall.mp4` | Two meteor fragments leave dark vertical shafts as they descend, strongly obscuring the distant city. **Targeted correction committed after this recording:** thinner, shorter, less opaque meteor-specific plumes (four smoke puffs versus ten structural fire puffs); do not claim visual success until the next motion run is inspected. |
+| MOT-12 | 1.28–2.56 s | `traffic.mp4` | Close camera now makes the white vehicle's lift/roll clearly visible around 1.9–2.3s. The dust still arrives as a wide fairly uniform tan band. Vehicle is upright again by ~2.9s. **Camera gap resolved; dust graphics still open.** |
+
+**New implementation under test:** `src/rendering/cinematic-effects.js`
+distinguishes fast meteor exhaust from building fire, reducing the meteor
+smoke sprites per burning rock from 10 to 4, reducing size and opacity,
+and shortening the plume's age envelope. `src/game.js` selects this lighter
+style only for burning meteors. This change preserves all collision, scoring,
+meteor wave logic, fire on buildings and the standing skyscraper rule.
+
+**Next visual gate:** Compare `skyfall.mp4` at 1.28–3.52 seconds before and
+after the meteor plume change. If the trail no longer dominates while meteors
+remain trackable, mark MOT-11 resolved; otherwise adjust smoke size/contrast
+from observed footage only. Follow with dragon wing articulation and more
+localized wind-driven traffic dust.
+
+---
+
+
 **Evidence:** Five-second, 20 fps browser-captured MP4s from commit
 `92e2a6bef0689e5ac2beb23cd39237295cbfdff5`, GitHub browser QA
 run [#445](https://github.com/erin6374/dragon-defense-play/actions/runs/42841175848),
