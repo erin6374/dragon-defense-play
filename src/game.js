@@ -2840,6 +2840,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   // Actual player shoot() -> swept projectile -> shockwave -> fragmentation.
   // Isolate targets so staged waves cannot obscure a missed peripheral hit.
   stagePlayerInterception:(size=.7,withFringe=false)=>run('stagePlayerInterception',()=>{
+   if(cinematicActive)closeChapterTransition();
+   active=true;paused=false;waterDisable=0;dragonStun=0;
    for(let i=meteors.length-1;i>=0;i--)remove(meteors,i);
    for(let i=shots.length-1;i>=0;i--)remove(shots,i);
    for(let i=blasts.length-1;i>=0;i--)remove(blasts,i);
