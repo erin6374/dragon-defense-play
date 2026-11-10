@@ -1,3 +1,11 @@
+## November 9 — v5.4.0-rc.13 demolition presentation / framing checkpoint
+
+- Based on visual review of RC12 browser captures, the new airborne masonry was clipped by the **diagnostic close-up camera** and the expanding demolition dust was partly hidden inside the affected house.
+- Revised the dedicated test capture to a wider, slightly elevated perspective aimed at the airborne debris arc; gameplay camera, aim, zoom, movement and collision are unchanged.
+- Shifted dust toward the street-facing side of collapsing houses and widened its low-lying plume to read better above nearby rooftops. Retains the eight-slot bounded pool and post-collapse fade.
+- RC12's shared irregular geometry, 6-tier rubble LOD, standing skyscrapers, North Philadelphia reference-based scenery and fire escalation retained.
+- **Source changes committed, not yet accepted**: exact-head full browser QA plus inspection of `06c2-distant-building-debris-flight.png` required. Production main and Building Explorer untouched.
+
 ## November 9 — v5.4.0-rc.12 long-range structural destruction polish
 
 - **Irregular debris geometry:** All six distant destruction tiers now share a single precomputed chipped-masonry geometry in their InstancedMeshes rather than perfect rectangular chunks. Brick/roof color variation and the existing parabolic launches remain. No new per-hit GPU geometry allocations or debris draw-call batches.
