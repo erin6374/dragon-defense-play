@@ -1,3 +1,10 @@
+## November 10 ~18:20 ET — RC25 skyline window-band art candidate (UNVERIFIED)
+
+- Verified public fallback remains RC24 `01696438ab04707cee9603fb432bbb76fb3288e0` (browser 42917909399, motion 42917909365, automatic Pages 42919539127 seven-file byte verification). Live head and PR #2 were checked before editing; no competing PR workflow was running.
+- RC25 replaces the two widely separated secondary tower burns with **four small, horizontally distributed broken-window origins** per struck skyscraper. Each uses an independently phased short flame, off-white rising smoke that expands and fades before loop reset, and a warm radial facade-contact glow. The original large central flame and soot are reduced, while towers stay standing.
+- Bounded at 36 flame + 36 smoke + 36 glow instances over nine landmarks, three instanced draw calls, no new textures, no impact-time GPU allocations. Existing rowhouse window/rubble fire and dragon/meteor gameplay remain untouched.
+- Browser QA now asserts four window-band origins, horizontal spread, bounded vertical separation, smoke tint and fixed resource budgets. **Must not certify RC25 until exact-head browser QA, independent five-MP4 motion QA and authorized automatic Pages seven-file verification pass; watch skyline.mp4 at 0.75, 1.2, 2.4, 3.4, 4.8 s against RC24.**
+
 ## November 10 ~17:45 ET — RC24 lab-camera QA repair candidate (UNVERIFIED)
 
 - **Actual failure:** RC24 exact-head [browser QA 42914963922](https://github.com/erin6374/dragon-defense-play/actions/runs/42914963922) reached the Paulo lab and failed `qa/browser.mjs:1838`: “full front-view dragon anatomy including wing tips fits the frame.” The 64-file artifact `13810040493` shows a working WebGL game and earlier gameplay/fire regression stages; the failure occurs when the test switches lab view from `wind` to `front`, then changes pose to `hover`. The lab framed the ortho view from the prior pose and never recalculated after the more extended hover wing span. Treat as a camera framing/QA failure; do not claim RC24 passed.

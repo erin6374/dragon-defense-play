@@ -32,3 +32,7 @@ Before any edit, recheck live branch head, PR comments and running workflows. St
 ## RC24 smoke pool
 
 RC24 adds one fixed InstancedMesh for 56 window-level rowhouse smoke quads using the existing dust atlas. Browser QA must verify capacity 56, one draw call, independent smoke positions, and window-height flame origins. Compare the five exact-head MP4 clips to verified RC23 before visual acceptance.
+
+## RC25 window-band smoke / glow regression
+
+The skyline renderer preallocates 36 flame, 36 smoke and 36 glow instances (nine towers × four window origins) in three instanced draw calls. QA checks horizontal separation, bounded vertical offsets, off-white central smoke and small flames. The independently recorded `skyline.mp4` must be reviewed for visible smoke motion and absence of hard loop pops; no visual acceptance is inferred from passing numeric assertions alone.

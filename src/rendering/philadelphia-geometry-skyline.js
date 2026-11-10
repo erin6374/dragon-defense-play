@@ -98,7 +98,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
  // this avoids the previous static circles and extra local smoke texture.
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
-  color:0x89949c,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+  color:0xb2b8be,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -158,32 +158,39 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   {id:'other-center-city',x:-62,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
- // Two extra combustion origins per tower are pooled into exactly two draw calls:
- // 18 flame quads and 18 smoke quads, never allocated during impacts.
- // The original central sprites and QA contact anchors remain unchanged.
- const SECONDARY_BURN_SITES_PER_TOWER=2;
+ // Four short, window-attached flames per tower form a horizontal burn band.
+ // Nine landmarks share fixed pools (36 each) of flame, smoke and warm
+ // facade-contact glow; all allocations happen at initialization, not impact.
+ const SECONDARY_BURN_SITES_PER_TOWER=4;
  const secondaryPlane=new THREE.PlaneGeometry(1,1);
  const secondaryFire=new THREE.InstancedMesh(secondaryPlane,
   new THREE.MeshBasicMaterial({map:flameTexture,transparent:true,opacity:.78,
    depthWrite:false,depthTest:true,side:THREE.DoubleSide}),defs.length*SECONDARY_BURN_SITES_PER_TOWER);
  const secondarySmoke=new THREE.InstancedMesh(secondaryPlane,
-  new THREE.MeshBasicMaterial({map:smokeAtlas,color:0xc1c7ca,transparent:true,opacity:.58,
+  new THREE.MeshBasicMaterial({map:smokeAtlas,color:0xc9ced0,transparent:true,opacity:.56,
    depthWrite:false,depthTest:true,side:THREE.DoubleSide}),defs.length*SECONDARY_BURN_SITES_PER_TOWER);
+ const secondaryGlow=new THREE.InstancedMesh(secondaryPlane,
+  new THREE.MeshBasicMaterial({map:impactTexture,color:0xff813a,transparent:true,opacity:.26,
+   blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,side:THREE.DoubleSide}),defs.length*SECONDARY_BURN_SITES_PER_TOWER);
  secondaryFire.name='landmark-secondary-fire-pool';
  secondarySmoke.name='landmark-secondary-smoke-pool';
- secondaryFire.frustumCulled=false;secondarySmoke.frustumCulled=false;
+ secondaryGlow.name='landmark-secondary-contact-glow-pool';
+ secondaryFire.frustumCulled=false;secondarySmoke.frustumCulled=false;secondaryGlow.frustumCulled=false;
  secondaryFire.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
  secondarySmoke.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+ secondaryGlow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
  const secondaryDummy=new THREE.Object3D();
  secondaryDummy.position.set(0,-10000,0);secondaryDummy.scale.setScalar(0);
  secondaryDummy.updateMatrix();
  for(let j=0;j<secondaryFire.count;j++){
   secondaryFire.setMatrixAt(j,secondaryDummy.matrix);
   secondarySmoke.setMatrixAt(j,secondaryDummy.matrix);
+  secondaryGlow.setMatrixAt(j,secondaryDummy.matrix);
  }
  secondaryFire.instanceMatrix.needsUpdate=true;
  secondarySmoke.instanceMatrix.needsUpdate=true;
- group.add(secondarySmoke,secondaryFire);
+ secondaryGlow.instanceMatrix.needsUpdate=true;
+ group.add(secondarySmoke,secondaryGlow,secondaryFire);
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
  // six material groups (one draw for every face). The only distinct finish is
@@ -312,7 +319,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   scorchSprite.scale.set(5,5,1);
   g.add(scorchSprite);
   const smokeOrigin=new THREE.Vector3(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
-  const burnSites=[0,1].map(j=>({index:i*SECONDARY_BURN_SITES_PER_TOWER+j,
+  const burnSites=Array.from({length:SECONDARY_BURN_SITES_PER_TOWER},(_,j)=>({index:i*SECONDARY_BURN_SITES_PER_TOWER+j,
    active:false,origin:new THREE.Vector3(),width:0,seed:i*1.71+j*2.43}));
   towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
    impactSprite,impactLocal:new THREE.Vector3(),smokeSprite,smokeOrigin,fireSprite,fireBaseWidth:0,scorchSprite,
@@ -341,10 +348,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Coordinates are skyline-local and do not inherit any tower damage transform.
  function placeBurnSite(tower,site,offsetX,offsetY,width){
   const d=tower.def;
-  site.origin.set(tower.group.position.x+Math.max(-d.w*.36,Math.min(d.w*.36,tower.impactLocal.x+offsetX)),
+  site.origin.set(tower.group.position.x+Math.max(-d.w*.37,Math.min(d.w*.37,tower.impactLocal.x*.16+offsetX)),
    Math.max(d.h*.24,Math.min(d.h*.82,tower.impactLocal.y+offsetY)),
    tower.group.position.z+d.depth/2+.95);
-  site.width=Math.max(1.3,Math.min(4.6,width));
+  site.width=Math.max(1.8,Math.min(3.25,width));
   site.active=true;
  }
  function strikeNearest(localX,intensity=0){
@@ -385,31 +392,33 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=11.4+smokeIntensity*1.4;
+  const smokeWidth=7.6+smokeIntensity*1.4;
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.28,1);
   // Lift the existing plume above the combustion core; do not add sprites.
   tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
-  tower.smokeSprite.material.opacity=Math.min(.58,.48+smokeIntensity*.10);
+  tower.smokeSprite.material.opacity=Math.min(.54,.46+smokeIntensity*.08);
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=Math.min(7.8,(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50));
+  const flameWidth=Math.min(5.4,(3.8+Math.min(1,tower.strikeDamage/.26)*3.5)*(1+intensity*.80));
   tower.fireBaseWidth=flameWidth;
-  tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
-  tower.fireSprite.scale.set(flameWidth,flameWidth*1.82,1);
+  tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.22,tower.smokeOrigin.z+.10);
+  tower.fireSprite.scale.set(flameWidth,flameWidth*1.28,1);
   tower.fireSprite.material.opacity=Math.min(.99,.72+intensity*.22+tower.strikeDamage*.13);
   tower.fireSprite.visible=true;
-  // First hit seeds two staggered burns; subsequent hits refresh only one,
-  // leaving the other anchored to a different damaged floor.
+  // Four broken windows share a single damaged floor band. Uneven small
+  // height offsets and independent phase seeds avoid a synchronized fire wall.
+  // Repeated strikes refresh one window, preserving the others' continuity.
   if(!tower.burnSites[0].active){
-   placeBurnSite(tower,tower.burnSites[0],-tower.def.w*.24,-tower.def.h*.15,Math.max(4.1,flameWidth*.62));
-   placeBurnSite(tower,tower.burnSites[1], tower.def.w*.24, tower.def.h*.13,Math.max(4.0,flameWidth*.56));
+   for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++){
+    placeBurnSite(tower,tower.burnSites[j],(j-1.5)*tower.def.w*.215,
+     ((j%2===0?-.012:.018)+(j===3?.008:0))*tower.def.h,2.55+j*.16);
+   }
   }else{
-   const site=tower.burnSites[tower.siteCursor];
-   const left=tower.siteCursor===0;
-   placeBurnSite(tower,site,(left?-.22:.22)*tower.def.w,
-    (left?-.16:.15)*tower.def.h,Math.max(4.0,flameWidth*.59));
-   tower.siteCursor=(tower.siteCursor+1)%SECONDARY_BURN_SITES_PER_TOWER;
+   const j=tower.siteCursor,site=tower.burnSites[j];
+   placeBurnSite(tower,site,(j-1.5)*tower.def.w*.215,
+    ((j%2===0?-.012:.018)+(j===3?.008:0))*tower.def.h,2.7+j*.13);
+   tower.siteCursor=(j+1)%SECONDARY_BURN_SITES_PER_TOWER;
   }
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
   tower.scorchSprite.visible=true;
@@ -493,7 +502,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    }
    if(t.strikeDamage>0){
     const flamePulse=1+.14*Math.sin(elapsed*5.4+i*1.9)+.045*Math.sin(elapsed*9.7+i*.3);
-    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*1.82*(1+.12*Math.sin(elapsed*7.1+i)),1);
+    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*1.28*(1+.12*Math.sin(elapsed*7.1+i)),1);
     t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.16;
     t.fireSprite.material.opacity=Math.min(.99,.76+.13*Math.sin(elapsed*10.2+i));
     // Only position changes over time; stable smoke size and opacity were set
@@ -511,20 +520,27 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
       site.origin.y+Math.sin(phase*.74)*w*.08,site.origin.z+.10);
      secondaryDummy.rotation.set(0,0,Math.sin(phase*.62)*.085);
      secondaryDummy.scale.set(w*(.88+.13*Math.sin(phase)),
-      w*(1.46+.23*Math.sin(phase*1.38)),1);
+      w*(1.18+.20*Math.sin(phase*1.38)),1);
      secondaryDummy.updateMatrix();
      secondaryFire.setMatrixAt(site.index,secondaryDummy.matrix);
+     // Localized facade contact glow uses the existing radial impact atlas;
+     // no point lights, shadow passes or new textures are required.
+     secondaryDummy.position.set(site.origin.x,site.origin.y-w*.18,site.origin.z+.045);
+     secondaryDummy.rotation.set(0,0,0);
+     secondaryDummy.scale.set(w*1.85,w*1.22,1);
+     secondaryDummy.updateMatrix();
+     secondaryGlow.setMatrixAt(site.index,secondaryDummy.matrix);
      // Rising smoke dissipates before each loop reset: the quad shrinks
      // to zero at the seam so it cannot teleport downward visibly.
      const smokePhase=(elapsed*.15+site.seed*.173)%1;
      const dissipate=Math.max(.001,Math.sin(Math.PI*smokePhase));
      secondaryDummy.position.set(site.origin.x+Math.sin(elapsed*.57+site.seed)*w*.38+
-      smokePhase*w*.42,
-      site.origin.y+w*(.85+smokePhase*3.15),
+      smokePhase*w*.54,
+      site.origin.y+w*(.60+smokePhase*3.60),
       site.origin.z-.10);
      secondaryDummy.rotation.set(0,0,Math.sin(elapsed*.28+site.seed)*.09);
-     secondaryDummy.scale.set(w*(1.22+.28*smokePhase)*dissipate,
-      w*(2.10+.48*smokePhase)*dissipate,1);
+     secondaryDummy.scale.set(w*(1.12+.68*smokePhase)*dissipate,
+      w*(1.80+1.20*smokePhase)*dissipate,1);
      secondaryDummy.updateMatrix();
      secondarySmoke.setMatrixAt(site.index,secondaryDummy.matrix);
      secondaryDirty=true;
@@ -552,11 +568,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   if(secondaryDirty){
    secondaryFire.instanceMatrix.needsUpdate=true;
    secondarySmoke.instanceMatrix.needsUpdate=true;
+   secondaryGlow.instanceMatrix.needsUpdate=true;
   }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallSettled=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.fireSprite.visible=false;t.fireSprite.material.opacity=0;t.fireBaseWidth=0;t.siteCursor=0;for(const site of t.burnSites){site.active=false;site.width=0;secondaryDummy.position.set(0,-10000,0);secondaryDummy.scale.setScalar(0);secondaryDummy.rotation.set(0,0,0);secondaryDummy.updateMatrix();secondaryFire.setMatrixAt(site.index,secondaryDummy.matrix);secondarySmoke.setMatrixAt(site.index,secondaryDummy.matrix);}t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}secondaryFire.instanceMatrix.needsUpdate=true;secondarySmoke.instanceMatrix.needsUpdate=true;setTime(0,0);}
+ function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;t.fallActive=false;t.fallSettled=false;t.fallElapsed=0;for(let j=0;j<t.slabs.length;j++){const slab=t.slabs[j];slab.position.y=slab.userData.fallStartY;slab.rotation.set(.11*j,.17*j,.09*(j-1));}t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;t.impactSprite.material.opacity=0;t.fireSprite.visible=false;t.fireSprite.material.opacity=0;t.fireBaseWidth=0;t.siteCursor=0;for(const site of t.burnSites){site.active=false;site.width=0;secondaryDummy.position.set(0,-10000,0);secondaryDummy.scale.setScalar(0);secondaryDummy.rotation.set(0,0,0);secondaryDummy.updateMatrix();secondaryFire.setMatrixAt(site.index,secondaryDummy.matrix);secondarySmoke.setMatrixAt(site.index,secondaryDummy.matrix);secondaryGlow.setMatrixAt(site.index,secondaryDummy.matrix);}t.smokeSprite.visible=false;t.smokeSprite.material.opacity=0;t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;}secondaryFire.instanceMatrix.needsUpdate=true;secondarySmoke.instanceMatrix.needsUpdate=true;secondaryGlow.instanceMatrix.needsUpdate=true;setTime(0,0);}
  return {group,towers,setTime,setDamage,strikeNearest,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,
   secondaryFireInstances:secondaryFire.count,secondarySmokeInstances:secondarySmoke.count,
-  secondaryDrawCalls:2,activeBurnSites:towers.reduce((n,t)=>n+t.burnSites.filter(site=>site.active).length,0),
+  secondaryGlowInstances:secondaryGlow.count,secondaryDrawCalls:3,activeBurnSites:towers.reduce((n,t)=>n+t.burnSites.filter(site=>site.active).length,0),
   geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }

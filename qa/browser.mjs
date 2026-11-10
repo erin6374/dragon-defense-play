@@ -72,12 +72,14 @@ const gameSource = await readFile('src/game.js', 'utf8');
 const skylineSource = await readFile('src/rendering/philadelphia-geometry-skyline.js', 'utf8');
 assert.match(skylineSource,/smokeOrigin\.y\+t\.smokeSprite\.scale\.y\*\.15/,
  'persistent landmark plume is lifted above its fixed impact anchor without new sprites');
-assert.match(skylineSource,/SECONDARY_BURN_SITES_PER_TOWER=2/,
- 'skyscraper combustion adds exactly two preallocated secondary sites per tower');
+assert.match(skylineSource,/SECONDARY_BURN_SITES_PER_TOWER=4/,
+ 'skyscraper combustion adds four preallocated window-band sites per tower');
 assert.match(skylineSource,/secondaryFire=new THREE.InstancedMesh/,
  'secondary flames are pooled in one fixed instanced draw call');
 assert.match(skylineSource,/secondarySmoke=new THREE.InstancedMesh/,
  'secondary smoke is pooled in one fixed instanced draw call');
+assert.match(skylineSource,/secondaryGlow=new THREE.InstancedMesh/,
+ 'window contact glow uses one bounded preallocated draw call');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
@@ -892,37 +894,41 @@ try {
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
-  assert.equal(towerImpact.result.secondaryBurnSites.length,2,
-    'two additional facade-attached burn regions are tracked per landmark');
+  assert.equal(towerImpact.result.secondaryBurnSites.length,4,
+    'four facade-window burn origins are tracked per landmark');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>1&&
-    site.position.every(Number.isFinite)),'both independent facade burns ignite on first impact');
-  assert.ok(Math.abs(towerImpact.result.secondaryBurnSites[0].position[1]-
-    towerImpact.result.secondaryBurnSites[1].position[1])>towerImpact.result.fireSize[0],
-    'independent tower flames occupy vertically separated damaged floors');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondaryFireInstances,18,
-    'all nine landmarks share an 18-instance secondary flame pool');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondarySmokeInstances,18,
-    'all nine landmarks share an 18-instance secondary smoke pool');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondaryDrawCalls,2,
-    'additional skyline combustion requires only two fixed draw calls');
-  assert.equal(towerImpact.result.skylineBurnBudget.activeBurnSites,2,
-    'first impact activates only the selected tower secondary regions');
-  assert.ok(towerImpact.result.fireSize[0]>5.0&&
-    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
-    'skyscraper impact produces a tall, dramatic pillar of persistent flames');
-  assert.ok(towerImpact.result.fireSize[0]<9 &&
-    towerImpact.result.secondaryBurnSites.every(site=>site.width>=3.8),
-    'dominant tower flame is bounded while two independent facade fires stay readable');
+    site.position.every(Number.isFinite)),'all four independently phased window flames ignite');
+  const band=towerImpact.result.secondaryBurnSites.map(site=>site.position);
+  assert.ok(Math.max(...band.map(p=>p[0]))-Math.min(...band.map(p=>p[0]))>5.0,
+    'window fires span a horizontal row of broken facade openings');
+  assert.ok(Math.max(...band.map(p=>p[1]))-Math.min(...band.map(p=>p[1]))<7.0,
+    'window fire origins share a floor band rather than separate tower levels');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondaryFireInstances,36,
+    'all nine landmarks share a fixed 36-instance window-flame pool');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondarySmokeInstances,36,
+    'all nine landmarks share a fixed 36-instance smoke pool');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondaryGlowInstances,36,
+    'all nine landmarks share a fixed 36-instance warm facade glow pool');
+  assert.equal(towerImpact.result.skylineBurnBudget.secondaryDrawCalls,3,
+    'window combustion uses only three preallocated draw calls');
+  assert.equal(towerImpact.result.skylineBurnBudget.activeBurnSites,4,
+    'first impact activates four window-level combustion origins');
+  assert.ok(towerImpact.result.fireSize[0]>3.8&&
+    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.1,
+    'skyscraper impact produces a short facade-attached central flame');
+  assert.ok(towerImpact.result.fireSize[0]<6.5 &&
+    towerImpact.result.secondaryBurnSites.every(site=>site.width>=2.5&&site.width<=3.3),
+    'dominant flame is bounded while four smaller window fires remain readable');
   // smokeWorldScale is in WORLD units; the distant skyline group scales X by
   // 3.25. RC23 limits local width to 14.8, or 48.1 world units at full strike.
-  assert.ok(towerImpact.result.smokeOpacity<.62 &&
-    towerImpact.result.smokeWorldScale[0]<49.0,
-    'the central plume stays below RC23 world-space width/opacity caps');
+  assert.ok(towerImpact.result.smokeOpacity<.56 &&
+    towerImpact.result.smokeWorldScale[0]<34.0,
+    'central plume is narrower so independent pale window plumes remain visible');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
   assert.ok(towerImpact.result.smokeOpacity>.46,'central smoke stays visible without obscuring independent facade plumes');
-  assert.ok(towerImpact.result.smokeColor>0x808080&&towerImpact.result.smokeColor<0xa0a0a0,
-    'central skyline smoke uses a softer gray tint instead of one dark soot blot');
+  assert.ok(towerImpact.result.smokeColor>0xaaaaaa&&towerImpact.result.smokeColor<0xc9c9c9,
+    'central skyline smoke is off-white rather than dark soot');
   assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
     towerImpact.result.smokeWorldScale[1]>24 &&
     towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,

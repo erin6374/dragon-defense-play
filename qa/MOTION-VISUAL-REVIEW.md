@@ -1,3 +1,10 @@
+## November 10 ~18:20 ET — RC25 skyline window-band art candidate (UNVERIFIED)
+
+- Verified public fallback remains RC24 `01696438ab04707cee9603fb432bbb76fb3288e0` (browser 42917909399, motion 42917909365, automatic Pages 42919539127 seven-file byte verification). Live head and PR #2 were checked before editing; no competing PR workflow was running.
+- RC25 replaces the two widely separated secondary tower burns with **four small, horizontally distributed broken-window origins** per struck skyscraper. Each uses an independently phased short flame, off-white rising smoke that expands and fades before loop reset, and a warm radial facade-contact glow. The original large central flame and soot are reduced, while towers stay standing.
+- Bounded at 36 flame + 36 smoke + 36 glow instances over nine landmarks, three instanced draw calls, no new textures, no impact-time GPU allocations. Existing rowhouse window/rubble fire and dragon/meteor gameplay remain untouched.
+- Browser QA now asserts four window-band origins, horizontal spread, bounded vertical separation, smoke tint and fixed resource budgets. **Must not certify RC25 until exact-head browser QA, independent five-MP4 motion QA and authorized automatic Pages seven-file verification pass; watch skyline.mp4 at 0.75, 1.2, 2.4, 3.4, 4.8 s against RC24.**
+
 ## November 10 ~17:25 ET — RC23 VERIFIED; RC24 window-fire smoke candidate (QA PENDING)
 
 - **RC23 public provenance:** exact-head `db8d5d6b5ecf7b59800716b636b9421a7354398d` passed [browser QA 42906842324](https://github.com/erin6374/dragon-defense-play/actions/runs/42906842324) and [motion QA 42906842154](https://github.com/erin6374/dragon-defense-play/actions/runs/42906842154), artifact 13807421331, five 100-frame clips, `report.json.errors=[]`. [Automatic Pages 42908745545](https://github.com/erin6374/dragon-defense-play/actions/runs/42908745545) checked out exact `db8d5d6`, deployed and passed seven-file unauthenticated comparison. RC23 is technically verified playable, but MOT-01/MOT-03 remain visually open.

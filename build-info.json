@@ -1,8 +1,8 @@
 {
-  "build": "5.4-window-fire-plumes-rc24",
-  "version": "5.4.0-rc.24",
+  "build": "5.4-window-band-fire-rc25",
+  "version": "5.4.0-rc.25",
   "gameplay_base": "5.2.3",
-  "scope": "MOT-01/MOT-03: facade-window flame roots and independently rising pale rowhouse smoke, separated rubble fires, softer distributed skyline smoke. Fixed 56-slot house smoke pool adds one bounded draw call; no gameplay or tower-collapse changes.",
+  "scope": "MOT-03 candidate: four short, independently phased flames across broken skyline windows, four buoyant off-white plumes and warm facade contact glow; 36 fixed instances each across nine standing towers, three bounded draw calls. Preserve RC24 rowhouse/rubble effects and gameplay.",
   "new_gameplay_features": true,
   "release_status": "RC24 candidate: exact-head browser, five-MP4 motion review and authorized Pages seven-file verification required; production unchanged"
 }
