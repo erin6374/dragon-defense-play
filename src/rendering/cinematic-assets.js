@@ -92,7 +92,9 @@ function createFluidCombustionAtlases(THREE){
  return {flame,smoke,update,stats:()=>({fireFrame,smokeFrame,fireSize:[FW,FH],
   smokeSize:[SW,SH],flameUploadHz:12,smokeUploadHz:7,textures:2}),
   // Read-back is only for QA; no pixel transfer from GPU is required.
-  checksum:()=>{let sum=0;for(let i=0;i<fi.data.length;i+=31)sum=(sum+fi.data[i]*17+fi.data[i+3])>>>0;return sum;}};
+  // Read the alpha channel only while i+3 is in bounds. Previously the
+  // final out-of-range sample converted every checksum to zero via NaN >>> 0.
+  checksum:()=>{let sum=0;for(let i=0;i+3<fi.data.length;i+=31)sum=(sum+fi.data[i]*17+fi.data[i+3])>>>0;return sum;}};
 }
 // Original generated artwork, no third-party imagery, compatible with Unity texture export.
 export function createVisualMaterials(THREE){
