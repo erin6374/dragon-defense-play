@@ -1,3 +1,9 @@
+## November 10 — skyline plume contrast refinement (new QA pending)
+
+- Inspected actual QA #440 real-renderer close and standing-fire captures: bright fire is clearly visible on the Comcast tower, but the existing smoke sprite remains too faint against the dusk sky. QA #440 passed at `f9cdec1`, and Pages #176 passed its seven-file unauthenticated public comparison for that exact SHA. Prior release is now verified, but this new refinement is NOT yet tested or deployed.
+- Narrow rendering-only change: darken the shared skyline smoke sprite tint from `0x575b62` to `0x343941` and raise its existing strike-opacity envelope from `.40+.54*intensity` to `.48+.52*intensity`; retain one smoke sprite per landmark, existing atlas, plume geometry, sprite counts, draw calls, scale, anchors, and motion. Strengthen deterministic QA opacity/tint thresholds; preserve all player-fired meteor, molten debris, dragon mouth, wind and performance checks.
+- No production, `main`, Building Explorer, dragon binaries or Pages workflow changes. Wait for exact-head QA report/screenshots and authorized automatic Pages seven-file comparison before certifying public preview.
+
 ## November 10 — read-only Pages provenance reference correction (new QA pending)
 
 - [Browser QA #439](https://github.com/erin6374/dragon-defense-play/actions/runs/42808050973) passed at `f3eec73`; [Pages #175](https://github.com/erin6374/dragon-defense-play/actions/runs/42808922175) staged that exact preview but failed the final main-owned seven-file comparison. No new public SHA is certified; last successful live seven-file verification is `b9b4beb3a334de198ff7329bba948f48ae850340` via [Pages #173](https://github.com/erin6374/dragon-defense-play/actions/runs/42800003689).

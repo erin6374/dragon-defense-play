@@ -98,7 +98,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
  // this avoids the previous static circles and extra local smoke texture.
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
-  color:0x575b62,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+  color:0x343941,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -350,7 +350,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.45,1);
   // Lift the existing plume above the combustion core; do not add sprites.
   tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
-  tower.smokeSprite.material.opacity=.40+smokeIntensity*.54;
+  tower.smokeSprite.material.opacity=.48+smokeIntensity*.52;
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;

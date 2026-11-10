@@ -891,8 +891,8 @@ try {
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
-  assert.ok(towerImpact.result.smokeOpacity>.63,'landmark smoke is dense enough to read against the dusk sky');
-  assert.ok(towerImpact.result.smokeColor<0x606060,'landmark smoke uses a dark ash tint');
+  assert.ok(towerImpact.result.smokeOpacity>.68,'landmark smoke is dense enough to read against the dusk sky');
+  assert.ok(towerImpact.result.smokeColor<0x454545,'landmark smoke uses a dark ash tint');
   assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
     towerImpact.result.smokeWorldScale[1]>30 &&
     towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,
