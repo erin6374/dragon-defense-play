@@ -98,7 +98,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
  // this avoids the previous static circles and extra local smoke texture.
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
-  color:0x66686a,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+  color:0x575b62,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -346,13 +346,15 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=8.4+smokeIntensity*8.6;
+  const smokeWidth=9.2+smokeIntensity*9.2;
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.45,1);
-  tower.smokeSprite.material.opacity=.32+smokeIntensity*.55;
+  // Lift the existing plume above the combustion core; do not add sprites.
+  tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
+  tower.smokeSprite.material.opacity=.40+smokeIntensity*.54;
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=(4.2+Math.min(1,tower.strikeDamage/.26)*5.0)*(1+intensity*1.50);
+  const flameWidth=(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50);
   tower.fireBaseWidth=flameWidth;
   tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
   tower.fireSprite.scale.set(flameWidth,flameWidth*2.35,1);
@@ -446,7 +448,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
     // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
     t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.45+intensity*.75);
-    t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*1.25;
+    t.smokeSprite.position.y=t.smokeOrigin.y+t.smokeSprite.scale.y*.15+Math.sin(elapsed*.47+i)*1.25;
     t.smokeSprite.material.rotation=Math.sin(elapsed*.22+i*.61)*.045;
    }
    if(t.impactAge>0){

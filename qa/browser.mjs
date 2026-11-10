@@ -69,6 +69,9 @@ const expected = JSON.parse(await readFile('build-info.json', 'utf8'));
 const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
+const skylineSource = await readFile('src/rendering/philadelphia-geometry-skyline.js', 'utf8');
+assert.match(skylineSource,/smokeOrigin\.y\+t\.smokeSprite\.scale\.y\*\.15/,
+ 'persistent landmark plume is lifted above its fixed impact anchor without new sprites');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
@@ -883,14 +886,15 @@ try {
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
-  assert.ok(towerImpact.result.fireSize[0]>3.5&&
+  assert.ok(towerImpact.result.fireSize[0]>6&&
     towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
-  assert.ok(towerImpact.result.smokeOpacity>.5,'landmark smoke is dense enough to read against the dusk sky');
-  assert.ok(towerImpact.result.smokeColor<0x808080,'landmark smoke uses a dark ash tint');
+  assert.ok(towerImpact.result.smokeOpacity>.63,'landmark smoke is dense enough to read against the dusk sky');
+  assert.ok(towerImpact.result.smokeColor<0x606060,'landmark smoke uses a dark ash tint');
   assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
+    towerImpact.result.smokeWorldScale[1]>30 &&
     towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,
     'landmark smoke is wider and rises above the visible fire without new geometry');
   assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');

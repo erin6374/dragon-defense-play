@@ -1,3 +1,9 @@
+## November 10 — RC19 skyline plume readability pass (new exact-head QA required)
+
+- After [QA #437](https://github.com/erin6374/dragon-defense-play/actions/runs/42799131782) and [Pages #173](https://github.com/erin6374/dragon-defense-play/actions/runs/42800003689) passed for `b9b4beb`, inspected the actual close-up screenshot (`06-skyline-fire-close.png`): flame was small relative to the Comcast tower and smoke faint against the dusk sky.
+- Narrow visual pass: enlarge existing fire sprite slightly, darken and increase the opacity/width of the **existing single smoke sprite per landmark**, and raise the smoke plume above the flame using its existing world-space anchor. No additional sprites, meshes, texture uploads, draw calls, geometry or gameplay changes; the nine landmark and particle budgets remain fixed.
+- Tightened deterministic browser assertions for the fire width, plume height, smoke contrast and the source-level lifted anchor; existing real-renderer close and standing-fire screenshot captures remain. **Do not certify this revision until exact-head QA passes, screenshots are inspected, and a new Pages live byte comparison succeeds.** Production, `main`, Building Explorer and the unavailable licensed European Dragon binary remain untouched.
+
 ## November 9 — GitHub Actions incident; restore exact-head QA provenance (pending)
 
 - The current head `b2cc5bd` has [QA #364](https://github.com/erin6374/dragon-defense-play/actions/runs/42673421697) failed with **zero jobs**; the workflow file blob is identical to the one that passed [QA #362](https://github.com/erin6374/dragon-defense-play/actions/runs/42665399029). A retry of failed jobs returned HTTP 403: "This workflow run cannot be retried." No browser test ran in #364.
