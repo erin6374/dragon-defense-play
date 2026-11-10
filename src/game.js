@@ -234,7 +234,7 @@ function makeFireTexture(smoke=false){
  return new THREE.CanvasTexture(c);
 }
 const fireSpriteTexture=visualBank.images.flame,smokeSpriteTexture=visualBank.images.smoke;
-const flameMats=[0xffffff,0xffe8ae,0xffab69].map(color=>new THREE.SpriteMaterial({map:fireSpriteTexture,color,transparent:true,opacity:.90,depthWrite:false}));
+const flameMats=[0xffffff,0xfff6e8,0xffe2be].map(color=>new THREE.SpriteMaterial({map:fireSpriteTexture,color,transparent:true,opacity:.91,depthWrite:false,blending:THREE.NormalBlending}));
 const smokeSpriteMat=new THREE.SpriteMaterial({map:smokeSpriteTexture,color:0x626369,transparent:true,opacity:.33,depthWrite:false});
 function ignite(x,y,z){
  if(schoolFire.length>=42)return;
@@ -691,7 +691,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  // but entirely behind the expanded North Philadelphia rowhouse horizon.
  skyline.position.set(0,-15,-740);skyline.scale.set(3.25,2.10,1.15);
  const skylineFires=[];let skylineDamage=0;
- const skylineBackdrop=createPhiladelphiaSkyline(skyline);
+ const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke});
  const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
  skylineBackdrop.group.position.x-=landmarkCenter/skyline.scale.x;
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
@@ -701,20 +701,9 @@ const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(330,140),new THREE.Shade
 skylineAir.position.set(0,47,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
 // Distant facade lights are integrated into building materials.
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
-// Generated alpha flame atlas. Soft, irregular shapes replace obvious orange cone geometry.
-const flameCanvas=document.createElement('canvas');flameCanvas.width=128;flameCanvas.height=192;
-const fctx=flameCanvas.getContext('2d');
-for(let i=0;i<10;i++){
- const cx=64+Math.sin(i*4.3)*12, cy=168-i*13;
- const radius=26-i*1.5;
- const flameGradient=fctx.createRadialGradient(cx,cy,0,cx,cy,radius);
- flameGradient.addColorStop(0,i<3?'rgba(255,244,148,.85)':'rgba(255,130,38,.60)');
- flameGradient.addColorStop(.5,'rgba(252,82,14,.38)');
- flameGradient.addColorStop(1,'rgba(160,25,7,0)');
- fctx.fillStyle=flameGradient;fctx.beginPath();fctx.ellipse(cx,cy,radius*.68,radius*1.15,0,0,Math.PI*2);fctx.fill();
-}
+// The entire game now shares a time-animated, turbulence-driven flame field.
 const flameTexture=visualBank.images.flame;
-const skylineFlameMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffb278,transparent:true,opacity:.85,depthWrite:false});
+const skylineFlameMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffffff,transparent:true,opacity:.89,depthWrite:false,blending:THREE.NormalBlending});
 // Volumetric-looking, irregular alpha cloud sprites rather than opaque geometric spheres.
 const smokeCanvas=document.createElement('canvas');smokeCanvas.width=128;smokeCanvas.height=128;
 const smokeCtx=smokeCanvas.getContext('2d'),smokeImage=smokeCtx.createImageData(128,128);
@@ -2358,7 +2347,9 @@ function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagn
  const targetZoom=wave===15?.86:1;
  const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*1.8));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
- const renderStartUTC=Date.now();const renderStart=performance.now();cinematicFX.flush();renderer.render(scene,camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
+ const renderStartUTC=Date.now();const renderStart=performance.now();
+ visualBank.advanceFireVisuals(elapsed);
+ cinematicFX.flush();renderer.render(scene,camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
    frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames};
