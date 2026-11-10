@@ -1,3 +1,9 @@
+## November 10 — Preview stale-snapshot classification (QA pending)
+
+- Prior exact-head browser QA #436 passed at `b4e62a7`; Pages #172 staged the exact development SHA and reported deployment success but failed its final seven-file comparison. At the earlier #436 diagnostic, changed public preview JS matched the size of the last successful RC19 deployment `5b4fecf`, while production root matched main. Root cause (edge cache vs promotion vs other) remains unconfirmed.
+- Extended the **nonblocking, read-only** PR browser QA provenance diagnostic to compare both changed preview JS files against the byte content of the **last verified public release** `5b4fecf` and the tested head. It now labels current/previous/other snapshots and records Age, Last-Modified, Date, X-Cache and Via response headers when available; added deterministic classifier self-tests. This can distinguish a demonstrably stale prior release from a different published snapshot after the next run.
+- This does not change the main-owned Pages verifier, production root, gameplay, shaders, or deployed assets. Do not certify a new live preview until exact-head QA and unauthenticated live byte comparisons succeed. Main-owned verifier's minimal authorized future fix would log individual HTTP statuses and SHA-256 differences, and permit measured propagation beyond its present 90-second silent retry window.
+
 ## November 10 — Read-only Pages mismatch diagnostics (exact-head QA pending)
 
 - Previous [browser QA #435](https://github.com/erin6374/dragon-defense-play/actions/runs/42790751526) **passed** for `8c4b571`; inspected skyline-fire screenshots and verified playable ZIP manifest. [Pages deployment #171](https://github.com/erin6374/dragon-defense-play/actions/runs/42792215832) uploaded and deployed successfully, but failed the final seven-file comparison with no per-file failure details.
