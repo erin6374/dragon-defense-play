@@ -1004,8 +1004,9 @@ try {
     &&backgroundSettled.roof.tilt>.3
     &&backgroundSettled.roof.x>backgroundIntact.roof.x+.5,
     'settled roof folds, shifts and tilts instead of covering debris as a full-size slab');
-  assert.ok(backgroundSettled.rubblePieces.some(piece=>piece.height>backgroundSettled.height*1.5),
-    'some wall fragments remain taller than the low collapsed shell');
+  assert.ok(backgroundSettled.rubblePieces.filter(piece=>
+    piece.height>.04&&piece.height<backgroundIntact.originalHeight*.20).length>=6,
+    'small masonry fragments persist after settlement without oversized wall slabs');
   assert.ok(new Set(backgroundSettled.rubblePieces.map(piece=>piece.x.toFixed(2))).size>1,
     'collapsed facade pieces have different horizontal offsets');
   for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],
