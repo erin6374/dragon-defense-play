@@ -298,7 +298,11 @@ const skylineShot = async (name, detail=false) => {
   const png = capture.result.png;
   assert.ok(png.startsWith('data:image/png;base64,'), 'Skyline capture is a rendered PNG');
   await writeFile('qa-output/' + name + '.png', Buffer.from(png.split(',')[1], 'base64'));
-  return capture.result.camera;
+  // Preserve the fire-state and projected-framing diagnostics alongside the
+  // camera position; the assertions below must inspect the actual capture.
+  return {...capture.result.camera,
+    fireVisible:capture.result.fireVisible,
+    fireNdc:capture.result.fireNdc};
 };
 try {
   for (let attempt = 0; attempt < 30; attempt++) {

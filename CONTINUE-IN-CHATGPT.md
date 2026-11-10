@@ -1,3 +1,8 @@
+## November 10 — RC19 skyline close-up QA failure isolated (new exact-head QA pending)
+
+- [QA #433](https://github.com/erin6374/dragon-defense-play/actions/runs/42779054783) failed at `qa/browser.mjs:901` because `skylineShot()` returned only `capture.result.camera`, discarding the already-computed `fireVisible` and `fireNdc` fields. The new fire-framing assertions consequently received `undefined` even though the renderer's `captureSkyline()` produced these diagnostics. This was a **test-harness data-shape error**, not evidence that the tower fire failed to render.
+- Narrow QA-only repair: preserve `fireVisible` and `fireNdc` in the `skylineShot()` return value so the close-fire assertions actually verify visible fire and its normalized viewport coordinates. Gameplay, shaders, performance budgets, production and `main` are unchanged. **Require new exact-head browser QA and screenshot inspection before certification.**
+
 ## November 10 — focused skyline-fire QA captures (pending exact-head QA)
 
 - Added two real-renderer close skyline screenshots immediately after the first skyscraper fire impact and after sustained damage: `06-skyline-fire-close.png` and `06-skyline-standing-fire-close.png`. A deterministic camera-distance assertion ensures this is a closer diagnostic view than the existing wide screenshot. No gameplay, assets, rendering budgets, main, or production Pages changed.
