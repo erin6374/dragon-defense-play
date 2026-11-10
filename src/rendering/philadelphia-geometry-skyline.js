@@ -144,14 +144,37 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const fireCanvas=document.createElement('canvas');
  fireCanvas.width=64;fireCanvas.height=96;
  const fireCtx=fireCanvas.getContext('2d');
- for(let i=0;i<5;i++){
-  const x=32+Math.sin(i*2.1)*6,y=78-i*14,r=18-i*2;
-  const grad=fireCtx.createRadialGradient(x,y,1,x,y,r);
-  grad.addColorStop(0,'rgba(255,240,151,.86)');
-  grad.addColorStop(.44,'rgba(255,114,26,.65)');
-  grad.addColorStop(1,'rgba(205,43,8,0)');
-  fireCtx.fillStyle=grad;fireCtx.fillRect(x-r,y-r,2*r,2*r);
+ // Bright tongues and a golden base glow remain legible at skyline depth,
+ // avoiding the barely visible, uniform orange circles of the earlier sprite.
+ const fireBase=fireCtx.createRadialGradient(32,79,1,32,79,29);
+ fireBase.addColorStop(0,'rgba(255,247,175,.98)');
+ fireBase.addColorStop(.32,'rgba(255,174,36,.88)');
+ fireBase.addColorStop(.76,'rgba(255,67,9,.40)');
+ fireBase.addColorStop(1,'rgba(200,29,0,0)');
+ fireCtx.fillStyle=fireBase;fireCtx.fillRect(0,46,64,50);
+ function towerFlame(cx,base,high,width,bend,core=false){
+  fireCtx.beginPath();
+  fireCtx.moveTo(cx-width*.52,base);
+  fireCtx.bezierCurveTo(cx-width*.92,base-high*.35,cx+bend-width*.20,base-high*.75,cx+bend,base-high);
+  fireCtx.bezierCurveTo(cx+bend+width*.17,base-high*.57,cx+width*.81,base-high*.28,cx+width*.46,base);
+  fireCtx.closePath();
+  const grad=fireCtx.createLinearGradient(cx,base,cx+bend,base-high);
+  if(core){
+   grad.addColorStop(0,'rgba(255,255,237,.99)');
+   grad.addColorStop(.47,'rgba(255,221,95,.92)');
+   grad.addColorStop(.88,'rgba(255,135,15,.35)');
+  }else{
+   grad.addColorStop(0,'rgba(255,193,36,.97)');
+   grad.addColorStop(.38,'rgba(255,111,10,.93)');
+   grad.addColorStop(.82,'rgba(255,46,5,.66)');
+  }
+  grad.addColorStop(1,'rgba(255,42,5,0)');
+  fireCtx.fillStyle=grad;fireCtx.fill();
  }
+ for(const p of [[17,90,49,16,-8],[30,93,73,20,6],[45,93,82,20,-5],[52,89,49,15,7]])
+  towerFlame(...p);
+ towerFlame(29,91,47,13,3,true);
+ towerFlame(43,90,62,12,-4,true);
  const fireTexture=new THREE.CanvasTexture(fireCanvas);
  fireTexture.colorSpace=THREE.SRGBColorSpace;
  const fireMaterial=new THREE.SpriteMaterial({map:fireTexture,transparent:true,depthWrite:false,depthTest:true,opacity:.75,blending:THREE.AdditiveBlending});
@@ -370,17 +393,17 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=5.5+smokeIntensity*5.2;
-  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*1.8,1);
-  tower.smokeSprite.material.opacity=.12+smokeIntensity*.42;
+  const smokeWidth=6.4+smokeIntensity*7.0;
+  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.15,1);
+  tower.smokeSprite.material.opacity=.22+smokeIntensity*.56;
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=(2.2+Math.min(1,tower.strikeDamage/.30)*2.5)*(1+intensity*1.45);
+  const flameWidth=(3.2+Math.min(1,tower.strikeDamage/.26)*4.0)*(1+intensity*1.50);
   tower.fireBaseWidth=flameWidth;
-  tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.64,tower.smokeOrigin.z+.10);
-  tower.fireSprite.scale.set(flameWidth,flameWidth*1.7,1);
-  tower.fireSprite.material.opacity=Math.min(.95,.54+intensity*.28+tower.strikeDamage*.16);
+  tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
+  tower.fireSprite.scale.set(flameWidth,flameWidth*2.20,1);
+  tower.fireSprite.material.opacity=Math.min(.99,.72+intensity*.22+tower.strikeDamage*.13);
   tower.fireSprite.visible=true;
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
   tower.scorchSprite.visible=true;
@@ -462,9 +485,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     if(allGrounded)t.fallSettled=true;
    }
    if(t.strikeDamage>0){
-    const flamePulse=1+.10*Math.sin(elapsed*5.4+i*1.9);
-    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*1.7*(1+.06*Math.sin(elapsed*7.1+i)),1);
-    t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.13;
+    const flamePulse=1+.14*Math.sin(elapsed*5.4+i*1.9)+.045*Math.sin(elapsed*9.7+i*.3);
+    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*2.20*(1+.12*Math.sin(elapsed*7.1+i)),1);
+    t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.16;
+    t.fireSprite.material.opacity=Math.min(.99,.76+.13*Math.sin(elapsed*10.2+i));
     // Only position changes over time; stable smoke size and opacity were set
     // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
