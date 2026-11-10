@@ -3173,7 +3173,7 @@ if(motionQA){
   start(name){
    if(scenario)throw Error('Use a fresh page for each motion scenario');
    scenario=name;
-   const started=qa.start(name==='skyfall'?4:7);
+   const started=qa.start(name==='skyfall'||name==='dragon'?4:7);
    if(!started.ok)throw Error(started.error);
    closeChapterTransition();
    qa.cinematicStage('quiet');
@@ -3186,6 +3186,13 @@ if(motionQA){
     meteor=meteors.at(-1);
     meteor.mesh.position.set(9,67,13);
     meteor.vel.set(-1,-15,0);
+   }else if(name==='dragon'){
+    dragon.position.set(-22,30,15);
+    setPauloPreview(true);
+    dragonLeavingRoof=true;
+    detail.position.copy(dragon.position).add(new THREE.Vector3(0,4.5,16));
+    detail.lookAt(dragon.position.x,dragon.position.y+1.3,dragon.position.z);
+    captureCamera=detail;
    }else if(name==='houses'){
     house=district.targetAt(0,-100);
     const target=district.root.localToWorld(new THREE.Vector3(house.x,house.y*.5,house.z));
@@ -3209,8 +3216,9 @@ if(motionQA){
     vehicle.root.position.set(14,-.36,20);
     vehicle.root.rotation.y=Math.PI;
     Object.assign(vehicle,{dir:-1,laneZ:20,speed:7,desiredSpeed:7,turnAt:null});
-    detail.position.set(0,15,67);
-    detail.lookAt(0,6,20);
+    // Tight enough to see individual wheels, chassis roll and recovery.
+    detail.position.set(12,8,44);
+    detail.lookAt(12,1,20);
     captureCamera=detail;
    }else throw Error('Unknown motion scenario '+name);
    return {version:GAME_VERSION,build:BUILD_ID,wave};
@@ -3225,6 +3233,16 @@ if(motionQA){
     }
     if(frame===29){input.keyUp('KeyD');input.keyDown('KeyA');}
     if(frame===54)input.keyUp('KeyA');
+   }
+   if(scenario==='dragon'){
+    if(frame===0){input.keyDown('KeyD');input.keyDown('KeyW');}
+    if(frame===14)input.keyUp('KeyW');
+    if(frame===28){input.keyUp('KeyD');input.keyDown('KeyA');}
+    if(frame===57){input.keyUp('KeyA');input.keyDown('KeyD');}
+    if(frame===83)input.keyUp('KeyD');
+    // Keep Paulo large in the frame while making his turn visible.
+    detail.position.copy(dragon.position).add(new THREE.Vector3(0,4.5,16));
+    detail.lookAt(dragon.position.x,dragon.position.y+1.3,dragon.position.z);
    }
    if(scenario==='houses'&&[12,27,42].includes(frame))district.strikeTarget(house.id,.36);
    if(scenario==='skyline'&&[15,42].includes(frame)){
@@ -3244,6 +3262,9 @@ if(motionQA){
     dragon:dragon.position.toArray()
    };
    if(meteor)state.meteors=meteors.map(m=>({y:m.mesh.position.y,generation:m.generation||0}));
+   if(scenario==='dragon')state.flight={x:dragon.position.x,y:dragon.position.y,
+    heading:dragon.rotation.y,model:pauloPreviewEnabled?'paulo':'legacy',
+    pose:pauloPoseDriver?.snapshot()?.pose??null};
    if(house){
     const {damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning}=district.buildingState(house.id);
     state.house={damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning};
