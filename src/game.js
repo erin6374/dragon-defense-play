@@ -2856,7 +2856,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    scene.add(mesh);
    const root={mesh,target:mesh.position.clone(),vel:new THREE.Vector3(),
     trail:1,hp:Math.ceil(size*3),size,kind:size>2?'flaming':'stone',
-    opening:true,largeSplitter:true,burning:size>2,damage:1};
+    opening:true,generation:size>2?1:size>1.1?2:3,largeSplitter:true,burning:size>2,damage:1};
    meteors.push(root);
    let fringe=null;
    if(withFringe){
@@ -2864,7 +2864,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     fringeMesh.position.copy(mesh.position).add(new THREE.Vector3(0,3.1,0));
     scene.add(fringeMesh);
     fringe={mesh:fringeMesh,target:fringeMesh.position.clone(),vel:new THREE.Vector3(),
-     trail:1,hp:3,size:.65,kind:'stone',opening:true,damage:1};
+     trail:1,hp:3,size:.65,kind:'stone',opening:true,generation:3,damage:1};
     meteors.push(fringe);
    }
    const shrapnelBefore=impactParticles.filter(p=>p.shrapnel).length;
@@ -2876,7 +2876,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     return {size,playerShots:sessionStats.shots-shotsBefore,
      directRemoved:!meteors.includes(root),
      fringeRemoved:fringe?!meteors.includes(fringe):null,
-     fragments:meteors.filter(m=>m.fragment&&m.generation===1).map(m=>({
+     fragments:meteors.filter(m=>m.fragment&&m.generation===root.generation+1).map(m=>({
       size:m.size,kind:m.kind,opening:!!m.opening,burning:!!m.burning})),
      shrapnel:impactParticles.filter(p=>p.shrapnel).length-shrapnelBefore};
    }finally{pointer.copy(priorAim);}
