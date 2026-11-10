@@ -2415,7 +2415,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    visualBank.advanceFireVisuals(elapsed);
    return {initial,metrics,checksumChanged:before!==after,
     sharedFlameTexture:visualBank.images.flame===flameTexture,
-    fluidSkylineMaterial:skylineBackdrop.towers.every(t=>t.fireSprite.material.map===flameTexture),
+    proceduralSkylineFire:skylineBackdrop.getStats().combustion.textures===0,
     phaseOne:before,phaseTwo:after};
   }),
   captureDragonDetail:()=>run('captureDragonDetail',()=>{
@@ -2446,7 +2446,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    // the old close-up cut every major flame off above the screenshot.
    skyline.updateMatrixWorld(true);
    const tower=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
-   const fireWorld=tower?.fireSprite.getWorldPosition(new THREE.Vector3())??new THREE.Vector3(centerX,60,skyline.position.z);
+   const fireWorld=(tower?skylineBackdrop.group.localToWorld(skylineBackdrop.fireState(tower).position):null)??new THREE.Vector3(centerX,60,skyline.position.z);
    if(detail){
     qaSkylineCamera.position.set(fireWorld.x,fireWorld.y+12,skyline.position.z+35);
     qaSkylineCamera.lookAt(fireWorld.x,fireWorld.y,skyline.position.z);
@@ -2459,7 +2459,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const fireNdc=fireWorld.clone().project(qaSkylineCamera);
    renderer.render(scene,qaSkylineCamera);
    return {png:renderer.domElement.toDataURL('image/png'),detail,
-    fireVisible:!!tower?.fireSprite.visible,
+    fireVisible:!!tower&&skylineBackdrop.fireState(tower).active,
     fireNdc:fireNdc.toArray(),
     camera:{x:qaSkylineCamera.position.x,y:qaSkylineCamera.position.y,z:qaSkylineCamera.position.z},
     skyline:{x:skyline.position.x,y:skyline.position.y,z:skyline.position.z}};
@@ -2529,7 +2529,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    // Snapshot before the animation tick: the next strike must not inherit
    // the previous flash's expanded radius.
    const flashScaleImmediately=t.impactSprite.scale.x;
-   const smokeVisibleImmediately=t.smokeSprite.visible;
+   const smokeVisibleImmediately=skylineBackdrop.fireState(t).active;
    skylineBackdrop.setDamage(skylineDamage);
    skylineBackdrop.update(elapsed,displayedDarkness,1/60);
    return {landmark:t.def.id,worldPosition:hit?.toArray(),beforeDamage:before,
@@ -2539,15 +2539,15 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     flashWorldPosition:t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray(),
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     flashScaleImmediately,
-    smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
-    smokeColor:t.smokeSprite.material.color.getHex(),
-    fireVisible:t.fireSprite.visible,fireOpacity:t.fireSprite.material.opacity,
-    fireSize:t.fireSprite.scale.toArray(),
+    smokeVisible:skylineBackdrop.fireState(t).active,smokeOpacity:null,
+    smokeColor:null,
+    fireVisible:skylineBackdrop.fireState(t).active,fireOpacity:null,
+    fireSize:[skylineBackdrop.fireState(t).width,skylineBackdrop.fireState(t).height,1],
     secondaryBurnSites:t.burnSites.map(site=>({active:site.active,index:site.index,
      position:site.origin.toArray(),width:site.width})),
     skylineBurnBudget:skylineBackdrop.getStats(),
-    smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
-    smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
+    smokeParentStable:skylineBackdrop.fireState(t).parentStable,
+    smokeWorldScale:skylineBackdrop.group.getWorldScale(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
   }),
   stageSkylineCollapse:()=>run('stageSkylineCollapse',()=>{
@@ -2556,10 +2556,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    // any displacement would mean smoke inherited the tower transform.
    const t=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
    if(!t)throw Error('Expected landmark missing');
-   const smokeWorldBefore=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
+   const smokeWorldBefore=skylineBackdrop.group.localToWorld(skylineBackdrop.fireState(t).position).toArray();
    const flashWorldBefore=t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray();
    skylineBackdrop.setDamage(1);
-   const smokeWorldAfter=t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray();
+   const smokeWorldAfter=skylineBackdrop.group.localToWorld(skylineBackdrop.fireState(t).position).toArray();
    const flashWorldAfter=t.impactSprite.getWorldPosition(new THREE.Vector3()).toArray();
    return {landmark:t.def.id,collapse:t.collapse,ruinVisible:t.ruin.visible,
     smokeWorldBefore,smokeWorldAfter,flashWorldBefore,flashWorldAfter,
@@ -2567,10 +2567,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     rubbleDetached:t.ruin.parent===skylineBackdrop.group,
     rubbleGroundY:t.ruin.position.y,slabs:t.slabs.length,
     fallActive:t.fallActive,fallElapsed:t.fallElapsed,
-    smokeVisible:t.smokeSprite.visible,
-    fireVisible:t.fireSprite.visible,
-    smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
-    smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
+    smokeVisible:skylineBackdrop.fireState(t).active,
+    fireVisible:skylineBackdrop.fireState(t).active,
+    smokeParentStable:skylineBackdrop.fireState(t).parentStable,
+    smokeWorldScale:skylineBackdrop.group.getWorldScale(new THREE.Vector3()).toArray(),
     towerScaleY:t.group.scale.y,slabY:t.slabs.map(s=>s.position.y),
     slabReleaseY:t.slabs.map(s=>s.userData.fallStartY),
     slabGroundY:t.slabs.map(s=>s.userData.groundY),
@@ -2583,9 +2583,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    if(!t)throw Error('Expected landmark missing');
    return {fallActive:t.fallActive,fallElapsed:t.fallElapsed,ruinVisible:t.ruin.visible,
     strikeDamage:t.strikeDamage,collapse:t.collapse,towerScaleY:t.group.scale.y,
-    impactVisible:t.impactSprite.visible,smokeVisible:t.smokeSprite.visible,
-    fireVisible:t.fireSprite.visible,
-    smokeWorldPosition:t.smokeSprite.getWorldPosition(new THREE.Vector3()).toArray(),
+    impactVisible:t.impactSprite.visible,smokeVisible:skylineBackdrop.fireState(t).active,
+    fireVisible:skylineBackdrop.fireState(t).active,
+    smokeWorldPosition:skylineBackdrop.group.localToWorld(skylineBackdrop.fireState(t).position).toArray(),
+    combustionClock:skylineBackdrop.fireState(t).clock,
     scorchVisible:t.scorchSprite.visible,
     slabY:t.slabs.map(s=>s.position.y),groundY:t.slabs.map(s=>s.userData.groundY)};
   }),
@@ -3279,8 +3280,8 @@ if(motionQA){
     const {damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning}=district.buildingState(house.id);
     state.house={damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning};
    }
-   if(tower)state.tower={damage:tower.strikeDamage,fire:tower.fireSprite.material.opacity,
-    smoke:tower.smokeSprite.material.opacity,fireVisible:tower.fireSprite.visible,smokeVisible:tower.smokeSprite.visible};
+   if(tower)state.tower={damage:tower.strikeDamage,combustionTime:skylineBackdrop.fireState(tower).clock,
+    smoke:null,fireVisible:skylineBackdrop.fireState(tower).active,smokeVisible:skylineBackdrop.fireState(tower).active};
    if(vehicle)state.traffic={position:vehicle.root.position.toArray(),roll:vehicle.root.rotation.x,
     gust:windActive,hit:vehicle.windGustId===gustId,headlights:vehicle.root.userData.headlightBeam.visible};
    return {state,png:renderer.domElement.toDataURL('image/png').split(',')[1]};

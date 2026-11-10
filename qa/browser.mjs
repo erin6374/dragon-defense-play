@@ -70,16 +70,8 @@ const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
 const skylineSource = await readFile('src/rendering/philadelphia-geometry-skyline.js', 'utf8');
-assert.match(skylineSource,/smokeOrigin\.y\+t\.smokeSprite\.scale\.y\*\.15/,
- 'persistent landmark plume is lifted above its fixed impact anchor without new sprites');
-assert.match(skylineSource,/SECONDARY_BURN_SITES_PER_TOWER=4/,
- 'skyscraper combustion adds four preallocated window-band sites per tower');
-assert.match(skylineSource,/secondaryFire=new THREE.InstancedMesh/,
- 'secondary flames are pooled in one fixed instanced draw call');
-assert.match(skylineSource,/secondarySmoke=new THREE.InstancedMesh/,
- 'secondary smoke is pooled in one fixed instanced draw call');
-assert.match(skylineSource,/secondaryGlow=new THREE.InstancedMesh/,
- 'window contact glow uses one bounded preallocated draw call');
+assert.match(skylineSource,/createBuildingCombustion/,'skyline uses the shared GPU combustion pool');
+assert.doesNotMatch(skylineSource,/new THREE.Sprite\(fireMaterial|secondaryFire=new/,'legacy skyline fire is removed');
 // Fireball interception must select nearest swept 3D contact rather than
 // whichever meteor happens to occur last in the live meteor array.
 assert.match(gameSource,/const travelSq=path\.lengthSq\(\);let hitIndex=-1,hitT=Infinity/,
@@ -340,6 +332,33 @@ try {
   await page.waitForFunction(() => window.__DD_QA?.snap().frameTimes.frames >= 2 &&
     window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
   report.startup = await snap();
+  report.combustionPool=await page.evaluate(async()=>{
+    const T=await import('three');
+    const {createBuildingCombustion}=await import('./src/rendering/building-combustion.js');
+    const parent=new T.Group(),pool=createBuildingCombustion(parent,2);
+    const ids=pool.group.children.map(m=>[m.geometry.uuid,m.material.uuid]);
+    const activeCounts=()=>pool.group.children.map(m=>{
+      const a=m.geometry.attributes.settings;let n=0;for(let i=0;i<a.count;i++)if(a.getW(i)>0)n++;return n;
+    });
+    pool.set(0,3,5,7,1,2,13,1,0);const near=activeCounts();
+    pool.set(0,3,5,7,1,2,13,1,5);const far=activeCounts();
+    const anchor={...pool.sources[0]};pool.update(15);const after={...pool.sources[0]};
+    let rejected=false;try{pool.set(2,0,0,0,1,1,0)}catch{rejected=true;}
+    pool.clear(0);const cleared=activeCounts();
+    for(let i=0;i<100;i++){pool.set(i%2,1,2,3,1,1,i);pool.clear(i%2);}
+    pool.reset();
+    const result={near,far,anchor,after,rejected,cleared,stats:pool.stats(),
+      stable:JSON.stringify(ids)===JSON.stringify(pool.group.children.map(m=>[m.geometry.uuid,m.material.uuid]))};
+    for(const m of pool.group.children){m.geometry.dispose();m.material.dispose();}
+    return result;
+  });
+  assert.deepEqual(report.combustionPool.near,[3,6,5,1]);
+  assert.deepEqual(report.combustionPool.far,[2,2,1,1]);
+  assert.deepEqual(report.combustionPool.anchor,report.combustionPool.after,'advected particles do not move their opening');
+  assert.deepEqual(report.combustionPool.cleared,[0,0,0,0]);
+  assert.ok(report.combustionPool.rejected&&report.combustionPool.stable,'capacity and GPU resource identities survive reuse');
+  assert.equal(report.combustionPool.stats.active,0);
+
   const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
   assert.ok(fluidFire.ok,fluidFire.error);
   assert.deepEqual(fluidFire.result.metrics.fireSize,[128,192],
@@ -351,8 +370,8 @@ try {
     'flame structure actually changes with time rather than stretching a painted silhouette');
   assert.equal(fluidFire.result.sharedFlameTexture,true,
     'cinematic effects use the same animated fire atlas');
-  assert.equal(fluidFire.result.fluidSkylineMaterial,true,
-    'all distant standing skyscraper fires share the animated fire atlas');
+  assert.equal(fluidFire.result.proceduralSkylineFire,true,
+    'distant standing skyscrapers use texture-free procedural combustion');
   assert.ok(fluidFire.result.metrics.fireFrame>=fluidFire.result.initial.fireFrame+2,
     'time-stepped fire texture updates without allocating a new GPU map');
   report.fluidFire=fluidFire.result;
@@ -896,45 +915,13 @@ try {
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
   assert.equal(towerImpact.result.secondaryBurnSites.length,4,
     'four facade-window burn origins are tracked per landmark');
-  assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>1&&
-    site.position.every(Number.isFinite)),'all four independently phased window flames ignite');
-  const band=towerImpact.result.secondaryBurnSites.map(site=>site.position);
-  assert.ok(Math.max(...band.map(p=>p[0]))-Math.min(...band.map(p=>p[0]))>5.0,
-    'window fires span a horizontal row of broken facade openings');
-  assert.ok(Math.max(...band.map(p=>p[1]))-Math.min(...band.map(p=>p[1]))<7.0,
-    'window fire origins share a floor band rather than separate tower levels');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondaryFireInstances,36,
-    'all nine landmarks share a fixed 36-instance window-flame pool');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondarySmokeInstances,36,
-    'all nine landmarks share a fixed 36-instance smoke pool');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondaryGlowInstances,36,
-    'all nine landmarks share a fixed 36-instance warm facade glow pool');
-  assert.equal(towerImpact.result.skylineBurnBudget.secondaryDrawCalls,3,
-    'window combustion uses only three preallocated draw calls');
-  assert.equal(towerImpact.result.skylineBurnBudget.activeBurnSites,4,
-    'first impact activates four window-level combustion origins');
-  assert.ok(towerImpact.result.fireSize[0]>3.8&&
-    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.1,
-    'skyscraper impact produces a short facade-attached central flame');
-  assert.ok(towerImpact.result.fireSize[0]<6.5 &&
-    towerImpact.result.secondaryBurnSites.every(site=>site.width>=2.5&&site.width<=3.3),
-    'dominant flame is bounded while four smaller window fires remain readable');
-  // smokeWorldScale is in WORLD units; the distant skyline group scales X by
-  // 3.25. RC23 limits local width to 14.8, or 48.1 world units at full strike.
-  assert.ok(towerImpact.result.smokeOpacity<.56 &&
-    towerImpact.result.smokeWorldScale[0]<34.0,
-    'central plume is narrower so independent pale window plumes remain visible');
-  assert.ok(towerImpact.result.fireOpacity>.58,
-    'skyscraper fire has a bright, readable core');
-  assert.ok(towerImpact.result.smokeOpacity>.46,'central smoke stays visible without obscuring independent facade plumes');
-  assert.ok(towerImpact.result.smokeColor>0xaaaaaa&&towerImpact.result.smokeColor<0xc9c9c9,
-    'central skyline smoke is off-white rather than dark soot');
-  assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
-    towerImpact.result.smokeWorldScale[1]>24 &&
-    towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,
-    'landmark smoke is wider and rises above the visible fire without new geometry');
-  assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');
-  assert.ok(towerImpact.result.smokeWorldScale.every(v=>v>0),'intact smoke has nonzero world scale');
+  assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
+    'sources are small finite window openings');
+  const budget=towerImpact.result.skylineBurnBudget.combustion;
+  assert.equal(budget.capacity,36);assert.equal(budget.active,4);
+  assert.equal(budget.drawCalls,4);assert.equal(budget.textures,0);
+  assert.equal(budget.smokeCapacity,216);assert.equal(budget.flameCapacity,108);
+  assert.ok(towerImpact.result.fireSize[0]<2,'no oversized central sprite remains');
   assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
   assert.ok(towerImpact.result.scorchOpacity>0,'facade damage mark has positive opacity');
   assert.ok(towerImpact.result.worldPosition?.every(Number.isFinite), 'landmark impact position is finite');
@@ -1000,7 +987,8 @@ try {
   assert.equal(aftermath.result.scorchVisible,true,'facade scorch survives flash');
   const smokeMotion=Math.hypot(...aftermath.result.smokeWorldPosition.map((v,i)=>
    v-beforeIdle.result.smokeWorldPosition[i]));
-  assert.ok(smokeMotion>.001&&smokeMotion<4,'tower smoke drifts without teleporting');
+  assert.ok(smokeMotion<.001,'GPU plume source remains attached to its opening');
+  assert.ok(aftermath.result.combustionClock>beforeIdle.result.combustionClock,'GPU advection clock advances while source stays fixed');
   report.skylineAftermath=aftermath.result;
   await skylineShot('06-skyline-smoke-aftermath');
   report.skylineDetailCamera=await skylineShot('06-skyline-close-aftermath',true);
@@ -1074,65 +1062,19 @@ try {
     'settled collapse releases low dust points without leaking objects');
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
-  // The plume uses a sine-wave drift: a snapshot near its turning point can
-  // have almost no movement over one interval, even though it visibly moves
-  // across the complete staged collapse. Test the sampled range instead.
-  const smokeXs=[backgroundIntact,backgroundFalling,backgroundSettled].map(s=>s.smokePosition[0]);
-  const smokeDriftRange=Math.max(...smokeXs)-Math.min(...smokeXs);
-  assert.ok(smokeXs.every(Number.isFinite)&&smokeDriftRange>.05&&smokeDriftRange<4,
-    'distant impact smoke moves over the staged collapse without teleporting');
-  // Intact fires are prominent, but a collapsed roof must NOT drag a tall,
-  // unchanged flame column down onto the street. Two independently animated
-  // pooled vents remain on the rubble after the original source disappears.
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
-  assert.ok(backgroundIntact.flameHeight>backgroundIntact.originalHeight*.23&&
-    backgroundIntact.flameHeight<backgroundIntact.originalHeight*.45,
-    'central rooftop glow is visible but no longer towers over its house; two pooled vents carry the fire');
-  assert.ok(backgroundSettled.flameHeight<backgroundIntact.flameHeight*.50
-    &&!backgroundSettled.primaryFlameVisible,
-    'unsupported tall flame shrinks and extinguishes after roof collapse');
-  assert.ok(fireStates.every(f=>f.tonguePositions.length===2
-    &&f.tonguePositions.every(p=>p.every(Number.isFinite))
-    &&Math.abs(f.tonguePositions[0][0]-f.tonguePositions[1][0])>f.flameWidth*.25),
-    'two independently placed flame vents stay separated throughout collapse');
-  assert.ok(fireStates.every(f=>f.ventSmokePositions.length===2
-    &&f.ventSmokePositions.every(p=>p.every(Number.isFinite)&&p[1]>0)),
-    'each window flame has its own finite rising smoke plume');
-  assert.ok(backgroundIntact.tonguePositions.every(p=>p[1]<backgroundIntact.originalHeight*1.05),
-    'flame roots occupy upper-floor windows rather than floating above the roof');
-  assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<backgroundIntact.originalHeight*.55),
-    'surviving flame vents remain low on settled rubble');
-  assert.ok(fireStates.every(f=>f.flameWidth>1&&f.smokeHeight>f.flameHeight),
-    'bright flame body is backed by a taller smoke plume');
-  assert.ok(fireStates.every(f=>f.activeEmbers===10),
-    'persistent fires emit the same bounded, rising ember group through collapse');
-  assert.equal(flightBudget.fireEmberDrawCalls,1,
-    'all active rooftop embers use one GPU Points batch');
-  assert.equal(flightBudget.fireEmberCapacity,280,
-    'one shared 280-slot spark buffer is sufficient for all 28 fires');
-  assert.equal(flightBudget.fireTongueDrawCalls,1,
-    'all secondary fire vents share one fixed instanced draw call');
-  assert.equal(flightBudget.fireTongueCapacity,56,
-    'two bounded secondary vents are reserved for each of 28 fires');
-  assert.equal(flightBudget.fireVentSmokeCapacity,56,
-    'all 28 burning houses share exactly 56 fixed smoke quads');
-  assert.equal(flightBudget.fireVentSmokeDrawCalls,1,
-    'window smoke uses only one new fixed instanced draw call');
-  assert.equal(flightBudget.activeFireVentSmoke,2,
-    'one burning house has two independently rising smoke origins');
-  assert.equal(flightBudget.activeFireTongues,2,
-    'one burning house has exactly two pooled secondary vents');
-  assert.equal(flightBudget.activeFireEmbers,10,
-    'one damaged house uses just ten hot ember points');
-  assert.deepEqual(flightBudget.blazeAtlasSize,[128,192],
-    'house fires share one bright two-tone 128x192 flame atlas');
-  assert.ok(fireStates.every(s=>s.flamePosition?.every(Number.isFinite)
-    &&Number.isFinite(s.flameHeight)&&s.flameHeight>0
-    &&Math.abs(s.flamePosition[0]-s.smokePosition[0])<4),
-    'distant fire billboards remain finite and anchored near their smoke');
-  assert.ok(backgroundFalling.flameHeight>0
-    &&backgroundSettled.flameHeight/backgroundIntact.flameHeight<.50,
-    'structural collapse reduces the unsupported primary flame rather than preserving its height');
+  assert.ok(fireStates.every(f=>!f.primaryFlameVisible),'legacy central sprite is absent in all damage states');
+  assert.ok(fireStates.every(f=>f.combustionSites.length>=2&&f.combustionSites.every(s=>[s.x,s.y,s.z,s.w,s.h].every(Number.isFinite))),
+    'bounded real window/roof openings survive collapse');
+  assert.ok(backgroundIntact.tonguePositions.slice(0,2).every(p=>p[1]<backgroundIntact.originalHeight),
+    'window sources are below the roof');
+  assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<1),'all sources settle onto rubble');
+  assert.ok(backgroundIntact.tonguePositions[0][1]>backgroundSettled.tonguePositions[0][1]+2,
+    'sources follow structural collapse to the ground');
+  assert.equal(flightBudget.combustion.capacity,168);
+  assert.equal(flightBudget.combustion.drawCalls,4);
+  assert.equal(flightBudget.combustion.textures,0);
+  assert.ok(flightBudget.combustion.active>=2&&flightBudget.combustion.active<=168);
   assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
   assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');
   assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');
@@ -1182,7 +1124,7 @@ try {
   assert.ok(zeroBlock.ok,zeroBlock.error);
   assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
   assert.ok(zeroBlock.result.afterImpact.ambientRooftopFires>=6&&
-    zeroBlock.result.afterImpact.ambientRooftopFires<=10,
+    zeroBlock.result.afterImpact.ambientRooftopFires<=28,
     'catastrophic neighborhood damage creates bounded, visible distant rooftop fires');
   assert.ok(zeroBlock.result.settled.ambientRooftopFires>=6,
     'background rooftop fires persist after the impact dust clears');
@@ -1292,14 +1234,7 @@ try {
    if(distance(hit.post,hit.expectedPre)>.1)movedFacade=true;
   }
   assert.equal(movedFacade,false,'repeated impacts never deform or displace skyscraper facades');
-  for(let i=1;i<impactCascade.result.smokeSamples.length;i++){
-   const before=impactCascade.result.smokeSamples[i-1];
-   const after=impactCascade.result.smokeSamples[i];
-   assert.ok(after.opacity>=before.opacity-1e-6,'smoke opacity increases only when damage grows');
-   assert.ok(after.scale>=before.scale-1e-6,'smoke width increases only when damage grows');
-  }
-  assert.ok(impactCascade.result.smokeSamples[1].scale>impactCascade.result.smokeSamples[0].scale,
-   'additional impact visibly thickens plume');
+  assert.ok(impactCascade.result.smokeSamples.every(s=>s.scale>0),'source space remains valid after repeated strikes');
   assert.equal(impactCascade.result.fallActive,false,'repeated strikes never trigger skyscraper collapse');
   assert.equal(impactCascade.result.ruinVisible,false,'skyscraper rubble stays disabled despite severe damage');
   assert.equal(impactCascade.result.hpAfter,impactCascade.result.hpBefore,'background strikes do not harm player block');

@@ -1,8 +1,8 @@
 {
-  "build": "5.4-window-band-fire-rc25",
-  "version": "5.4.0-rc.25",
+  "build": "5.5-anchored-combustion-rc1",
+  "version": "5.5.0-rc.1",
   "gameplay_base": "5.2.3",
-  "scope": "MOT-03 candidate: four short, independently phased flames across broken skyline windows, four buoyant off-white plumes and warm facade contact glow; 36 fixed instances each across nine standing towers, three bounded draw calls. Preserve RC24 rowhouse/rubble effects and gameplay.",
+  "scope": "Replace neighborhood and skyline fire sprites with pooled GPU combustion, window and roof anchors, volume-integrated smoke, embers and soot.",
   "new_gameplay_features": true,
-  "release_status": "RC24 candidate: exact-head browser, five-MP4 motion review and authorized Pages seven-file verification required; production unchanged"
+  "release_status": "Development candidate; browser and visual validation pending"
 }

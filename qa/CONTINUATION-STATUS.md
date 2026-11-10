@@ -1,3 +1,26 @@
+## November 10 — v5.5.0 RC1 building combustion replacement
+
+- Replaces the complete persistent neighborhood/skyline fire stack with a shared
+  texture-free GPU combustion module. Removes the dominant central sprites,
+  ambient rooftop sprites, and prior secondary window-fire batches.
+- Three crossed flame sheets, six density-integrated smoke puffs, five embers,
+  and one soot/opening/glow surface per source. Fixed 168-source neighborhood
+  and 36-source skyline pools; four draw batches each; distance-tier budgets.
+- Real rowhouse window coordinates, horizontal roof breaches, structural-part
+  anchors for nearer buildings, and window-grid snapping on standing towers.
+  Sources settle with rubble, clear on restart, and reuse GPU resources.
+- Fixes the existing compact HUD radar overlap found during browser QA. Updates
+  the stale window title and runtime metadata to identify the new candidate.
+- Read `qa/COMBUSTION-RELEASE.md` for implementation and validation scope. The
+  stored campaign visual target informed the work; the new chat's mentioned
+  attachment was absent and its acceptance sentence was truncated.
+- Validation: complete local browser QA passed with zero errors/warnings; all
+  five 100-frame motion scenarios passed. House/skyline frames reviewed at
+  1.2/2.4/3.4/4.8 seconds. Anchors and collapse transitions improved, but narrow
+  flame tips and distinct smoke lobes remain stylized. Exact-head CI, hardware
+  GPU FPS and final art acceptance are not established by these local checks.
+  Keep PR #2 draft and unmerged.
+
 # Graphics continuation — November 6, 2026
 
 ## Repository and deployment audit

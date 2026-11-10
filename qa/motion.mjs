@@ -64,7 +64,7 @@ function checkMotion(name, samples) {
     assert.ok(last.house.burning && last.house.rubbleCount > 0);
   } else if (name === 'skyline') {
     assert.ok(last.tower.damage > first.tower.damage && last.tower.fireVisible && last.tower.smokeVisible);
-    assert.ok(new Set(samples.slice(50).map(({tower}) => tower.fire)).size > 5, 'fire opacity animates');
+    assert.ok(new Set(samples.slice(50).map(({tower}) => tower.combustionTime)).size > 5, 'GPU combustion time advances');
   } else {
     assert.ok(samples.some(({traffic}) => traffic.headlights && traffic.gust && traffic.hit));
     assert.ok(samples.some(({traffic}) => Math.abs(traffic.roll) > .02), 'tracked vehicle tilts');
@@ -93,6 +93,7 @@ try {
       }, seed);
       const page = await context.newPage();
       page.on('pageerror', error => report.errors.push({name, error: String(error)}));
+      page.on('console', message => {if(message.type()==='error')report.errors.push({name,error:message.text()});});
       await page.goto(new URL('?qa=1&motion=1', base).href);
       await page.waitForFunction(() => window.__DD_MOTION && window.__DD_QA.snap().renderVisibility.actualSchoolOverlayReady,
         null, {timeout: 90000});
