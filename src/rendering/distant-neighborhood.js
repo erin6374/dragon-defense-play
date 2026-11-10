@@ -221,12 +221,40 @@ export function createDistantNeighborhood({root,flameTexture}){
  }
  fracturedGeometry.computeVertexNormals();
 
+ // A single shared, mipmapped, procedural masonry finish breaks up uniform
+ // brown surfaces on the exposed floors and flying rubble, without extra
+ // per-building materials, textures, meshes or runtime allocations.
+ const masonryCanvas=document.createElement('canvas');
+ masonryCanvas.width=128;masonryCanvas.height=128;
+ const masonryCtx=masonryCanvas.getContext('2d');
+ const surface=masonryCtx.createImageData(128,128);
+ for(let py=0;py<128;py++)for(let px=0;px<128;px++){
+  const index=(py*128+px)*4;
+  const offset=(Math.floor(py/16)%2)*16;
+  const mortar=(py%16===0)||((px+offset)%32===0);
+  const grain=((px*31+py*67+((px*py)%41)*9)%31)-15;
+  const shade=Math.max(110,Math.min(242,mortar?147+grain*.32:218+grain));
+  surface.data[index]=shade;
+  surface.data[index+1]=shade*.973;
+  surface.data[index+2]=shade*.945;
+  surface.data[index+3]=255;
+ }
+ masonryCtx.putImageData(surface,0,0);
+ const masonryTexture=new THREE.CanvasTexture(masonryCanvas);
+ masonryTexture.colorSpace=THREE.SRGBColorSpace;
+ masonryTexture.wrapS=masonryTexture.wrapT=THREE.RepeatWrapping;
+ masonryTexture.minFilter=THREE.LinearMipmapLinearFilter;
+ masonryTexture.magFilter=THREE.LinearFilter;
+ const debrisSurface=new THREE.MeshStandardMaterial({
+  map:masonryTexture,color:0xffffff,roughness:.97,metalness:0
+ });
+
  // A SECOND instanced structural batch per tier reveals simplified interior floors,
  // dark rear cavity and torn front masonry. All pieces are allocated once.
  // The horizon has only one representative floor/panel, while the closer
  // homes expose up to three slabs plus two broken facade sections.
  const floorsPerTier=[4,4,3,3,2,1],panelsPerTier=[4,4,3,3,2,2];
- const interiorMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
+ const interiorMaterial=new THREE.MeshStandardMaterial({color:0xffffff,map:masonryTexture,roughness:.96,metalness:0});
  const interiorBatches=tiers.map((tier,ti)=>{
   const homes=buildingDefs.filter(home=>home.tier===ti);
   const perHome=1+floorsPerTier[ti]+panelsPerTier[ti];
@@ -261,7 +289,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  const rubbleBatches=tiers.map((tier,ti)=>{
   const homes=buildingDefs.filter(home=>home.tier===ti);
   const capacity=homes.length*rubblePerTier[ti];
-  const mesh=new THREE.InstancedMesh(fracturedGeometry,materials.main,capacity);
+  const mesh=new THREE.InstancedMesh(fracturedGeometry,debrisSurface,capacity);
   mesh.name='distance-'+tier.name+'-facade-debris';
   mesh.frustumCulled=false;
   mesh.visible=false;
@@ -397,6 +425,64 @@ export function createDistantNeighborhood({root,flameTexture}){
  }
  const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
  smokeTexture.colorSpace=THREE.SRGBColorSpace;
+ // A single soft point cloud adds a low, irregular rolling dust layer around
+ // all active collapses. It supplements (rather than duplicates) the existing
+ // one-per-house fading smoke sprites. One draw call, at most 96 points.
+ const dustPerTier=[12,11,10,9,7,5],DUST_PER_SLOT=12,DUST_SLOTS=8;
+ const dustCloudCapacity=DUST_PER_SLOT*DUST_SLOTS;
+ const dustCanvas=document.createElement('canvas');
+ dustCanvas.width=64;dustCanvas.height=64;
+ const dustCtx=dustCanvas.getContext('2d');
+ const dustGrad=dustCtx.createRadialGradient(32,32,2,32,32,32);
+ dustGrad.addColorStop(0,'rgba(255,255,255,.79)');
+ dustGrad.addColorStop(.43,'rgba(255,255,255,.30)');
+ dustGrad.addColorStop(1,'rgba(255,255,255,0)');
+ dustCtx.fillStyle=dustGrad;dustCtx.fillRect(0,0,64,64);
+ const dustTexture=new THREE.CanvasTexture(dustCanvas);
+ dustTexture.colorSpace=THREE.SRGBColorSpace;
+ const dustPositions=new Float32Array(dustCloudCapacity*3);
+ const dustColors=new Float32Array(dustCloudCapacity*3);
+ for(let i=0;i<dustCloudCapacity;i++){
+  dustPositions[i*3+1]=-10000;
+  const n=(i*37%19)/19;
+  dustColors[i*3]=.81+n*.13;
+  dustColors[i*3+1]=.76+n*.13;
+  dustColors[i*3+2]=.68+n*.13;
+ }
+ const dustGeometry=new THREE.BufferGeometry();
+ dustGeometry.setAttribute('position',new THREE.BufferAttribute(dustPositions,3).setUsage(THREE.DynamicDrawUsage));
+ dustGeometry.setAttribute('color',new THREE.BufferAttribute(dustColors,3));
+ const dustMaterial=new THREE.PointsMaterial({size:4.8,map:dustTexture,
+  color:0xffffff,vertexColors:true,transparent:true,opacity:.42,
+  alphaTest:.025,depthWrite:false,depthTest:true,sizeAttenuation:true});
+ const dustPoints=new THREE.Points(dustGeometry,dustMaterial);
+ dustPoints.name='distant-demolition-pooled-dust';
+ dustPoints.visible=false;dustPoints.frustumCulled=false;
+ root.add(dustPoints);drawCalls++;
+ function concealDust(slotIndex){
+  for(let k=0;k<DUST_PER_SLOT;k++){
+   const j=(slotIndex*DUST_PER_SLOT+k)*3;
+   dustPositions[j]=0;dustPositions[j+1]=-10000;dustPositions[j+2]=0;
+  }
+  dustGeometry.attributes.position.needsUpdate=true;
+ }
+ function advanceDust(slot){
+  const home=slot.home;
+  if(!home||home.fall>=1){concealDust(slot.index);return;}
+  const tierCount=dustPerTier[home.tier],t=home.fall;
+  for(let k=0;k<DUST_PER_SLOT;k++){
+   const j=(slot.index*DUST_PER_SLOT+k)*3;
+   if(k>=tierCount){dustPositions[j+1]=-10000;continue;}
+   const angle=(k*2.399963+home.id*.47);
+   const scatter=.24+((k*17+home.id*7)%13)/13;
+   dustPositions[j]=home.x+Math.cos(angle)*home.w*(.16+scatter*.67*t);
+   dustPositions[j+1]=.65+home.h*(.035+scatter*.13)
+     +Math.sin(Math.PI*t)*home.h*.08;
+   dustPositions[j+2]=home.z+home.d*(.62+.08*scatter)
+     +Math.sin(angle)*home.d*(.10+scatter*.20*t);
+  }
+  dustGeometry.attributes.position.needsUpdate=true;
+ }
  const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
  const fireMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffa357,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
  // Eight translucent dust sheets, pooled and allocated at scene creation.
@@ -408,18 +494,21 @@ export function createDistantNeighborhood({root,flameTexture}){
   const sprite=new THREE.Sprite(material);
   sprite.name='distant-collapse-dust-'+i;
   sprite.visible=false;root.add(sprite);
-  return {sprite,home:null,age:0};
+  return {sprite,home:null,age:0,index:i};
  });
  function releaseDust(slot){
+  concealDust(slot.index);
   if(slot.home)slot.home.dust=null;
   slot.home=null;slot.age=0;
   slot.sprite.visible=false;slot.sprite.material.opacity=0;
+  dustPoints.visible=backgroundVisible&&collapseDust.some(item=>item.home&&item.home.fall<1);
  }
  function beginDust(home){
   const slot=collapseDust.find(item=>!item.home);
   if(!slot)return;
   home.dust=slot;slot.home=home;slot.age=0;
-  slot.sprite.visible=true;
+  slot.sprite.visible=true;dustPoints.visible=backgroundVisible;
+  advanceDust(slot);
  }
 
  const damageMarkers=[],impactSmoke=new Map();
@@ -593,6 +682,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const slot of collapseDust){
    if(!slot.home)continue;
    slot.age+=dt;
+   advanceDust(slot);
    const flightDuration=1.35+slot.home.tier*.27;
    if(slot.age>flightDuration){
     const tail=Math.max(0,1-(slot.age-flightDuration)/.9);
@@ -645,7 +735,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    positionImpactEffects(home,1-home.damage**2*.84);
   },
   setVisible(on){backgroundVisible=on;base.visible=on;for(const t of tiers)t.group.visible=on;
-   for(const pool of particlePools)pool.mesh.visible=on&&activeParticleSlots>0},
+   for(const pool of particlePools)pool.mesh.visible=on&&activeParticleSlots>0;
+   dustPoints.visible=on&&collapseDust.some(s=>s.home&&s.home.fall<1)},
   buildingState(id){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
@@ -682,6 +773,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     visibleFracturePanels:facadePanelHeights.length,fracturePanelHeights:facadePanelHeights,
     dustVisible:!!home.dust?.sprite.visible,
     dustOpacity:home.dust?.sprite.material.opacity??0,
+    layeredDustPoints:home.dust&&home.fall<1?dustPerTier[home.tier]:0,
     smokePosition:smoke?[smoke.puff.position.x,smoke.puff.position.y]:null,
     flamePosition:smoke?[smoke.flame.position.x,smoke.flame.position.y]:null,
     flameHeight:smoke?smoke.flame.scale.y:null,
@@ -698,7 +790,9 @@ export function createDistantNeighborhood({root,flameTexture}){
    particleCapacity:particlePools.reduce((sum,pool)=>sum+pool.capacity,0),
    interiorBatches:interiorBatches.length,
    interiorCapacity:buildingDefs.reduce((sum,b)=>sum+b.interiorCount,0),
-   dustPoolCapacity:collapseDust.length,
+   dustPoolCapacity:collapseDust.length,dustCloudCapacity,
+   dustPointDrawCalls:1,proceduralMasonryTextureSize:128,
+   layeredDustActive:collapseDust.reduce((sum,s)=>sum+(s.home&&s.home.fall<1?dustPerTier[s.home.tier]:0),0),
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),
    falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
