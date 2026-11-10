@@ -11,7 +11,7 @@ import {createPauloPoseDriver} from '../src/dragon/paulo-pose-driver.js';
 import {selectMeteorWarning} from '../src/simulation/meteor-warning.js';
 import {fireballMeteorDamage,meteorSplitPlan,MAX_PLAYABLE_METEORS,openingMeteorWave} from '../src/simulation/fireball-balance.js';
 import {Script} from 'node:vm';
-import {impactProfile} from '../src/simulation/impact-profiles.js';
+import {impactProfile,openingMoltenHeat,structuralImpactProfile} from '../src/simulation/impact-profiles.js';
 
 // Exact class rules for direct fireballs and peripheral player shockwaves.
 for(const hp of [1,2,8,30])for(const size of [.55,.95,1.3,2.4])
@@ -34,6 +34,13 @@ for(const size of [.8,1.65,3.2]){
  const stone=impactProfile(size,'stone'),molten=impactProfile(size,'molten');
  assert.ok(molten.strength>stone.strength&&molten.radius>stone.radius&&molten.fire>stone.fire);
 }
+const openingMolten={size:.8,kind:'molten',opening:true};
+const normalMolten={...openingMolten,opening:false};
+assert.equal(openingMoltenHeat(openingMolten),1.35);
+for(const meteor of [normalMolten,{size:.8,kind:'flaming',opening:true},{size:.8,kind:'stone',opening:true}])
+ assert.equal(openingMoltenHeat(meteor),1,'non-opening-molten meteors retain ordinary structural force');
+assert.ok(Math.abs(structuralImpactProfile(openingMolten).strength/
+ structuralImpactProfile(normalMolten).strength-1.35)<1e-9);
 const warningSchool={x:0,z:-8,w:26,d:18};
 const warningNeighbor={x:20,z:-7,w:7,d:14};
 const warningMeteor=(target,y,flags={})=>({target,mesh:{position:{y}},vel:{y:-10},...flags});
@@ -640,6 +647,19 @@ try {
   assert.match(skyfallCapture,/^data:image\/png;base64,/);
   await writeFile('qa-output/02f-skyfall-wave-4.png',Buffer.from(skyfallCapture.split(',')[1],'base64'));
   report.openingWaves=openingWaves.map(({result:{png,...result}})=>result);
+  const moltenStructure=await page.evaluate(()=>{
+    const qa=window.__DD_QA;
+    const started=qa.start(3);
+    return started.ok?qa.stageMoltenStructuralImpact():started;
+  });
+  assert.ok(moltenStructure.ok,moltenStructure.error);
+  const structural=moltenStructure.result;
+  for(const [ordinary,molten] of [['ordinaryPressure','moltenPressure'],['ordinarySchool','moltenSchool']]){
+    assert.ok(structural[ordinary]>0,`ordinary ${ordinary} must produce measurable structural damage`);
+    assert.ok(Math.abs(structural[molten]/structural[ordinary]-1.35)<.001,
+      `opening molten fragments must increase ${ordinary} by 35% through production damage()`);
+  }
+  report.moltenStructuralImpact=structural;
   const shootability=await page.evaluate(()=>{
     const qa=window.__DD_QA;
     return [[.05,false],[.2,false],[.44,false],[.8,true],[.34,false]].map(([roll,edge])=>{

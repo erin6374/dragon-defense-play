@@ -1,3 +1,10 @@
+## November 9 — v5.4.0-rc.15 opening molten structural force
+
+- **Molten fragment correction:** Wave-3/4 molten descendants now apply their existing +35% heat multiplier to school structural damage and nearby buildings, not just ground fireballs, craters and vehicles. The normal molten impact profile remains intact; other meteor classes and the final boss retain their previous damage behavior.
+- **Single shared rule:** The opening-molten multiplier is defined in `src/simulation/impact-profiles.js` and reused by ground effects and structural calculations. Roof-breach radius and the secondary large-impact neighborhood strike also scale with the same heat factor.
+- **Deterministic regression:** Node assertions cover the multiplier and unaffected classes. Browser QA invokes the real `damage()` path on a neighboring building and the school and compares ordinary molten versus opening molten structural response at a 1.35 ratio.
+- **Release status:** Development PR only; this change requires a new exact-head GitHub browser QA pass before any RC15 artifact can be described as verified. No production/Pages/Building Explorer change; real GPU FPS and public `/preview/` availability remain unverified.
+
 ## November 9 — v5.4.0-rc.14 exposed rowhouse floors and broken facade pass
 
 - **More convincing structural breakup:** Rather than only shrinking a distant rectangular main building, failing houses now open their street-facing wall; the remaining core retreats into the lot while a dark interior cavity, horizontal floor slabs and separate masonry facade panels appear. The roof and RC13 airborne debris/dust sequence remain.

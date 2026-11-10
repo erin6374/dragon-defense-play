@@ -2,7 +2,7 @@ import {createChapterStaging} from './simulation/chapter-staging.js';
 import {createFinalSquadron} from './simulation/final-squadron.js';
 import {createMilitaryOccupation} from './simulation/military-occupation.js';
 import {createCinematicEffects} from './rendering/cinematic-effects.js';
-import {impactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
+import {impactProfile,openingMoltenHeat,structuralImpactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
 import {updatePedestrianPose} from './simulation/pedestrian-motion.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave} from './simulation/fireball-balance.js';
@@ -1828,7 +1828,7 @@ function traceOpeningMeteorImpact(m,start){
  m.target.copy(start).lerp(end,earliest);
  return true;
 }
-function damage(x,z,y=7,meteor=null){const profile=meteor?impactProfile(meteor.size,meteor.kind):impactProfile(1.8);
+function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const targetX=THREE.MathUtils.clamp(x,-90,90);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
@@ -2271,17 +2271,17 @@ for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.f
   }
   m.mesh.rotation.x+=dt*2;m.mesh.rotation.y+=dt*1.5;if(m.burning)cinematicFX.fire(m.mesh.position,elapsed,m.size*.6,0);m.trail-=dt;if(m.trail<=0){m.trail=m.fastImpact?.035:.11;if(quality.allowTrail(trailParticles.length)){emitTrail(m.mesh.position,!m.fastImpact&&(!m.burning||Math.random()<.73))}}if(m.dragonHunter&&m.mesh.position.distanceTo(dragon.position)<2.6){hurtDragon('FLAMING METEOR');groundFireball(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,1.2);remove(meteors,i);continue;}
  const openingImpact=m.opening&&traceOpeningMeteorImpact(m,meteorStart);
- if(openingImpact||(m.dragonHunter&&m.mesh.position.y<=.8)||(!m.opening&&!m.dragonHunter&&(m.mesh.position.distanceTo(m.target)<Math.max(.8,m.size*.65)||m.mesh.position.y<=.7))){if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}const heat=m.opening&&m.kind==='molten'?1.35:1;
+ if(openingImpact||(m.dragonHunter&&m.mesh.position.y<=.8)||(!m.opening&&!m.dragonHunter&&(m.mesh.position.distanceTo(m.target)<Math.max(.8,m.size*.65)||m.mesh.position.y<=.7))){if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}const heat=openingMoltenHeat(m);
  if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat);
  if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
  if(m.boss){neighborhood.levelAll(p=>debrisPiece(p,'brick'));schoolDamage=1;syncStructuralDamage();hp=0;groundFireball(m.target.x,m.target.y,m.target.z,12);updateHud();gameOver();remove(meteors,i);break;}
  groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);cinematicFX.burst(m.target,Math.max(.4,m.size));if(impactProfile(m.size,m.kind).penetrates&&m.target.z<13){const internal=m.target.clone().add(new THREE.Vector3(0,-1.2,-1.7));cinematicFX.burst(internal,Math.max(.4,m.size*.8));neighborhood.city.impact(neighborhood.city.buildings.find(b=>Math.abs(b.x-internal.x)<b.w/2&&Math.abs(b.z-internal.z)<b.d/2),internal,impactProfile(m.size,m.kind).radius,.45);}if(m.burning){const count=m.kind==='flaming'?5:3;for(let k=0;k<count;k++)ignite(m.target.x+(Math.random()-.5)*m.size*4,Math.max(.4,m.target.y),m.target.z+(Math.random()-.5)*2);}
- const roofImpact=neighborhood.roofBreach(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).radius*.65);
+ const roofImpact=neighborhood.roofBreach(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).radius*.65*heat);
  if(roofImpact){emitMeteorShrapnel(m.target,Math.min(5,m.size*2));
   for(let k=0;k<3;k++)ignite(m.target.x+(Math.random()-.5)*3,Math.max(1,m.target.y-2.2),m.target.z+(Math.random()-.5)*2);
   neighborhood.aftershock(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).shockRadius,p=>debrisPiece(p,'roof'));
  }
- damage(m.target.x,m.target.z,m.target.y,m);if(m.size>1.5){blast(m.target.x,m.target.y,m.target.z,5*m.size);neighborhood.impact(m.target.x,m.target.y,m.target.z,3*m.size,p=>debrisPiece(p,'brick'));}
+ damage(m.target.x,m.target.z,m.target.y,m);if(m.size>1.5){blast(m.target.x,m.target.y,m.target.z,5*m.size);neighborhood.impact(m.target.x,m.target.y,m.target.z,3*m.size,p=>debrisPiece(p,'brick'),heat);}
  strikeParkedCars(m.target.x,m.target.z,5.5*heat);for(const c of cars)if(performanceLab.isEnabled('traffic')&&Math.abs(c.root.position.x-m.target.x)<4&&Math.abs(c.root.position.z-m.target.z)<7&&m.target.y<5)explodeCar(c);
  if(m.target.y<2){m.grounded=true;m.ttl=9;m.vel.set(0,0,0);m.mesh.position.copy(m.target);m.mesh.position.y=.7;m.mesh.scale.multiplyScalar(.75);m.hp=Math.max(1,m.hp);}
  else remove(meteors,i);if(!active)break;continue}
@@ -2809,6 +2809,31 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    updateWaveProgress(7.1);
    return {incoming,layers,heldDuringSplit,advancedTo:wave,skyLift:skyCameraLift(flightCeiling)-skyCameraLift(44),skyScreenHeight,
     intact:backgroundImpactEffects(100),damaged:backgroundImpactEffects(0),hitRoof,hitGround,png};
+  }),
+  stageMoltenStructuralImpact:()=>run('stageMoltenStructuralImpact',()=>{
+   // Exercise the production damage() path on both a neighbor and the school.
+   // The city tracks deterministic structural pressure even when random debris
+   // detaches; schoolDamage is a deterministic fraction of profile strength.
+   const normal={size:.8,kind:'molten',opening:false,vel:new THREE.Vector3(0,-10,0)};
+   const hot={...normal,opening:true};
+   const building=neighborhood.targetBuildings.find(b=>!b.background&&b.z<13&&b.damage<.1);
+   if(!building)throw Error('QA molten structural impact needs an intact foreground building');
+   const y=Math.max(2,Math.min(10,building.h*.5));
+   damage(building.x,building.z,y,normal);
+   const ordinaryPressure=building.pressure;
+   neighborhood.restore();
+   damage(building.x,building.z,y,hot);
+   const moltenPressure=building.pressure;
+   neighborhood.restore();
+   const center=schoolBounds.getCenter(new THREE.Vector3());
+   const roofY=Math.max(2,Math.min(20,schoolBounds.max.y-1));
+   const before=schoolDamage;
+   damage(center.x,center.z,roofY,normal);
+   const ordinarySchool=schoolDamage-before;
+   const beforeHot=schoolDamage;
+   damage(center.x,center.z,roofY,hot);
+   const moltenSchool=schoolDamage-beforeHot;
+   return {ordinaryPressure,moltenPressure,ordinarySchool,moltenSchool,heat:openingMoltenHeat(hot)};
   }),
   stageMeteorShootability:(roll,edge=false,allowImpact=false)=>run('stageMeteorShootability',()=>{
    spawnMeteor(()=>roll);
