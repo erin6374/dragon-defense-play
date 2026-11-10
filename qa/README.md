@@ -6,9 +6,13 @@ The artifact contains startup and gameplay PNGs, camera pans, both school side e
 
 ## Motion review
 
-Pull requests and manually dispatched browser QA runs also publish **dragon-defense-motion-qa**. Extract it and open `index.html` to play the four 960 × 540 MP4s. The artifact also contains three reference PNGs per clip and a JSON report with the exact commit, seed, timeline and per-frame scene counters.
+The motion recordings now run under the **separate [Dragon Defense motion review](../.github/workflows/motion-qa.yml) workflow**, instead of sharing the main browser QA's cancel-on-new-commit setting. This is essential: hourly development commits previously cancelled motion runs after their recordings finished. The motion workflow permits an active recording to complete and queues subsequent exact-head captures. Pull requests trigger it automatically; manual workflow dispatch is available once GitHub recognizes the workflow on the selected branch.
 
-Each five-second clip uses a fresh seeded browser context and 100 rendered frames, with three production simulation steps per frame. The Skyfall clip uses keyboard flight and explicitly triggers a split. The house and skyline clips use fixed diagnostic cameras and staged strikes. The traffic clip stages the gust release and records the production wind and traffic response. The clips are silent and their playback cadence represents simulation time. Use the existing browser QA and the downloadable Windows preview for real-time performance or interaction checks.
+Download **dragon-defense-motion-qa**, extract it and open `index.html` to play five 960 × 540 MP4s, including a newly added close-up Paulo flight sequence. The artifact contains three reference PNGs per clip, `review-guide.md` and a JSON report with the exact commit, seed, timeline and per-frame scene counters.
+
+Each five-second clip uses a fresh seeded browser context and 100 rendered frames, with three production simulation steps per frame. `skyfall.mp4` records the wide meteor split and dragon movement. `dragon.mp4` tracks Paulo closely through wing beats and direction reversals so the flight animations can actually be judged. `houses.mp4` and `skyline.mp4` capture multiple real impacts from diagnostic cameras. `traffic.mp4` now uses a closer road camera for visible wheel/vehicle roll and gust recovery. Video playback cadence is simulation time, **not measured real-time GPU FPS**.
+
+A time-coded, manually inspected baseline is maintained at [MOTION-VISUAL-REVIEW.md](MOTION-VISUAL-REVIEW.md). The recorder validates events and produces MP4s; it does not automatically certify physical plausibility. Review the motion itself before claiming graphical quality.
 
 To reproduce locally, serve the repo over HTTP, install Playwright Core and FFmpeg with libx264, set `PLAYWRIGHT_MODULE` to Playwright Core's absolute `index.mjs` path, and set `QA_BROWSER_CHANNEL=chrome` or `QA_BROWSER_EXECUTABLE` to a compatible Chromium binary. Run `node qa/motion.mjs http://127.0.0.1:8765/`. Outputs go to `qa-output/motion/`. Software rendering and browser versions can affect pixels across machines.
 
