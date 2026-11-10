@@ -3173,7 +3173,7 @@ if(motionQA){
   start(name){
    if(scenario)throw Error('Use a fresh page for each motion scenario');
    scenario=name;
-   const started=qa.start({skyfall:4,houses:7,skyline:7,traffic:10}[name]);
+   const started=qa.start(name==='skyfall'?4:7);
    if(!started.ok)throw Error(started.error);
    closeChapterTransition();
    qa.cinematicStage('quiet');
@@ -3194,8 +3194,8 @@ if(motionQA){
     captureCamera=detail;
    }else if(name==='skyline'){
     tower=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
-    const point=tower.group.localToWorld(new THREE.Vector3(0,tower.def.h*.7,0));
-    detail.position.copy(point).add(new THREE.Vector3(0,9,76));
+    const point=tower.group.localToWorld(new THREE.Vector3(0,tower.def.h*.78,0));
+    detail.position.copy(point).add(new THREE.Vector3(0,9,156));
     detail.lookAt(point);
     captureCamera=detail;
    }else if(name==='traffic'){
@@ -3209,6 +3209,9 @@ if(motionQA){
     vehicle.root.position.set(14,-.36,20);
     vehicle.root.rotation.y=Math.PI;
     Object.assign(vehicle,{dir:-1,laneZ:20,speed:7,desiredSpeed:7,turnAt:null});
+    detail.position.set(0,15,67);
+    detail.lookAt(0,6,20);
+    captureCamera=detail;
    }else throw Error('Unknown motion scenario '+name);
    return {version:GAME_VERSION,build:BUILD_ID,wave};
   },

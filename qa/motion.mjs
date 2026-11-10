@@ -13,6 +13,7 @@ const scenarios = {
   skyline: 'Skyline | Repeated Comcast Technology Center strikes, fires and smoke (detail camera)',
   traffic: 'Traffic | Night headlights, staged wind gust and live vehicle recovery',
 };
+const actionFrame = {skyfall: 30, houses: 53, skyline: 48, traffic: 32};
 const width = 960, height = 540, fps = 20, frames = 100, seed = 20261110;
 const output = 'qa-output/motion';
 const temporary = await mkdtemp(join(tmpdir(), 'dragon-motion-'));
@@ -79,7 +80,9 @@ try {
         samples.push(state);
         const image = Buffer.from(png, 'base64');
         await writeFile(join(temporary, `frame-${String(index).padStart(3, '0')}.png`), image);
-        if (index === 0 || index === 44 || index === frames - 1) await save(`${name}-${index}.png`, image);
+        if (index === 0 || index === actionFrame[name] || index === frames - 1) {
+          await save(`${name}-${index}.png`, image);
+        }
       }
       ffmpeg('-framerate', String(fps), '-i', join(temporary, 'frame-%03d.png'), '-frames:v', String(frames),
         '-vf', `scale=${width}:${height}`, '-c:v', 'libx264', '-preset', 'fast', '-crf', '21',
