@@ -1,8 +1,8 @@
 {
-  "build": "5.4-inferno-background-fire-rc18",
-  "version": "5.4.0-rc.18",
+  "build": "5.4-fluid-fire-realism-rc19",
+  "version": "5.4.0-rc.19",
   "gameplay_base": "5.2.3",
-  "scope": "Cinematic distant house and skyline infernos: brighter taller flame tongues, dense smoke, pooled fire embers and health-driven rooftop fires",
+  "scope": "Global animated turbulence-driven fire and smoke across dragon, school, neighborhood, impacts, cars and skyscrapers",
   "new_gameplay_features": true,
-  "release_status": "RC18 development candidate — exact-head browser QA, screenshot review and Windows GPU playtest pending; production untouched"
+  "release_status": "RC19 development candidate — exact-head browser QA and screenshot review required; production untouched"
 }
