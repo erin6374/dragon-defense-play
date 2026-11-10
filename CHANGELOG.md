@@ -1,3 +1,12 @@
+## November 10 — v5.4.0-rc.18 distant inferno / cinematic fire overhaul
+
+- **House fires:** Replaced the dim, single blurred orange billboard with one shared 128×192 generated fire atlas featuring layered irregular orange-red flame tongues, a yellow-white core and ground-level glow. Enlarged house flames and deepened/tallened the existing smoke plume. Fire flicker and sway remain tied to the slow background destruction timeline and continue after debris settles.
+- **Pooled glowing embers:** A single `THREE.Points` batch with a bounded 280-point buffer supplies ten upward-drifting gold/orange sparks per damaged house, for at most 28 simultaneous impacted homes. No per-ember meshes, collision bodies, allocations per impact or GPU lights. Evicted or reset fires free their reserved spark slots; one draw call while active.
+- **Standing skyscrapers burn more dramatically:** One shared sharper flame atlas for landmark impact fire, widened/higher persistent flames, darker denser smoke, and stronger irregular flicker. Tower geometry, height and the intentionally fictionalized skyline placement stay unchanged. The <50% and <20% meteor impact escalations remain intact.
+- **Citywide disaster progression:** As neighborhood health drops, every third existing distant smoke marker includes a flickering roof fire (maximum ten additional flame sprites); markers remove their flame when health recovers or the simulation resets. No health, collision, wave, or scoring changes.
+- **QA:** Expanded browser regression coverage for fire size, pooled spark budget, persistent sparks after collapse, restart cleanup, and severe-health rooftop fires. Full exact-head QA and visual screenshot review must pass before RC18 is distributed; actual Windows hardware FPS is unknown.
+- **Preserved:** RC17 masonry texture and layered dust, RC16 fine rubble point-cloud LOD, Skyfall splitting waves, original/Paulo model toggle, North Broad reference-driven neighborhood, standalone Building Explorer and unmerged production main.
+
 ## November 10 — v5.4.0-rc.17 masonry grain and layered collapse dust
 
 - **Finer art without geometric inflation:** RC16's 10/9/8/7/6/5 persistent structural pieces and large/small GPU masonry flecks are retained. Chipped flying masonry and broken interiors now share one 128×128 deterministic, mipmapped, mottled mortar/brick texture, multiplied by per-building colors; no per-hit texture/material allocations.
