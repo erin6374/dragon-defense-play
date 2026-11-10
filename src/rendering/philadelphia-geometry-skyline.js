@@ -389,26 +389,26 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.45,1);
   // Lift the existing plume above the combustion core; do not add sprites.
   tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
-  tower.smokeSprite.material.opacity=.48+smokeIntensity*.52;
+  tower.smokeSprite.material.opacity=Math.min(.86,.48+smokeIntensity*.52);
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50);
+  const flameWidth=Math.min(10.5,(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50));
   tower.fireBaseWidth=flameWidth;
   tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
-  tower.fireSprite.scale.set(flameWidth,flameWidth*2.35,1);
+  tower.fireSprite.scale.set(flameWidth,flameWidth*1.82,1);
   tower.fireSprite.material.opacity=Math.min(.99,.72+intensity*.22+tower.strikeDamage*.13);
   tower.fireSprite.visible=true;
   // First hit seeds two staggered burns; subsequent hits refresh only one,
   // leaving the other anchored to a different damaged floor.
   if(!tower.burnSites[0].active){
-   placeBurnSite(tower,tower.burnSites[0],-tower.def.w*.24,-tower.def.h*.15,flameWidth*.32);
-   placeBurnSite(tower,tower.burnSites[1], tower.def.w*.24, tower.def.h*.13,flameWidth*.28);
+   placeBurnSite(tower,tower.burnSites[0],-tower.def.w*.24,-tower.def.h*.15,flameWidth*.50);
+   placeBurnSite(tower,tower.burnSites[1], tower.def.w*.24, tower.def.h*.13,flameWidth*.44);
   }else{
    const site=tower.burnSites[tower.siteCursor];
    const left=tower.siteCursor===0;
    placeBurnSite(tower,site,(left?-.22:.22)*tower.def.w,
-    (left?-.16:.15)*tower.def.h,flameWidth*.34);
+    (left?-.16:.15)*tower.def.h,flameWidth*.46);
    tower.siteCursor=(tower.siteCursor+1)%SECONDARY_BURN_SITES_PER_TOWER;
   }
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
@@ -493,7 +493,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    }
    if(t.strikeDamage>0){
     const flamePulse=1+.14*Math.sin(elapsed*5.4+i*1.9)+.045*Math.sin(elapsed*9.7+i*.3);
-    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*2.35*(1+.12*Math.sin(elapsed*7.1+i)),1);
+    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*1.82*(1+.12*Math.sin(elapsed*7.1+i)),1);
     t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.16;
     t.fireSprite.material.opacity=Math.min(.99,.76+.13*Math.sin(elapsed*10.2+i));
     // Only position changes over time; stable smoke size and opacity were set

@@ -1,3 +1,12 @@
+## November 10 ~15:30 ET — RC21 real-motion review, RC22 target
+
+**Evidence:** RC21 [motion run 42884814107](https://github.com/erin6374/dragon-defense-play/actions/runs/42884814107), artifact 13795739780, SHA `e5a442fa54b75995e4bc038e8ee867931bbf7012`, five 100-frame clips and report errors=[]. Compared to RC20 artifact 13792297801 at 0.5, 1.2, 2.4, 3.4, 4.8s.
+
+- **MOT-03 still open:** `skyline.mp4` 1.2–4.8s: small secondary facade flames visible, but oversized persistent central flame still dominates and smoke reads as one dark patch. RC22 caps main flame size and smoke opacity and enlarges the existing two burn regions, without adding instances.
+- **MOT-01 still open:** `houses.mp4` 1.2–2.4s: bright roof column oversized relative to the house. RC22 shrinks primary sprite by ~19% height and ~23% width; independent vents remain.
+- **MOT-02 improved:** `houses.mp4` 3.4–4.8s: tall column no longer descends intact; separated rubble fires persist, though still stylized.
+- **Next acceptance:** review exact-head RC22 MP4s and browser screenshots. Numeric tests alone cannot close the visual issues.
+
 ## November 10 — RC21 pre-change comparison and required motion gate
 
 Downloaded and inspected **actual** five-clip `b7a2fe3` motion artifact 13792297801 from [successful motion run 42871663277](https://github.com/erin6374/dragon-defense-play/actions/runs/42871663277), with `report.json.errors=[]`. Compared sampled frames at **0.5, 1.2, 2.4, 3.4, 4.8 seconds** against the earlier `52176a4` recording. The `skyline.mp4` flame remains one concentrated stationary-looking patch at 1.2–4.8s, despite two staged strikes. The `houses.mp4` rooftop flame remains tall at 1.2–2.4s; after 3.4s the earlier two small rubble fires remain instead of a single descending torch. MOT-03 and MOT-01 are still visually open; MOT-02 is improved but not photorealistic.

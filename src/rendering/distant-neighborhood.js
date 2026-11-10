@@ -657,7 +657,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   const size=Math.min(5,home.w*.54);
   const flame=new THREE.Sprite(fireMat);
   puff.scale.set(size*2.0,size*3.65,1);
-  flame.scale.set(size*1.55,size*2.30,1);
+  flame.scale.set(size*1.20,size*1.86,1);
   groups[home.tier??0].add(puff,flame);
   impactSmoke.set(home,{puff,flame,baseFlameHeight:flame.scale.y,
    baseFlameWidth:flame.scale.x,basePuffHeight:puff.scale.y,basePuffWidth:puff.scale.x});

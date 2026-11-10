@@ -1,8 +1,8 @@
 {
-  "build": "5.4-skyline-fire-regions-rc21",
-  "version": "5.4.0-rc.21",
+  "build": "5.4-fire-balance-rc22",
+  "version": "5.4.0-rc.22",
   "gameplay_base": "5.2.3",
-  "scope": "MOT-03: two additional preallocated facade-attached flame and smoke regions per skyline landmark; staggered burn floors, independent convection and fixed two-draw-call pool. RC20 Paulo flight and all meteor gameplay preserved.",
+  "scope": "MOT-01/MOT-03 video-driven fire balance: reduce oversized rooftop source flames, cap dominant skyline flame, strengthen separated facade burns and cap smoke opacity. Reuses RC21 fixed pools; no new draw calls or gameplay changes.",
   "new_gameplay_features": true,
-  "release_status": "RC21 development candidate — exact-head browser and independent motion QA plus authorized Pages seven-file comparison required; production unchanged"
+  "release_status": "RC22 development candidate — exact-head browser QA, five-video motion review and authorized Pages seven-file public comparison required; production unchanged"
 }
