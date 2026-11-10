@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises';
+import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -129,11 +129,15 @@ capture**, not photorealistic quality or real-time GPU performance. Visual
 observations should cite clip and time interval, distinguish defects from
 artistic choices, and be checked again after graphics revisions.
 `);
-  await save('index.html', `<!doctype html>
-<meta charset="utf-8"><title>Dragon Defense motion QA</title>
-<style>body{background:#161c24;color:#fff;font:16px system-ui;margin:2rem}video{display:block;width:min(100%,960px)}a{color:#9edcff}</style>
-<h1>Dragon Defense motion QA</h1><p>Commit <code>${sha}</code> · <a href="report.json">Frame metrics</a></p>
-${Object.entries(scenarios).map(([name, title]) => `<h2>${title}</h2><video controls preload="metadata" src="${name}.mp4"></video>`).join('\n')}`);
+  // Ship a self-contained offline visual player, with ¼× playback and
+  // single-frame stepping; there are no CDN/runtime network dependencies.
+  const playerTemplate=await readFile(new URL('./motion-reviewer.html',import.meta.url),'utf8');
+  const videoCards=Object.entries(scenarios).map(([name,title])=>
+    `<article data-clip="${name}"><h2>${title}</h2><video controls preload="metadata" src="${name}.mp4"></video>
+    <p>Scrub this clip or select it for 20 FPS frame stepping. <a href="${name}-0.png">First frame</a> ·
+    <a href="${name}-${actionFrame[name]}.png">Event frame</a> ·
+    <a href="${name}-${frames-1}.png">Last frame</a></p></article>`).join('\n');
+  await save('index.html',playerTemplate.replaceAll('@@SHA@@',sha).replace('@@VIDEO_CARDS@@',videoCards));
   await browser?.close();
   await rm(temporary, {recursive: true, force: true});
 }
