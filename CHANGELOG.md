@@ -1,3 +1,12 @@
+## November 9 — v5.4.0-rc.14 exposed rowhouse floors and broken facade pass
+
+- **More convincing structural breakup:** Rather than only shrinking a distant rectangular main building, failing houses now open their street-facing wall; the remaining core retreats into the lot while a dark interior cavity, horizontal floor slabs and separate masonry facade panels appear. The roof and RC13 airborne debris/dust sequence remain.
+- **Distance-dependent interiors:** Six existing depth tiers have floor counts `3/3/2/2/1/1` and fracture-panel counts `2/2/2/1/1/1`. All three types share just **one new preallocated InstancedMesh per tier** with baked colors and stable per-house slots; no per-impact mesh, geometry, material or physics-object allocation.
+- **Damage progression:** Intact buildings remain closed, damaged walls open progressively, surviving floors compress toward ground as the house collapses, and settled rubble retains partial masonry. Restart hides all exposed structures and restores original facades.
+- **Performance:** Refactored repeating per-frame fragment-profile arrays into immutable per-scene caches; each falling house updates its own instanced slots. RC13's bounded eight-dust pool and one rubble batch per tier are preserved.
+- **Verification:** Browser QA checks that interiors do not show while intact, become visible during failure, collapse into supported rubble and fully reset after restart. Examine `06c2-distant-building-debris-flight.png` alongside before/after screenshots before release.
+- **Status:** Development branch only. Exact-head QA and screenshots required; real GPU performance, launch on a Windows workstation, and reference-image fidelity remain unverified. Standing distant skyscrapers, cinematic layout and <50%/<20% skyline impacts unchanged. Building Explorer and production main untouched.
+
 ## November 9 — v5.4.0-rc.13 demolition presentation / framing checkpoint
 
 - Based on visual review of RC12 browser captures, the new airborne masonry was clipped by the **diagnostic close-up camera** and the expanding demolition dust was partly hidden inside the affected house.
