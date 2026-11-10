@@ -1,8 +1,8 @@
 {
-  "build": "5.4-masonry-dust-rc17",
-  "version": "5.4.0-rc.17",
+  "build": "5.4-inferno-background-fire-rc18",
+  "version": "5.4.0-rc.18",
   "gameplay_base": "5.2.3",
-  "scope": "Shared procedural masonry grain, layered bounded low dust cloud for long-range house destruction; RC16 particle debris retained",
+  "scope": "Cinematic distant house and skyline infernos: brighter taller flame tongues, dense smoke, pooled fire embers and health-driven rooftop fires",
   "new_gameplay_features": true,
-  "release_status": "RC17 development candidate — exact-head browser QA and rendered-screenshot review required; main untouched"
+  "release_status": "RC18 development candidate — exact-head browser QA, screenshot review and Windows GPU playtest pending; production untouched"
 }
