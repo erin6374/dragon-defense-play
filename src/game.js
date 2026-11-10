@@ -2460,9 +2460,10 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    const impact=district.strike(0,-100,.36);
    if(!impact)throw Error('Expected an intact distant building');
    const target=district.root.localToWorld(new THREE.Vector3(impact.x,impact.y*.42,impact.z));
-   const camera=new THREE.PerspectiveCamera(41,renderer.domElement.width/renderer.domElement.height,.1,500);
-   camera.position.copy(target).add(new THREE.Vector3(4,12,25));
-   camera.lookAt(target);
+   const camera=new THREE.PerspectiveCamera(49,renderer.domElement.width/renderer.domElement.height,.1,500);
+   camera.position.copy(target).add(new THREE.Vector3(4,13,31));
+   // Frame the entire ballistic debris arc rather than cropping chunks above the roof.
+   camera.lookAt(target.clone().add(new THREE.Vector3(0,3.5,0)));
    const capture=()=>{
     renderer.render(scene,camera);
     return renderer.domElement.toDataURL('image/png');
