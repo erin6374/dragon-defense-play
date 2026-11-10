@@ -7,7 +7,7 @@ const mat={
  armor:new THREE.MeshStandardMaterial({color:0x343943,roughness:.83,metalness:.13,emissive:0x181d24,emissiveIntensity:.27}),
  plates:new THREE.MeshStandardMaterial({color:0x58535f,roughness:.74,metalness:.13,emissive:0x2b2331,emissiveIntensity:.29}),
  red:new THREE.MeshStandardMaterial({color:0xb43a4b,roughness:.69,side:THREE.DoubleSide,emissive:0x471520,emissiveIntensity:.26}),
- membrane:new THREE.MeshStandardMaterial({color:0xc55268,roughness:.78,side:THREE.DoubleSide,transparent:true,opacity:.95,vertexColors:true,emissive:0x4f1927,emissiveIntensity:.22}),
+ membrane:new THREE.MeshStandardMaterial({color:0x975360,roughness:.91,side:THREE.DoubleSide,transparent:false,vertexColors:true,emissive:0x30151c,emissiveIntensity:.09}),
  bronze:new THREE.MeshStandardMaterial({color:0xc6a073,metalness:.34,roughness:.51,emissive:0x3d2916,emissiveIntensity:.13}),
  eye:new THREE.MeshStandardMaterial({color:0xffcb64,emissive:0xbd5809,emissiveIntensity:.72}),
  mouth:new THREE.MeshStandardMaterial({color:0x160e14,roughness:.92}),
@@ -143,17 +143,21 @@ function membrane(parent,verts,side,region='outer'){
   for(let i=0;i<=segments;i++){
    const u=i/segments;
    // Curved outer margin dips between the finger tips, with a taut root.
-   const scallop=Math.sin(Math.PI*u)*.17;
+   const scallop=Math.sin(Math.PI*u)*(region==='outer'?.36:region==='middle'?.20:.13);
    const reach=v*(1-scallop*v);
    const p=root.clone().addScaledVector(left,reach*(1-u))
     .addScaledVector(right,reach*u);
-   p.y+=side*Math.sin(Math.PI*u)*Math.sin(Math.PI*v)*.17;
+   const bow=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);
+   p.y+=side*bow*(region==='outer'?.25:.16);
+   p.z+=side*bow*(region==='outer'?.23:.09);
    positions.push(p.x,p.y,p.z);
    uvs.push(u,v);
    // Prebaked radial tint gives each membrane depth at night without
    // allocating textures or adding lights/draw calls during gameplay.
-   const depth=.59+.38*v*(.65+.35*Math.sin(Math.PI*u));
-   colors.push(depth,depth*(.80+.17*Math.sin(Math.PI*u)),depth*.90);
+   const vein=Math.pow(Math.abs(Math.cos(Math.PI*u)),8);
+   const depth=.55+.35*v*(.65+.35*Math.sin(Math.PI*u));
+   const shade=depth*(.86+.14*vein);
+   colors.push(shade,shade*(.84+.12*Math.sin(Math.PI*u)),shade*.87);
    if(i<segments&&j<radial){
     const a=j*(segments+1)+i,b=a+segments+1;
     indices.push(a,b,a+1,b,b+1,a+1);
@@ -186,7 +190,10 @@ function deformMembranes(t,intensity){
     const u=i/12,idx=j*13+i,off=idx*3;
     const envelope=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);
     const flutter=Math.sin(t*7-u*3.2-v*4.1)*.095*intensity;
-    attr.array[off+1]=base[off+1]+envelope*(.13*intensity+flutter);
+    const camber=.17*intensity+flutter;
+    attr.array[off+1]=base[off+1]+envelope*camber;
+    attr.array[off+2]=base[off+2]+panel.side*envelope*
+      (.12*intensity+.045*Math.sin(t*5.2-u*4+v*3)*intensity);
    }
   }
   attr.needsUpdate=true;
@@ -248,17 +255,29 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  // Paulo looks into the turn before the tail finishes steering behind him.
  head.rotation.y=state==='bank'?bank*.35:groundTurn*bankDirection*.25;
  jaw.rotation.z=['wind','fire','gas'].includes(state)?-.37:state==='inhale'?-.11:0;
+ // Rather than moving every membrane at the same time, the shoulder starts
+ // the beat, the elbow follows, and the outer finger bones lag on recovery.
+ // Inside wing partly folds during a banking turn; outside stays broad to
+ // generate lift. Joint rotation only, so original hitboxes stay unchanged.
  wings.forEach(({shoulder,elbow,wrist,side})=>{
-  const phase=cycle*power;
-  // Brace the wings during exhale; fire keeps a narrower, more aerodynamic
-  // profile. Bank favors the outside wing and partially folds the inside.
-  // Landing starts with a broad, eagle-like airbrake flare, then folds toward rest.
+  const shoulderBeat=Math.sin(t*5)*power;
+  const elbowBeat=Math.sin(t*5-.58)*power;
+  const wristBeat=Math.sin(t*5-1.10)*power;
+  const innerTurn=state==='bank'&&side===bankDirection;
+  const turnFold=innerTurn?.34:state==='bank'?.045:0;
   const braced=state==='wind'?.26:state==='inhale'?.15:0;
   const fireFold=state==='fire'?.25:0;
-  shoulder.rotation.x=side*(.12+phase*.47+bank*side*.24+braced+landingBrake*.10);
-  shoulder.rotation.y=side*(state==='ground-turn'?.45+groundTurn*.13:state==='land'?-.15-landingBrake*.26:state==='glide'?-.15:state==='idle'?.45:.08+fireFold);
-  elbow.rotation.x=side*(.12+phase*.22+braced*.65+landingBrake*.18);
-  wrist.rotation.y=side*(state==='land'?-.06-landingBrake*.28:state==='glide'?.05:state==='idle'?.35:.16+fireFold*.5);
+  shoulder.rotation.x=side*(.11+shoulderBeat*.48+bank*side*.25+
+    braced+landingBrake*.12);
+  shoulder.rotation.y=side*(state==='ground-turn'?.45+groundTurn*.13:
+    state==='land'?-.15-landingBrake*.26:state==='glide'?-.10:
+    state==='idle'?.45:.04+fireFold+turnFold);
+  elbow.rotation.x=side*(.11+elbowBeat*.34+braced*.58+landingBrake*.22);
+  elbow.rotation.y=side*(.05+turnFold*.42-.07*elbowBeat);
+  wrist.rotation.x=side*(.06+wristBeat*.27+landingBrake*.14);
+  wrist.rotation.y=side*(state==='land'?-.06-landingBrake*.28:
+    state==='glide'?.02:state==='idle'?.35:.11+fireFold*.5+turnFold*.72);
+  wrist.rotation.z=side*(.04-.18*wristBeat+turnFold*.26);
  });
  tail.forEach((seg,i)=>{
   // The tail trails into the turn, rather than waving independently of yaw.
@@ -277,9 +296,11 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   // Deepen the full fold so the claws follow the belly instead of hanging down.
   // Keep the original hover posture and ease into the deeper fold after it.
   const flightFold=Math.max(0,(tuck-.28)/.72);
-  hip.rotation.z=-(fore?1.14:1.02)*tuck-(fore?.29:.19)*flightFold+(fore?.55:-.22)*groundTurn;
-  knee.rotation.z=-(fore?.56:.48)*tuck-(fore?.38:.56)*flightFold+(state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
-  foot.rotation.z=(fore?.64:.55)*tuck-(fore?.49:.45)*flightFold+(fore?.2:0)*groundTurn;
+  hip.rotation.z=-(fore?1.30:1.19)*tuck-(fore?.34:.27)*flightFold+(fore?.55:-.22)*groundTurn;
+  knee.rotation.z=-(fore?.69:.61)*tuck-(fore?.45:.67)*flightFold+
+    (state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
+  foot.rotation.z=(fore?.64:.55)*tuck-(fore?.61:.54)*flightFold+
+    (fore?.2:0)*groundTurn;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
  breathPreview.update(state,t);
