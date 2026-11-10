@@ -975,6 +975,21 @@ try {
   assert.ok(backgroundFalling.dustOpacity>.05,'collapse dust has measurable opacity');
   assert.equal(backgroundSettled.dustVisible,false,'settled collapse dust dissipates instead of persisting indefinitely');
   assert.equal(backgroundSettled.dustOpacity,0,'dust pool resets its per-slot opacity after collapse');
+  assert.equal(backgroundIntact.layeredDustPoints,0,'intact buildings have no active low dust cloud');
+  assert.ok(backgroundFalling.layeredDustPoints>=7,
+    'the breaking building emits a second, pooled layer of low drifting dust');
+  assert.equal(backgroundSettled.layeredDustPoints,0,
+    'secondary dust disperses by structural settlement');
+  assert.equal(flightBudget.dustPointDrawCalls,1,
+    'all layered demolition dust shares one GPU Points batch');
+  assert.equal(flightBudget.dustCloudCapacity,96,
+    'the new secondary dust buffer stays fixed at 96 points');
+  assert.equal(flightBudget.proceduralMasonryTextureSize,128,
+    'all fracture panels and rubble share one 128-pixel masonry atlas');
+  assert.ok(flightBudget.layeredDustActive>=7&&flightBudget.layeredDustActive<=96,
+    'layered dust never exceeds its fixed pooled budget');
+  assert.equal(settledBudget.layeredDustActive,0,
+    'settled collapse releases low dust points without leaking objects');
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
   // The plume uses a sine-wave drift: a snapshot near its turning point can
@@ -1027,6 +1042,7 @@ try {
   assert.equal(restoredBackground.visibleFloors,0,'restart hides exposed interior slabs');
   assert.equal(restoredBackground.visibleFracturePanels,0,'restart closes broken facade geometry');
   assert.equal(restoredBackground.dustVisible,false,'restart clears any active dust burst');
+  assert.equal(restoredBackground.layeredDustPoints,0,'restart hides secondary dust particles');
   assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
   assert.equal(restoredBackground.flamePosition,null,'restart clears distant fire sprites');
   assert.equal(restoredBackground.flameHeight,null,'restart clears distant fire animation state');
