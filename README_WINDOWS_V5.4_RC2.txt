@@ -1,16 +1,20 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC17 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC18 WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged RC17 development candidate. Browser QA is tied to the exact
-commit recorded in PREVIEW-BUILD.txt when distributed via GitHub Actions.
-Compared with RC16, broken masonry and exposed interiors share a mottled,
-mipmapped brick-and-mortar finish rather than flat colors. Eight concurrent
-collapses also share a second 96-point low dust-cloud pool (one draw call);
-the RC16 large/small masonry particle batches, slow distant motion and
-persistent structural rubble are retained.
-Standing skyscrapers continue to burn without collapsing, with stronger
-flaming background strikes below 50% and 20% neighborhood health. The dense
-North Broad blocks reflect reference images; the distant Center City skyline
-is deliberately fictionalized for dramatic visibility. Production untouched.
+Status: unmerged RC18 candidate. Exact-head GitHub browser QA must pass before
+this edition is treated as a verified downloadable preview.
+
+What changed since RC17: background house fires now have a sharper yellow-white
+flame core and taller orange tongues, thicker smoke, and rising bright embers.
+All embers share one capped 280-point GPU batch across at most 28 damaged homes.
+The distant skyscraper fire atlas is brighter and larger, with more energetic
+flicker and denser smoke; skyscrapers DO NOT collapse.
+At low neighborhood health, some of the existing distant smoke markers now
+also display burning rooftops (at most ten added flame sprites).
+RC16/17 particle destruction, slower distant debris, and persistent rubble
+are preserved without gameplay collision or damage changes.
+
+This is a development preview only: production main and the separate Building
+Explorer remain unchanged. Windows GPU performance is not yet certified.
 
 WINDOWS PREREQUISITES
 - Python 3 must be installed and available as `py -3` or `python`.
