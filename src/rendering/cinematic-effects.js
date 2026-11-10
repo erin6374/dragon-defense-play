@@ -21,13 +21,42 @@ export function createCinematicEffects(T,scene,camera,bank){
   windStrength=Math.max(0,Math.min(1,strength));
   if(windStrength&&origin&&direction){windOrigin.copy(origin);windDirection.copy(direction);}
  }
- function fire(pos,age,size=1,suppression=0){const intensity=Math.max(0,1-suppression);
+ function fire(pos,age,size=1,suppression=0,style='structure'){
+  const intensity=Math.max(0,1-suppression);
   const relX=pos.x-windOrigin.x,relY=pos.y-windOrigin.y,relZ=pos.z-windOrigin.z;
   const along=relX*windDirection.x+relY*windDirection.y+relZ*windDirection.z;
   const distanceSquared=relX*relX+relY*relY+relZ*relZ;
   const across=Math.sqrt(Math.max(0,distanceSquared-along*along));
   const windAtFire=windStrength&&along>0&&along<50&&across<10+along*.33
-   ?windStrength*(1-along/80)*(1-across/(12+along*.40)):0;for(let i=0;i<5;i++){const t=age*(1.7+i*.19)+i*2.3,offset=new T.Vector3(Math.sin(i*4)*size*.65,1+Math.sin(t)*.24,Math.cos(i)*size*.3);flame.add(pos.clone().add(offset),size*(1.6+Math.sin(t)*.35),size*(3.6+Math.sin(t*1.3)*1.0)*intensity,.75*intensity,Math.sin(t)*.12)}for(let i=0;i<10;i++){const t=(age*.55+i*.61)%6,scale=size*(1.8+t*.95);smoke.add(pos.clone().add(new T.Vector3(Math.sin(i*2.4)*size*.6+t*.45+windDirection.x*windAtFire*t*2.2,2.2+t*2.0+windDirection.y*windAtFire*t*.8,1.1+Math.cos(i)*.4+windDirection.z*windAtFire*t*2.2)),scale,scale*1.2,Math.sin(t/6*Math.PI)*(.8-.3*suppression)*(1-windAtFire*.55),Math.sin(i)*.4)}}
+   ?windStrength*(1-along/80)*(1-across/(12+along*.40)):0;
+  // Meteor smoke is a short, broken exhaust ribbon. Building fires produce
+  // slower, denser rising plumes. Distinct caps prevent two small fragments
+  // from creating opaque shafts that obscure the entire distant skyline.
+  const fastTrail=style==='meteor';
+  const flameCount=fastTrail?3:5;
+  const smokeCount=fastTrail?4:10;
+  for(let i=0;i<flameCount;i++){
+   const t=age*(1.7+i*.19)+i*2.3;
+   const offset=new T.Vector3(Math.sin(i*4)*size*(fastTrail?.34:.65),
+    (fastTrail?.5:1)+Math.sin(t)*.24,Math.cos(i)*size*.3);
+   flame.add(pos.clone().add(offset),size*(fastTrail?.85:1.6+Math.sin(t)*.35),
+    size*(fastTrail?1.55:3.6+Math.sin(t*1.3)*1.0)*intensity,
+    (fastTrail?.61:.75)*intensity,Math.sin(t)*.12);
+  }
+  for(let i=0;i<smokeCount;i++){
+   const t=fastTrail?(age*.75+i*.43)%2.6:(age*.55+i*.61)%6;
+   const wandering=Math.sin(age*1.4+i*2.3)*size*(fastTrail?.28:.6);
+   const scale=fastTrail?size*(.78+t*.29):size*(1.8+t*.95);
+   const y=fastTrail?.6+t*.75:2.2+t*2;
+   const smokePosition=pos.clone().add(new T.Vector3(
+    wandering+t*(fastTrail?.13:.45)+windDirection.x*windAtFire*t*2.2,
+    y+windDirection.y*windAtFire*t*.8,
+    .3+Math.cos(i)*.25+windDirection.z*windAtFire*t*2.2));
+   smoke.add(smokePosition,scale,scale*(fastTrail?1.25:1.2),
+    Math.sin(t/(fastTrail?2.6:6)*Math.PI)*
+      (fastTrail?.24:.8-.3*suppression)*(1-windAtFire*.55),Math.sin(i+age*.3)*.4);
+  }
+ }
  function water(from,to,width=.12){const delta=to.clone().sub(from),length=delta.length(),steps=Math.min(56,Math.max(12,Math.ceil(length*2)));for(let i=0;i<steps;i++){const t=(i+(clock*9%1))/steps;const p=from.clone().addScaledVector(delta,t);p.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),angle=Math.atan2(-delta.dot(right),delta.dot(up));spray.add(p,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle)}for(let i=0;i<12;i++){const a=clock*7+i*2.4,r=.2+(i%4)*.18;spray.add(to.clone().add(new T.Vector3(Math.cos(a)*r,Math.abs(Math.sin(a))*r,Math.sin(a)*r)),.23,.32,.4)}}
  return {begin,fire,setWind,water,burst,shock,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:4,puffs:puffs.length,shockwaves:rings.length,windStrength})};
 }
