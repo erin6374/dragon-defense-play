@@ -1,12 +1,16 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC14 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC17 WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged RC14 playable candidate; source-level and browser QA must be tied to exact commit.
-What changed since RC11: irregular fractured masonry / roof chunks instead of cuboid
-bricks, 12-to-6 debris LOD by distance, pooled expanding dust during distant
-rowhouse collapse, longer airborne debris footage in the QA screenshot set.
-Skyscrapers remain intact and burning; large flaming background strikes escalate
-at 50% and 20% block health. North Broad neighborhood placement remains an
-artistic reconstruction, not survey-accurate geography.
+Status: unmerged RC17 development candidate. Browser QA is tied to the exact
+commit recorded in PREVIEW-BUILD.txt when distributed via GitHub Actions.
+Compared with RC16, broken masonry and exposed interiors share a mottled,
+mipmapped brick-and-mortar finish rather than flat colors. Eight concurrent
+collapses also share a second 96-point low dust-cloud pool (one draw call);
+the RC16 large/small masonry particle batches, slow distant motion and
+persistent structural rubble are retained.
+Standing skyscrapers continue to burn without collapsing, with stronger
+flaming background strikes below 50% and 20% neighborhood health. The dense
+North Broad blocks reflect reference images; the distant Center City skyline
+is deliberately fictionalized for dramatic visibility. Production untouched.
 
 WINDOWS PREREQUISITES
 - Python 3 must be installed and available as `py -3` or `python`.
