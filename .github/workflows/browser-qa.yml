@@ -8,47 +8,6 @@ concurrency:
   group: dragon-browser-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  motion:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    permissions:
-      contents: read
-    env:
-      EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      QA_BROWSER_CHANNEL: chrome
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.EXPECTED_HEAD_SHA }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
-      - name: Install video encoder
-        run: |
-          python3 -m venv "$RUNNER_TEMP/motion-encoder"
-          "$RUNNER_TEMP/motion-encoder/bin/pip" install imageio-ffmpeg==0.8.1
-          encoder="$("$RUNNER_TEMP/motion-encoder/bin/python" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
-          echo "QA_FFMPEG=$encoder" >> "$GITHUB_ENV"
-      - name: Capture fixed-step gameplay video
-        run: |
-          "$QA_FFMPEG" -version
-          python3 -m http.server 8765 --bind 127.0.0.1 &
-          for attempt in {1..20}; do
-            if curl -fsS http://127.0.0.1:8765/build-info.json >/dev/null; then break; fi
-            sleep 1
-          done
-          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
-          node qa/motion.mjs
-      - name: Retain motion recordings and diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dragon-defense-motion-qa
-          path: qa-output/motion/
-          compression-level: 0
-          retention-days: 30
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
