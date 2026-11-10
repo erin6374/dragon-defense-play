@@ -1,3 +1,9 @@
+## November 10 — Read-only Pages mismatch diagnostics (exact-head QA pending)
+
+- Previous [browser QA #435](https://github.com/erin6374/dragon-defense-play/actions/runs/42790751526) **passed** for `8c4b571`; inspected skyline-fire screenshots and verified playable ZIP manifest. [Pages deployment #171](https://github.com/erin6374/dragon-defense-play/actions/runs/42792215832) uploaded and deployed successfully, but failed the final seven-file comparison with no per-file failure details.
+- Added a read-only, nonblocking PR-head browser-workflow diagnostic that reports per-file public HTTP status, byte length, SHA-256, first mismatching byte, and cache headers for the current development preview and production root. Its offline comparator self-test covers equality, changed bytes and truncated files. It does not publish, change Pages, or affect browser QA pass/fail.
+- This check runs against the previously published preview; a new Pages workflow may publish the just-tested head afterward. Require exact-head QA logs and separate Pages verification before claiming the new head publicly served. No `main`/production edits.
+
 ## November 10 — RC19 skyline plume legibility refinement (QA pending)
 
 - Previous exact-head baseline `5b4fecf` passed [browser QA #434](https://github.com/erin6374/dragon-defense-play/actions/runs/42781950485) and the isolated public [Pages preview verification #170](https://github.com/erin6374/dragon-defense-play/actions/runs/42783410845). The close screenshot showed a visible but small white-yellow flame and faint smoke.
