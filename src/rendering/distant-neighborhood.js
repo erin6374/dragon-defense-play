@@ -202,7 +202,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  // Visual LOD: more fragments close to the camera, fewer near the horizon.
  // All slots are preallocated and updated only for actively damaged homes.
  // More chunks near the player; a handful of highly visible silhouettes at the horizon.
- const rubblePerTier=[12,11,10,8,7,6];
+ const rubblePerTier=[10,9,8,7,6,5];
  // A single chipped-masonry shape replaces perfectly rectangular debris.
  // Shared across ALL tier batches: no additional draw calls or impact allocations.
  const fracturedGeometry=new THREE.BoxGeometry(1,1,1);
@@ -225,7 +225,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  // dark rear cavity and torn front masonry. All pieces are allocated once.
  // The horizon has only one representative floor/panel, while the closer
  // homes expose up to three slabs plus two broken facade sections.
- const floorsPerTier=[3,3,2,2,1,1],panelsPerTier=[2,2,2,1,1,1];
+ const floorsPerTier=[4,4,3,3,2,1],panelsPerTier=[4,4,3,3,2,2];
  const interiorMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
  const interiorBatches=tiers.map((tier,ti)=>{
   const homes=buildingDefs.filter(home=>home.tier===ti);
@@ -254,9 +254,9 @@ export function createDistantNeighborhood({root,flameTexture}){
   return mesh;
  });
  // Immutable shard-profile arrays: no garbage allocations during active collapse.
- const shardWidths=[.28,.20,.35,.16,.25,.18,.30,.15,.22,.11,.17,.09];
- const shardHeights=[.27,.40,.18,.10,.24,.36,.14,.21,.18,.11,.22,.08];
- const shardDepths=[.21,.19,.27,.35,.18,.20,.28,.17,.21,.14,.17,.12];
+ const shardWidths=[.20,.12,.18,.10,.15,.09,.22,.11,.14,.08,.17,.07];
+ const shardHeights=[.18,.10,.14,.08,.13,.07,.19,.09,.12,.06,.16,.07];
+ const shardDepths=[.14,.09,.13,.08,.12,.07,.16,.08,.10,.06,.14,.06];
  const shardZ=[.21,-.19,-.28,.13,-.23];
  const rubbleBatches=tiers.map((tier,ti)=>{
   const homes=buildingDefs.filter(home=>home.tier===ti);
@@ -287,6 +287,99 @@ export function createDistantNeighborhood({root,flameTexture}){
   groups[ti].add(mesh);drawCalls++;
   return mesh;
  });
+ // Two shared GPU point clouds replace dozens of individual airborne meshes.
+ // Structural rubble still persists; particle debris vanishes on settlement.
+ // Capped to eight simultaneous building collapses, no per-hit GPU allocation.
+ const PARTICLE_SLOTS=8;
+ const largePerTier=[16,14,12,10,8,6],smallPerTier=[66,56,48,38,30,22];
+ const particleCanvas=document.createElement('canvas');
+ particleCanvas.width=64;particleCanvas.height=64;
+ const particleCtx=particleCanvas.getContext('2d');
+ particleCtx.fillStyle='white';particleCtx.beginPath();
+ for(let j=0;j<8;j++){
+  const a=j*Math.PI/4,r=j%3===0?26:j%2===0?22:29;
+  const px=32+r*Math.cos(a),py=32+r*Math.sin(a);
+  if(j===0)particleCtx.moveTo(px,py);else particleCtx.lineTo(px,py);
+ }
+ particleCtx.closePath();particleCtx.fill();
+ const particleTexture=new THREE.CanvasTexture(particleCanvas);
+ const particlePools=[
+  {name:'large',perTier:largePerTier,max:16,size:.80,opacity:.92},
+  {name:'small',perTier:smallPerTier,max:66,size:.28,opacity:.80}
+ ].map(config=>{
+  const capacity=PARTICLE_SLOTS*config.max;
+  const positions=new Float32Array(capacity*3),colors=new Float32Array(capacity*3);
+  const seeds=new Float32Array(capacity*5);
+  for(let k=0;k<capacity;k++){positions[k*3+1]=-10000;colors[k*3]=colors[k*3+1]=colors[k*3+2]=1;}
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3).setUsage(THREE.DynamicDrawUsage));
+  const material=new THREE.PointsMaterial({size:config.size,map:particleTexture,transparent:true,
+   opacity:config.opacity,vertexColors:true,depthWrite:false,sizeAttenuation:true,alphaTest:.10});
+  const mesh=new THREE.Points(geometry,material);
+  mesh.name='pooled-distant-'+config.name+'-debris';
+  mesh.frustumCulled=false;mesh.visible=false;
+  root.add(mesh);drawCalls++;
+  return {...config,positions,colors,seeds,geometry,mesh,capacity};
+ });
+ const particleSlots=Array.from({length:PARTICLE_SLOTS},()=>({home:null}));
+ let activeParticleSlots=0,backgroundVisible=true;
+ const particleHash=x=>{const v=Math.sin(x*12.9898+78.233)*43758.5453;return v-Math.floor(v);};
+ function assignParticles(home){
+  const slotIndex=particleSlots.findIndex(s=>!s.home);
+  if(slotIndex<0)return;
+  particleSlots[slotIndex].home=home;home.particleSlot=slotIndex;activeParticleSlots++;
+  const facade=home.parts.find(p=>p.type==='main');
+  const brickColor=new THREE.Color(instances[home.tier].main[facade.index].color??0x9a7769);
+  for(let ci=0;ci<particlePools.length;ci++){
+   const pool=particlePools[ci];
+   for(let k=0;k<pool.perTier[home.tier];k++){
+    const idx=slotIndex*pool.max+k,seedIndex=idx*5,c=idx*3;
+    const seed=home.id*731+k*43+ci*997;
+    for(let j=0;j<5;j++)pool.seeds[seedIndex+j]=particleHash(seed+j+1);
+    const base=k%7===0?new THREE.Color(0x504742):brickColor;
+    const shade=.70+pool.seeds[seedIndex+4]*.38;
+    pool.colors[c]=base.r*shade;pool.colors[c+1]=base.g*shade;pool.colors[c+2]=base.b*shade;
+   }
+   pool.geometry.attributes.color.needsUpdate=true;
+   pool.mesh.visible=backgroundVisible;
+  }
+ }
+ function releaseParticles(index){
+  const slot=particleSlots[index];
+  if(!slot.home)return;
+  slot.home.particleSlot=undefined;slot.home=null;activeParticleSlots--;
+  for(const pool of particlePools){
+   for(let k=0;k<pool.max;k++){
+    const j=(index*pool.max+k)*3;
+    pool.positions[j]=0;pool.positions[j+1]=-10000;pool.positions[j+2]=0;
+   }
+   pool.geometry.attributes.position.needsUpdate=true;
+   pool.mesh.visible=backgroundVisible&&activeParticleSlots>0;
+  }
+ }
+ function updateParticles(){
+  if(!activeParticleSlots)return;
+  for(let i=0;i<PARTICLE_SLOTS;i++){
+   const home=particleSlots[i].home;
+   if(!home)continue;
+   if(home.fall>=1){releaseParticles(i);continue;}
+   const t=home.fall,arc=Math.sin(Math.PI*t);
+   for(const pool of particlePools){
+    for(let k=0;k<pool.perTier[home.tier];k++){
+     const idx=i*pool.max+k,base=idx*3,seed=idx*5;
+     const a=pool.seeds[seed]*Math.PI*2;
+     const spread=(.10+pool.seeds[seed+3]*.78)*t;
+     pool.positions[base]=home.x+Math.cos(a)*home.w*spread;
+     pool.positions[base+1]=.17+home.h*(.13+pool.seeds[seed+1]*.64)*(1-t)
+       +home.h*(.27+pool.seeds[seed+2]*.69)*arc;
+     pool.positions[base+2]=home.z+home.d*(.35+pool.seeds[seed+4]*.16)
+       +Math.sin(a)*home.d*(.12+pool.seeds[seed+3]*.34)*t;
+    }
+    pool.geometry.attributes.position.needsUpdate=true;
+   }
+  }
+ }
  // Shared translucent smoke atlas replaces obvious rigid black cones. A single
  // billboard per damaged building retains the original 28-marker visual budget.
  // The texture is constructed once; no per-frame canvas or material allocations.
@@ -405,18 +498,19 @@ export function createDistantNeighborhood({root,flameTexture}){
     dummy.position.set(home.x+home.w*.05*Math.sin(home.id+k),floorY,
      home.z+home.d*.17);
     dummy.rotation.set(.025*home.fall,0,(k%2?-.085:.11)*home.fall);
-    dummy.scale.set(home.w*.78*(1-home.fall*.13)*breach,
-     .16*breach,home.d*.68*(1-home.fall*.18)*breach);
+    dummy.scale.set(home.w*(.72-.05*(k%2))*(1-home.fall*.15)*breach,
+     .11*breach,home.d*(.60-.06*(k%3))*(1-home.fall*.20)*breach);
    }else{
     const index=k-1-home.interiorFloors;
     const direction=index%2===0?-1:1;
-    const panelWidth=home.w*(home.fracturePanels>1?.29:.42);
-    const panelHeight=home.h*(.58-.40*home.fall);
-    dummy.position.set(home.x+direction*home.w*(.27+home.fall*.17),
-     panelHeight*.5+(1-home.fall)*home.h*.14,
-     home.z+home.d*(.48+home.fall*.04));
-    dummy.rotation.set(.10*home.fall,0,direction*(.12+.43*home.fall));
-    dummy.scale.set(panelWidth*breach,panelHeight*breach,.22*breach);
+    const panelOffset=index/Math.max(1,home.fracturePanels-1);
+    const panelWidth=home.w*(home.fracturePanels>2?.16+.03*(index%2):.22);
+    const panelHeight=home.h*(.20+.08*(index%3))*(1-home.fall*.16);
+    dummy.position.set(home.x+direction*home.w*(.10+panelOffset*.26+home.fall*.10),
+     panelHeight*.5+home.h*(.12+.12*(index%3))*(1-home.fall*.32),
+     home.z+home.d*(.40+.10*panelOffset+home.fall*.08));
+    dummy.rotation.set(.08*home.fall+.04*panelOffset,0,direction*(.18+.34*home.fall+.09*panelOffset));
+    dummy.scale.set(panelWidth*breach,panelHeight*breach,.14*breach);
    }
    dummy.updateMatrix();interior.setMatrixAt(home.interiorStart+k,dummy.matrix);
   }
@@ -477,7 +571,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   home.damage=Math.min(1,home.damage+strength);
   damaged.add(home);
   addImpactSmoke(home);
-  if(home.damage===1){falling.add(home);beginDust(home);}
+  if(home.damage===1){falling.add(home);beginDust(home);assignParticles(home);}
   else applyFall(home); // visible progressive roof/cornice cracks before collapse
   return true;
  }
@@ -495,6 +589,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    applyFall(home);
    if(home.fall===1)falling.delete(home);
   }
+  updateParticles();
   for(const slot of collapseDust){
    if(!slot.home)continue;
    slot.age+=dt;
@@ -519,6 +614,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   }
  }
  function restore(){
+  for(let i=0;i<PARTICLE_SLOTS;i++)releaseParticles(i);
   for(const slot of collapseDust)releaseDust(slot);
   for(const {puff,flame} of impactSmoke.values()){puff.removeFromParent();flame.removeFromParent();}
   for(const puff of damageMarkers)puff.removeFromParent();
@@ -548,7 +644,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    addImpactSmoke(home);
    positionImpactEffects(home,1-home.damage**2*.84);
   },
-  setVisible(on){base.visible=on;for(const t of tiers)t.group.visible=on},
+  setVisible(on){backgroundVisible=on;base.visible=on;for(const t of tiers)t.group.visible=on;
+   for(const pool of particlePools)pool.mesh.visible=on&&activeParticleSlots>0},
   buildingState(id){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
@@ -579,6 +676,8 @@ export function createDistantNeighborhood({root,flameTexture}){
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     airborneCount:home.fall>0&&home.fall<1?rubblePieces.filter(piece=>piece.y>home.h*.85).length:0,
     debrisMotionSeconds:1.35+home.tier*.27,
+    largeParticleCount:home.particleSlot===undefined?0:largePerTier[home.tier],
+    smallParticleCount:home.particleSlot===undefined?0:smallPerTier[home.tier],
     visibleFloors:floorHeights.length,floorElevations:floorHeights,
     visibleFracturePanels:facadePanelHeights.length,fracturePanelHeights:facadePanelHeights,
     dustVisible:!!home.dust?.sprite.visible,
@@ -593,6 +692,10 @@ export function createDistantNeighborhood({root,flameTexture}){
    rubbleBatches:rubbleBatches.length,rubbleCapacity:buildingDefs.reduce((sum,b)=>sum+b.rubbleCount,0),
    debrisLodByTier:rubblePerTier,
    exposedFloorLodByTier:floorsPerTier,facadeFractureLodByTier:panelsPerTier,
+   airborneParticleDrawCalls:particlePools.length,activeParticleSlots,
+   particleSlotCapacity:PARTICLE_SLOTS,
+   largeParticleLodByTier:largePerTier,smallParticleLodByTier:smallPerTier,
+   particleCapacity:particlePools.reduce((sum,pool)=>sum+pool.capacity,0),
    interiorBatches:interiorBatches.length,
    interiorCapacity:buildingDefs.reduce((sum,b)=>sum+b.interiorCount,0),
    dustPoolCapacity:collapseDust.length,
