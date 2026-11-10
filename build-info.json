@@ -1,8 +1,8 @@
 {
-  "build": "5.4-fire-balance-rc22",
-  "version": "5.4.0-rc.22",
+  "build": "5.4-distributed-fire-rc23",
+  "version": "5.4.0-rc.23",
   "gameplay_base": "5.2.3",
-  "scope": "MOT-01/MOT-03 video-driven fire balance: reduce oversized rooftop source flames, cap dominant skyline flame, strengthen separated facade burns and cap smoke opacity. Reuses RC21 fixed pools; no new draw calls or gameplay changes.",
+  "scope": "MOT-01/MOT-03 motion-guided distributed fire: smaller roof source behind two independently animated pooled vents; bounded tower central flame and smoke so separated facade fires read. No new GPU allocations, draw calls or gameplay changes.",
   "new_gameplay_features": true,
-  "release_status": "RC22 development candidate — exact-head browser QA, five-video motion review and authorized Pages seven-file public comparison required; production unchanged"
+  "release_status": "RC23 candidate — exact-head browser QA, independent five-MP4 visual review and authorized Pages seven-file verification required; production unchanged"
 }

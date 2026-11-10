@@ -910,6 +910,11 @@ try {
   assert.ok(towerImpact.result.fireSize[0]>5.0&&
     towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
+  assert.ok(towerImpact.result.fireSize[0]<9 &&
+    towerImpact.result.secondaryBurnSites.every(site=>site.width>=3.8),
+    'dominant tower flame is bounded while two independent facade fires stay readable');
+  assert.ok(towerImpact.result.smokeOpacity<.80 && towerImpact.result.smokeWorldScale[0]<16.5,
+    'single central smoke patch cannot overwhelm staggered burning floors');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
   assert.ok(towerImpact.result.smokeOpacity>.68,'landmark smoke is dense enough to read against the dusk sky');
@@ -1070,8 +1075,9 @@ try {
   // unchanged flame column down onto the street. Two independently animated
   // pooled vents remain on the rubble after the original source disappears.
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
-  assert.ok(backgroundIntact.flameHeight>backgroundIntact.originalHeight*.48,
-    'initial rooftop fire is visible before demolition');
+  assert.ok(backgroundIntact.flameHeight>backgroundIntact.originalHeight*.23&&
+    backgroundIntact.flameHeight<backgroundIntact.originalHeight*.45,
+    'central rooftop glow is visible but no longer towers over its house; two pooled vents carry the fire');
   assert.ok(backgroundSettled.flameHeight<backgroundIntact.flameHeight*.50
     &&!backgroundSettled.primaryFlameVisible,
     'unsupported tall flame shrinks and extinguishes after roof collapse');

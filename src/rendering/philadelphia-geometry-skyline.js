@@ -385,15 +385,15 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=9.2+smokeIntensity*9.2;
-  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.45,1);
+  const smokeWidth=12.9+smokeIntensity*1.9;
+  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.28,1);
   // Lift the existing plume above the combustion core; do not add sprites.
   tower.smokeSprite.position.y=tower.smokeOrigin.y+tower.smokeSprite.scale.y*.15;
-  tower.smokeSprite.material.opacity=Math.min(.86,.48+smokeIntensity*.52);
+  tower.smokeSprite.material.opacity=Math.min(.78,.69+smokeIntensity*.09);
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=Math.min(10.5,(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50));
+  const flameWidth=Math.min(7.8,(4.8+Math.min(1,tower.strikeDamage/.26)*5.8)*(1+intensity*1.50));
   tower.fireBaseWidth=flameWidth;
   tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
   tower.fireSprite.scale.set(flameWidth,flameWidth*1.82,1);
@@ -402,13 +402,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // First hit seeds two staggered burns; subsequent hits refresh only one,
   // leaving the other anchored to a different damaged floor.
   if(!tower.burnSites[0].active){
-   placeBurnSite(tower,tower.burnSites[0],-tower.def.w*.24,-tower.def.h*.15,flameWidth*.50);
-   placeBurnSite(tower,tower.burnSites[1], tower.def.w*.24, tower.def.h*.13,flameWidth*.44);
+   placeBurnSite(tower,tower.burnSites[0],-tower.def.w*.24,-tower.def.h*.15,Math.max(4.1,flameWidth*.62));
+   placeBurnSite(tower,tower.burnSites[1], tower.def.w*.24, tower.def.h*.13,Math.max(4.0,flameWidth*.56));
   }else{
    const site=tower.burnSites[tower.siteCursor];
    const left=tower.siteCursor===0;
    placeBurnSite(tower,site,(left?-.22:.22)*tower.def.w,
-    (left?-.16:.15)*tower.def.h,flameWidth*.46);
+    (left?-.16:.15)*tower.def.h,Math.max(4.0,flameWidth*.59));
    tower.siteCursor=(tower.siteCursor+1)%SECONDARY_BURN_SITES_PER_TOWER;
   }
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.

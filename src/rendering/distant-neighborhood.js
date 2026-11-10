@@ -657,7 +657,8 @@ export function createDistantNeighborhood({root,flameTexture}){
   const size=Math.min(5,home.w*.54);
   const flame=new THREE.Sprite(fireMat);
   puff.scale.set(size*2.0,size*3.65,1);
-  flame.scale.set(size*1.20,size*1.86,1);
+  // Two independent pooled vents now carry the roof fire; the central glow stays low.
+  flame.scale.set(size*.82,size*1.08,1);
   groups[home.tier??0].add(puff,flame);
   impactSmoke.set(home,{puff,flame,baseFlameHeight:flame.scale.y,
    baseFlameWidth:flame.scale.x,basePuffHeight:puff.scale.y,basePuffWidth:puff.scale.x});
@@ -829,9 +830,11 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const [home,effects] of impactSmoke){
    const rubble=THREE.MathUtils.smoothstep(home.fall,.50,.96);
    const roofY=home.h*(1-home.fall*home.fall*.84);
-   effects.puff.scale.x=effects.basePuffWidth*(1+.45*rubble);
-   effects.puff.scale.y=effects.basePuffHeight*(1-.40*rubble);
-   effects.puff.position.x=home.x+Math.sin(fireTime*.66+home.id*.37)*effects.puff.scale.x*.18;
+   const smokePhase=fireTime*.72+home.id*.41;
+   effects.puff.scale.x=effects.basePuffWidth*(1+.45*rubble)*(.91+.12*Math.sin(smokePhase));
+   effects.puff.scale.y=effects.basePuffHeight*(1-.40*rubble)*(.91+.09*Math.sin(smokePhase*.73+1.1));
+   effects.puff.position.x=home.x+Math.sin(smokePhase)*effects.puff.scale.x*.18;
+   effects.puff.position.z=home.z+Math.sin(smokePhase*.47)*home.d*.035;
    effects.puff.position.y=roofY+effects.puff.scale.y*.25
     +Math.sin(fireTime*.42+home.id*.29)*effects.puff.scale.y*.07;
    const phase=fireTime*6.8+home.id*.57;
