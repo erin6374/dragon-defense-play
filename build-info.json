@@ -1,8 +1,8 @@
 {
-  "build": "5.4-destruction-framing-rc13",
-  "version": "5.4.0-rc.13",
+  "build": "5.4-north-philly-open-facades-rc14",
+  "version": "5.4.0-rc.14",
   "gameplay_base": "5.2.3",
-  "scope": "RC12 distant destruction with visible frontal dust shock cloud and full-frame airborne debris camera QA",
+  "scope": "Layered visible interior floors and fractured facade panels in the slow-motion, distance-LOD North Broad destruction pass",
   "new_gameplay_features": true,
-  "release_status": "experimental RC13 — exact-head browser QA and visual capture review required"
+  "release_status": "RC14 development preview; exact-head browser QA and screenshot review required, production untouched"
 }
