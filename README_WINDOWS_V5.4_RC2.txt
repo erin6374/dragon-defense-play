@@ -1,10 +1,12 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC10 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC12 WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged RC10 developer release candidate; original dragon remains default.
-Fireball balance: small rocks die in one fireball/shockwave contact; medium split into three small, large into three medium.
-Wind and fire effects now track the active dragon model's animated mouth during hover, flight and turns.
-Browser QA #362 passed on a42f7bd; newer commits require their own QA.
-Base game v5.2.3 / North Broad graphics / wind gameplay v5.3.1 / Paulo v5.4 design.
+Status: unmerged RC12 playable candidate; source-level and browser QA must be tied to exact commit.
+What changed since RC11: irregular fractured masonry / roof chunks instead of cuboid
+bricks, 12-to-6 debris LOD by distance, pooled expanding dust during distant
+rowhouse collapse, longer airborne debris footage in the QA screenshot set.
+Skyscrapers remain intact and burning; large flaming background strikes escalate
+at 50% and 20% block health. North Broad neighborhood placement remains an
+artistic reconstruction, not survey-accurate geography.
 
 WINDOWS PREREQUISITES
 - Python 3 must be installed and available as `py -3` or `python`.
