@@ -514,15 +514,17 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
       w*(1.46+.23*Math.sin(phase*1.38)),1);
      secondaryDummy.updateMatrix();
      secondaryFire.setMatrixAt(site.index,secondaryDummy.matrix);
-     // Slow vertical convection and independent lateral eddies keep the soot
-     // moving while its underlying ignition point remains facade-attached.
+     // Rising smoke dissipates before each loop reset: the quad shrinks
+     // to zero at the seam so it cannot teleport downward visibly.
+     const smokePhase=(elapsed*.15+site.seed*.173)%1;
+     const dissipate=Math.max(.001,Math.sin(Math.PI*smokePhase));
      secondaryDummy.position.set(site.origin.x+Math.sin(elapsed*.57+site.seed)*w*.38+
-      Math.sin(elapsed*.19+site.seed)*w*.18,
-      site.origin.y+w*(1.05+.40*Math.sin(elapsed*.72+site.seed)),
-      site.origin.z+.16);
+      smokePhase*w*.42,
+      site.origin.y+w*(.85+smokePhase*3.15),
+      site.origin.z-.10);
      secondaryDummy.rotation.set(0,0,Math.sin(elapsed*.28+site.seed)*.09);
-     secondaryDummy.scale.set(w*(1.25+.16*Math.sin(elapsed*.41+site.seed)),
-      w*(2.55+.26*Math.sin(elapsed*.51+site.seed)),1);
+     secondaryDummy.scale.set(w*(1.22+.28*smokePhase)*dissipate,
+      w*(2.10+.48*smokePhase)*dissipate,1);
      secondaryDummy.updateMatrix();
      secondarySmoke.setMatrixAt(site.index,secondaryDummy.matrix);
      secondaryDirty=true;
