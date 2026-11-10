@@ -8,17 +8,19 @@ import {pathToFileURL} from 'node:url';
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const scenarios = {
-  skyfall: 'Skyfall | Falling and staged splitting meteor, with keyboard-driven Paulo flight',
+  skyfall: 'Skyfall | Wide shot of falling, splitting meteors and the dragon',
+  dragon: 'Dragon flight | Close-up wing strokes, direction reversal and turning posture',
   houses: 'Background houses | Three staged hits, structural debris, dust and fire (detail camera)',
   skyline: 'Skyline | Repeated Comcast Technology Center strikes, fires and smoke (detail camera)',
   traffic: 'Traffic | Night headlights, staged wind gust and live vehicle recovery',
 };
-const actionFrame = {skyfall: 30, houses: 53, skyline: 48, traffic: 32};
+const actionFrame = {skyfall: 30, dragon: 28, houses: 53, skyline: 48, traffic: 32};
 const width = 960, height = 540, fps = 20, frames = 100, seed = 20261110;
 const output = 'qa-output/motion';
 const temporary = await mkdtemp(join(tmpdir(), 'dragon-motion-'));
 const sha = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
-const report = {sha, seed, fps, frames, width, height, scenarios: {}, errors: []};
+const report = {sha, seed, fps, frames, width, height, scenarios: {}, errors: [],
+  reviewMethod:'Frame-by-frame deterministic replay. Automated counters verify events, but an observer must review morphology, pose, continuity and visual plausibility.'};
 const ffmpeg = (...args) => execFileSync(process.env.QA_FFMPEG || 'ffmpeg', [
   '-hide_banner', '-loglevel', 'error', '-y', ...args,
 ], {stdio: 'inherit'});
@@ -32,6 +34,14 @@ function checkMotion(name, samples) {
     assert.ok(samples[26].meteors.filter(m => m.generation > 0).length >= 2, 'split creates moving fragments');
     assert.ok(samples[28].dragon[0] > first.dragon[0] + 15 && last.dragon[0] < samples[28].dragon[0] - 15,
       'dragon flies in both directions');
+  } else if (name === 'dragon') {
+    assert.ok(samples.every(s => s.flight?.model === 'paulo'),
+      'close-up footage consistently uses the current Paulo dragon');
+    assert.ok(Math.max(...samples.map(s => s.flight.x))-
+      Math.min(...samples.map(s => s.flight.x))>10,
+      'dragon traverses enough distance to review wing mechanics in motion');
+    assert.ok(samples.every(s => Number.isFinite(s.flight.heading)),
+      'turning pose retains a finite heading during both direction changes');
   } else if (name === 'houses') {
     assert.equal(first.house.damage, 0);
     assert.equal(last.house.fall, 1);
@@ -98,6 +108,27 @@ try {
   assert.deepEqual(report.errors, [], 'all motion scenarios must pass');
 } finally {
   await save('report.json', JSON.stringify(report, null, 2));
+  await save('review-guide.md', `# Dragon Defense — motion visual review
+
+Commit: ${sha} · ${fps} FPS · ${frames} frames per scenario · seeded ${seed}
+
+The five videos are **rendered gameplay**, not motion mockups. Browser QA
+exercises the real update/render path at three simulation steps per recorded
+frame, independent of hardware FPS.
+
+| Clip | What to inspect closely |
+| --- | --- |
+| skyfall.mp4 | Meteor spawn and fragment continuity, smoke length and direction, dragon readability in wide composition |
+| dragon.mp4 | Wing tuck/banking, feet while flying, believable direction reversal, frame-to-frame pose continuity |
+| houses.mp4 | Staged impacts at 0.60, 1.35 and 2.10 seconds; fire/smoke anchoring, airborne masonry speed, dust and settled rubble |
+| skyline.mp4 | First tower strike at 0.75 seconds, second at 2.10 seconds; fire intensity, rising soot, standing facade and repeated impact continuity |
+| traffic.mp4 | Gust at 1.25 seconds, vehicle tilt/sliding, recovery, headlamp positioning and roadside dust |
+
+A passing automated motion test proves **event sequencing and playable video
+capture**, not photorealistic quality or real-time GPU performance. Visual
+observations should cite clip and time interval, distinguish defects from
+artistic choices, and be checked again after graphics revisions.
+`);
   await save('index.html', `<!doctype html>
 <meta charset="utf-8"><title>Dragon Defense motion QA</title>
 <style>body{background:#161c24;color:#fff;font:16px system-ui;margin:2rem}video{display:block;width:min(100%,960px)}a{color:#9edcff}</style>
