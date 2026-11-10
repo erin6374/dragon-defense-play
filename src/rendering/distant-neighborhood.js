@@ -484,49 +484,11 @@ export function createDistantNeighborhood({root,flameTexture}){
   dustGeometry.attributes.position.needsUpdate=true;
  }
  const smokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0xd1d5d8,transparent:true,opacity:.67,depthWrite:false,depthTest:true});
- // Hot, tapered tongues with a bright white-yellow combustion core are much
- // easier to read across the long North Broad perspective than the old soft
- // orange bitmap. One atlas is shared by every background house fire.
- const blazeCanvas=document.createElement('canvas');
- blazeCanvas.width=128;blazeCanvas.height=192;
- const blazeCtx=blazeCanvas.getContext('2d');
- const glow=blazeCtx.createRadialGradient(64,161,2,64,161,58);
- glow.addColorStop(0,'rgba(255,242,135,.98)');
- glow.addColorStop(.26,'rgba(255,171,24,.78)');
- glow.addColorStop(.67,'rgba(255,85,14,.34)');
- glow.addColorStop(1,'rgba(255,52,0,0)');
- blazeCtx.fillStyle=glow;blazeCtx.fillRect(0,85,128,106);
- function blazeTongue(cx,base,height,width,bend,inner=false){
-  blazeCtx.beginPath();
-  blazeCtx.moveTo(cx-width*.52,base);
-  blazeCtx.bezierCurveTo(cx-width*.84,base-height*.29,cx+bend-width*.34,base-height*.74,cx+bend,base-height);
-  blazeCtx.bezierCurveTo(cx+bend+width*.16,base-height*.57,cx+width*.77,base-height*.34,cx+width*.5,base);
-  blazeCtx.closePath();
-  const gradient=blazeCtx.createLinearGradient(cx,base,cx+bend,base-height);
-  if(inner){
-   gradient.addColorStop(0,'rgba(255,255,236,.99)');
-   gradient.addColorStop(.43,'rgba(255,226,93,.95)');
-   gradient.addColorStop(.86,'rgba(255,152,14,.55)');
-  }else{
-   gradient.addColorStop(0,'rgba(255,172,25,.95)');
-   gradient.addColorStop(.45,'rgba(255,105,8,.95)');
-   gradient.addColorStop(.85,'rgba(255,44,5,.69)');
-  }
-  gradient.addColorStop(1,'rgba(255,39,0,0)');
-  blazeCtx.fillStyle=gradient;blazeCtx.fill();
- }
- for(const p of [
-  [30,180,98,30,-14],[52,184,133,40,8],[79,183,153,37,-8],
-  [102,181,91,29,12],[66,185,113,31,10]
- ])blazeTongue(...p);
- blazeTongue(58,183,77,26,3,true);
- blazeTongue(78,182,103,22,-5,true);
- blazeTongue(44,181,55,18,-8,true);
- const blazeTexture=new THREE.CanvasTexture(blazeCanvas);
- blazeTexture.colorSpace=THREE.SRGBColorSpace;
- const fireMat=new THREE.SpriteMaterial({map:blazeTexture,color:0xffffff,
-  transparent:true,opacity:.95,depthWrite:false,depthTest:true,
-  blending:THREE.AdditiveBlending});
+ // One physically suggestive, flowing, rate-limited atlas serves ALL fires.
+ // The generated noise field is updated globally, not a static flame silhouette.
+ const fireMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffffff,
+  transparent:true,opacity:.97,depthWrite:false,depthTest:true,
+  blending:THREE.NormalBlending});
 
  // Rising ember sparks form a single scene-wide, bounded GPU point cloud.
  // Existing impactSmoke has a strict 28-entry cap, so at most 280 sparks
