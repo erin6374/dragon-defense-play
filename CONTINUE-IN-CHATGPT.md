@@ -1,3 +1,9 @@
+## November 10 — focused skyline-fire QA captures (pending exact-head QA)
+
+- Added two real-renderer close skyline screenshots immediately after the first skyscraper fire impact and after sustained damage: `06-skyline-fire-close.png` and `06-skyline-standing-fire-close.png`. A deterministic camera-distance assertion ensures this is a closer diagnostic view than the existing wide screenshot. No gameplay, assets, rendering budgets, main, or production Pages changed.
+- The latest prior verified baseline was RC18 `c8e67f49` ([browser QA #420](https://github.com/erin6374/dragon-defense-play/actions/runs/42772477897)). New exact-head QA and visual inspection are required before certifying the close screenshots.
+- [Pages deployment #42773835716](https://github.com/erin6374/dragon-defense-play/actions/runs/42773835716) deployed successfully but its final seven-file live byte comparison failed without naming the mismatch. The Pages verification step is owned by `main`; do not alter production or call the current preview revision verified without successful independent comparison. Diagnose per-file HTTP status/size/hash in an authorized workflow-only change.
+
 ## November 9 — GitHub Actions incident; restore exact-head QA provenance (pending)
 
 - The current head `b2cc5bd` has [QA #364](https://github.com/erin6374/dragon-defense-play/actions/runs/42673421697) failed with **zero jobs**; the workflow file blob is identical to the one that passed [QA #362](https://github.com/erin6374/dragon-defense-play/actions/runs/42665399029). A retry of failed jobs returned HTTP 403: "This workflow run cannot be retried." No browser test ran in #364.

@@ -877,6 +877,12 @@ try {
   report.landmarkImpact = towerImpact.result;
   await shot('06-landmark-strike');
   await skylineShot('06-skyline-strike');
+  // A second, close skyline camera provides inspectable real pixels of the
+  // tower's upper fire; the wide shot alone crops this region behind blocks.
+  const closeFireCamera=await skylineShot('06-skyline-fire-close',true);
+  assert.ok(closeFireCamera.z<report.skylineCamera.z-100,
+    'focused skyline fire camera is substantially closer than the city-wide view');
+  report.skylineFireCloseCamera=closeFireCamera;
   // Skyline art rule: even a catastrophic strike NEVER collapses a landmark.
   // Repeated hits leave smoke, fire and scorch while the silhouette survives.
   const standingTower=await page.evaluate(()=>window.__DD_QA.stageSkylineCollapse());
@@ -910,6 +916,7 @@ try {
   report.damagedSkylineEmission=damagedEmission.result;
   report.skylineStanding=standingTower.result;
   await skylineShot('06-skyline-standing-fire');
+  await skylineShot('06-skyline-standing-fire-close',true);
   const beforeIdle=await page.evaluate(()=>window.__DD_QA.skylineFallState());
   const aftermathStep=await page.evaluate(()=>window.__DD_QA.advanceSkylineFall(4));
   assert.ok(aftermathStep.ok,aftermathStep.error);
