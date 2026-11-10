@@ -1,3 +1,11 @@
+## November 10 — v5.4.0-rc.17 masonry grain and layered collapse dust
+
+- **Finer art without geometric inflation:** RC16's 10/9/8/7/6/5 persistent structural pieces and large/small GPU masonry flecks are retained. Chipped flying masonry and broken interiors now share one 128×128 deterministic, mipmapped, mottled mortar/brick texture, multiplied by per-building colors; no per-hit texture/material allocations.
+- **A second dust layer:** One reusable `THREE.Points` cloud supplements the existing eight individual fading shock puffs. At most **96 soft dust points** are resident across all eight concurrent collapses, with distance LOD `12/11/10/9/7/5`. Dust spreads low over the street-facing wreckage, using the deliberately slower distant-collapse timeline; it disappears on settlement/restart. Adds exactly one draw call while active.
+- **Performance caps:** Particle systems now have 656 masonry points + 96 secondary dust points across 8 slots, in three batched point-cloud draw calls. Structural geometry is still instanced by distance tier. Textures are produced once at scene setup. Existing 28-marker smoke/fire and 8-slot primary dust limits unchanged.
+- **Visual QA:** Added browser assertions for the second dust layer while falling, its zero count once settled and after restart, single draw-call batch, 96-point capacity, and 128-pixel shared texture. Exact-head browser QA and screenshot review required; actual GPU FPS not yet measured.
+- **Preserved:** Molten structural damage, Skyfall waves, original and Paulo dragons, standing distant skyline with 50%/20% escalating strikes, geographic reference-driven North Broad neighborhood, separate Building Explorer and production main.
+
 ## November 10 — v5.4.0-rc.16 GPU particle destruction pass
 
 - **Art direction:** Distant rowhouse destruction now combines fewer, smaller structural chunks with a large number of screen-facing masonry flecks, so it resembles a chaotic material breakup instead of several rectangular blocks.
