@@ -2825,7 +2825,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    damage(building.x,building.z,y,hot);
    const moltenPressure=building.pressure;
    neighborhood.restore();
-   const center=schoolBounds.getCenter(new THREE.Vector3());
+   // The original FBX bounds extend deep into the block; target the actual
+   // school gameplay footprint, not the FBX bounding-box midpoint.
+   const center=new THREE.Vector3(neighborhood.school.x,0,neighborhood.school.z);
    const roofY=Math.max(2,Math.min(20,schoolBounds.max.y-1));
    const before=schoolDamage;
    damage(center.x,center.z,roofY,normal);
