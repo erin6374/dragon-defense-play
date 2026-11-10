@@ -2543,6 +2543,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     smokeColor:t.smokeSprite.material.color.getHex(),
     fireVisible:t.fireSprite.visible,fireOpacity:t.fireSprite.material.opacity,
     fireSize:t.fireSprite.scale.toArray(),
+    secondaryBurnSites:t.burnSites.map(site=>({active:site.active,index:site.index,
+     position:site.origin.toArray(),width:site.width})),
+    skylineBurnBudget:skylineBackdrop.getStats(),
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
     smokeWorldScale:t.smokeSprite.getWorldScale(new THREE.Vector3()).toArray(),
     scorchVisible:t.scorchSprite.visible,scorchOpacity:t.scorchSprite.material.opacity};
