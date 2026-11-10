@@ -1,20 +1,18 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC18 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC19 WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged RC18 candidate. Exact-head GitHub browser QA must pass before
-this edition is treated as a verified downloadable preview.
+Status: unmerged RC19 development candidate; exact-head browser QA required.
 
-What changed since RC17: background house fires now have a sharper yellow-white
-flame core and taller orange tongues, thicker smoke, and rising bright embers.
-All embers share one capped 280-point GPU batch across at most 28 damaged homes.
-The distant skyscraper fire atlas is brighter and larger, with more energetic
-flicker and denser smoke; skyscrapers DO NOT collapse.
-At low neighborhood health, some of the existing distant smoke markers now
-also display burning rooftops (at most ten added flame sprites).
-RC16/17 particle destruction, slower distant debris, and persistent rubble
-are preserved without gameplay collision or damage changes.
+RC19 replaces the old static orange fire artwork with shared animated,
+noise-advected combustion. Flames have variable hot yellow-white centers,
+amber/red edges and turbulent silhouettes instead of triangles. Smoke is
+animated separately. The shared atlas now drives school fires, dragon and
+meteor flame effects, distant houses, vehicles and standing skyscrapers.
+There are only TWO streaming textures: fire 128x192 at up to 12 Hz and smoke
+96x128 at up to 7 Hz. RC18 pooled embers and gameplay rules are retained.
 
-This is a development preview only: production main and the separate Building
-Explorer remain unchanged. Windows GPU performance is not yet certified.
+This is a 2.5D procedural approximation, not true 3D volumetric physics.
+Windows GPU performance is not verified. Production and Building Explorer
+were not changed.
 
 WINDOWS PREREQUISITES
 - Python 3 must be installed and available as `py -3` or `python`.
