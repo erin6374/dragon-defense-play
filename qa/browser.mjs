@@ -898,6 +898,11 @@ try {
   const closeFireCamera=await skylineShot('06-skyline-fire-close',true);
   assert.ok(closeFireCamera.z<report.skylineCamera.z-100,
     'focused skyline fire camera is substantially closer than the city-wide view');
+  assert.equal(closeFireCamera.fireVisible,true,'focused skyline shot contains an active tower fire');
+  assert.ok(closeFireCamera.fireNdc.every(Number.isFinite) &&
+    Math.abs(closeFireCamera.fireNdc[0])<.7 &&
+    Math.abs(closeFireCamera.fireNdc[1])<.7,
+    'the close-up diagnostic camera must actually frame the burning skyscraper');
   report.skylineFireCloseCamera=closeFireCamera;
   // Skyline art rule: even a catastrophic strike NEVER collapses a landmark.
   // Repeated hits leave smoke, fire and scorch while the silhouette survives.
