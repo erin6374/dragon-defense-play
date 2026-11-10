@@ -627,7 +627,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  const damageMarkers=[],impactSmoke=new Map();
  // Damage-dependent atmospheric fires share the same hot atlas as meteor-hit
  // rooftops. Only every third marker burns; this adds at most nine sprites in
- // a fully devastated district, with no new textures, shaders or physics.
+ // a fully devastated district (ten at most), with no new textures or physics.
  function clearDamageMarker(puff){
   puff.userData.ambientFlame?.removeFromParent();
   puff.removeFromParent();
