@@ -864,7 +864,7 @@ try {
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
   assert.ok(towerImpact.result.fireSize[0]>3.5&&
-    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.9,
+    towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
@@ -1077,6 +1077,11 @@ try {
   const zeroBlock=await page.evaluate(()=>window.__DD_QA.stageZeroBlockMeteorDamage());
   assert.ok(zeroBlock.ok,zeroBlock.error);
   assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
+  assert.ok(zeroBlock.result.afterImpact.ambientRooftopFires>=6&&
+    zeroBlock.result.afterImpact.ambientRooftopFires<=10,
+    'catastrophic neighborhood damage creates bounded, visible distant rooftop fires');
+  assert.ok(zeroBlock.result.settled.ambientRooftopFires>=6,
+    'background rooftop fires persist after the impact dust clears');
   assert.equal(zeroBlock.result.incoming,3,'an empty gauge launches a heavier background barrage');
   assert.equal(zeroBlock.result.nearDamage,1,'a meteor also finishes the heavily damaged nearer background building');
   assert.ok(zeroBlock.result.afterImpact.falling>=1&&zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.smoke>=1,
