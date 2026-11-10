@@ -933,7 +933,7 @@ try {
   const backgroundCollapse=await page.evaluate(()=>window.__DD_QA.stageDistantBuildingCollapse());
   assert.ok(backgroundCollapse.ok,backgroundCollapse.error);
   const {id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,
-    before:beforeCollapse,flight:flightCollapse,after:afterCollapse}=backgroundCollapse.result;
+    flightBudget,settledBudget,before:beforeCollapse,flight:flightCollapse,after:afterCollapse}=backgroundCollapse.result;
   assert.equal(backgroundIntact.rubbleCount,0,'an intact distant building has no visible facade debris');
   assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
     'the first distant hit creates smoke while the building stays standing');
@@ -956,7 +956,21 @@ try {
     'repeated hits animate the actual instanced building down toward the ground');
   assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
     'the collapsed shell persists as low rubble with smoke');
-  assert.ok(backgroundFalling.rubbleCount>=8,'mid-distance houses eject numerous masonry and roof fragments');
+  assert.ok(backgroundFalling.rubbleCount>=8,'mid-distance houses eject structural roof and masonry fragments');
+  assert.ok(backgroundFalling.largeParticleCount>=10,
+    'background impact emits larger GPU masonry flecks');
+  assert.ok(backgroundFalling.smallParticleCount>=30,
+    'background impact emits numerous small screen-facing particles');
+  assert.equal(backgroundSettled.largeParticleCount,0,'large particles disappear after settlement');
+  assert.equal(backgroundSettled.smallParticleCount,0,'small particles disappear after settlement');
+  assert.equal(flightBudget.airborneParticleDrawCalls,2,
+    'all active house debris uses only two shared GPU point-cloud draw calls');
+  assert.equal(flightBudget.particleCapacity,656,
+    'particle buffers remain fixed regardless of building count');
+  assert.ok(flightBudget.activeParticleSlots>=1&&flightBudget.activeParticleSlots<=8,
+    'particle effects remain inside the bounded active-house pool');
+  assert.equal(settledBudget.activeParticleSlots,0,
+    'finished debris releases its pooled particle slot');
   assert.equal(backgroundFalling.dustVisible,true,'collapse dust burst is visible during debris flight');
   assert.ok(backgroundFalling.dustOpacity>.05,'collapse dust has measurable opacity');
   assert.equal(backgroundSettled.dustVisible,false,'settled collapse dust dissipates instead of persisting indefinitely');
@@ -1007,6 +1021,8 @@ try {
     return qa.distantBuildingState(id);
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
+  assert.equal(restoredBackground.largeParticleCount,0,'restart clears large point debris');
+  assert.equal(restoredBackground.smallParticleCount,0,'restart clears small point debris');
   assert.equal(restoredBackground.visibleFloors,0,'restart hides exposed interior slabs');
   assert.equal(restoredBackground.visibleFracturePanels,0,'restart closes broken facade geometry');
   assert.equal(restoredBackground.dustVisible,false,'restart clears any active dust burst');
