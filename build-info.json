@@ -1,8 +1,8 @@
 {
-  "build": "5.4-north-philly-destruction-rc12",
-  "version": "5.4.0-rc.12",
+  "build": "5.4-destruction-framing-rc13",
+  "version": "5.4.0-rc.13",
   "gameplay_base": "5.2.3",
-  "scope": "Fractured reusable house-debris geometry, slow airborne collapse, pooled dust blast; skyline remains upright and distant behind North Broad rowhouses",
+  "scope": "RC12 distant destruction with visible frontal dust shock cloud and full-frame airborne debris camera QA",
   "new_gameplay_features": true,
-  "release_status": "experimental RC12 — exact-head browser QA and screenshot inspection required; production main unchanged"
+  "release_status": "experimental RC13 — exact-head browser QA and visual capture review required"
 }
