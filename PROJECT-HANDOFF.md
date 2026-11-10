@@ -1,3 +1,9 @@
+## November 10 — rowhouse fire collapse correction candidate (QA and motion pending)
+
+- Based on MOT-01/02 real-video evidence, changed `src/rendering/distant-neighborhood.js`: one tall persistent rooftop billboard now shrinks and becomes invisible when its support collapses, while **two smaller, independently phased flame vents per house** remain separated and settle onto the rubble. Smoke broadens and lowers as the roof fails. Vents are a **single preallocated 56-instance pool / one fixed draw call** for all 28 capped fires, with the existing 280-ember pool untouched. No impact-time GPU allocations.
+- Updated browser QA to reject the prior unrealistic full-height street bonfire, verify vent separation/settlement and enforce the new fixed 56-instance budget. No gameplay, meteor interception, dragon flight, production, main, Building Explorer or Pages workflow changes.
+- **Not yet verified:** exact-head browser QA, five-scenario independent MP4 motion review, public seven-file deployment. Inspect `houses.mp4` at 0.35–2.10 and 2.30–4.95 seconds against MOT-01/02; if motion is still artificial, revise before release.
+
 ## November 10 — skyline plume contrast refinement (new QA pending)
 
 - Inspected actual QA #440 real-renderer close and standing-fire captures: bright fire is clearly visible on the Comcast tower, but the existing smoke sprite remains too faint against the dusk sky. QA #440 passed at `f9cdec1`, and Pages #176 passed its seven-file unauthenticated public comparison for that exact SHA. Prior release is now verified, but this new refinement is NOT yet tested or deployed.

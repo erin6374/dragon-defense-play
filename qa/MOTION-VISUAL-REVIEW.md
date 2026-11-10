@@ -15,6 +15,10 @@ uniformly sampled frames per recording. Findings below concern only observable
 graphics and composition; time markers refer to **seconds of recorded video**.
 Physical realism and actual hardware FPS require a separate playtest.
 
+## Current correction candidate — verification pending
+
+The latest development candidate adds two pooled, independently phased flame vents per struck house, fades the unsupported tall rooftop flame during collapse, and broadens/lower the smoke. It must be compared with the recorded baseline at MOT-01 0.35–2.10s and MOT-02 2.30–4.95s using the **new** exact-head `houses.mp4`. No visual pass is claimed yet.
+
 ## Observed issues and priority
 
 | ID | Priority | Clip / time | Visible issue | Recommended correction |

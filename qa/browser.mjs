@@ -1045,11 +1045,21 @@ try {
   const smokeDriftRange=Math.max(...smokeXs)-Math.min(...smokeXs);
   assert.ok(smokeXs.every(Number.isFinite)&&smokeDriftRange>.05&&smokeDriftRange<4,
     'distant impact smoke moves over the staged collapse without teleporting');
-  // Per-building flames sway and flicker within their original billboard budget.
-  // Check bounded positions at each staged state, not a phase-sensitive delta.
+  // Intact fires are prominent, but a collapsed roof must NOT drag a tall,
+  // unchanged flame column down onto the street. Two independently animated
+  // pooled vents remain on the rubble after the original source disappears.
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
-  assert.ok(fireStates.every(f=>f.flameHeight>backgroundIntact.originalHeight*.48),
-    'distant building fires remain tall and readable through collapse');
+  assert.ok(backgroundIntact.flameHeight>backgroundIntact.originalHeight*.48,
+    'initial rooftop fire is visible before demolition');
+  assert.ok(backgroundSettled.flameHeight<backgroundIntact.flameHeight*.50
+    &&!backgroundSettled.primaryFlameVisible,
+    'unsupported tall flame shrinks and extinguishes after roof collapse');
+  assert.ok(fireStates.every(f=>f.tonguePositions.length===2
+    &&f.tonguePositions.every(p=>p.every(Number.isFinite))
+    &&Math.abs(f.tonguePositions[0][0]-f.tonguePositions[1][0])>f.flameWidth*.25),
+    'two independently placed flame vents stay separated throughout collapse');
+  assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<backgroundIntact.originalHeight*.55),
+    'surviving flame vents remain low on settled rubble');
   assert.ok(fireStates.every(f=>f.flameWidth>1&&f.smokeHeight>f.flameHeight),
     'bright flame body is backed by a taller smoke plume');
   assert.ok(fireStates.every(f=>f.activeEmbers===10),
@@ -1058,6 +1068,12 @@ try {
     'all active rooftop embers use one GPU Points batch');
   assert.equal(flightBudget.fireEmberCapacity,280,
     'one shared 280-slot spark buffer is sufficient for all 28 fires');
+  assert.equal(flightBudget.fireTongueDrawCalls,1,
+    'all secondary fire vents share one fixed instanced draw call');
+  assert.equal(flightBudget.fireTongueCapacity,56,
+    'two bounded secondary vents are reserved for each of 28 fires');
+  assert.equal(flightBudget.activeFireTongues,2,
+    'one burning house has exactly two pooled secondary vents');
   assert.equal(flightBudget.activeFireEmbers,10,
     'one damaged house uses just ten hot ember points');
   assert.deepEqual(flightBudget.blazeAtlasSize,[128,192],
@@ -1066,9 +1082,9 @@ try {
     &&Number.isFinite(s.flameHeight)&&s.flameHeight>0
     &&Math.abs(s.flamePosition[0]-s.smokePosition[0])<4),
     'distant fire billboards remain finite and anchored near their smoke');
-  assert.ok(fireStates.every(s=>s.flameHeight/backgroundIntact.flameHeight>.75
-    &&s.flameHeight/backgroundIntact.flameHeight<1.25),
-    'distant fire flicker remains bounded during collapse');
+  assert.ok(backgroundFalling.flameHeight>0
+    &&backgroundSettled.flameHeight/backgroundIntact.flameHeight<.50,
+    'structural collapse reduces the unsupported primary flame rather than preserving its height');
   assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
   assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');
   assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');

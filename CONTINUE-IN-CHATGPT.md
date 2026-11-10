@@ -1,3 +1,9 @@
+## November 10 — rowhouse fire collapse correction candidate (QA and motion pending)
+
+- Based on MOT-01/02 real-video evidence, changed `src/rendering/distant-neighborhood.js`: one tall persistent rooftop billboard now shrinks and becomes invisible when its support collapses, while **two smaller, independently phased flame vents per house** remain separated and settle onto the rubble. Smoke broadens and lowers as the roof fails. Vents are a **single preallocated 56-instance pool / one fixed draw call** for all 28 capped fires, with the existing 280-ember pool untouched. No impact-time GPU allocations.
+- Updated browser QA to reject the prior unrealistic full-height street bonfire, verify vent separation/settlement and enforce the new fixed 56-instance budget. No gameplay, meteor interception, dragon flight, production, main, Building Explorer or Pages workflow changes.
+- **Not yet verified:** exact-head browser QA, five-scenario independent MP4 motion review, public seven-file deployment. Inspect `houses.mp4` at 0.35–2.10 and 2.30–4.95 seconds against MOT-01/02; if motion is still artificial, revise before release.
+
 ## November 10 — motion-video review pipeline and observed visual issues
 
 - **New repeatable workflow:** `.github/workflows/motion-qa.yml` runs separate from the normal cancellable browser QA. Its `cancel-in-progress: false` keeps an active motion recording alive when new commits arrive; only superseded *pending* runs may be replaced. Motion jobs check out their exact SHA, encode silent five-second 960x540/20fps MP4 gameplay scenarios, and upload `dragon-defense-motion-qa` with PNG checkpoints, JSON telemetry, review guide and an offline playback interface with ¼-speed and frame stepping. The old duplicate motion job was removed from `browser-qa.yml`.
