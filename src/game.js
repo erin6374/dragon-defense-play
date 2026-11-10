@@ -2398,6 +2398,19 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
  window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+  stageFluidFire:()=>run('stageFluidFire',()=>{
+   const initial=visualBank.fireVisualStats();
+   visualBank.advanceFireVisuals(124.15);
+   const before=visualBank.fireVisualChecksum();
+   visualBank.advanceFireVisuals(124.62);
+   const after=visualBank.fireVisualChecksum();
+   const metrics=visualBank.fireVisualStats();
+   visualBank.advanceFireVisuals(elapsed);
+   return {initial,metrics,checksumChanged:before!==after,
+    sharedFlameTexture:visualBank.images.flame===flameTexture,
+    fluidSkylineMaterial:skylineBackdrop.towers.every(t=>t.fireSprite.material.map===flameTexture),
+    phaseOne:before,phaseTwo:after};
+  }),
   captureDragonDetail:()=>run('captureDragonDetail',()=>{
    const width=renderer.domElement.width,height=renderer.domElement.height;
    qaDragonCamera.aspect=width/Math.max(1,height);
