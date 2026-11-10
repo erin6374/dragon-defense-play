@@ -221,6 +221,43 @@ export function createDistantNeighborhood({root,flameTexture}){
  }
  fracturedGeometry.computeVertexNormals();
 
+ // A SECOND instanced structural batch per tier reveals simplified interior floors,
+ // dark rear cavity and torn front masonry. All pieces are allocated once.
+ // The horizon has only one representative floor/panel, while the closer
+ // homes expose up to three slabs plus two broken facade sections.
+ const floorsPerTier=[3,3,2,2,1,1],panelsPerTier=[2,2,2,1,1,1];
+ const interiorMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
+ const interiorBatches=tiers.map((tier,ti)=>{
+  const homes=buildingDefs.filter(home=>home.tier===ti);
+  const perHome=1+floorsPerTier[ti]+panelsPerTier[ti];
+  const mesh=new THREE.InstancedMesh(cube,interiorMaterial,homes.length*perHome);
+  mesh.name='distance-'+tier.name+'-exposed-floor-and-fracture';
+  mesh.visible=false;mesh.frustumCulled=false;
+  for(let j=0;j<homes.length;j++){
+   const home=homes[j],offset=j*perHome;
+   home.interiorStart=offset;home.interiorCount=perHome;
+   home.interiorFloors=floorsPerTier[ti];home.fracturePanels=panelsPerTier[ti];
+   const facadePart=home.parts.find(p=>p.type==='main');
+   const facade=instances[ti].main[facadePart.index].color;
+   for(let k=0;k<perHome;k++){
+    dummy.position.set(home.x,0,home.z);dummy.rotation.set(0,0,0);
+    dummy.scale.set(0,0,0);dummy.updateMatrix();
+    mesh.setMatrixAt(offset+k,dummy.matrix);
+    mesh.setColorAt(offset+k,k===0?new THREE.Color(0x252730):
+     k<=home.interiorFloors?new THREE.Color(0xc3b7a2):
+     new THREE.Color(facade??0x9b7868).multiplyScalar(.72+(k%3)*.07));
+   }
+  }
+  mesh.instanceMatrix.needsUpdate=true;
+  if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  groups[ti].add(mesh);drawCalls++;
+  return mesh;
+ });
+ // Immutable shard-profile arrays: no garbage allocations during active collapse.
+ const shardWidths=[.28,.20,.35,.16,.25,.18,.30,.15,.22,.11,.17,.09];
+ const shardHeights=[.27,.40,.18,.10,.24,.36,.14,.21,.18,.11,.22,.08];
+ const shardDepths=[.21,.19,.27,.35,.18,.20,.28,.17,.21,.14,.17,.12];
+ const shardZ=[.21,-.19,-.28,.13,-.23];
  const rubbleBatches=tiers.map((tier,ti)=>{
   const homes=buildingDefs.filter(home=>home.tier===ti);
   const capacity=homes.length*rubblePerTier[ti];
@@ -333,15 +370,58 @@ export function createDistantNeighborhood({root,flameTexture}){
    // screenshot. Fold the roof inward and cant it over the debris instead.
    // These are existing instance transforms: no new mesh or draw call.
    const roofFootprint=roof?1-progress*.58:1;
-   dummy.position.set(part.x+(roof?progress*home.w*.24:0),part.y*heightScale,
-    part.z+(roof?progress*home.d*.09:0));
-   dummy.scale.set(part.w*trimScale*roofFootprint,part.h*heightScale*trimScale,
-    part.d*trimScale*(roof?1-progress*.46:1));
+   const rupture=Math.min(1,Math.max(0,(home.fall-.07)/.28));
+   // A damaged building opens toward the street. The remaining solid core
+   // retreats behind the floor slabs instead of shrinking as one opaque cube.
+   const main=type==='main';
+   dummy.position.set(part.x+(roof?progress*home.w*.24:main?(home.id%2?-.25:.25)*home.w*rupture:0),
+    part.y*heightScale,
+    part.z+(roof?progress*home.d*.09:main?-home.d*.24*rupture:0));
+   dummy.scale.set(part.w*trimScale*roofFootprint*(main?1-rupture*.48:1),
+    part.h*heightScale*trimScale,
+    part.d*trimScale*(roof?1-progress*.46:main?1-rupture*.30:1));
    dummy.rotation.set(roof?progress*.10:0,0,roof?progress*.39+crack*.075:0);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
   }
+  // The dark cavity and fractured facade reveal real horizontal floor layers.
+  // Each damaged home updates only its reserved slots in ONE instanced
+  // batch for the tier. No runtime mesh creation or interior physics.
+  const breach=Math.min(1,Math.max(0,(home.fall-.07)/.28));
+  const interior=interiorBatches[home.tier];
+  for(let k=0;k<home.interiorCount;k++){
+   if(breach<=0){
+    dummy.position.set(home.x,0,home.z);
+    dummy.rotation.set(0,0,0);dummy.scale.set(0,0,0);
+   }else if(k===0){
+    const wallHeight=home.h*heightScale*.93;
+    dummy.position.set(home.x,wallHeight*.5,home.z+home.d*.105);
+    dummy.rotation.set(0,0,0);
+    dummy.scale.set(home.w*.79*breach,wallHeight*breach,.13);
+   }else if(k<=home.interiorFloors){
+    const fraction=k/(home.interiorFloors+1);
+    const floorY=.13+home.h*heightScale*fraction;
+    dummy.position.set(home.x+home.w*.05*Math.sin(home.id+k),floorY,
+     home.z+home.d*.17);
+    dummy.rotation.set(.025*home.fall,0,(k%2?-.085:.11)*home.fall);
+    dummy.scale.set(home.w*.78*(1-home.fall*.13)*breach,
+     .16*breach,home.d*.68*(1-home.fall*.18)*breach);
+   }else{
+    const index=k-1-home.interiorFloors;
+    const direction=index%2===0?-1:1;
+    const panelWidth=home.w*(home.fracturePanels>1?.29:.42);
+    const panelHeight=home.h*(.58-.40*home.fall);
+    dummy.position.set(home.x+direction*home.w*(.27+home.fall*.17),
+     panelHeight*.5+(1-home.fall)*home.h*.14,
+     home.z+home.d*(.48+home.fall*.04));
+    dummy.rotation.set(.10*home.fall,0,direction*(.12+.43*home.fall));
+    dummy.scale.set(panelWidth*breach,panelHeight*breach,.22*breach);
+   }
+   dummy.updateMatrix();interior.setMatrixAt(home.interiorStart+k,dummy.matrix);
+  }
+  interior.instanceMatrix.needsUpdate=true;
+  if(breach>0)interior.visible=true;
   // Shared instanced chunks rise ABOVE the roofline on a stylized ballistic arc.
   // They drift and rotate toward the street, leaving settled masonry and roof
   // fragments. Distant LOD deliberately uses a slower visual clock than
@@ -350,21 +430,18 @@ export function createDistantNeighborhood({root,flameTexture}){
   const visibility=Math.min(1,home.fall*6);
   const airborne=Math.sin(Math.PI*home.fall);
   const horizontalSpread=home.w*(.12+.44*airborne);
-  const widths=[.28,.20,.35,.16,.25,.18,.30,.15,.22,.11,.17,.09];
-  const heights=[.27,.40,.18,.10,.24,.36,.14,.21,.18,.11,.22,.08];
-  const depths=[.21,.19,.27,.35,.18,.20,.28,.17,.21,.14,.17,.12];
   for(let k=0;k<home.rubbleCount;k++){
    const roofFragment=k%4===0;
-   const w=home.w*widths[k]*visibility;
-   const h=home.h*heights[k]*(roofFragment?.45:1)*visibility;
-   const d=home.d*depths[k]*visibility;
+   const w=home.w*shardWidths[k]*visibility;
+   const h=home.h*shardHeights[k]*(roofFragment?.45:1)*visibility;
+   const d=home.d*shardDepths[k]*visibility;
    const direction=k%2===0?-1:1;
    const side=(.13+(k%5)*.12)*direction;
    const landingHeight=h*.5+.035;
    const loft=airborne*home.h*(.72+(k%4)*.13);
    const y=landingHeight+(1-home.fall)*home.h*(.34+(k%3)*.11)+loft;
    const settleX=home.w*(side*.80);
-   const settleZ=home.d*([.21,-.19,-.28,.13,-.23][k%5]);
+   const settleZ=home.d*shardZ[k%5];
    dummy.position.set(home.x+settleX+direction*horizontalSpread*airborne,y,
     home.z+settleZ+airborne*home.d*.10);
    dummy.rotation.set(airborne*(k%2?-.68:.54)+home.fall*.22,
@@ -448,6 +525,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   impactSmoke.clear();damageMarkers.length=0;
   for(const home of damaged){home.damage=home.fall=0;applyFall(home);}
   for(const debris of rubbleBatches)debris.visible=false;
+  for(const interior of interiorBatches)interior.visible=false;
   damaged.clear();falling.clear();fireTime=0;
  }
  function setHealth(health){
@@ -482,6 +560,15 @@ export function createDistantNeighborhood({root,flameTexture}){
     const e=dummy.matrix.elements;
     rubblePieces.push({height:Math.hypot(e[4],e[5],e[6]),x:e[12],y:e[13],z:e[14]});
    }
+   const interiors=interiorBatches[home.tier];
+   const floorHeights=[],facadePanelHeights=[];
+   for(let k=1;k<home.interiorCount;k++){
+    interiors.getMatrixAt(home.interiorStart+k,dummy.matrix);
+    const m=dummy.matrix.elements,meshHeight=Math.hypot(m[4],m[5],m[6]);
+    if(k<=home.interiorFloors){
+     if(meshHeight>.001)floorHeights.push(m[13]);
+    }else if(meshHeight>.001)facadePanelHeights.push(meshHeight);
+   }
    const roofPart=home.parts.find(part=>part.type==='roof');
    batches[home.tier].roof.getMatrixAt(roofPart.index,dummy.matrix);
    const re=dummy.matrix.elements;
@@ -492,6 +579,8 @@ export function createDistantNeighborhood({root,flameTexture}){
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
     airborneCount:home.fall>0&&home.fall<1?rubblePieces.filter(piece=>piece.y>home.h*.85).length:0,
     debrisMotionSeconds:1.35+home.tier*.27,
+    visibleFloors:floorHeights.length,floorElevations:floorHeights,
+    visibleFracturePanels:facadePanelHeights.length,fracturePanelHeights:facadePanelHeights,
     dustVisible:!!home.dust?.sprite.visible,
     dustOpacity:home.dust?.sprite.material.opacity??0,
     smokePosition:smoke?[smoke.puff.position.x,smoke.puff.position.y]:null,
@@ -502,7 +591,11 @@ export function createDistantNeighborhood({root,flameTexture}){
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    rubbleBatches:rubbleBatches.length,rubbleCapacity:buildingDefs.reduce((sum,b)=>sum+b.rubbleCount,0),
-   debrisLodByTier:rubblePerTier,dustPoolCapacity:collapseDust.length,
+   debrisLodByTier:rubblePerTier,
+   exposedFloorLodByTier:floorsPerTier,facadeFractureLodByTier:panelsPerTier,
+   interiorBatches:interiorBatches.length,
+   interiorCapacity:buildingDefs.reduce((sum,b)=>sum+b.interiorCount,0),
+   dustPoolCapacity:collapseDust.length,
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),
    falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
