@@ -913,8 +913,11 @@ try {
   assert.ok(towerImpact.result.fireSize[0]<9 &&
     towerImpact.result.secondaryBurnSites.every(site=>site.width>=3.8),
     'dominant tower flame is bounded while two independent facade fires stay readable');
-  assert.ok(towerImpact.result.smokeOpacity<.80 && towerImpact.result.smokeWorldScale[0]<16.5,
-    'single central smoke patch cannot overwhelm staggered burning floors');
+  // smokeWorldScale is in WORLD units; the distant skyline group scales X by
+  // 3.25. RC23 limits local width to 14.8, or 48.1 world units at full strike.
+  assert.ok(towerImpact.result.smokeOpacity<.80 &&
+    towerImpact.result.smokeWorldScale[0]<49.0,
+    'the central plume stays below RC23 world-space width/opacity caps');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
   assert.ok(towerImpact.result.smokeOpacity>.68,'landmark smoke is dense enough to read against the dusk sky');
