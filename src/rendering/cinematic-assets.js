@@ -1,5 +1,99 @@
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Dragon Defense 4.4 — coherent visual asset library, browser-native WebGL/PBR.
+
+// Shared, animated, deterministic fluid-fire atlases. Fire moves through its
+// *texture* instead of stretching fixed triangular polygons. All game systems
+// (dragon, vehicles, school, rowhouses and landmark towers) reuse these maps.
+// Fixed 128x192/96x128 RGBA buffers upload at 12/7 Hz, independent of fires.
+function createFluidCombustionAtlases(THREE){
+ const FW=128,FH=192,SW=96,SH=128;
+ const fireCanvas=document.createElement('canvas');fireCanvas.width=FW;fireCanvas.height=FH;
+ const smokeCanvas=document.createElement('canvas');smokeCanvas.width=SW;smokeCanvas.height=SH;
+ const fc=fireCanvas.getContext('2d',{willReadFrequently:false}),sc=smokeCanvas.getContext('2d',{willReadFrequently:false});
+ const fi=fc.createImageData(FW,FH),si=sc.createImageData(SW,SH);
+ const flame=new THREE.CanvasTexture(fireCanvas),smoke=new THREE.CanvasTexture(smokeCanvas);
+ for(const tex of [flame,smoke]){
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
+  tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;
+  tex.generateMipmaps=false;
+ }
+ const values=new Float32Array(4096);let seed=0x1f20a911;
+ for(let i=0;i<values.length;i++){
+  seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+  values[i]=(seed>>>8)/16777216;
+ }
+ const clamp=x=>Math.max(0,Math.min(1,x));
+ function noise(x,y){
+  const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+  const tx=fx*fx*(3-2*fx),ty=fy*fy*(3-2*fy);
+  const a=((iy&63)<<6)|(ix&63),b=((iy&63)<<6)|((ix+1)&63);
+  const c=(((iy+1)&63)<<6)|(ix&63),d=(((iy+1)&63)<<6)|((ix+1)&63);
+  return (values[a]+(values[b]-values[a])*tx)*(1-ty)+
+         (values[c]+(values[d]-values[c])*tx)*ty;
+ }
+ function drawFlame(t){
+  const p=fi.data,flow=t*1.6;
+  for(let y=0;y<FH;y++){
+   const h=1-(y+.5)/FH,baseFall=Math.pow(Math.max(.0001,1-h),.42);
+   for(let x=0;x<FW;x++){
+    const u=(x+.5)/FW-.5,i=(y*FW+x)*4;
+    // Advected noise domains cause twisting, detaching tongues; the edge is
+    // turbulent rather than cut out as clean geometric spikes.
+    const coarse=noise(u*7.7+3.1,h*6.4-flow);
+    const mids=noise(u*22+coarse*2.4,h*19-flow*2.1);
+    const detail=noise(u*48+mids*3.2,h*42-flow*3.9);
+    const lean=.060*Math.sin(h*7.2-t*.9)+.12*(coarse-.5)+.065*(mids-.5)*h;
+    const breadth=(.45*Math.pow(Math.max(0,1-h),.86)+.012)*(.86+.31*coarse);
+    const r=Math.abs(u-lean)/breadth;
+    const fracture=(mids-.5)*.65+(detail-.5)*.26;
+    const ragged=clamp((1.13-r+fracture)*2.45);
+    const breakUp=clamp(.50+.78*coarse+.50*mids+.33*detail);
+    const alpha=clamp(ragged*breakUp*baseFall*1.40);
+    // Blackbody-inspired gradient: opaque bright white-yellow hot core,
+    // amber transition and thin dark-red fringes toward flame tips.
+    const temp=clamp((1-h*.80)*(1-r*.36)*(.75+.38*mids)*1.35);
+    const white=clamp((temp-.79)*4.7);
+    p[i]=Math.round(214+41*clamp(temp*1.2));
+    p[i+1]=Math.round(47+189*temp+19*white);
+    p[i+2]=Math.round(12+34*temp+178*white);
+    p[i+3]=Math.round(255*alpha);
+   }
+  }
+  fc.putImageData(fi,0,0);flame.needsUpdate=true;
+ }
+ function drawSmoke(t){
+  const p=si.data,flow=t*.50;
+  for(let y=0;y<SH;y++){
+   const h=1-(y+.5)/SH;
+   for(let x=0;x<SW;x++){
+    const u=(x+.5)/SW-.5,i=(y*SW+x)*4;
+    const low=noise(u*5.6+2.3,h*7.2-flow),mid=noise(u*16+low*2.7,h*16-flow*1.9);
+    const high=noise(u*35+mid*2,h*31-flow*3.1);
+    const center=Math.sin(t*.28+h*5.2)*.065+(low-.5)*.16;
+    const spread=.20+.23*h+.11*low;
+    const rad=Math.abs(u-center)/spread;
+    const wisps=clamp((1.14-rad+(mid-.5)*.68+(high-.5)*.24)*1.95);
+    const density=clamp((.14+.54*low+.32*mid)*wisps);
+    // White atlas, colored by existing grayscale/soot sprite materials.
+    const v=Math.round(177+55*high);
+    p[i]=v;p[i+1]=v;p[i+2]=v;p[i+3]=Math.round(255*density*.72);
+   }
+  }
+  sc.putImageData(si,0,0);smoke.needsUpdate=true;
+ }
+ let fireFrame=0,smokeFrame=0,lastFire=-Infinity,lastSmoke=-Infinity;
+ function update(time){
+  const t=Math.max(0,Number(time)||0);
+  if(t<lastFire||t-lastFire>=1/12){drawFlame(t);lastFire=t;fireFrame++;}
+  if(t<lastSmoke||t-lastSmoke>=1/7){drawSmoke(t);lastSmoke=t;smokeFrame++;}
+ }
+ update(0);
+ return {flame,smoke,update,stats:()=>({fireFrame,smokeFrame,fireSize:[FW,FH],
+  smokeSize:[SW,SH],flameUploadHz:12,smokeUploadHz:7,textures:2}),
+  // Read-back is only for QA; no pixel transfer from GPU is required.
+  checksum:()=>{let sum=0;for(let i=0;i<fi.data.length;i+=31)sum=(sum+fi.data[i]*17+fi.data[i+3])>>>0;return sum;}};
+}
 // Original generated artwork, no third-party imagery, compatible with Unity texture export.
 export function createVisualMaterials(THREE){
  const loader=new THREE.TextureLoader();
@@ -34,7 +128,11 @@ export function createVisualMaterials(THREE){
   roadStripe:new THREE.MeshBasicMaterial({color:0xe6e2d1,transparent:true,opacity:.86,depthWrite:false}),
   yellowStripe:new THREE.MeshBasicMaterial({color:0xd5aa51,transparent:true,opacity:.9,depthWrite:false})
  };
- bank.images={flame:tex('flame.png',[1,1],true),smoke:tex('smoke.png',[1,1],true),dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
+ const fluidFire=createFluidCombustionAtlases(THREE);
+ bank.images={flame:fluidFire.flame,smoke:fluidFire.smoke,dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
+ bank.advanceFireVisuals=fluidFire.update;
+ bank.fireVisualStats=fluidFire.stats;
+ bank.fireVisualChecksum=fluidFire.checksum;
  const wallVariants=new Map();
  bank.getBuilding=(kind,hex=null)=>{
   const base=kind==='brick'?bank.brick:(kind==='modern'||kind==='concrete')?bank.concrete:bank.limestone;
