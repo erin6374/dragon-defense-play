@@ -1,8 +1,8 @@
 {
-  "build": "5.4-north-philly-molten-structure-rc15",
-  "version": "5.4.0-rc.15",
+  "build": "5.4-cinematic-particle-debris-rc16",
+  "version": "5.4.0-rc.16",
   "gameplay_base": "5.2.3",
-  "scope": "Opening molten fragments apply extra structural damage to school and neighboring buildings with deterministic browser regression",
+  "scope": "GPU point-cloud masonry bursts (large/small), smaller structural fragments and finer exposed walls; retains RC15 molten structural damage",
   "new_gameplay_features": true,
-  "release_status": "RC15 development preview; exact-head browser QA pending, production untouched"
+  "release_status": "RC16 development preview; exact-head browser QA and screenshot review required; production untouched"
 }
