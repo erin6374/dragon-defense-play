@@ -43,6 +43,10 @@ const descriptions={
 };
 const poses=document.querySelector('#poses'),description=document.querySelector('#description');
 let state='hover',speed=1,time=0,paused=false,bankDirection=1;
+// Changing a pose after selecting an orthographic study view can widen the
+// wings beyond the previous pose's bounding box. Refit once after a pose
+// change, not once per animation frame (which would make the camera swim).
+let referenceNeedsFraming=false;
 const playbackButton=document.querySelector('#play-toggle');
 const frameButton=document.querySelector('#step-frame');
 const timeSlider=document.querySelector('#timeline');
@@ -55,17 +59,30 @@ function syncPlaybackUI(){
 }
 function renderAtTime(){
   applyPose(time,state,bankDirection);
+  if(referenceNeedsFraming&&camera.isOrthographicCamera){
+    setView(currentView);
+    referenceNeedsFraming=false;
+  }
   renderer.render(scene,camera);
   syncPlaybackUI();
 }
 playbackButton.addEventListener('click',()=>{paused=!paused;syncPlaybackUI();});
 frameButton.addEventListener('click',()=>{paused=true;time+=1/60;renderAtTime();});
-timeSlider.addEventListener('input',e=>{paused=true;time=Number(e.target.value);renderAtTime();});
+timeSlider.addEventListener('input',e=>{
+  paused=true;time=Number(e.target.value);
+  referenceNeedsFraming=camera.isOrthographicCamera;
+  renderAtTime();
+});
 // The same deterministic timeline drives live animation, pause, scrubbing,
 // frame stepping, and QA. Browser tests can inspect exact poses.
 for(const name of Object.keys(descriptions)){
  const button=document.createElement('button');button.textContent=name.toUpperCase();button.setAttribute('aria-pressed',name===state);
- button.addEventListener('click',()=>{state=name;time=0;description.textContent=descriptions[name];for(const b of poses.children)b.setAttribute('aria-pressed',b===button);renderAtTime();});
+ button.addEventListener('click',()=>{
+  state=name;time=0;description.textContent=descriptions[name];
+  for(const b of poses.children)b.setAttribute('aria-pressed',b===button);
+  referenceNeedsFraming=camera.isOrthographicCamera;
+  renderAtTime();
+ });
  poses.append(button);
 }
 description.textContent=descriptions[state];
@@ -74,6 +91,7 @@ document.querySelector('#wire').addEventListener('change',e=>{for(const m of rig
 // Positive and negative bank are exact mirrored studies at the same pose time.
 document.querySelector('#bank-direction').addEventListener('change',e=>{
  bankDirection=e.target.value==='left'?-1:1;
+ referenceNeedsFraming=camera.isOrthographicCamera;
  renderAtTime();
 });
 const views={perspective:[13,9,18],front:[14,2,0],side:[0,3,19],top:[0,22,.01],rear:[-14,2,0]};
@@ -95,8 +113,10 @@ function setView(name){
     camera.position.set(...views[currentView]).add(center);
     camera.lookAt(center);
     const aspect=Math.max(.1,host.clientWidth/Math.max(1,host.clientHeight));
-    let halfW=(currentView==='front'||currentView==='rear'?extent.z:extent.x)*.65;
-    let halfH=(currentView==='top'?extent.z:extent.y)*.65;
+    // Leave room for the rig's moving wrists/tips between animation frames.
+    // A 1.5x box on each axis is too tight when hover wings fully extend.
+    let halfW=(currentView==='front'||currentView==='rear'?extent.z:extent.x)*.82;
+    let halfH=(currentView==='top'?extent.z:extent.y)*.82;
     halfW=Math.max(1.5,halfW);halfH=Math.max(1.5,halfH);
     halfH=Math.max(halfH,halfW/aspect);
     halfW=halfH*aspect;

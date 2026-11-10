@@ -1834,6 +1834,8 @@ try {
       window.__PAULO_LAB_QA.setState('hover');
     });
     const frontFrame=await lab.evaluate(()=>window.__PAULO_LAB_QA.snapshot());
+    // Capture diagnostics even if a future pose exceeds the camera envelope.
+    report.pauloReferenceFrontBeforeAssert=frontFrame.referenceFrame;
     assert.equal(frontFrame.cameraType,'orthographic','front reference uses true orthographic projection');
     assert.ok(frontFrame.referenceFrame?.maxX<.90&&frontFrame.referenceFrame?.maxY<.90,
       'full front-view dragon anatomy including wing tips fits the frame');
