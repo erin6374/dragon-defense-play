@@ -1,6 +1,6 @@
-TECH FREIRE DRAGON DEFENSE — v5.4.0 RC12 WINDOWS DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.4.0 RC13 WINDOWS DEVELOPMENT PREVIEW
 ==================================================================
-Status: unmerged RC12 playable candidate; source-level and browser QA must be tied to exact commit.
+Status: unmerged RC13 playable candidate; source-level and browser QA must be tied to exact commit.
 What changed since RC11: irregular fractured masonry / roof chunks instead of cuboid
 bricks, 12-to-6 debris LOD by distance, pooled expanding dust during distant
 rowhouse collapse, longer airborne debris footage in the QA screenshot set.
