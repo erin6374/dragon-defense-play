@@ -1,8 +1,8 @@
 {
-  "build": "5.4-cinematic-particle-debris-rc16",
-  "version": "5.4.0-rc.16",
+  "build": "5.4-masonry-dust-rc17",
+  "version": "5.4.0-rc.17",
   "gameplay_base": "5.2.3",
-  "scope": "GPU point-cloud masonry bursts (large/small), smaller structural fragments and finer exposed walls; retains RC15 molten structural damage",
+  "scope": "Shared procedural masonry grain, layered bounded low dust cloud for long-range house destruction; RC16 particle debris retained",
   "new_gameplay_features": true,
-  "release_status": "RC16 development preview; exact-head browser QA and screenshot review required; production untouched"
+  "release_status": "RC17 development candidate — exact-head browser QA and rendered-screenshot review required; main untouched"
 }
