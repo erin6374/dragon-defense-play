@@ -1,3 +1,9 @@
+## November 10 ~15:35 ET — new RC22 repair verification pending
+
+- Browser QA 42895988129 on `111f3e0690c0ffd1ab7089a6a54ae14b9cdaa1ea` **FAILED** at `qa/browser.mjs:357`: runtime version/build identifiers stayed RC21 while `build-info.json` expected RC22. Targeted metadata-only synchronization committed next; source fire balance unchanged.
+- RC22 motion QA 42895988236 was still in progress at diagnosis; inspect all actual MP4s before closing MOT-01/MOT-03. A successful new exact-head browser run, independent motion review and automated Pages seven-file check are required.
+- Last independently verified preview is RC21 `e5a442fa54b75995e4bc038e8ee867931bbf7012`; no production or main changes.
+
 # Dragon Defense — current verification and next actions
 
 **Snapshot:** November 10, 2026, ~15:30 Eastern; live GitHub state takes precedence.
