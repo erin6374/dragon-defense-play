@@ -1,3 +1,9 @@
+## November 10 — RC21 pre-change comparison and required motion gate
+
+Downloaded and inspected **actual** five-clip `b7a2fe3` motion artifact 13792297801 from [successful motion run 42871663277](https://github.com/erin6374/dragon-defense-play/actions/runs/42871663277), with `report.json.errors=[]`. Compared sampled frames at **0.5, 1.2, 2.4, 3.4, 4.8 seconds** against the earlier `52176a4` recording. The `skyline.mp4` flame remains one concentrated stationary-looking patch at 1.2–4.8s, despite two staged strikes. The `houses.mp4` rooftop flame remains tall at 1.2–2.4s; after 3.4s the earlier two small rubble fires remain instead of a single descending torch. MOT-03 and MOT-01 are still visually open; MOT-02 is improved but not photorealistic.
+
+**New RC21 candidate, not visually certified:** two additional pooled, independently animated facade fire/smoke origins per skyline tower. Acceptance: after repeated impacts, at least two vertically separated burning floor regions are visible, their flame shapes and smoke do not pulse or drift in lockstep, and the tower stays standing; smoke should visibly rise without an abrupt teleport or broad opaque rectangle. Fixed rendering budget: 18 flame + 18 smoke instances in two draw calls. Inspect new `skyline.mp4` at **0.8–4.8s** and close real-renderer browser screenshots. Keep the rowhouse 1.2–2.4s roof flame on the follow-up list. Numeric QA alone cannot close these visual issues.
+
 # Dragon Defense — motion-based graphics review
 
 ## November 10 — verified five-clip motion review (new baseline)
