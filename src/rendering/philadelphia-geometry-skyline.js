@@ -81,7 +81,7 @@ function profile(w,h,roof){
 }
 function addLine(parent,x1,y1,x2,y2,mat,r=.065,z=1.2){const a=new THREE.Vector3(x1,y1,z),b=new THREE.Vector3(x2,y2,z),v=b.clone().sub(a);
  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,v.length(),5),mat);mesh.position.copy(a).addScaledVector(v,.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());parent.add(mesh);return mesh;}
-export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
+export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture=null,smokeAtlas=null}={}){
  const group=new THREE.Group();group.name='PHILADELPHIA-ORIGINAL-3D-SKYLINE';parent.add(group);
  const towers=[],beacons=[],distantHelis=[],clockMat=new THREE.MeshBasicMaterial({color:0xd8c6a3});
  // A shared atlas and one dormant sprite per landmark. Impact effects never
@@ -95,23 +95,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  impactGlow.addColorStop(.55,'rgba(249,81,28,.45)');
  impactGlow.addColorStop(1,'rgba(244,50,12,0)');
  impactContext.fillStyle=impactGlow;impactContext.fillRect(0,0,64,64);
- // Distant smoke is baked once and is independent of the short impact flash.
- // Reusing one sprite per landmark bounds the smoke budget at nine drawables.
- const smokeCanvas=document.createElement('canvas');
- smokeCanvas.width=64;smokeCanvas.height=128;
- const smokeContext=smokeCanvas.getContext('2d');
- for(let i=0;i<5;i++){
-  const x=32+Math.sin(i*2.3)*8,y=104-i*20,r=17+i*2.7;
-  const haze=smokeContext.createRadialGradient(x,y,1,x,y,r);
-  haze.addColorStop(0,'rgba(50,53,57,.67)');
-  haze.addColorStop(.55,'rgba(76,82,88,.35)');
-  haze.addColorStop(1,'rgba(103,113,121,0)');
-  smokeContext.fillStyle=haze;
-  smokeContext.beginPath();smokeContext.ellipse(x,y,r*.88,r,0,0,Math.PI*2);smokeContext.fill();
- }
- const smokeTexture=new THREE.CanvasTexture(smokeCanvas);
- smokeTexture.colorSpace=THREE.SRGBColorSpace;
- const smokeMaterial=new THREE.SpriteMaterial({map:smokeTexture,color:0xc0c7ca,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+ // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
+ // this avoids the previous static circles and extra local smoke texture.
+ const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
+  color:0x9da0a2,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -139,45 +126,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
- // Persistent fire is a preallocated billboard, not a skyscraper demolition effect.
- // Each landmark reuses this single atlas; no new GPU resource is allocated per strike.
- const fireCanvas=document.createElement('canvas');
- fireCanvas.width=64;fireCanvas.height=96;
- const fireCtx=fireCanvas.getContext('2d');
- // Bright tongues and a golden base glow remain legible at skyline depth,
- // avoiding the barely visible, uniform orange circles of the earlier sprite.
- const fireBase=fireCtx.createRadialGradient(32,79,1,32,79,29);
- fireBase.addColorStop(0,'rgba(255,247,175,.98)');
- fireBase.addColorStop(.32,'rgba(255,174,36,.88)');
- fireBase.addColorStop(.76,'rgba(255,67,9,.40)');
- fireBase.addColorStop(1,'rgba(200,29,0,0)');
- fireCtx.fillStyle=fireBase;fireCtx.fillRect(0,46,64,50);
- function towerFlame(cx,base,high,width,bend,core=false){
-  fireCtx.beginPath();
-  fireCtx.moveTo(cx-width*.52,base);
-  fireCtx.bezierCurveTo(cx-width*.92,base-high*.35,cx+bend-width*.20,base-high*.75,cx+bend,base-high);
-  fireCtx.bezierCurveTo(cx+bend+width*.17,base-high*.57,cx+width*.81,base-high*.28,cx+width*.46,base);
-  fireCtx.closePath();
-  const grad=fireCtx.createLinearGradient(cx,base,cx+bend,base-high);
-  if(core){
-   grad.addColorStop(0,'rgba(255,255,237,.99)');
-   grad.addColorStop(.47,'rgba(255,221,95,.92)');
-   grad.addColorStop(.88,'rgba(255,135,15,.35)');
-  }else{
-   grad.addColorStop(0,'rgba(255,193,36,.97)');
-   grad.addColorStop(.38,'rgba(255,111,10,.93)');
-   grad.addColorStop(.82,'rgba(255,46,5,.66)');
-  }
-  grad.addColorStop(1,'rgba(255,42,5,0)');
-  fireCtx.fillStyle=grad;fireCtx.fill();
- }
- for(const p of [[17,90,49,16,-8],[30,93,73,20,6],[45,93,82,20,-5],[52,89,49,15,7]])
-  towerFlame(...p);
- towerFlame(29,91,47,13,3,true);
- towerFlame(43,90,62,12,-4,true);
- const fireTexture=new THREE.CanvasTexture(fireCanvas);
- fireTexture.colorSpace=THREE.SRGBColorSpace;
- const fireMaterial=new THREE.SpriteMaterial({map:fireTexture,transparent:true,depthWrite:false,depthTest:true,opacity:.75,blending:THREE.AdditiveBlending});
+ // Physically inspired noise-advection atlas shared with dragon breath,
+ // rowhouse fires, cinematic impacts and the distant city. Each skyscraper
+ // still owns just one bounded sprite and its immutable impact metadata.
+ const fireMaterial=new THREE.SpriteMaterial({map:flameTexture,transparent:true,
+  depthWrite:false,depthTest:true,opacity:.88,blending:THREE.NormalBlending});
  const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
