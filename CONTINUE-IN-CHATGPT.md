@@ -1,3 +1,8 @@
+## November 10 — RC19 plume QA #438 pulse-envelope correction (new QA pending)
+
+- [Exact-head browser QA #438](https://github.com/erin6374/dragon-defense-play/actions/runs/42807040997) reached the actual WebGL skyline stage, then failed `qa/browser.mjs:889` on a new **phase-sensitive width threshold** (`fireSize[0]>6`), not on an exception or a gameplay test. The new fire base width is approximately 6.36 world units for the staged first strike, but the existing time-dependent pulse can multiply it by as little as 0.815, yielding about 5.19. Thus `>6` incorrectly rejects valid animation frames.
+- Lowered only this width assertion to `>5.0`, below the theoretical minimum of the enlarged flame yet above the previous 3.5 threshold. Existing plume size/opacity/contrast and real-renderer screenshot tests remain unchanged. **New exact-head QA and public Pages byte comparison required**; the failed SHA was never certified.
+
 ## November 10 — RC19 skyline plume readability pass (new exact-head QA required)
 
 - After [QA #437](https://github.com/erin6374/dragon-defense-play/actions/runs/42799131782) and [Pages #173](https://github.com/erin6374/dragon-defense-play/actions/runs/42800003689) passed for `b9b4beb`, inspected the actual close-up screenshot (`06-skyline-fire-close.png`): flame was small relative to the Comcast tower and smoke faint against the dusk sky.

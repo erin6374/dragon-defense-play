@@ -886,7 +886,7 @@ try {
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
-  assert.ok(towerImpact.result.fireSize[0]>6&&
+  assert.ok(towerImpact.result.fireSize[0]>5.0&&
     towerImpact.result.fireSize[1]>towerImpact.result.fireSize[0]*1.5,
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
   assert.ok(towerImpact.result.fireOpacity>.58,
