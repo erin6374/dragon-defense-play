@@ -4,6 +4,14 @@ Open **Actions → Dragon Defense browser QA → Run workflow** for an on-demand
 
 The artifact contains startup and gameplay PNGs, camera pans, both school side elevations, and matched front, corner, and side views before impact, after a localized impact, and after total collapse. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
 
+## Motion review
+
+Pull requests and manually dispatched browser QA runs also publish **dragon-defense-motion-qa**. Extract it and open `index.html` to play the four 960 × 540 MP4s. The artifact also contains three reference PNGs per clip and a JSON report with the exact commit, seed, timeline and per-frame scene counters.
+
+Each five-second clip uses a fresh seeded browser context and 100 rendered frames, with three production simulation steps per frame. The Skyfall clip uses keyboard flight and explicitly triggers a split. The house and skyline clips use fixed diagnostic cameras and staged strikes. The traffic clip stages the gust release and records the production wind and traffic response. The clips are silent and their playback cadence represents simulation time. Use the existing browser QA and the downloadable Windows preview for real-time performance or interaction checks.
+
+To reproduce locally, serve the repo over HTTP, install Playwright Core and FFmpeg with libx264, set `PLAYWRIGHT_MODULE` to Playwright Core's absolute `index.mjs` path, and set `QA_BROWSER_CHANNEL=chrome` or `QA_BROWSER_EXECUTABLE` to a compatible Chromium binary. Run `node qa/motion.mjs http://127.0.0.1:8765/`. Outputs go to `qa-output/motion/`. Software rendering and browser versions can affect pixels across machines.
+
 ## v5.2.2 source fidelity
 
 The three matched views each reported 592,298 triangles for the source school and the game model. The axis-aligned bounds differed by less than 0.001 game units. Batching reduced the school from 3,420 draw calls to 8 in isolation. The v5.2.1 matched renders showed a reconstructed grid of window bays and a simplified flat roof, while v5.2.2 shows the source's two main window banks, front doors and rails, and rooftop volumes.

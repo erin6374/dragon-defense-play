@@ -2322,9 +2322,16 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'){
   diagnosticFrames.contextEvents.push({at:Date.now(),type:'restored'});
  });
 }
-function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
- if(maxRenderFPS>0&&present-previousRenderAt<1000/maxRenderFPS-1.0)return;
- previousRenderAt=present;const dt=clock.getDelta();if(dt>.25&&active&&!paused){quality.sample(Math.min(dt,.2));}hostMetricTime+=dt;hostMetricFrames++;quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
+const motionQA=schoolQA&&new URLSearchParams(location.search).get('motion')==='1';
+function animate(){if(!motionQA){requestAnimationFrame(animate);renderFrame();}}
+function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
+ if(!motionQA&&maxRenderFPS>0&&present-previousRenderAt<1000/maxRenderFPS-1.0)return;
+ previousRenderAt=present;const dt=motionQA?3/60:clock.getDelta();
+ if(!motionQA){
+  if(dt>.25&&active&&!paused)quality.sample(Math.min(dt,.2));
+  quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
+ }
+ hostMetricTime+=dt;hostMetricFrames++;
  sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const step=fixedStep.advance(dt,update);const simMs=performance.now()-simStart;
  const w=innerWidth,h=innerHeight;
  const resized=w!==lastW||h!==lastH;
@@ -2349,7 +2356,7 @@ function animate(){requestAnimationFrame(animate);diagnosticFrames.ticks++;diagn
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
  const renderStartUTC=Date.now();const renderStart=performance.now();
  visualBank.advanceFireVisuals(elapsed);
- cinematicFX.flush();renderer.render(scene,camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
+ cinematicFX.flush();renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
    frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames};
@@ -3158,6 +3165,94 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
 
 // v4.12: deterministic, low-impact frame sampling for local automated benchmark.
 // Never enabled in normal gameplay; raw timings are exported in the local QA ZIP.
+if(motionQA){
+ const qa=window.__DD_QA,district=neighborhood.longRange;
+ const detail=new THREE.PerspectiveCamera(45,16/9,.1,500);
+ let scenario,meteor,house,tower,vehicle,captureCamera,frame=0;
+ window.__DD_MOTION={
+  start(name){
+   if(scenario)throw Error('Use a fresh page for each motion scenario');
+   scenario=name;
+   const started=qa.start({skyfall:4,houses:7,skyline:7,traffic:10}[name]);
+   if(!started.ok)throw Error(started.error);
+   closeChapterTransition();
+   qa.cinematicStage('quiet');
+   qa.qaSettleAtmosphere();
+   dragonMeteorTimer=distantTimer=skylineEventTimer=600;
+   if(name==='skyfall'){
+    dragon.position.set(-28,35,15);
+    setPauloPreview(true);
+    spawnMeteor(Math.random,{size:3.6,kind:'flaming'});
+    meteor=meteors.at(-1);
+    meteor.mesh.position.set(9,67,13);
+    meteor.vel.set(-1,-15,0);
+   }else if(name==='houses'){
+    house=district.targetAt(0,-100);
+    const target=district.root.localToWorld(new THREE.Vector3(house.x,house.y*.5,house.z));
+    detail.position.copy(target).add(new THREE.Vector3(4,13,34));
+    detail.lookAt(target.clone().add(new THREE.Vector3(0,3,0)));
+    captureCamera=detail;
+   }else if(name==='skyline'){
+    tower=skylineBackdrop.towers.find(t=>t.def.id==='comcast-technology');
+    const point=tower.group.localToWorld(new THREE.Vector3(0,tower.def.h*.7,0));
+    detail.position.copy(point).add(new THREE.Vector3(0,9,76));
+    detail.lookAt(point);
+    captureCamera=detail;
+   }else if(name==='traffic'){
+    dragon.position.set(-22,9,19);
+    dragonLeavingRoof=true;
+    for(let i=0;i<8&&!vehicle;i++){
+     spawnCar();
+     vehicle=cars.find(c=>!c.emergency&&c.root.userData.headlightBeam);
+    }
+    if(!vehicle)throw Error('No road vehicle for motion capture');
+    vehicle.root.position.set(14,-.36,20);
+    vehicle.root.rotation.y=Math.PI;
+    Object.assign(vehicle,{dir:-1,laneZ:20,speed:7,desiredSpeed:7,turnAt:null});
+   }else throw Error('Unknown motion scenario '+name);
+   return {version:GAME_VERSION,build:BUILD_ID,wave};
+  },
+  frame(){
+   if(scenario==='skyfall'){
+    if(frame===0){input.keyDown('KeyD');input.keyDown('KeyW');}
+    if(frame===12)input.keyUp('KeyW');
+    if(frame===24&&meteors.includes(meteor)){
+     remove(meteors,meteors.indexOf(meteor));
+     fragmentMeteor(meteor);
+    }
+    if(frame===29){input.keyUp('KeyD');input.keyDown('KeyA');}
+    if(frame===54)input.keyUp('KeyA');
+   }
+   if(scenario==='houses'&&[12,27,42].includes(frame))district.strikeTarget(house.id,.36);
+   if(scenario==='skyline'&&[15,42].includes(frame)){
+    const strike=qa.stageSkylineStrike();
+    if(!strike.ok)throw Error(strike.error);
+   }
+   if(scenario==='traffic'&&frame===25){
+    pointer.set(45,5,20);
+    gustCooldownReset();
+    gustTime=.85;
+    windActive=true;
+   }
+   renderFrame(captureCamera);
+   frame++;
+   const state={
+    elapsed,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+    dragon:dragon.position.toArray()
+   };
+   if(meteor)state.meteors=meteors.map(m=>({y:m.mesh.position.y,generation:m.generation||0}));
+   if(house){
+    const {damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning}=district.buildingState(house.id);
+    state.house={damage,fall,rubbleCount,airborneCount,largeParticleCount,smallParticleCount,smokePosition,burning};
+   }
+   if(tower)state.tower={damage:tower.strikeDamage,fire:tower.fireSprite.material.opacity,
+    smoke:tower.smokeSprite.material.opacity,fireVisible:tower.fireSprite.visible,smokeVisible:tower.smokeSprite.visible};
+   if(vehicle)state.traffic={position:vehicle.root.position.toArray(),roll:vehicle.root.rotation.x,
+    gust:windActive,hit:vehicle.windGustId===gustId,headlights:vehicle.root.userData.headlightBeam.visible};
+   return {state,png:renderer.domElement.toDataURL('image/png').split(',')[1]};
+  }
+ };
+}
 if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
  let phase=null;
  const percentile=(arr,p)=>{if(!arr.length)return null;const a=[...arr].sort((x,y)=>x-y);return Math.round(a[Math.min(a.length-1,Math.floor((a.length-1)*p))]*100)/100;};
