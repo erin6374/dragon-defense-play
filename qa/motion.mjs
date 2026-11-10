@@ -42,6 +42,21 @@ function checkMotion(name, samples) {
       'dragon traverses enough distance to review wing mechanics in motion');
     assert.ok(samples.every(s => Number.isFinite(s.flight.heading)),
       'turning pose retains a finite heading during both direction changes');
+    assert.ok(samples.every(s => s.flight.wingJoints?.length === 2 &&
+      s.flight.wingJoints.every(w => ['shoulder','elbow','wrist','spread'].every(k => Number.isFinite(w[k])))),
+      'record actual, finite shoulder/elbow/wrist angles for both wing joints');
+    const shoulderAngles=samples.map(s => Math.abs(s.flight.wingJoints[0].shoulder));
+    assert.ok(Math.max(...shoulderAngles)-Math.min(...shoulderAngles)>.19,
+      'visible primary wing beat spans a substantial range during recorded flight');
+    assert.ok(samples.some(s => Math.abs(s.flight.wingJoints[0].shoulder -
+      s.flight.wingJoints[0].elbow)>.08),
+      'elbow beat lags shoulder instead of rotating as one rigid sail');
+    assert.ok(samples.some(s => Math.abs(s.flight.wingJoints[0].wrist -
+      s.flight.wingJoints[0].elbow)>.06),
+      'distal wrist lags elbow for aerodynamic wing recovery');
+    assert.ok(samples.filter(s => s.flight.pose === 'flight').some(s =>
+      s.flight.tuckedLegs?.every(leg => leg.hip < -1.4 && leg.knee < -.85)),
+      'feet fold backward toward the belly during extended forward flight');
   } else if (name === 'houses') {
     assert.equal(first.house.damage, 0);
     assert.equal(last.house.fall, 1);
