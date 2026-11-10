@@ -888,7 +888,11 @@ try {
     'skyscraper impact produces a tall, dramatic pillar of persistent flames');
   assert.ok(towerImpact.result.fireOpacity>.58,
     'skyscraper fire has a bright, readable core');
-  assert.ok(towerImpact.result.smokeOpacity>0,'landmark smoke has positive opacity');
+  assert.ok(towerImpact.result.smokeOpacity>.5,'landmark smoke is dense enough to read against the dusk sky');
+  assert.ok(towerImpact.result.smokeColor<0x808080,'landmark smoke uses a dark ash tint');
+  assert.ok(towerImpact.result.smokeWorldScale[0]>towerImpact.result.fireSize[0] &&
+    towerImpact.result.smokeWorldScale[1]>towerImpact.result.fireSize[1]*1.5,
+    'landmark smoke is wider and rises above the visible fire without new geometry');
   assert.equal(towerImpact.result.smokeParentStable,true,'meteor smoke is independent of shrinking tower');
   assert.ok(towerImpact.result.smokeWorldScale.every(v=>v>0),'intact smoke has nonzero world scale');
   assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');

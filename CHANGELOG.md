@@ -1,3 +1,10 @@
+## November 10 — RC19 skyline smoke and fire readability pass (exact-head QA pending)
+
+- Increased the existing one-sprite-per-landmark flame's base width and vertical reach so active tower fires remain legible in the focused real-renderer close-up.
+- Re-tinted the existing shared smoke-atlas sprite to darker ash, widened and raised its plume, and added bounded slow lateral/vertical drift and a small rotation. No new textures, sprites, lights, geometry, or draw calls; no per-frame allocations.
+- Browser QA now checks smoke tint, density, and plume dimensions relative to the fire after an actual staged skyline meteor strike. Retains world-space impact anchoring, skyscraper preservation, cleanup, existing player-fired meteor tests, and mouth-anchored breath tests.
+- **Unverified until exact-head browser QA and screenshot review.** Previous verified baseline: RC19 `5b4fecf`, [browser QA #434](https://github.com/erin6374/dragon-defense-play/actions/runs/42781950485), [Pages deployment #170](https://github.com/erin6374/dragon-defense-play/actions/runs/42783410845). Production, main and Building Explorer unchanged; real GPU FPS unknown.
+
 ## November 10 — v5.4.0-rc.19 realistic fluid-fire and smoke visual overhaul
 
 - Replaced globally shared static orange flame bitmap and separate painted geometric flame tongues with an animated, deterministic, noise-advected combustion texture. Heat varies from a yellow-white core to irregular amber/red wisps, with a contour that changes shape over time rather than simply stretching.

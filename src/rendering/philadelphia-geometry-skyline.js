@@ -98,7 +98,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Reuse the game's flowing, turbulent smoke atlas for all nine towers;
  // this avoids the previous static circles and extra local smoke texture.
  const smokeMaterial=new THREE.SpriteMaterial({map:smokeAtlas,
-  color:0x9da0a2,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+  color:0x66686a,transparent:true,opacity:0,depthWrite:false,depthTest:true});
  // One shared scorch/debris atlas, placed as a local damage decal on each tower.
  // Drawn at initialization rather than creating marks every time a meteor lands.
  const scorchCanvas=document.createElement('canvas');
@@ -346,16 +346,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Update these once per hit rather than reassigning material and scale on
   // every animation frame for every previously damaged landmark.
   const smokeIntensity=Math.min(1,tower.strikeDamage/.16);
-  const smokeWidth=6.4+smokeIntensity*7.0;
-  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.15,1);
-  tower.smokeSprite.material.opacity=.22+smokeIntensity*.56;
+  const smokeWidth=8.4+smokeIntensity*8.6;
+  tower.smokeSprite.scale.set(smokeWidth,smokeWidth*2.45,1);
+  tower.smokeSprite.material.opacity=.32+smokeIntensity*.55;
   // Make the plume visible in the same event as the impact, even if no
   // animation update occurs before the next render.
   tower.smokeSprite.visible=true;
-  const flameWidth=(3.2+Math.min(1,tower.strikeDamage/.26)*4.0)*(1+intensity*1.50);
+  const flameWidth=(4.2+Math.min(1,tower.strikeDamage/.26)*5.0)*(1+intensity*1.50);
   tower.fireBaseWidth=flameWidth;
   tower.fireSprite.position.set(tower.smokeOrigin.x,tower.smokeOrigin.y-flameWidth*.40,tower.smokeOrigin.z+.10);
-  tower.fireSprite.scale.set(flameWidth,flameWidth*2.20,1);
+  tower.fireSprite.scale.set(flameWidth,flameWidth*2.35,1);
   tower.fireSprite.material.opacity=Math.min(.99,.72+intensity*.22+tower.strikeDamage*.13);
   tower.fireSprite.visible=true;
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
@@ -439,14 +439,15 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    }
    if(t.strikeDamage>0){
     const flamePulse=1+.14*Math.sin(elapsed*5.4+i*1.9)+.045*Math.sin(elapsed*9.7+i*.3);
-    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*2.20*(1+.12*Math.sin(elapsed*7.1+i)),1);
+    t.fireSprite.scale.set(t.fireBaseWidth*flamePulse,t.fireBaseWidth*2.35*(1+.12*Math.sin(elapsed*7.1+i)),1);
     t.fireSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*2.9+i)*t.fireBaseWidth*.16;
     t.fireSprite.material.opacity=Math.min(.99,.76+.13*Math.sin(elapsed*10.2+i));
     // Only position changes over time; stable smoke size and opacity were set
     // on impact. Preserve the existing animation and one-sprite limit.
     const intensity=Math.min(1,t.strikeDamage/.16);
-    t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.32+intensity*.58);
-    t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*.8;
+    t.smokeSprite.position.x=t.smokeOrigin.x+Math.sin(elapsed*.26+i)*(.45+intensity*.75);
+    t.smokeSprite.position.y=t.smokeOrigin.y+Math.sin(elapsed*.47+i)*1.25;
+    t.smokeSprite.material.rotation=Math.sin(elapsed*.22+i*.61)*.045;
    }
    if(t.impactAge>0){
     t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));

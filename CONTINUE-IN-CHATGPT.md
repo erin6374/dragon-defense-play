@@ -1,3 +1,9 @@
+## November 10 — RC19 skyline plume legibility refinement (QA pending)
+
+- Previous exact-head baseline `5b4fecf` passed [browser QA #434](https://github.com/erin6374/dragon-defense-play/actions/runs/42781950485) and the isolated public [Pages preview verification #170](https://github.com/erin6374/dragon-defense-play/actions/runs/42783410845). The close screenshot showed a visible but small white-yellow flame and faint smoke.
+- Narrow visual-only change increases existing landmark fire/smoke sprite scale and contrast, with bounded drift; extends deterministic browser assertions to smoke color, opacity and relative dimensions. No extra draw calls or asset loads. **Require exact-head QA, screenshot inspection and new public preview SHA verification before calling this revision playable.**
+- No edits to main, production Pages, separate Building Explorer, or licensed European Dragon binaries. Do not claim real GPU 60 FPS.
+
 ## November 10 — RC19 skyline close-up QA failure isolated (new exact-head QA pending)
 
 - [QA #433](https://github.com/erin6374/dragon-defense-play/actions/runs/42779054783) failed at `qa/browser.mjs:901` because `skylineShot()` returned only `capture.result.camera`, discarding the already-computed `fireVisible` and `fireNdc` fields. The new fire-framing assertions consequently received `undefined` even though the renderer's `captureSkyline()` produced these diagnostics. This was a **test-harness data-shape error**, not evidence that the tower fire failed to render.

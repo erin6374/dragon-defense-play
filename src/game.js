@@ -2533,6 +2533,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     flashOpacity:t.impactSprite.material.opacity,flashAge:t.impactAge,
     flashScaleImmediately,
     smokeVisible:t.smokeSprite.visible,smokeOpacity:t.smokeSprite.material.opacity,
+    smokeColor:t.smokeSprite.material.color.getHex(),
     fireVisible:t.fireSprite.visible,fireOpacity:t.fireSprite.material.opacity,
     fireSize:t.fireSprite.scale.toArray(),
     smokeParentStable:t.smokeSprite.parent===skylineBackdrop.group,
