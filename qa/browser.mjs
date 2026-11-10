@@ -887,7 +887,7 @@ try {
   const backgroundCollapse=await page.evaluate(()=>window.__DD_QA.stageDistantBuildingCollapse());
   assert.ok(backgroundCollapse.ok,backgroundCollapse.error);
   const {id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,
-    before:beforeCollapse,after:afterCollapse}=backgroundCollapse.result;
+    before:beforeCollapse,flight:flightCollapse,after:afterCollapse}=backgroundCollapse.result;
   assert.equal(backgroundIntact.rubbleCount,0,'an intact distant building has no visible facade debris');
   assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
     'the first distant hit creates smoke while the building stays standing');
@@ -895,7 +895,11 @@ try {
     'repeated hits animate the actual instanced building down toward the ground');
   assert.ok(backgroundSettled.fall===1&&backgroundSettled.height<backgroundFalling.height&&backgroundSettled.height>0&&backgroundSettled.smoking,
     'the collapsed shell persists as low rubble with smoke');
-  assert.ok(backgroundFalling.rubbleCount>0,'falling distant facades release visible debris');
+  assert.ok(backgroundFalling.rubbleCount>=8,'mid-distance houses eject numerous masonry and roof fragments');
+  assert.equal(backgroundFalling.dustVisible,true,'collapse dust burst is visible during debris flight');
+  assert.ok(backgroundFalling.dustOpacity>.05,'collapse dust has measurable opacity');
+  assert.equal(backgroundSettled.dustVisible,false,'settled collapse dust dissipates instead of persisting indefinitely');
+  assert.equal(backgroundSettled.dustOpacity,0,'dust pool resets its per-slot opacity after collapse');
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
   // The plume uses a sine-wave drift: a snapshot near its turning point can
@@ -929,7 +933,9 @@ try {
     'some wall fragments remain taller than the low collapsed shell');
   assert.ok(new Set(backgroundSettled.rubblePieces.map(piece=>piece.x.toFixed(2))).size>1,
     'collapsed facade pieces have different horizontal offsets');
-  for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],['06d-distant-building-rubble',afterCollapse]]){
+  for(const [filename,png] of [['06c-distant-building-before',beforeCollapse],
+    ['06c2-distant-building-debris-flight',flightCollapse],
+    ['06d-distant-building-rubble',afterCollapse]]){
     assert.match(png,/^data:image\/png;base64,/);
     await writeFile('qa-output/'+filename+'.png',Buffer.from(png.split(',')[1],'base64'));
   }
@@ -940,6 +946,7 @@ try {
     return qa.distantBuildingState(id);
   },id);
   assert.equal(restoredBackground.rubbleCount,0,'restart hides all facade rubble instances');
+  assert.equal(restoredBackground.dustVisible,false,'restart clears any active dust burst');
   assert.equal(restoredBackground.smokePosition,null,'restart clears distant impact smoke animation');
   assert.equal(restoredBackground.flamePosition,null,'restart clears distant fire sprites');
   assert.equal(restoredBackground.flameHeight,null,'restart clears distant fire animation state');
