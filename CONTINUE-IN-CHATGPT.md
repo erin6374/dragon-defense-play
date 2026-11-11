@@ -1,3 +1,9 @@
+## November 11 — RC9 distinct-floor placement repair (verification pending)
+
+- The new all-landmark test at `ba4daa2fac01d89ac999f708d9671bd1e3a7b048` **caught a second real defect**: browser 42968898246 allocated all 81 sources, but each GPU batch contained only **62 unique origins**. The old per-site upper clamp merged multiple fire rows when the meteor struck above the allowed setback band. Reset/reuse and active counts passed; do not weaken the distinct-origin assertion.
+- Fix reserves room for the complete three-floor pattern by clamping its center first, then snapping individual offsets. Existing window-grid limits, standing-tower behavior, CC0 assets, stagger timing and bounded pools remain. No art acceptance or public release is claimed; fresh exact-head browser/motion required.
+- RC8 real 30s MP4 sampled every three seconds still shows a near-horizontal flame band and pale narrow smoke. Report errors=[]; 600 frames; max draw calls 380. RC8 automatic Pages 42966413220 succeeded, deploy job 130346834763 checked out f84126ec and ran all seven public comparisons. This certifies RC8 technical provenance only.
+
 ## November 11 — RC9 capacity repair and all-landmark regression (verification pending)
 
 - Live PR head inspected: `0351a3fd73ad9131e7c61008b25efe073000758e`. Its browser run **42966757190 FAILED** at qa/browser.mjs:985: actual pool capacity 36 versus expected 81. Renderer still allocated `defs.length*4` despite nine slots per tower. This is a real runtime defect: the fifth/later tower can throw `RangeError: Combustion pool index`, not merely a stale assertion.

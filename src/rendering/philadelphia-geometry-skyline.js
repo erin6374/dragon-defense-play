@@ -302,7 +302,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Snap to the same UV window grid used by makeFacade; stay below setbacks.
   const cols=d.style==='civic'?7:11,rows=d.style==='civic'?30:56;
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
-  const row=Math.max(3,Math.min(Math.floor(rows*.60),Math.round((tower.impactLocal.y+offsetY)/d.h*rows)));
+  // Reserve vertical room for the whole three-floor pattern before snapping.
+  // Clamping each offset independently merges upper rows at the setback limit.
+  const centerRow=Math.max(5,Math.min(Math.floor(rows*.60)-Math.ceil(rows*.041),
+   Math.round(tower.impactLocal.y/d.h*rows)));
+  const row=Math.max(3,Math.min(Math.floor(rows*.60),Math.round(centerRow+offsetY/d.h*rows)));
   const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
