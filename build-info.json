@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-cinematic-scene-rc19",
-  "version": "5.5.0-rc.19",
+  "build": "5.5-architectural-firefront-rc21",
+  "version": "5.5.0-rc.21",
   "gameplay_base": "5.2.3",
-  "scope": "Whole-scene cinematic pass: prefiltered reflections, day/night lighting, school material calibration, mature leafy trees, skyline glazing and lantern detail; preserves RC18 VFX and gameplay.",
+  "scope": "Staggered multi-storey skyline firefront: nine existing licensed window contacts per tower spread vertically across five distinct facade elevations; corrected roof-safe positioning and RC21 QA coverage. Preserves RC20 licensed smoke, RC19 scene graphics and gameplay.",
   "new_gameplay_features": true,
-  "release_status": "RC19 CANDIDATE: browser, scene comparisons, sustained motion and package verification required."
+  "release_status": "RC21 SOURCE CANDIDATE: exact-head Playwright QA, five-view screenshots, sustained motion art acceptance, Windows package and Pages provenance remain required."
 }
