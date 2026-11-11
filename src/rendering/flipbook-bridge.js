@@ -103,8 +103,13 @@ ${anchor}`);
   float time=clock*(7.+fract(vSeed*.27)*3.)+fract(vSeed*.191)*64.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
-  color=mix(frame.rgb,vec3(.52,.53,.56),.56);
-  alpha=frame.a*vPower*.44*smoothstep(.015,.19,q.y)*(1.-smoothstep(.78,.995,q.y));
+  // Warm gray smoke close to the burning facade, dark ash higher up;
+  // prevents the previous pale wisps reading as floating white ghosts.
+  float soot=smoothstep(.19,.88,q.y);
+  color=mix(vec3(.61,.55,.50),vec3(.30,.32,.35),soot)*
+   (.75+.25*frame.rgb);
+  alpha=frame.a*vPower*.51*smoothstep(.015,.18,q.y)*
+   (1.-smoothstep(.78,.995,q.y));
  }
 ${anchor}`);
  }

@@ -936,6 +936,11 @@ try {
     'four facade-window burn origins are tracked per landmark');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
+  assert.ok(towerImpact.result.secondaryBurnSites.every(site=>
+    Number.isFinite(site.renderWidth)&&Number.isFinite(site.renderHeight)&&
+    site.renderWidth>site.width*2.05&&site.renderWidth<site.width*2.40&&
+    site.renderHeight>site.width*.8),
+    'licensed combustion expands beyond its precise broken-window contacts');
   const budget=towerImpact.result.skylineBurnBudget.combustion;
   assert.equal(budget.capacity,36);assert.equal(budget.active,4);
   assert.equal(budget.drawCalls,4);

@@ -1,8 +1,8 @@
 {
-  "build": "5.5-licensed-flipbook-pipeline-rc5",
-  "version": "5.5.0-rc.5",
+  "build": "5.5-facade-blaze-growth-rc7",
+  "version": "5.5.0-rc.7",
   "gameplay_base": "5.2.3",
-  "scope": "GPU flipbook material with 2 verified CC0 atlases, 8x8 frame blending, dev A/B procedural fallback; importer must complete before visual change takes effect",
+  "scope": "Coherent growing facade fire using licensed CC0 textures; independent 6Hz burn-site progression, bigger visual envelopes, warm-to-ash smoke color grade. Gameplay and pools unchanged.",
   "new_gameplay_features": true,
-  "release_status": "Licensed original Unity Labs 64-frame CC0 Flame03 + WispySmoke03 atlases bundled; exact-head QA/motion/public preview acceptance still pending"
+  "release_status": "RC7 source staged pending RC6 motion complete; do not promote without new exact-head QA, 5+30-second motion, visual assessment and seven-file Pages verification"
 }

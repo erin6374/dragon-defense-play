@@ -267,7 +267,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   g.add(scorchSprite);
   const smokeOrigin=new THREE.Vector3(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
   const burnSites=Array.from({length:SECONDARY_BURN_SITES_PER_TOWER},(_,j)=>({index:i*SECONDARY_BURN_SITES_PER_TOWER+j,
-   active:false,origin:new THREE.Vector3(),width:0,seed:i*1.71+j*2.43}));
+   active:false,origin:new THREE.Vector3(),width:0,height:0,renderWidth:0,
+   renderHeight:0,ignitedAt:0,seed:i*1.71+j*2.43}));
   towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
    impactSprite,impactLocal:new THREE.Vector3(),smokeOrigin,scorchSprite,
    burnSites,siteCursor:0,
@@ -291,6 +292,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   distantHelis.push({group:h,rotor,nav,seed:i*13.1,x0:-82+i*55,y0:45+(i%2)*18,speed:i===1?-1:1});
  }
  let time=-1,lastPhase=-1,damage=0;
+ let renderClock=0,lastCombustionRefresh=-Infinity;
+ // Existing fixed 36-source pool: update growing window fires only at ~6Hz,
+ // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
  // Retain stable, vertically separated facade contact points between strikes.
  // Coordinates are skyline-local and do not inherit any tower damage transform.
  function placeBurnSite(tower,site,offsetX,offsetY,width){
@@ -303,7 +307,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
   site.width=w;site.height=h;site.active=true;
-  combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,w,h*1.54,site.seed,.95,1);
+  // Accurate broken-pane center, but the simulated blaze reaches adjacent
+  // glazing bays instead of looking like four isolated miniature candles.
+  site.renderWidth=w*(2.1+.25*Math.abs(Math.sin(site.seed*.47)));
+  site.renderHeight=h*(3.05+.36*Math.abs(Math.sin(site.seed*.81)));
+  site.ignitedAt=renderClock;
+  combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+   site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
 
  }
  function strikeNearest(localX,intensity=0){
@@ -394,6 +404,21 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   }
  }
  function update(elapsed,darkness=0,dt=1/60){
+  renderClock=elapsed;
+  if(elapsed<lastCombustionRefresh||elapsed-lastCombustionRefresh>=.16){
+   lastCombustionRefresh=elapsed;
+   for(const tower of towers)for(const site of tower.burnSites){
+    if(!site.active)continue;
+    const age=Math.max(0,elapsed-site.ignitedAt);
+    const spread=Math.min(1,age/(1.8+.65*Math.abs(Math.sin(site.seed))));
+    const pulse=.85+.13*Math.sin(elapsed*1.73+site.seed*2.4)+
+     .07*Math.sin(elapsed*3.97+site.seed*.84);
+    combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+     site.renderWidth*(.66+.34*spread),
+     site.renderHeight*(.67+.33*spread),site.seed,
+     (.33+.62*spread)*pulse,1);
+   }
+  }
   for(let i=0;i<beacons.length;i++){
    const b=beacons[i];b.material.opacity=(.13+.83*Math.pow(Math.max(0,Math.sin(elapsed*3.8+b.userData.phase)),9))*(.55+.45*darkness);
   }
@@ -457,10 +482,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
 
  function reset(){
   combustion.reset();damage=0;time=-1;lastPhase=-1;
+  renderClock=0;lastCombustionRefresh=-Infinity;
   for(const t of towers){
    t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;
    t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;t.siteCursor=0;
-   for(const site of t.burnSites){site.active=false;site.width=0;}
+   for(const site of t.burnSites){site.active=false;site.width=0;
+    site.height=0;site.renderWidth=0;site.renderHeight=0;site.ignitedAt=0;}
   }
   setTime(0,0);
  }
