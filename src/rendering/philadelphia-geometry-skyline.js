@@ -157,7 +157,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // over the following twenty seconds. This array is allocated once at setup.
  const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
  // Nine fixed, UV-snapped architectural openings; intentionally not a 3x3 grid.
- const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-2],[-2,0],[0,-1],[1,1],[-1,2],[2,-1],[0,-2]];
+ const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-2],[-2,0],[0,-1],[1,1],[-1,2],[2,-1],[0,-3]];
  const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
