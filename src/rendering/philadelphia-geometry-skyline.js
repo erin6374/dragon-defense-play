@@ -150,7 +150,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   {id:'other-center-city',x:-62,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
- const SECONDARY_BURN_SITES_PER_TOWER=4;
+ const SECONDARY_BURN_SITES_PER_TOWER=9; // Three staggered damaged floors, three openings each.
  const combustion=createBuildingCombustion(group,defs.length*4,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
@@ -353,15 +353,27 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Four broken windows share a single damaged floor band. Uneven small
   // height offsets and independent phase seeds avoid a synchronized fire wall.
   // Repeated strikes refresh one window, preserving the others' continuity.
+  // A contiguous multi-floor fire rather than four isolated stationary
+  // torches. Each cell maps to a different real window-grid contact. No
+  // hit-time objects: all nine sites exist in the fixed instance buffer.
+  const ignite=(j)=>{
+   const row=Math.floor(j/3),col=j%3;
+   const offsetX=(col-1)*tower.def.w*.175+(row%2?.047:-.047)*tower.def.w;
+   const offsetY=(row-1)*tower.def.h*.037+(col===1?.004:0)*tower.def.h;
+   const site=tower.burnSites[j];
+   placeBurnSite(tower,site,offsetX,offsetY,2.55+col*.14);
+   // Seeded sequential ignition unfolds across a few seconds. Instant hit
+   // still lights the central cell; no synchronized ignition of nine flames.
+   const delay=j===4?0:(Math.floor(j/3)*.47+Math.abs(j%3-1)*.23+.20);
+   site.ignitedAt=renderClock+delay;
+   if(delay>0)combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+     site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
+  };
   if(!tower.burnSites[0].active){
-   for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++){
-    placeBurnSite(tower,tower.burnSites[j],(j-1.5)*tower.def.w*.215,
-     ((j%2===0?-.012:.018)+(j===3?.008:0))*tower.def.h,2.55+j*.16);
-   }
+   for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++)ignite(j);
   }else{
-   const j=tower.siteCursor,site=tower.burnSites[j];
-   placeBurnSite(tower,site,(j-1.5)*tower.def.w*.215,
-    ((j%2===0?-.012:.018)+(j===3?.008:0))*tower.def.h,2.7+j*.13);
+   const j=tower.siteCursor;
+   ignite(j);
    tower.siteCursor=(j+1)%SECONDARY_BURN_SITES_PER_TOWER;
   }
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
@@ -409,14 +421,15 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    lastCombustionRefresh=elapsed;
    for(const tower of towers)for(const site of tower.burnSites){
     if(!site.active)continue;
-    const age=Math.max(0,elapsed-site.ignitedAt);
+    const signedAge=elapsed-site.ignitedAt;
+    const age=Math.max(0,signedAge);
     const spread=Math.min(1,age/(1.8+.65*Math.abs(Math.sin(site.seed))));
     const pulse=.85+.13*Math.sin(elapsed*1.73+site.seed*2.4)+
      .07*Math.sin(elapsed*3.97+site.seed*.84);
     combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
      site.renderWidth*(.66+.34*spread),
      site.renderHeight*(.67+.33*spread),site.seed,
-     (.33+.62*spread)*pulse,1);
+     (signedAge<0?0:(.12+.78*spread)*pulse),1);
    }
   }
   for(let i=0;i<beacons.length;i++){

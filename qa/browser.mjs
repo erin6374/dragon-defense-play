@@ -972,8 +972,8 @@ try {
    'landmark smoke is visible during the impact event, before the next animation update');
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
-  assert.equal(towerImpact.result.secondaryBurnSites.length,4,
-    'four facade-window burn origins are tracked per landmark');
+  assert.equal(towerImpact.result.secondaryBurnSites.length,9,
+    'nine pooled contacts form three staggered rows of damaged windows');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>
@@ -982,11 +982,13 @@ try {
     site.renderHeight>site.width*.8),
     'licensed combustion expands beyond its precise broken-window contacts');
   const budget=towerImpact.result.skylineBurnBudget.combustion;
-  assert.equal(budget.capacity,36);assert.equal(budget.active,4);
+  assert.equal(budget.capacity,81);
+  assert.ok(budget.active>=1&&budget.active<=9,
+    'multi-floor fire begins with an immediate ignition and reserves eight staggered later sources');
   assert.equal(budget.drawCalls,4);
   assert.equal(budget.textures,report.combustionPool.licensedAtlases?2:0,
     'landmark fire is rendered from two shared licensed atlases when bundled');
-  assert.equal(budget.smokeCapacity,216);assert.equal(budget.flameCapacity,108);
+  assert.equal(budget.smokeCapacity,486);assert.equal(budget.flameCapacity,243);
   assert.ok(towerImpact.result.fireSize[0]<2,'no oversized central sprite remains');
   assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
   assert.ok(towerImpact.result.scorchOpacity>0,'facade damage mark has positive opacity');

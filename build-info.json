@@ -1,8 +1,8 @@
 {
-  "build": "5.5-facade-collapse-binding-rc8",
-  "version": "5.5.0-rc.8",
+  "build": "5.5-staggered-multifloor-fires-rc9",
+  "version": "5.5.0-rc.9",
   "gameplay_base": "5.2.3",
-  "scope": "Attach detailed North Broad street-front facade overlays, signs, trim, glass and stoops to nearest existing segmented physical building supports; visual parts detach with local wall collapse rather than floating until an arbitrary global threshold. Preserve RC7 CC0 grown fire materials, physics and all existing fixed GPU batches.",
+  "scope": "Replace 4 uniform skyline window flames with nine CC0 flipbook sources on three staggered physical floors, staggered ignition over 0–1.4 sec, fixed-capacity 81-slot skyline instancing; retain RC8 support-bound street facade collapse.",
   "new_gameplay_features": true,
-  "release_status": "RC8 UNVERIFIED development candidate; exact-head browser QA, five+30-second real gameplay motion review, Windows preview integrity and authorized automatic seven-file Pages check required; MOT-03 cinematic fire acceptance still OPEN."
+  "release_status": "RC9 CANDIDATE UNVERIFIED: browser QA, five 100-frame + 600-frame authentic motion, art acceptance, GPU fragment overdraw assessment and authorized Pages 7-file exact commit needed"
 }
