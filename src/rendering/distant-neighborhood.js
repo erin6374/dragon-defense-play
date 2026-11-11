@@ -160,7 +160,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  // Use simple fixed masses here, with the low civic lot beside Susquehanna kept open.
  for(const side of [-1,1]){
   for(const z of [-10,-31,-53,-75]){
-   for(let i=0;i<8;i++){
+   for(let i=0;i<22;i++){
     if(z===-10&&i<2)continue; // existing frontage and the lower civic building
     const x=side*(70+i*9.4);
     const h=7.6+(i*13+Math.abs(z))%7;

@@ -1,8 +1,8 @@
 {
-  "build": "5.5-staggered-multifloor-fires-rc9",
-  "version": "5.5.0-rc.9",
+  "build": "5.5-defense-depth-and-rising-smoke-rc10",
+  "version": "5.5.0-rc.10",
   "gameplay_base": "5.2.3",
-  "scope": "Replace 4 uniform skyline window flames with nine CC0 flipbook sources on three staggered physical floors, staggered ignition over 0–1.4 sec, fixed-capacity 81-slot skyline instancing; retain RC8 support-bound street facade collapse.",
+  "scope": "Defense-zone screen-aim interception; faster fire; free-flight chapter cleanup; cross-lane military gas; bilateral distant infill and frequent blue-gray background strikes; rising licensed smoke packets.",
   "new_gameplay_features": true,
-  "release_status": "RC9 CANDIDATE UNVERIFIED: browser QA, five 100-frame + 600-frame authentic motion, art acceptance, GPU fragment overdraw assessment and authorized Pages 7-file exact commit needed"
+  "release_status": "RC10 CANDIDATE: exact-head browser and independent motion review pending; fire art NOT accepted"
 }

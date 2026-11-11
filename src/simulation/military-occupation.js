@@ -21,6 +21,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  function clearExhaust(){for(const p of exhaust){scene.remove(p.puff);p.puff.material.dispose();}exhaust.length=0;}
  const vehicles=[],missiles=[];
  const hullMat=new THREE.MeshStandardMaterial({color:0x48533c,roughness:.88,metalness:.12});
+ const gasHullMat=hullMat.clone();gasHullMat.color.setHex(0x60b946);
  const steel=new THREE.MeshStandardMaterial({color:0x29342e,roughness:.7,metalness:.28});
  const warning=new THREE.MeshBasicMaterial({color:0xffb04a});
  const rocketMat=new THREE.MeshStandardMaterial({color:0xb5bab0,metalness:.45,roughness:.45});
@@ -52,7 +53,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   const searchLens=new THREE.Mesh(ball,searchlightLensMat);
   searchLens.scale.setScalar(.18);searchLens.position.set(0,3.52,0);root.add(searchLens);
   scene.add(root);vehicles.push({root,hull,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0,
-   searchlight,searchDir:new THREE.Vector3(0,1,0),searchTarget:new THREE.Vector3(0,1,0),searchClock:0});
+   gasTime:0,searchlight,searchDir:new THREE.Vector3(0,1,0),searchTarget:new THREE.Vector3(0,1,0),searchClock:0});
   return root;
  }
  function updateSearchlight(v,dt){
@@ -97,8 +98,11 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   for(let i=vehicles.length-1;i>=0;i--){const v=vehicles[i];v.cooldown-=dt;v.flash=Math.max(0,v.flash-dt);v.beacon.visible=v.flash>0;
    const dx=dragon.position.x-v.root.position.x,dy=dragon.position.y-3;
    v.launcher.rotation.z=Math.atan2(dy,dx)*.45;
-   updateSearchlight(v,dt);
-   if(v.cooldown<=0){fire(v);v.cooldown=(v.advanced?3.7:5.3)*(0.85+Math.random()*.4);}
+   v.gasTime=Math.max(0,v.gasTime-dt);
+   v.hull.material=v.gasTime>0?gasHullMat:hullMat;
+   v.searchlight.visible=v.gasTime<=0;
+   if(v.gasTime<=0)updateSearchlight(v,dt);
+   if(v.gasTime<=0&&v.cooldown<=0){fire(v);v.cooldown=(v.advanced?3.7:5.3)*(0.85+Math.random()*.4);}
    for(const meteor of meteors){if(meteor.mesh.position.distanceTo(v.root.position)<meteor.size+2.5){meteor.hp=0;onMeteorHit(meteor);destroy(v);break;}}
    if(!vehicles.includes(v))continue;
    for(const shot of playerShots){if(shot.hostile||shot.fireTarget||shot.life<=0)continue;if(shot.mesh.position.distanceTo(v.root.position)<3.3){shot.life=0;v.hp--;if(v.hp<=0){destroy(v);break;}}}
@@ -141,7 +145,17 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   missiles.push(rocket);return rocket;
  }
  function windRocketStates(){return missiles.map(m=>({position:m.mesh.position.toArray(),velocity:m.vel.toArray(),disruptTime:m.disruptTime||0,homing:m.homing}));}
- return {update,reset,suppress,deflectWind,stageWindRocket,windRocketStates,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
+ function applyGas(point,radius=5.6,seconds=7){
+  let affected=0;
+  for(const v of vehicles){
+   // Gas settles across the street lanes, not just the dragon's flight plane.
+   if(point.y<7.2&&Math.abs(v.root.position.x-point.x)<radius&&Math.abs(v.root.position.z-point.z)<22){
+    v.gasTime=Math.max(v.gasTime,seconds);v.cooldown=Math.max(v.cooldown,seconds);affected++;
+   }
+  }
+  return affected;
+ }
+ return {update,reset,suppress,applyGas,gasStates:()=>vehicles.map(v=>({x:v.root.position.x,z:v.root.position.z,gasTime:v.gasTime,cooldown:v.cooldown})),deflectWind,stageWindRocket,windRocketStates,counts:()=>({batteries:vehicles.length,homingBatteries:vehicles.filter(v=>v.advanced).length,missiles:missiles.length,searchlights:vehicles.filter(v=>v.searchlight.visible).length}),
   footprints:()=>vehicles.map(({root,hull})=>{
    root.updateWorldMatrix(true,false);
    const {min,max}=new THREE.Box3().setFromObject(hull);

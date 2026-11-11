@@ -61,15 +61,18 @@ export function prepareFlipbookMaterial(material,kind){
  const oldVertex=material.vertexShader;
  const vertexChanges=[
   ['float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12);',
-   'float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12)*(useFlipbook>.5?1.78:1.);'],
+   'float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12)*(useFlipbook>.5?1.15:1.);'],
   ['float height=.84+.34*fract(vSeed*.39);',
-   'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.18:1.);'],
+   'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.6:1.);'],
   ['center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));',
-   'center+=vec3((sway+layer*.10)*w*(useFlipbook>.5?2.2:1.),h*(.90+.12*layer),w*(.22+.11*layer));'],
+   `if(useFlipbook>.5){
+    center+=vec3((sway+vAge*(.35+fract(vSeed)*.55))*w,
+      h*(.24+vAge*2.4),w*(.38+.1*layer));
+   }else{center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));}`],
   ['float scale=w*(1.02+.16*layer);',
-   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?1.48:1.);'],
+   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(.65+2.1*vAge):1.);'],
   ['float stretch=2.65+.42*layer;',
-   'float stretch=(2.65+.42*layer)*(useFlipbook>.5?1.18:1.);']
+   'float stretch=useFlipbook>.5?1.35:2.65+.42*layer;']
  ];
  let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;');
  for(const [before,after] of vertexChanges){
@@ -90,7 +93,7 @@ export function prepareFlipbookMaterial(material,kind){
   float time=clock*(13.+fract(vSeed*.39)*5.)+fract(vSeed*.173)*64.;
   vec2 uv=clamp(q+vec2(.02*sin(q.y*5.+clock*.76+vSeed),0.),.014,.986);
   vec4 frame=flipbook(flameAtlas,uv,time);
-  color=frame.rgb*vec3(1.17,1.05,.92);
+  color=frame.rgb*vec3(2.4,1.65,1.1);
   alpha=frame.a*vPower*(.96+.12*sin(clock*2.6+vSeed));
  }
 ${anchor}`);
@@ -100,16 +103,16 @@ ${anchor}`);
   if(!patched.includes(anchor))throw Error('Missing smoke shader branch');
   patched=patched.replace(anchor,`
  if(useFlipbook>.5){
-  float time=clock*(7.+fract(vSeed*.27)*3.)+fract(vSeed*.191)*64.;
+  float time=vAge*63.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
   // Warm gray smoke close to the burning facade, dark ash higher up;
   // prevents the previous pale wisps reading as floating white ghosts.
   float soot=smoothstep(.19,.88,q.y);
-  color=mix(vec3(.61,.55,.50),vec3(.30,.32,.35),soot)*
+  color=mix(vec3(.15,.105,.07),vec3(.055,.065,.08),soot)*
    (.75+.25*frame.rgb);
-  alpha=frame.a*vPower*.51*smoothstep(.015,.18,q.y)*
-   (1.-smoothstep(.78,.995,q.y));
+  alpha=frame.a*min(1.,vPower)*.22*
+   smoothstep(0.,.12,vAge)*(1.-smoothstep(.65,1.,vAge));
  }
 ${anchor}`);
  }

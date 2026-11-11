@@ -87,7 +87,7 @@ assert.match(gameSource,/function releaseWind\(\)[\s\S]*?syncWindMouth\(\);gustT
 assert.match(gameSource,/const start=getBreathMouthWorld\(new THREE\.Vector3\(\)\)/,'fireball starts at muzzle');
 assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'shockwave origin is tagged');
 // Paulo must not be teleported back to the roof at each ordinary wave.
-// Initial reset and chapter settlement retain their explicit perch behavior.
+// Fresh games and cutscenes perch; chapter cleanup must retain free flight.
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
 assert.ok(waveSource.startsWith('function newWave(){'),'wave transition function found');
 assert.doesNotMatch(waveSource,/perchDragon\s*\(/,'ordinary waves preserve Paulo free-flight position');
@@ -424,6 +424,37 @@ try {
     window.__DD_FIRE_VFX.setMode('flipbook');
     return window.__DD_FIRE_VFX.ready;
   });
+
+  const defense=await page.evaluate(()=>window.__DD_QA.stageDefenseRegression());
+  assert.ok(defense.ok,defense.error);
+  assert.ok(defense.result.contacts.every(c=>c.intercepted),
+    'real fireballs intercept meteors at front, school rear and immediate rear row');
+  assert.ok(defense.result.contacts.every(c=>Math.abs(c.speed-64)<.001));
+  assert.ok(defense.result.settlement.after[0]>defense.result.settlement.before[0]+7,
+    'right input moves dragon during chapter settlement');
+  assert.ok(defense.result.settlement.after[1]>defense.result.settlement.before[1]+7,
+    'up input moves dragon during chapter settlement');
+  report.defenseZone=defense.result;
+  report.militaryGas=await page.evaluate(async()=>{
+    const THREE=await import('three');
+    const {createMilitaryOccupation}=await import('./src/simulation/military-occupation.js');
+    const unit=createMilitaryOccupation({scene:new THREE.Scene(),dragon:new THREE.Object3D(),
+      getWave:()=>11,onMessage:()=>{},onBlast:()=>{},onDragonHit:()=>{},onMeteorHit:()=>{}});
+    unit.update(0,[],[]);
+    const before=unit.gasStates();
+    const high=unit.applyGas(new THREE.Vector3(-25,20,15));
+    const hit=unit.applyGas(new THREE.Vector3(-25,1,3));
+    unit.update(.1,[],[]);const disabled=unit.gasStates();
+    const hidden=unit.searchlightStates().find(v=>v.x===-25).visible===false;
+    for(let i=0;i<71;i++)unit.update(.1,[],[]);
+    const recovered=unit.gasStates();unit.reset();
+    return {before,high,hit,disabled,hidden,recovered};
+  });
+  assert.equal(report.militaryGas.high,0,'airborne gas must descend before disabling ground units');
+  assert.equal(report.militaryGas.hit,1,'settled gas reaches launcher on another street lane');
+  assert.ok(report.militaryGas.disabled.find(v=>v.x===-25).gasTime>6.8);
+  assert.equal(report.militaryGas.hidden,true,'gassed searchlight is disabled');
+  assert.equal(report.militaryGas.recovered.find(v=>v.x===-25).gasTime,0);
 
   const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
   assert.ok(fluidFire.ok,fluidFire.error);
