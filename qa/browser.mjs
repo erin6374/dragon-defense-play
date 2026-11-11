@@ -381,7 +381,8 @@ try {
       return {id:t.def.id,indices:t.burnSites.map(s=>s.index),
         active:t.burnSites.filter(s=>s.active).length,
         damageContacts:t.facadeDamage.contacts.filter(c=>c.z>0).length,
-        heatFinite:Array.from(t.facadeDamage.heat).every(v=>Number.isFinite(v)&&v>0),
+        heatFinite:Array.from(t.facadeDamage.heat).every(v=>Number.isFinite(v)&&v>=0),
+        heatedContacts:Array.from(t.facadeDamage.heat).filter(v=>v>0).length,
         wallTop:t.def.h*fullWallTop,impactY:t.impactLocal.y,
         maxY:Math.max(...t.burnSites.map(s=>s.origin.y)),
         maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
@@ -396,8 +397,20 @@ try {
       return {active,origins:origins.size};
     });
     for(const tower of skyline.towers)skyline.strikeNearest(tower.group.position.x);
-    skyline.update(6,.5,0);
+    // Check mature combustion AFTER the intentional 20-second propagation.
+    // The previous 3-second all-nine assertion incorrectly rejected the new
+    // gradual spread while the first five sources were legitimately burning.
+    skyline.update(26,.5,0);
     const repeated=skyline.getStats().combustion.active;
+    const matureHeats=skyline.towers.map(t=>Array.from(t.facadeDamage.heat).filter(v=>v>0).length);
+    const matureBatches=pool.children.map(m=>{
+      const settings=m.geometry.attributes.settings,source=m.geometry.attributes.source;
+      let active=0;const origins=new Set();
+      for(let i=0;i<settings.count;i++)if(settings.getW(i)>0){
+        active++;origins.add([source.getX(i),source.getY(i),source.getZ(i)].join(','));
+      }
+      return {active,origins:origins.size};
+    });
     skyline.reset();
     const reset=skyline.getStats().combustion.active;
     const damageReset=skyline.towers.every(t=>t.facadeDamage.contacts.every(c=>c.z===0)&&t.facadeDamage.heat.every(v=>v===0));
@@ -406,11 +419,12 @@ try {
     skyline.group.traverse(o=>{if(o.geometry)geometries.add(o.geometry);
       for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)materials.add(m);});
     for(const g of geometries)g.dispose();for(const m of materials)m.dispose();
-    return {stats,contacts,batches,repeated,reset,stable,damageReset};
+    return {stats,contacts,batches,repeated,matureHeats,matureBatches,reset,stable,damageReset};
   });
   const coverage=report.skylinePoolCoverage;
   assert.equal(coverage.contacts.length,9);
-  assert.ok(coverage.contacts.every(t=>t.damageContacts===9&&t.heatFinite),'facade damage follows all active window contacts');
+  assert.ok(coverage.contacts.every(t=>t.damageContacts===9&&t.heatFinite&&t.heatedContacts===5),
+    'nine damaged openings exist immediately while five nearby windows are burning by 3 seconds');
   assert.ok(coverage.damageReset,'restart clears soot and heat contacts');
   assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
@@ -421,10 +435,13 @@ try {
   assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,
     'distant skyline strikes reach upper occupied floors rather than only lower tower bays');
   assert.equal(coverage.stats.capacity,81);
-  assert.equal(coverage.stats.active,81,'every tower ignites after staggered delays');
-  assert.deepEqual(coverage.batches.map(b=>b.active),[243,405,324,81]);
-  assert.ok(coverage.batches.every(b=>b.origins===81),'all four GPU batches receive every tower origin');
-  assert.equal(coverage.repeated,81,'repeat strikes retain all allocated sources');
+  assert.equal(coverage.stats.active,45,'five of nine sources per tower burn at 3 seconds; late sources remain pooled');
+  assert.deepEqual(coverage.batches.map(b=>b.active),[135,225,180,45]);
+  assert.ok(coverage.batches.every(b=>b.origins===45),'early GPU batches show five physical fire origins per tower');
+  assert.equal(coverage.repeated,81,'all nine sources per tower ignite after 26 seconds, even after repeat strikes');
+  assert.ok(coverage.matureHeats.every(count=>count===9),'all nine soot/heat contacts mature during sustained fire');
+  assert.deepEqual(coverage.matureBatches.map(b=>b.active),[243,405,324,81]);
+  assert.ok(coverage.matureBatches.every(b=>b.origins===81),'mature GPU batches retain 81 distinct physical fire origins');
   assert.equal(coverage.reset,0,'restart clears every tower source');
   assert.ok(coverage.stable,'multi-tower strikes reuse existing GPU resources');
   report.combustionPool.licensedAtlases=await page.evaluate(async()=>{
