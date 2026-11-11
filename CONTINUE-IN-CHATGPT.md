@@ -1,3 +1,13 @@
+## November 11 — RC10 skyline envelope regression repaired
+
+- Browser 42973656254 progressed beyond menu and gameplay but FAILED at qa/browser.mjs:1057: source `renderWidth` had been reduced to 1.5–1.75× window width, below required 2.05–2.40× neighboring-bay growth. Downloaded actual report: errors=[], warnings=[]. Retain the existing assertion and restore 2.1–2.35× source envelope. The narrower/taller/brighter individual atlas cards and rising soot packets remain the visual candidate; this supersedes the earlier reduced-envelope note.
+- Added independent focused 100-frame skyline recording workflow so actual fire appearance can be reviewed before the full motion queue finishes. Full five-clip + 30-second workflow remains unchanged. No art acceptance, public release or hardware performance claim. Fresh exact-head full browser and motion required after this repair.
+
+## November 11 — additive focused fire review
+
+- Added separate PR-only `fire-focus-qa.yml` to render the existing authentic five-second / 100-frame skyline scenario immediately, independent of the long motion queue. `QA_MOTION_SCENARIOS=skyline` selects it using `qa/motion.mjs`; absent the variable, the original five clips run unchanged. The full five+30s workflow is retained and uninterrupted. This focused evidence cannot substitute for sustained 30s motion acceptance.
+- Earlier first-candidate report downloaded: errors=[], warnings=[]; z=0/-25/-35 all intercepted at 64; settlement input moved [18,21,15] -> [26.5,29,15]; settled gas reached launcher at z24 from cloud z3, high cloud rejected, searchlight disabled and seven-second recovery passed. Initial full suite stopped only on hidden settings due QA cleanup; repaired-head browser 42973656254 still running and motion 42973656237 queued behind 42973145013.
+
 ## November 11 — RC10 browser test isolation repair
 
 - Exact candidate 08492658 browser run 42973145012 reached and PASSED new real gameplay checks: three-depth interceptions at speed 64, right/up movement in settlement, actual military gas altitude/other-lane/recovery and searchlight checks. It later FAILED at qa/browser.mjs:532 because the new regression reset left active=true and overlay hidden, so the existing graphics-menu interaction timed out. No shader/asset error caused that stop.

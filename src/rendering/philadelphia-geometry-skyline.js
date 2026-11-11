@@ -313,7 +313,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   site.width=w;site.height=h;site.active=true;
   // Accurate broken-pane center, but the simulated blaze reaches adjacent
   // glazing bays instead of looking like four isolated miniature candles.
-  site.renderWidth=w*(1.5+.25*Math.abs(Math.sin(site.seed*.47)));
+  site.renderWidth=w*(2.1+.25*Math.abs(Math.sin(site.seed*.47)));
   site.renderHeight=h*(3.05+.36*Math.abs(Math.sin(site.seed*.81)));
   site.ignitedAt=renderClock;
   combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,

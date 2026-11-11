@@ -1,3 +1,8 @@
+## November 11 — additive focused fire review
+
+- Added separate PR-only `fire-focus-qa.yml` to render the existing authentic five-second / 100-frame skyline scenario immediately, independent of the long motion queue. `QA_MOTION_SCENARIOS=skyline` selects it using `qa/motion.mjs`; absent the variable, the original five clips run unchanged. The full five+30s workflow is retained and uninterrupted. This focused evidence cannot substitute for sustained 30s motion acceptance.
+- Earlier first-candidate report downloaded: errors=[], warnings=[]; z=0/-25/-35 all intercepted at 64; settlement input moved [18,21,15] -> [26.5,29,15]; settled gas reached launcher at z24 from cloud z3, high cloud rejected, searchlight disabled and seven-second recovery passed. Initial full suite stopped only on hidden settings due QA cleanup; repaired-head browser 42973656254 still running and motion 42973656237 queued behind 42973145013.
+
 ## November 11 — RC10 browser test isolation repair
 
 - Exact candidate 08492658 browser run 42973145012 reached and PASSED new real gameplay checks: three-depth interceptions at speed 64, right/up movement in settlement, actual military gas altitude/other-lane/recovery and searchlight checks. It later FAILED at qa/browser.mjs:532 because the new regression reset left active=true and overlay hidden, so the existing graphics-menu interaction timed out. No shader/asset error caused that stop.

@@ -7,13 +7,17 @@ import {pathToFileURL} from 'node:url';
 
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
-const scenarios = {
+const allScenarios = {
   skyfall: 'Skyfall | Wide shot of falling, splitting meteors and the dragon',
   dragon: 'Dragon flight | Close-up wing strokes, direction reversal and turning posture',
   houses: 'Background houses | Three staged hits, structural debris, dust and fire (detail camera)',
   skyline: 'Skyline | Repeated Comcast Technology Center strikes, fires and smoke (detail camera)',
   traffic: 'Traffic | Night headlights, staged wind gust and live vehicle recovery',
 };
+// Optional focused evidence pass; default remains the complete five-clip suite.
+const requested=process.env.QA_MOTION_SCENARIOS?.split(',').filter(Boolean)??Object.keys(allScenarios);
+assert.ok(requested.length&&requested.every(name=>Object.hasOwn(allScenarios,name)), 'known motion scenarios only');
+const scenarios=Object.fromEntries(requested.map(name=>[name,allScenarios[name]]));
 const actionFrame = {skyfall: 30, dragon: 28, houses: 53, skyline: 48, traffic: 32};
 const width = 960, height = 540, fps = 20, frames = 100, seed = 20261110;
 const output = 'qa-output/motion';
@@ -128,7 +132,7 @@ try {
 
 Commit: ${sha} · ${fps} FPS · ${frames} frames per scenario · seeded ${seed}
 
-The five videos are **rendered gameplay**, not motion mockups. Browser QA
+The selected videos (${Object.keys(scenarios).join(", ")}) are **rendered gameplay**, not motion mockups. Browser QA
 exercises the real update/render path at three simulation steps per recorded
 frame, independent of hardware FPS.
 

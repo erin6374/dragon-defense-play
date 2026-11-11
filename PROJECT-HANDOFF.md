@@ -1,3 +1,8 @@
+## November 11 — RC10 skyline envelope regression repaired
+
+- Browser 42973656254 progressed beyond menu and gameplay but FAILED at qa/browser.mjs:1057: source `renderWidth` had been reduced to 1.5–1.75× window width, below required 2.05–2.40× neighboring-bay growth. Downloaded actual report: errors=[], warnings=[]. Retain the existing assertion and restore 2.1–2.35× source envelope. The narrower/taller/brighter individual atlas cards and rising soot packets remain the visual candidate; this supersedes the earlier reduced-envelope note.
+- Added independent focused 100-frame skyline recording workflow so actual fire appearance can be reviewed before the full motion queue finishes. Full five-clip + 30-second workflow remains unchanged. No art acceptance, public release or hardware performance claim. Fresh exact-head full browser and motion required after this repair.
+
 ## November 11 — RC10 browser test isolation repair
 
 - Exact candidate 08492658 browser run 42973145012 reached and PASSED new real gameplay checks: three-depth interceptions at speed 64, right/up movement in settlement, actual military gas altitude/other-lane/recovery and searchlight checks. It later FAILED at qa/browser.mjs:532 because the new regression reset left active=true and overlay hidden, so the existing graphics-menu interaction timed out. No shader/asset error caused that stop.
