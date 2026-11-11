@@ -38,15 +38,17 @@ try{
   null,{timeout:90000});
  await page.locator('#graphics').selectOption('mobile');
  report.build=await page.evaluate(()=>window.__DD_MOTION.start('skyline'));
- let burningFrames=0,maxDrawCalls=0;
+ let burningFrames=0,maxDrawCalls=0,multiTowerFrames=0;
  for(let index=0;index<frames;index++){
   const {state,png}=await page.evaluate(()=>window.__DD_MOTION.frame());
   if(state.tower?.fireVisible)burningFrames++;
+  if((state.skylineFires?.length||0)>=2)multiTowerFrames++;
   maxDrawCalls=Math.max(maxDrawCalls,state.drawCalls);
   if(index%20===0||index===frames-1)report.samples.push({
    frame:index,seconds:+state.elapsed.toFixed(2),drawCalls:state.drawCalls,
    towerDamage:state.tower?.damage,fireVisible:state.tower?.fireVisible,
-   smokeVisible:state.tower?.smokeVisible,combustionTime:state.tower?.combustionTime
+   smokeVisible:state.tower?.smokeVisible,combustionTime:state.tower?.combustionTime,
+   burningTowerIds:state.skylineFires
   });
   const image=Buffer.from(png,'base64');
   await writeFile(join(temporary,'long-'+String(index).padStart(4,'0')+'.png'),image);
@@ -54,10 +56,12 @@ try{
    await writeFile(join(output,'skyline-long-'+index+'.png'),image);
  }
  report.burningFrames=burningFrames;
+ report.multiTowerFrames=multiTowerFrames;
  report.maxDrawCalls=maxDrawCalls;
  assert.equal(report.samples.at(-1).frame,599);
  assert.ok(Math.abs(report.samples.at(-1).seconds-30)<.06,'capture covers 30 simulation seconds');
  assert.ok(burningFrames>100,'multi-window fires visible for a substantial part of the recording');
+ assert.ok(multiTowerFrames>100,'30-second recording shows at least two concurrently burning skyline facades');
  execFileSync(process.env.QA_FFMPEG||'ffmpeg',[
   '-hide_banner','-loglevel','error','-y','-framerate',String(fps),
   '-i',join(temporary,'long-%04d.png'),'-frames:v',String(frames),

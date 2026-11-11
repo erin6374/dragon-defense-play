@@ -2552,7 +2552,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
     fireVisible:skylineBackdrop.fireState(t).active,fireOpacity:null,
     fireSize:[skylineBackdrop.fireState(t).width,skylineBackdrop.fireState(t).height,1],
     secondaryBurnSites:t.burnSites.map(site=>({active:site.active,index:site.index,
-     position:site.origin.toArray(),width:site.width,
+     position:site.origin.toArray(),width:site.width,height:site.height,
      renderWidth:site.renderWidth,renderHeight:site.renderHeight,ignitedAt:site.ignitedAt})),
     skylineBurnBudget:skylineBackdrop.getStats(),
     smokeParentStable:skylineBackdrop.fireState(t).parentStable,
@@ -3288,6 +3288,12 @@ if(motionQA){
     const strike=qa.stageSkylineStrike();
     if(!strike.ok)throw Error(strike.error);
    }
+   // QA-only second facade fire for genuine 30-second multi-fire motion review.
+   if(scenario==='skyline'&&[220,390].includes(frame)){
+    const second=skylineBackdrop.towers.find(t=>t.def.id==='comcast-center');
+    if(!second)throw Error('Second skyline landmark missing');
+    skylineBackdrop.strikeNearest(second.group.position.x);
+   }
    if(scenario==='traffic'&&frame===25){
     pointer.set(45,5,20);
     gustCooldownReset();
@@ -3317,6 +3323,7 @@ if(motionQA){
    }
    if(tower)state.tower={damage:tower.strikeDamage,combustionTime:skylineBackdrop.fireState(tower).clock,
     smoke:null,fireVisible:skylineBackdrop.fireState(tower).active,smokeVisible:skylineBackdrop.fireState(tower).active};
+   if(tower)state.skylineFires=skylineBackdrop.towers.filter(t=>skylineBackdrop.fireState(t).active).map(t=>t.def.id);
    if(vehicle)state.traffic={position:vehicle.root.position.toArray(),roll:vehicle.root.rotation.x,
     gust:windActive,hit:vehicle.windGustId===gustId,headlights:vehicle.root.userData.headlightBeam.visible};
    return {state,png:renderer.domElement.toDataURL('image/png').split(',')[1]};

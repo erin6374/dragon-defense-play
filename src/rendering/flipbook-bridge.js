@@ -113,9 +113,9 @@ ${anchor}`);
   // Warm gray smoke close to the burning facade, dark ash higher up;
   // prevents the previous pale wisps reading as floating white ghosts.
   float soot=smoothstep(.19,.88,q.y);
-  color=mix(vec3(.22,.21,.20),vec3(.13,.16,.18),soot)*
+  color=mix(vec3(.15,.145,.14),vec3(.075,.085,.095),soot)*
    (.78+.22*frame.rgb);
-  alpha=frame.a*min(1.,vPower)*.48*
+  alpha=frame.a*min(1.,vPower)*.64*
    smoothstep(0.,.12,vAge)*(1.-smoothstep(.65,1.,vAge));
  }
 ${anchor}`);

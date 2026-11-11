@@ -12,7 +12,7 @@ export function attachFacadeFireDamage(material, count=9) {
    uniform float ddBurnHeat[${count}];\n`+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
    #include <map_fragment>
-   float ddSoot=0.; float ddOpening=0.; float ddHeat=0.;
+   float ddSoot=0.; float ddOpening=0.; float ddHeat=0.; float ddReflected=0.;
    #ifdef USE_MAP
    for(int i=0;i<${count};i++){
     vec4 c=ddBurnContacts[i];
@@ -26,18 +26,22 @@ export function attachFacadeFireDamage(material, count=9) {
      ddSoot=max(ddSoot,soot*.78);
      ddOpening=max(ddOpening,opening);
      ddHeat+=exp(-dot(p/vec2(1.7,2.1),p/vec2(1.7,2.1)))*ddBurnHeat[i];
+     // Bounded reflection on adjacent intact glass; no new light or draw call.
+     ddReflected+=max(0.,1.-dot(p/vec2(4.5,4.0),p/vec2(4.5,4.0)))*ddBurnHeat[i];
     }
    }
    diffuseColor.rgb*=1.-max(ddSoot,ddOpening*.94);
+   diffuseColor.rgb+=vec3(.47,.115,.012)*clamp(ddReflected*.27,0.,.48);
    #endif
   `).replace('#include <emissivemap_fragment>',`
    #include <emissivemap_fragment>
    // Extinguish the original office lights inside charred/broken windows.
    totalEmissiveRadiance*=1.-max(ddSoot,ddOpening);
    totalEmissiveRadiance+=vec3(1.,.21,.025)*min(ddHeat,.95)*(.18+.42*ddOpening);
+   totalEmissiveRadiance+=vec3(1.,.24,.035)*min(ddReflected,1.6)*.18;
   `);
  };
- material.customProgramCacheKey=()=>`facade-fire-damage-${count}-v1`;
+ material.customProgramCacheKey=()=>`facade-fire-damage-${count}-v2`;
  return {
   contacts,heat,
   set(index,u,v,width,height,power){

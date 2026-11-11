@@ -1120,7 +1120,7 @@ try {
   const burnHeightRatios=towerImpact.result.secondaryBurnSites.map(site=>site.renderHeight/site.height);
   assert.ok(burnRatios.every(Number.isFinite)&&burnHeightRatios.every(Number.isFinite)&&
     burnRatios.every(r=>r>1.15&&r<2.2)&&burnHeightRatios.every(r=>r>1.17&&r<2.7),
-    'licensed fire remains finite and window-scale, not an oversized ribbon');
+    'licensed fire remains finite and window-scale, not an oversized ribbon: '+JSON.stringify({burnRatios,burnHeightRatios}));
   assert.equal(burnRatios.filter(r=>r>=1.85).length,3,'three hero fire sources');
   assert.equal(burnRatios.filter(r=>r>=1.45&&r<1.85).length,3,'three medium fire sources');
   assert.equal(burnRatios.filter(r=>r<1.45).length,3,'three small broken-window fires');
