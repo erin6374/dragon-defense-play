@@ -389,8 +389,8 @@ try {
     'flame structure actually changes with time rather than stretching a painted silhouette');
   assert.equal(fluidFire.result.sharedFlameTexture,true,
     'cinematic effects use the same animated fire atlas');
-  assert.equal(fluidFire.result.proceduralSkylineFire,true,
-    'distant standing skyscrapers use texture-free procedural combustion');
+  assert.equal(fluidFire.result.proceduralSkylineFire,!report.combustionPool.licensedAtlases,
+    'skyscraper fire renderer matches the packaged CC0 flipbook versus procedural fallback');
   assert.ok(fluidFire.result.metrics.fireFrame>=fluidFire.result.initial.fireFrame+2,
     'time-stepped fire texture updates without allocating a new GPU map');
   report.fluidFire=fluidFire.result;
@@ -938,7 +938,9 @@ try {
     'sources are small finite window openings');
   const budget=towerImpact.result.skylineBurnBudget.combustion;
   assert.equal(budget.capacity,36);assert.equal(budget.active,4);
-  assert.equal(budget.drawCalls,4);assert.equal(budget.textures,0);
+  assert.equal(budget.drawCalls,4);
+  assert.equal(budget.textures,report.combustionPool.licensedAtlases?2:0,
+    'landmark fire is rendered from two shared licensed atlases when bundled');
   assert.equal(budget.smokeCapacity,216);assert.equal(budget.flameCapacity,108);
   assert.ok(towerImpact.result.fireSize[0]<2,'no oversized central sprite remains');
   assert.equal(towerImpact.result.scorchVisible,true,'meteor impact leaves a visible facade mark');
