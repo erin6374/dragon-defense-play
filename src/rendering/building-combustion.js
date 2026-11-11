@@ -31,7 +31,7 @@ void main(){
  float phase=clock*(1.12+.45*fract(vSeed*.61))+vSeed*1.27;
  float bend=pow(axial,1.45)*(.22*sin(phase+axial*3.3)+
   .11*sin(phase*.73+axial*6.4+vSeed));
- float breadth=(1.12+.30*fract(vSeed*.23))*(1.-axial*.12);
+ float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12);
  float height=.84+.34*fract(vSeed*.39);
  p=vec3((p.x*breadth+bend)*w*cos(angle),axial*h*height,
   (p.x*breadth+bend)*w*sin(angle));
@@ -41,9 +41,9 @@ void main(){
  float life=vAge;
  float rise=life*(1.+life*.16);
  center+=vec3((sin(clock*.38+vSeed)*.13+sin(life*6.+vSeed)*.12+
-  rise*.30)*w,h*.25+rise*h*2.25,w*(.24+sin(life*4.+vSeed)*.14));
+  rise*.38)*w,h*.25+rise*h*2.25,w*(.24+sin(life*4.+vSeed)*.14));
  vec4 eye=modelViewMatrix*vec4(center,1.);
- float scale=w*(.72+life*.87);
+ float scale=w*(.84+life*1.04);
  #if KIND == 2
  scale=w*.045; center.y+=life*h*1.8;eye=modelViewMatrix*vec4(center,1.);
  #endif
@@ -89,8 +89,8 @@ void main(){
  vec2 xy=(q-.5)*2.;
  float curl=fbm(vec3(xy*vec2(3.7,4.5)+vec2(vSeed,-clock*.13),clock*.17));
  // Six turbulent density layers in a sheared plume, not spherical cotton balls.
- float displaced=xy.x+.18*sin(xy.y*4.1+clock*.29+vSeed)+.11*(curl-.5)*xy.y;
- float radius=length(vec2(displaced*.89,xy.y*.77));
+ float displaced=xy.x+.26*sin(xy.y*4.1+clock*.29+vSeed)+.18*(curl-.5)*xy.y;
+ float radius=length(vec2(displaced*.82,xy.y*.77));
  if(radius>1.35)discard;
  float envelope=1.-smoothstep(.40,1.18,radius+.23*(curl-.5));
  float density=0.,shade=0.;
@@ -103,7 +103,7 @@ void main(){
   density+=d;shade+=d*(.52+.34*z);
  }
  float life=smoothstep(0.,.13,vAge)*(1.-smoothstep(.73,1.,vAge));
- alpha=(1.-exp(-density*.58))*life*.46*vPower*envelope;
+ alpha=(1.-exp(-density*.58))*life*.42*vPower*envelope;
  color=mix(vec3(.20,.22,.24),vec3(.59,.61,.63),
   clamp(.29+shade*.28+xy.y*.12,0.,1.));
  color+=vec3(.16,.058,.014)*exp(-vAge*9.)*(1.-min(1.,radius));

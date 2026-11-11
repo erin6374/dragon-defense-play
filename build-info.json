@@ -1,8 +1,8 @@
 {
-  "build": "5.5-sheared-plumes-rc2",
-  "version": "5.5.0-rc.2",
+  "build": "5.5-window-breadth-rc3",
+  "version": "5.5.0-rc.3",
   "gameplay_base": "5.2.3",
-  "scope": "Follow-up cinematic combustion: irregular broad flame shoulders, independent motion and sheared vertically stretched six-layer turbulent smoke; no new GPU batches or gameplay changes",
+  "scope": "RC3 cinematic combustion: broaden short window flame shoulders, widen and laterally shear buoyant smoke, preserve capped fixed GPU batches and unchanged gameplay",
   "new_gameplay_features": true,
-  "release_status": "RC2 UNVERIFIED: exact-head browser, five-clip motion and authorized Pages byte comparison required"
+  "release_status": "RC3 UNVERIFIED: exact-head browser, five-clip motion and authorized Pages seven-file byte comparison required"
 }

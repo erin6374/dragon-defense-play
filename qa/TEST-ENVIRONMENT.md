@@ -36,3 +36,7 @@ RC24 adds one fixed InstancedMesh for 56 window-level rowhouse smoke quads using
 ## RC25 window-band smoke / glow regression
 
 The skyline renderer preallocates 36 flame, 36 smoke and 36 glow instances (nine towers × four window origins) in three instanced draw calls. QA checks horizontal separation, bounded vertical offsets, off-white central smoke and small flames. The independently recorded `skyline.mp4` must be reviewed for visible smoke motion and absence of hard loop pops; no visual acceptance is inferred from passing numeric assertions alone.
+
+## RC3 window-band flame and smoke gate
+
+RC3 `5.5.0-rc.3` changes only procedural combustion shader constants, skyline window-source size and build metadata. Review actual 20fps `houses.mp4` and `skyline.mp4` at 0.6/1.2/2.4/3.4/4.8 seconds against exact-head RC2; inspect full-speed playback and frame-step for hard plume resets. The tower site width remains capped at 1.92 local units for the existing QA contract. Existing capacities, draw calls, textures, source transforms, game state, and production isolation must remain unchanged. Do not certify public /preview/ without the automatic same-SHA seven-file byte comparison.

@@ -299,11 +299,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   const cols=d.style==='civic'?7:11,rows=d.style==='civic'?30:56;
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
   const row=Math.max(3,Math.min(Math.floor(rows*.60),Math.round((tower.impactLocal.y+offsetY)/d.h*rows)));
-  const w=d.w/cols*.86,h=d.h/rows*.88;
+  const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
   site.width=w;site.height=h;site.active=true;
-  combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,w,h*1.65,site.seed,.95,1);
+  combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,w,h*1.54,site.seed,.95,1);
 
  }
  function strikeNearest(localX,intensity=0){
