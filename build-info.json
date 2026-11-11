@@ -1,8 +1,8 @@
 {
-  "build": "5.5-facade-fire-damage-rc12",
-  "version": "5.5.0-rc.12",
+  "build": "5.5-progressive-licensed-window-fire-rc13",
+  "version": "5.5.0-rc.13",
   "gameplay_base": "5.2.3",
-  "scope": "Window-bound soot, broken glazing and reflected firelight; retains RC11 placement and RC10 gameplay.",
+  "scope": "Twenty-second damage-coupled licensed CC0 fire propagation across wider physical facade window bays; retains RC12 soot/glow and all gameplay.",
   "new_gameplay_features": true,
-  "release_status": "RC12 CANDIDATE: exact-head browser and motion review pending; art not accepted"
+  "release_status": "RC13 CANDIDATE: fresh exact-head browser, five+30s motion, Windows and authorized Pages validation required; MOT-03 NOT visually accepted."
 }

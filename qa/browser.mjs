@@ -1072,6 +1072,14 @@ try {
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
   assert.equal(towerImpact.result.secondaryBurnSites.length,9,
     'nine pooled contacts form three staggered rows of damaged windows');
+  const ignitionTimes=towerImpact.result.secondaryBurnSites.map(site=>site.ignitedAt);
+  assert.ok(ignitionTimes.every(Number.isFinite)&&
+    ignitionTimes[4]===Math.min(...ignitionTimes)&&
+    Math.max(...ignitionTimes)-Math.min(...ignitionTimes)>17,
+    'licensed facade flames propagate from one immediate contact into nearby bays over 18+ seconds');
+  const fireXs=towerImpact.result.secondaryBurnSites.map(site=>site.position[0]);
+  assert.ok(Math.max(...fireXs)-Math.min(...fireXs)>5,
+    'multi-window combustion spans distinct physical bays rather than one narrow torch');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>

@@ -152,6 +152,10 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  const SECONDARY_BURN_SITES_PER_TOWER=9; // Three staggered damaged floors, three openings each.
+ // Fixed architectural spread order, not a synchronized impact-time flare.
+ // Five nearby bays ignite first; four peripheral windows catch progressively
+ // over the following twenty seconds. This array is allocated once at setup.
+ const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
  const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
@@ -295,7 +299,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  }
  let time=-1,lastPhase=-1,damage=0;
  let renderClock=0,lastCombustionRefresh=-Infinity;
- // Fixed nine-sites-per-tower pool: update growing window fires only at ~6Hz,
+ // Fixed nine-sites-per-tower pool: update propagating window fires only at ~6Hz,
  // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
  // Retain stable, vertically separated facade contact points between strikes.
  // Coordinates are skyline-local and do not inherit any tower damage transform.
@@ -383,13 +387,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // hit-time objects: all nine sites exist in the fixed instance buffer.
   const ignite=(j)=>{
    const row=Math.floor(j/3),col=j%3;
-   const offsetX=(col-1)*tower.def.w*.175+(row%2?.047:-.047)*tower.def.w;
-   const offsetY=(row-1)*tower.def.h*.037+(col===1?.004:0)*tower.def.h;
+   // Broader, physically distinct broken-window bays on three real storeys.
+   // Still UV-grid snapped, roof-safe and limited to the same nine slots.
+   const offsetX=(col-1)*tower.def.w*.235+(row%2?.032:-.032)*tower.def.w;
+   const offsetY=(row-1)*tower.def.h*.050+(col===1?.004:0)*tower.def.h;
    const site=tower.burnSites[j];
    placeBurnSite(tower,site,offsetX,offsetY,2.55+col*.14);
-   // Seeded sequential ignition unfolds across a few seconds. Instant hit
-   // still lights the central cell; no synchronized ignition of nine flames.
-   const delay=j===4?0:(Math.floor(j/3)*.47+Math.abs(j%3-1)*.23+.20);
+   // Damage accelerates lateral spread, while fixed ignition times let the
+   // 30-second recording show a genuine evolving multi-window blaze.
+   // Additional meteor strikes still re-ignite a single existing window.
+   const delay=BURN_IGNITION_DELAYS[j]/(1+tower.strikeDamage*.7);
    site.ignitedAt=renderClock+delay;
    if(delay>0)combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
      site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
