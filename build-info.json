@@ -1,8 +1,8 @@
 {
-  "build": "5.5-three-scale-licensed-fire-and-soot-rc15",
-  "version": "5.5.0-rc.15",
+  "build": "5.5-five-floor-tiered-architectural-fire-rc16",
+  "version": "5.5.0-rc.16",
   "gameplay_base": "5.2.3",
-  "scope": "Three tiers of CC0 Flame03 window fire, stronger rising CC0 WispySmoke03 and size-weighted facade glow; nine impact-local contacts, fixed 81-source pool, four batches, gameplay retained.",
+  "scope": "Five-floor staggered licensed Flame03 skyline fire (three floors for civic windows), 3+3+3 bounded flame tiers, impact-local contacts, 81 fixed GPU sources and four draw batches; gameplay unchanged.",
   "new_gameplay_features": true,
-  "release_status": "RC15 CANDIDATE; exact-head browser, five+30s motion, Windows and Pages pending; MOT-03 not artistically accepted."
+  "release_status": "RC16 CANDIDATE; browser, five+30s motion, Windows and authorized Pages same-head verification pending; MOT-03 not artistically accepted."
 }

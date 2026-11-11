@@ -151,13 +151,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   {id:'other-center-city',x:-62,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
- const SECONDARY_BURN_SITES_PER_TOWER=9; // Three staggered damaged floors, three openings each.
+ const SECONDARY_BURN_SITES_PER_TOWER=9; // Five staggered glass floors (three civic), nine fixed openings.
  // Fixed architectural spread order, not a synchronized impact-time flare.
  // Five nearby bays ignite first; four peripheral windows catch progressively
  // over the following twenty seconds. This array is allocated once at setup.
  const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
  // Nine fixed, UV-snapped architectural openings; intentionally not a 3x3 grid.
- const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-1],[-2,0],[0,-1],[1,1],[-1,1],[2,-1],[2,0]];
+ const BURN_WINDOW_PATTERN=[[-1,-2],[0,0],[1,-1],[-2,1],[0,-1],[1,2],[-1,1],[2,-2],[2,0]];
  const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
@@ -305,7 +305,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
  // Retain stable, vertically separated facade contact points between strikes.
  // Coordinates are skyline-local and do not inherit any tower damage transform.
- // Keep the complete three-floor fire cluster on full-width wall glazing,
+ // Keep the complete five-floor fire cluster on full-width wall glazing,
  // never on narrow setback crowns or an arbitrary 60%-height cutoff.
  function fullWidthFacadeTop(d){
   switch(d.roof){
@@ -326,7 +326,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Snap to the same UV window grid used by makeFacade; stay below setbacks.
   const cols=d.style==='civic'?7:11,rows=facadeRows(d);
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
-  // Reserve room for all three rows before snapping individual sources.
+  // Reserve two additional rows above center for five-floor glass fire spread.
   // This also prevents distinct windows merging at a roof setback.
   const centerRow=Math.max(5,Math.min(highestSafeCenterRow(d),
    Math.round(tower.impactLocal.y/d.h*rows)));
@@ -388,7 +388,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Repeated strikes scar and burn towers without deforming or collapsing them.
   tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07+intensity*.04);
   // Repeated strikes refresh one window, preserving the others' continuity.
-  // A contiguous multi-floor fire rather than four isolated stationary
+  // An irregular five-floor glass fire rather than four isolated stationary
   // torches. Each cell maps to a different real window-grid contact. No
   // hit-time objects: all nine sites exist in the fixed instance buffer.
   const ignite=(j)=>{

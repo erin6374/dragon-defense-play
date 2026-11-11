@@ -390,6 +390,10 @@ try {
         maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
         maxCardHeightRows:Math.max(...t.burnSites.map(s=>s.renderHeight/s.height)),
         maxCardWidthBays:Math.max(...t.burnSites.map(s=>s.renderWidth/s.width)),
+        tierCounts:[
+          t.burnSites.filter(s=>s.renderWidth/s.width<1.45).length,
+          t.burnSites.filter(s=>s.renderWidth/s.width>=1.45&&s.renderWidth/s.width<1.85).length,
+          t.burnSites.filter(s=>s.renderWidth/s.width>=1.85).length],
         windowPitch:t.def.h/rows};
     });
     const batches=pool.children.map(m=>{
@@ -433,11 +437,16 @@ try {
   assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
   assert.ok(coverage.contacts.every(t=>t.distinctBays>=4&&t.distinctFloors>=3),
     'licensed skyline fire occupies an irregular multi-bay multi-floor footprint');
+  assert.ok(coverage.contacts.filter(t=>t.id!=='city-hall').every(t=>t.distinctFloors>=5),
+    'glass skyscrapers spread fire across five distinct damaged window floors');
+  assert.ok(coverage.contacts.every(t=>t.tierCounts.join(',')==='3,3,3'),
+    'every tower retains exactly three small, three medium and three hero licensed flames');
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
   assert.ok(coverage.contacts.every(t=>t.maxY<t.wallTop),
     'every nine-window cluster stays below the full-width roof setback');
-  assert.ok(coverage.contacts.every(t=>t.maxCardHeightRows<1.81&&t.maxCardWidthBays<1.48),
-    'licensed flame sheets stay bounded to physical windows instead of overlapping into a horizontal ribbon');
+  assert.ok(coverage.contacts.every(t=>Number.isFinite(t.maxCardHeightRows)&&Number.isFinite(t.maxCardWidthBays)&&
+    t.maxCardHeightRows<2.64&&t.maxCardWidthBays<2.18),
+    'all three licensed flame tiers remain finite and physically bounded, including the intentionally larger hero flames');
   assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*3.5),
     'burning windows remain close to the meteor/scorch contact');
   assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,
