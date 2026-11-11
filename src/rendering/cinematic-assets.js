@@ -1,3 +1,4 @@
+import {createFoliageCluster} from './foliage-cluster.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Dragon Defense 4.4 — coherent visual asset library, browser-native WebGL/PBR.
 
@@ -130,6 +131,7 @@ export function createVisualMaterials(THREE){
   roadStripe:new THREE.MeshBasicMaterial({color:0xe6e2d1,transparent:true,opacity:.86,depthWrite:false}),
   yellowStripe:new THREE.MeshBasicMaterial({color:0xd5aa51,transparent:true,opacity:.9,depthWrite:false})
  };
+ bank.asphalt.roughness=.62;bank.asphaltCross.roughness=.62;
  const fluidFire=createFluidCombustionAtlases(THREE);
  bank.images={flame:fluidFire.flame,smoke:fluidFire.smoke,dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
  bank.advanceFireVisuals=fluidFire.update;
@@ -313,16 +315,17 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
   addBox(x,1.26,10.35,2.2,1.1,.045,bank.window);
   addBox(x,1.87,10.4,2.5,.09,1.2,metal);
  }
- const leafGeometry=new THREE.SphereGeometry(1,12,8),trunkMaterial=boxMaterial(THREE,0x65503b,.94,.01);
- const foliageMaterials=[0x354d33,0x496039,0x61764a].map(color=>boxMaterial(THREE,color,1,0));
- const leaves=foliageMaterials.map(m=>{const mesh=new THREE.InstancedMesh(leafGeometry,m,200);mesh.frustumCulled=false;scene.add(mesh);return mesh});const matrix=new THREE.Object3D(),windTrees=[];const leafIndex=[0,0,0];
- for(const x of [-47,-27,28,46]){
-  const root=new THREE.Group();root.position.set(x,-.05,8.95);street.add(root);
+ const foliage=createFoliageCluster();
+ const leafGeometry=foliage.geometry,trunkMaterial=boxMaterial(THREE,0x65503b,.94,.01);
+ const foliageMaterials=[0x718358,0x8b995f,0xa0a777].map(color=>new THREE.MeshStandardMaterial({color,map:foliage.map,alphaTest:.45,side:THREE.DoubleSide,roughness:.94,metalness:0}));
+ const leaves=foliageMaterials.map(m=>{const mesh=new THREE.InstancedMesh(leafGeometry,m,340);mesh.frustumCulled=false;scene.add(mesh);return mesh});const matrix=new THREE.Object3D(),windTrees=[];const leafIndex=[0,0,0];
+ for(const x of [-76,-47,-27,28,46,76]){
+  const root=new THREE.Group();root.position.set(x,-.05,8.95);root.scale.setScalar(1.85);street.add(root);
   const instances=[],wood=[];
   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.09,.19,3.5,14),trunkMaterial);trunk.position.y=1.75;wood.push(trunk);
   for(let branch=0;branch<7;branch++){const angle=branch*2.4,end=new THREE.Vector3(Math.cos(angle)*1.1,3.15+branch*.15,Math.sin(angle)*.9),start=new THREE.Vector3(0,2.25,0),v=end.clone().sub(start);
    const twig=new THREE.Mesh(new THREE.CylinderGeometry(.025,.065,v.length(),10),trunkMaterial);twig.position.copy(start.add(end).multiplyScalar(.5));twig.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());wood.push(twig);
-   for(let j=0;j<18;j++){const a=j*2.399+branch,r=.3+Math.sqrt(j/18)*.75;matrix.position.set(end.x+Math.cos(a)*r,end.y+Math.sin(j*1.7)*.55,end.z+Math.sin(a)*r);matrix.scale.set(.26+(j%3)*.06,.18+(j%4)*.045,.27);matrix.rotation.set(j,branch,0);matrix.updateMatrix();const kind=(j+branch)%3;instances.push({mesh:leaves[kind],index:leafIndex[kind]++,rest:matrix.matrix.clone()})}
+   for(let j=0;j<18;j++){const a=j*2.399+branch,r=.3+Math.sqrt(j/18)*.75;matrix.position.set(end.x+Math.cos(a)*r,end.y+Math.sin(j*1.7)*.55,end.z+Math.sin(a)*r);matrix.scale.set(.43+(j%3)*.08,.39+(j%4)*.055,.43);matrix.rotation.set(j,branch,0);matrix.updateMatrix();const kind=(j+branch)%3;instances.push({mesh:leaves[kind],index:leafIndex[kind]++,rest:matrix.matrix.clone()})}
   }
   const woodParts=wood.map(mesh=>{mesh.updateMatrix();return mesh.geometry.applyMatrix4(mesh.matrix);});
   root.add(new THREE.Mesh(mergeGeometries(woodParts),trunkMaterial));

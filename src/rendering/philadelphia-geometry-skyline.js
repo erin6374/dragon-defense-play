@@ -27,7 +27,13 @@ function makeFacade(seed,style='glass'){
    c.globalAlpha=1;
    c.fillStyle='rgba(195,232,247,.23)';c.fillRect(x+1,y+1,Math.max(1,w*.15),h*.85);
    c.fillStyle='rgba(4,15,24,.34)';c.fillRect(x+w*.52,y,1.2,h);
-   if(isLit){e.fillStyle=rnd()>.45?'#ffcf8d':'#ffebbb';e.fillRect(x+.7,y+1,w-1.4,h-2);}
+   if(isLit){
+    e.fillStyle=rnd()>.45?'#c89c60':'#dfc391';
+    e.fillRect(x+w*.12,y+h*.12,w*.76,h*.71);
+    // Retain dark mullions and office divisions inside illuminated bays.
+    e.fillStyle='#080c12';e.fillRect(x+w*.47,y,w*.07,h);
+    if(curtain)e.fillRect(x,y+h*.48,w,h*.08);
+   }
   }
   c.fillStyle='rgba(11,27,37,.33)';c.fillRect(0,(row+1)*dy-1.7,256,1.7);
  }
@@ -178,7 +184,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  collapsedSlabGeo.addGroup(30,6,1); // original textured front facade
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
- const crownMat=new THREE.MeshBasicMaterial({color:0x5d8398,transparent:true,opacity:.22,depthWrite:false});
+ const lanternCanvas=document.createElement('canvas');lanternCanvas.width=64;lanternCanvas.height=128;
+ const lc=lanternCanvas.getContext('2d');lc.fillStyle='#172631';lc.fillRect(0,0,64,128);
+ for(let y=3;y<128;y+=7){lc.fillStyle=y%3?'#96b8c7':'#bed1ce';lc.fillRect(4,y,56,2);}
+ for(const x of [16,32,48]){lc.fillStyle='#263b46';lc.fillRect(x,0,2,128);}
+ const lanternMap=new THREE.CanvasTexture(lanternCanvas);lanternMap.colorSpace=THREE.SRGBColorSpace;
+ const crownMat=new THREE.MeshBasicMaterial({map:lanternMap,color:0x9eb5c2,transparent:true,opacity:.22,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
   const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);

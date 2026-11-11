@@ -1,8 +1,8 @@
 {
-  "build": "5.5-licensed-coherent-smoke-plume-rc18",
-  "version": "5.5.0-rc.18",
+  "build": "5.5-north-broad-cinematic-scene-rc19",
+  "version": "5.5.0-rc.19",
   "gameplay_base": "5.2.3",
-  "scope": "Licensed CC0 WispySmoke03 coherent dark wind-sheared plume with RC17 smoke A/B, existing Flame03 facade fires, 81 fixed skyline sources and four draw batches; gameplay unchanged.",
+  "scope": "Whole-scene cinematic pass: prefiltered reflections, day/night lighting, school material calibration, mature leafy trees, skyline glazing and lantern detail; preserves RC18 VFX and gameplay.",
   "new_gameplay_features": true,
-  "release_status": "RC18 CANDIDATE; exact-head browser, five+30s motion, Windows and authorized Pages verification pending; MOT-03 not artistically accepted."
+  "release_status": "RC19 CANDIDATE: browser, scene comparisons, sustained motion and package verification required."
 }

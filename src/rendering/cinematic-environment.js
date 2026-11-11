@@ -15,17 +15,17 @@ export function createCinematicSky(THREE,scene){
  float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
  void main(){float night=darkness;float dusk=exp(-pow((phase-.34)*12.,2.))+exp(-pow((phase-.84)*12.,2.));
- vec3 horizon=mix(vec3(.81,.86,.90),vec3(.14,.17,.26),night),zenith=mix(vec3(.26,.49,.73),vec3(.012,.022,.065),night);
- horizon=mix(horizon,vec3(.93,.52,.33),dusk*.72);zenith=mix(zenith,vec3(.20,.19,.33),dusk*.58);
+ vec3 horizon=mix(vec3(.81,.86,.90),vec3(.14,.17,.26),night),zenith=mix(vec3(.33,.49,.67),vec3(.012,.022,.065),night);
+ horizon=mix(horizon,vec3(.93,.52,.33),dusk*.72);zenith=mix(zenith,vec3(.27,.23,.35),dusk*.58);
  vec3 col=mix(horizon,zenith,pow(vUv.y,.72));
  vec2 uv=vUv*vec2(aspect,1.);
- vec2 cloudUV=uv*vec2(3.2,6.5)+vec2(time*.0015,0.);
+ vec2 cloudUV=uv*vec2(2.6,8.5)+vec2(time*.0015,0.);
  float cloud=0.,weight=.5;
  for(int octave=0;octave<5;octave++){cloud+=noise(cloudUV)*weight;cloudUV=cloudUV*2.03+vec2(17.1,9.2);weight*=.5;}
  float sheet=smoothstep(.43,.71,cloud)*smoothstep(.12,.52,vUv.y);
  float rim=smoothstep(.48,.58,cloud)*(1.-smoothstep(.58,.72,cloud));
  vec3 cloudColor=mix(vec3(.82,.85,.88),vec3(.09,.12,.19),night);
- cloudColor=mix(cloudColor,vec3(.98,.65,.43),dusk*rim*.42);
+ cloudColor=mix(cloudColor,vec3(.98,.65,.43),dusk*rim*.64);
  col=mix(col,cloudColor,sheet*(.38+.25*dusk));
  vec2 moonUV=(vUv-vec2(.82,.86))*vec2(aspect,1.);float md=length(moonUV);float disc=1.-smoothstep(.025,.026,md);
  float craters=noise(moonUV*580.)*.14+noise(moonUV*230.)*.12;

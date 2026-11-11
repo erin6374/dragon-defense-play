@@ -35,7 +35,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   {name:'9th-8th',min:-326,max:-261},
   {name:'horizon',min:-590,max:-326}
  ];
- const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,0),dummy=new THREE.Object3D();
+ const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
   main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
   roof:new THREE.MeshStandardMaterial({color:0x4a4441,roughness:.95}),
