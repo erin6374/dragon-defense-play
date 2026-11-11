@@ -46,9 +46,37 @@ vec4 flipbook(sampler2D atlas,vec2 uv,float time){
 }
 `;
 export function prepareFlipbookMaterial(material,kind){
- if(kind>1)return;
+ if(kind===2)return;
  const u=material.uniforms;
  if(!u.useFlipbook){u.useFlipbook={value:0};u.flameAtlas={value:null};u.smokeAtlas={value:null};registry.add(u);}
+ if(kind===3){
+  const marker='color=mix(color,vec3(.025,.013,.008),opening*.85);';
+  if(!material.fragmentShader.includes(marker))throw Error('Opening shader changed; review flipbook contact glow');
+  material.fragmentShader='uniform float useFlipbook;\n'+material.fragmentShader.replace(marker,
+    marker+' if(useFlipbook>.5)color+=vec3(.28,.082,.009)*glow*min(1.,vPower);');
+  return;
+ }
+ // Adjust only the licensed atlas presentation, preserving the original procedural A/B.
+ // Three crossed flame cards and six smoke sheets remain preallocated per opening.
+ const oldVertex=material.vertexShader;
+ const vertexChanges=[
+  ['float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12);',
+   'float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12)*(useFlipbook>.5?1.78:1.);'],
+  ['float height=.84+.34*fract(vSeed*.39);',
+   'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.18:1.);'],
+  ['center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));',
+   'center+=vec3((sway+layer*.10)*w*(useFlipbook>.5?2.2:1.),h*(.90+.12*layer),w*(.22+.11*layer));'],
+  ['float scale=w*(1.02+.16*layer);',
+   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?1.48:1.);'],
+  ['float stretch=2.65+.42*layer;',
+   'float stretch=(2.65+.42*layer)*(useFlipbook>.5?1.18:1.);']
+ ];
+ let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;');
+ for(const [before,after] of vertexChanges){
+  if(!revised.includes(before))throw Error('Combustion vertex changed; review bridge scale: '+before);
+  revised=revised.replace(before,after);
+ }
+ material.vertexShader=revised;
  const source=material.fragmentShader;
  // Patch only the flame and smoke branches; preserve embers/scorch/old fallback.
  if(!source.includes('vec2 q=vUv;vec3 color;float alpha;'))throw Error('Combustion shader changed; review flipbook bridge');
@@ -62,8 +90,8 @@ export function prepareFlipbookMaterial(material,kind){
   float time=clock*(13.+fract(vSeed*.39)*5.)+fract(vSeed*.173)*64.;
   vec2 uv=clamp(q+vec2(.02*sin(q.y*5.+clock*.76+vSeed),0.),.014,.986);
   vec4 frame=flipbook(flameAtlas,uv,time);
-  color=frame.rgb*vec3(1.1,1.02,.96);
-  alpha=frame.a*vPower*(.78+.14*sin(clock*2.6+vSeed));
+  color=frame.rgb*vec3(1.17,1.05,.92);
+  alpha=frame.a*vPower*(.96+.12*sin(clock*2.6+vSeed));
  }
 ${anchor}`);
  }
@@ -75,8 +103,8 @@ ${anchor}`);
   float time=clock*(7.+fract(vSeed*.27)*3.)+fract(vSeed*.191)*64.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
-  color=mix(frame.rgb,vec3(.67,.67,.68),.23);
-  alpha=frame.a*vPower*.48*smoothstep(.015,.19,q.y)*(1.-smoothstep(.78,.995,q.y));
+  color=mix(frame.rgb,vec3(.52,.53,.56),.56);
+  alpha=frame.a*vPower*.44*smoothstep(.015,.19,q.y)*(1.-smoothstep(.78,.995,q.y));
  }
 ${anchor}`);
  }
