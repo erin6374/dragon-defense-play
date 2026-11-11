@@ -1,3 +1,9 @@
+## November 11 — actual RC10 focus footage reviewed; readable rising-soot follow-up
+
+- Focused exact head 76591d3 run 42974672224 SUCCESS, artifact 13835355205. Downloaded report errors=[] and actual 100-frame skyline.mp4. Compared RC9 repaired 1ecd95e vs RC10 at .8/1.2/2.4/3.4/4.8s and consecutive .1s steps at 3–3.9s. RC10 eliminates the white ghost-wall and changes pancake flame strips into much taller distinct flames across three floors. Still NOT cinematic acceptance: soot is too faint against the dark facade/sky, and the flame cluster remains small relative to the whole tower. Mean .1s source-region pixel deltas 4.397 vs 4.407/255 do NOT establish more cinematic motion.
+- Also inspected first RC10 08492658 full five+30s motion artifact 13834937840 (report errors=[]), including 12s and final30s actual frames: fire persists without white smoke wall but soot remains too weak. That source has the earlier narrower envelope; it is historical evidence, not exact newest head certification.
+- Follow-up candidate keeps bounded licensed atlas packets, all gameplay, fixed pools/resources and A/B fallback; raises smoke packet ascent 2.4 -> 4.4 flame heights, stronger wind drift/expansion, charcoal-gray readability and .22 -> .30 optical alpha. No return to stationary overlapping smoke sheets. Requires new focused and sustained motion review, full browser and release checks. MOT-03 remains OPEN.
+
 ## November 11 — RC10 skyline envelope regression repaired
 
 - Browser 42973656254 progressed beyond menu and gameplay but FAILED at qa/browser.mjs:1057: source `renderWidth` had been reduced to 1.5–1.75× window width, below required 2.05–2.40× neighboring-bay growth. Downloaded actual report: errors=[], warnings=[]. Retain the existing assertion and restore 2.1–2.35× source envelope. The narrower/taller/brighter individual atlas cards and rising soot packets remain the visual candidate; this supersedes the earlier reduced-envelope note.

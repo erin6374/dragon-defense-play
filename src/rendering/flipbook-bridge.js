@@ -66,11 +66,11 @@ export function prepareFlipbookMaterial(material,kind){
    'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.6:1.);'],
   ['center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));',
    `if(useFlipbook>.5){
-    center+=vec3((sway+vAge*(.35+fract(vSeed)*.55))*w,
-      h*(.24+vAge*2.4),w*(.38+.1*layer));
+    center+=vec3((sway+vAge*(1.1+fract(vSeed)*.6))*w,
+      h*(.32+vAge*4.4),w*(.38+.1*layer));
    }else{center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));}`],
   ['float scale=w*(1.02+.16*layer);',
-   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(.65+2.1*vAge):1.);'],
+   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(.70+2.7*vAge):1.);'],
   ['float stretch=2.65+.42*layer;',
    'float stretch=useFlipbook>.5?1.35:2.65+.42*layer;']
  ];
@@ -109,9 +109,9 @@ ${anchor}`);
   // Warm gray smoke close to the burning facade, dark ash higher up;
   // prevents the previous pale wisps reading as floating white ghosts.
   float soot=smoothstep(.19,.88,q.y);
-  color=mix(vec3(.15,.105,.07),vec3(.055,.065,.08),soot)*
+  color=mix(vec3(.19,.16,.125),vec3(.105,.12,.145),soot)*
    (.75+.25*frame.rgb);
-  alpha=frame.a*min(1.,vPower)*.22*
+  alpha=frame.a*min(1.,vPower)*.30*
    smoothstep(0.,.12,vAge)*(1.-smoothstep(.65,1.,vAge));
  }
 ${anchor}`);
