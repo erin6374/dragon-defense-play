@@ -1,8 +1,8 @@
 {
-  "build": "5.5-roof-safe-window-combustion-rc11",
-  "version": "5.5.0-rc.11",
+  "build": "5.5-facade-fire-damage-rc12",
+  "version": "5.5.0-rc.12",
   "gameplay_base": "5.2.3",
-  "scope": "Roof-profile-aligned skyline meteor impacts and three-floor CC0 window combustion, preserving RC10 defense-depth gameplay.",
+  "scope": "Window-bound soot, broken glazing and reflected firelight; retains RC11 placement and RC10 gameplay.",
   "new_gameplay_features": true,
-  "release_status": "RC11 CANDIDATE: exact-head browser, sustained motion and Pages checks pending; MOT-03 art NOT accepted"
+  "release_status": "RC12 CANDIDATE: exact-head browser and motion review pending; art not accepted"
 }

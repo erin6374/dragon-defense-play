@@ -3,6 +3,7 @@
 // One mesh per architectural face plus shared low-detail roof ornament; diffuse and
 // emissive maps are baked once so lighting changes don't allocate geometry/textures.
 import * as THREE from 'three';
+import {attachFacadeFireDamage} from './facade-fire-damage.js';
 import {createBuildingCombustion} from './building-combustion.js';
 
 function seeded(n){let x=n>>>0;return ()=>((x=(Math.imul(1664525,x)+1013904223)>>>0)/4294967296);}
@@ -176,6 +177,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  defs.forEach((d,i)=>{
   const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
   const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
+  const facadeDamage=attachFacadeFireDamage(facade,SECONDARY_BURN_SITES_PER_TOWER);
   const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});
   const poly=polygonMesh(profile(d.w,d.h,d.roof),d.depth,facade,side);g.add(poly.front,poly.sides);
   if(d.id.includes('liberty')){
@@ -269,7 +271,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   const burnSites=Array.from({length:SECONDARY_BURN_SITES_PER_TOWER},(_,j)=>({index:i*SECONDARY_BURN_SITES_PER_TOWER+j,
    active:false,origin:new THREE.Vector3(),width:0,height:0,renderWidth:0,
    renderHeight:0,ignitedAt:0,seed:i*1.71+j*2.43}));
-  towers.push({def:d,group:g,facade,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
+  towers.push({def:d,group:g,facade,facadeDamage,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
    impactSprite,impactLocal:new THREE.Vector3(),smokeOrigin,scorchSprite,
    burnSites,siteCursor:0,
    impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
@@ -449,6 +451,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
     const spread=Math.min(1,age/(1.8+.65*Math.abs(Math.sin(site.seed))));
     const pulse=.85+.13*Math.sin(elapsed*1.73+site.seed*2.4)+
      .07*Math.sin(elapsed*3.97+site.seed*.84);
+    tower.facadeDamage.set(site.index%SECONDARY_BURN_SITES_PER_TOWER,
+     (site.origin.x-tower.group.position.x)/tower.def.w+.5,
+     (site.origin.y+site.height*.5)/tower.def.h,
+     site.width/tower.def.w,site.height/tower.def.h,
+     signedAge<0?0:spread*pulse*.55);
     combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
      site.renderWidth*(.66+.34*spread),
      site.renderHeight*(.67+.33*spread),site.seed,
@@ -520,6 +527,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   combustion.reset();damage=0;time=-1;lastPhase=-1;
   renderClock=0;lastCombustionRefresh=-Infinity;
   for(const t of towers){
+   t.facadeDamage.reset();
    t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;
    t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;t.siteCursor=0;
    for(const site of t.burnSites){site.active=false;site.width=0;

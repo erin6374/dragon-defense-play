@@ -380,6 +380,8 @@ try {
         comcast:.92,setback:.74}[t.def.roof]??.97;
       return {id:t.def.id,indices:t.burnSites.map(s=>s.index),
         active:t.burnSites.filter(s=>s.active).length,
+        damageContacts:t.facadeDamage.contacts.filter(c=>c.z>0).length,
+        heatFinite:Array.from(t.facadeDamage.heat).every(v=>Number.isFinite(v)&&v>0),
         wallTop:t.def.h*fullWallTop,impactY:t.impactLocal.y,
         maxY:Math.max(...t.burnSites.map(s=>s.origin.y)),
         maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
@@ -398,15 +400,18 @@ try {
     const repeated=skyline.getStats().combustion.active;
     skyline.reset();
     const reset=skyline.getStats().combustion.active;
+    const damageReset=skyline.towers.every(t=>t.facadeDamage.contacts.every(c=>c.z===0)&&t.facadeDamage.heat.every(v=>v===0));
     const stable=JSON.stringify(before)===JSON.stringify(resources());
     const geometries=new Set(),materials=new Set();
     skyline.group.traverse(o=>{if(o.geometry)geometries.add(o.geometry);
       for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)materials.add(m);});
     for(const g of geometries)g.dispose();for(const m of materials)m.dispose();
-    return {stats,contacts,batches,repeated,reset,stable};
+    return {stats,contacts,batches,repeated,reset,stable,damageReset};
   });
   const coverage=report.skylinePoolCoverage;
   assert.equal(coverage.contacts.length,9);
+  assert.ok(coverage.contacts.every(t=>t.damageContacts===9&&t.heatFinite),'facade damage follows all active window contacts');
+  assert.ok(coverage.damageReset,'restart clears soot and heat contacts');
   assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
   assert.ok(coverage.contacts.every(t=>t.maxY<t.wallTop),
