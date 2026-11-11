@@ -48,11 +48,36 @@ jobs:
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
           node qa/motion.mjs
           node qa/long-fire.mjs
+      # The RC22 600-frame capture passed, but GitHub's artifact service
+      # returned HTML rather than JSON five times during CreateArtifact.
+      # Retry the upload once as a separate artifact without masking failure.
       - name: Retain playable recordings and frame diagnostics
+        id: motion_artifact_primary
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: dragon-defense-motion-qa
           path: qa-output/motion/
           compression-level: 0
           retention-days: 30
+      - name: Retry artifact transfer after service error
+        id: motion_artifact_retry
+        if: always() && steps.motion_artifact_primary.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragon-defense-motion-qa-retry
+          path: qa-output/motion/
+          compression-level: 0
+          retention-days: 30
+      - name: Require at least one retained motion artifact
+        if: always()
+        env:
+          PRIMARY: ${{ steps.motion_artifact_primary.outcome }}
+          RETRY: ${{ steps.motion_artifact_retry.outcome }}
+        run: |
+          echo "Motion artifact upload: primary=$PRIMARY retry=$RETRY"
+          if [[ "$PRIMARY" != "success" && "$RETRY" != "success" ]]; then
+            echo "::error::Motion footage was rendered but no artifact was retained"
+            exit 1
+          fi

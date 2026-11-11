@@ -930,6 +930,10 @@ try {
   report.meteorShootability.unopposedFastImpact=unopposedFastImpact.result;
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
+  report.keyboardStart={wave:restoredWave.result.wave,active:restoredWave.result.active,
+    paused:restoredWave.result.paused,dragon:restoredWave.result.dragon};
+  assert.ok(restoredWave.result.active&&!restoredWave.result.paused,
+    'QA wave-1 reset must dismiss its chapter cinematic before real keyboard movement');
   const before = await snap();
   await page.keyboard.down('KeyD');
   try {

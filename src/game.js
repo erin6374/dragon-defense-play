@@ -3015,7 +3015,12 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   advanceStructures:(dt=1)=>run('advanceStructures',()=>{for(let t=0;t<dt;t+=1/60)neighborhood.update(1/60);return snap()}),
   spawnHelicopter:(variant=null)=>run('spawnHelicopter',()=>{spawnHelicopter(variant);return snap()}),
   stageFirefighter:()=>run('stageFirefighter',()=>{ignite(0,3,3);spawnHelicopter(2);const h=helicopters[helicopters.length-1];h.root.position.set(0,16,3);return snap()}),
-  start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();return snap()}),
+  start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();
+   // A QA reset to chapter-opening wave 1/6/11/15 starts a real 49–76s
+   // cinematic and pauses movement. Explicitly dismiss it ONLY in this
+   // QA helper; normal player cinematics and controls remain unchanged.
+   if(cinematicActive)closeChapterTransition();
+   return snap()}),
   move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-91,91),THREE.MathUtils.clamp(y,2,flightCeiling),15);return snap()}),
   advanceOrdinaryWave:()=>run('advanceOrdinaryWave',()=>{if(!active||wave>=15||[5,10,14].includes(wave))throw Error('QA ordinary-wave transition requires active non-chapter boundary wave');const before=snap();wave++;between=0;updateHud();newWave();return {before,after:snap()}}),
   stageRallyLoop:()=>run('stageRallyLoop',()=>{
