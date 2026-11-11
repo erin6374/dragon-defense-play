@@ -1,8 +1,8 @@
 {
-  "build": "5.5-facade-blaze-growth-rc7",
-  "version": "5.5.0-rc.7",
+  "build": "5.5-facade-collapse-binding-rc8",
+  "version": "5.5.0-rc.8",
   "gameplay_base": "5.2.3",
-  "scope": "Coherent growing facade fire using licensed CC0 textures; independent 6Hz burn-site progression, bigger visual envelopes, warm-to-ash smoke color grade. Gameplay and pools unchanged.",
+  "scope": "Attach detailed North Broad street-front facade overlays, signs, trim, glass and stoops to nearest existing segmented physical building supports; visual parts detach with local wall collapse rather than floating until an arbitrary global threshold. Preserve RC7 CC0 grown fire materials, physics and all existing fixed GPU batches.",
   "new_gameplay_features": true,
-  "release_status": "RC7 source staged pending RC6 motion complete; do not promote without new exact-head QA, 5+30-second motion, visual assessment and seven-file Pages verification"
+  "release_status": "RC8 UNVERIFIED development candidate; exact-head browser QA, five+30-second real gameplay motion review, Windows preview integrity and authorized automatic seven-file Pages check required; MOT-03 cinematic fire acceptance still OPEN."
 }

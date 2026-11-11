@@ -54,9 +54,36 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   else if(spec.type==='brickShop'){bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);bx(group,b.x,1.40,z+.08,b.w*.82,2.35,.055,shadow);}
   else if(spec.type==='crown'){bx(group,b.x,b.h-.14,z,b.w+.06,.16,.22,warmStone);awning(group,b,0,b.w*.98,0x7c2424,'OPEN');bx(group,b.x,1.35,z+.06,b.w*.90,2.15,.055,shadow);for(const dx of [-b.w*.28,0,b.w*.28])bx(group,b.x+dx,1.35,z+.14,b.w*.16,1.95,.06,glass);}
   else if(spec.type==='brick'){bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);stoop(group,b,0,1.45,1.6,3);}
+  // Decorative signs, trim, glass and stoops lose visibility when their
+  // nearest physical facade support detaches. Bind once during construction.
+  const supports=b.sections?.length?b.sections:(b.structuralParts||[]);
+  const bindings=[];
+  group.traverse(mesh=>{
+   if(!mesh.isMesh)return;
+   let support=null,nearest=Infinity;
+   for(const part of supports){
+    const p=part.original?.position||part.position;
+    if(!p)continue;
+    const dx=mesh.position.x-p.x,dy=mesh.position.y-p.y,dz=mesh.position.z-p.z;
+    const dist=dx*dx+dy*dy*.8+dz*dz*.18;
+    if(dist<nearest){nearest=dist;support=part;}
+   }
+   bindings.push({mesh,support});
+  });
+  mapping[mapping.length-1].bindings=bindings;
+ }
+ function synchronize(entry){
+  const {group,building,bindings}=entry;
+  group.visible=building.damage<.74&&!externalFacadeNames.has(building.name);
+  if(!group.visible)return;
+  for(const {mesh,support} of bindings)mesh.visible=!support||support.state==='attached';
  }
  return {root,referenceBuildings:mapping.length,drawObjects:objects.length,
-  update(){for(const {group,building} of mapping)group.visible=building.damage<.74&&!externalFacadeNames.has(building.name);},
-  setExternalFacade(name,loaded){if(loaded)externalFacadeNames.add(name);else externalFacadeNames.delete(name);for(const {group,building} of mapping)if(building.name===name)group.visible=!loaded&&building.damage<.74;},
-  snapshots:()=>mapping.map(e=>({building:e.building.name,damage:e.building.damage,visible:e.group.visible}))};
+  update(){for(const entry of mapping)synchronize(entry);},
+  setExternalFacade(name,loaded){if(loaded)externalFacadeNames.add(name);else externalFacadeNames.delete(name);
+   for(const entry of mapping)if(entry.building.name===name)synchronize(entry);},
+  snapshots:()=>mapping.map(({group,building,bindings})=>({building:building.name,damage:building.damage,
+   visible:group.visible,decorations:bindings.length,
+   unsupported:bindings.filter(x=>x.support&&x.support.state!=='attached').length,
+   unsupportedVisible:bindings.filter(x=>x.support&&x.support.state!=='attached'&&x.mesh.visible&&group.visible).length}))};
 }

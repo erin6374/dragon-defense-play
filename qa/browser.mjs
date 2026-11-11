@@ -854,6 +854,46 @@ try {
   assert.ok(report.impact.schoolReconstruction.attached > report.impact.schoolReconstruction.detached);
   assert.ok(report.impact.schoolReconstruction.byMaterial.glass > 0);
   assert.ok(report.impact.schoolReconstruction.byMaterial.facade > 0);
+  // Exercise street-façade support bindings in isolation: individual signs,
+  // trim and windows must disappear when their structural wall detaches,
+  // without requiring the whole building to reach a global damage threshold.
+  report.streetFacadeBindings=await page.evaluate(async()=>{
+    const THREE=await import('three');
+    const {createBroadStreetReferenceFacades}=await import('./src/rendering/broad-street-reference.js');
+    const scene=new THREE.Scene();
+    const sections=Array.from({length:3},(_,floor)=>({
+      original:{position:new THREE.Vector3(10,2+floor*4,2)},
+      state:'attached'
+    }));
+    const building={name:'south-cream-rowhouse',x:10,w:8,h:12,front:2,
+      stories:3,damage:0,sections};
+    const reference=createBroadStreetReferenceFacades(scene,[building]);
+    reference.update();
+    const intact=reference.snapshots()[0];
+    for(const part of sections)part.state='falling';
+    reference.update();
+    const unsupported=reference.snapshots()[0];
+    for(const part of sections)part.state='attached';
+    reference.update();
+    const restored=reference.snapshots()[0];
+    reference.setExternalFacade(building.name,true);
+    const external=reference.snapshots()[0];
+    scene.remove(reference.root);
+    return {intact,unsupported,restored,external};
+  });
+  assert.ok(report.streetFacadeBindings.intact.decorations>=3,
+    'sample street facade contains several support-bound decorations');
+  assert.equal(report.streetFacadeBindings.intact.unsupportedVisible,0);
+  assert.equal(report.streetFacadeBindings.unsupported.visible,true,
+    'partial structural damage preserves the remaining facade group');
+  assert.ok(report.streetFacadeBindings.unsupported.unsupported>0,
+    'all unsupported sign, trim and facade segments are accounted for');
+  assert.equal(report.streetFacadeBindings.unsupported.unsupportedVisible,0,
+    'no unsupported decorative mesh floats after structural detachment');
+  assert.equal(report.streetFacadeBindings.restored.unsupportedVisible,0,
+    'restored structural support permits intact facade attachment');
+  assert.equal(report.streetFacadeBindings.external.visible,false,
+    'external-source facades remain authoritative when enabled');
   const collapse = await page.evaluate(() => window.__DD_QA.hitSchool(100));
   assert.ok(collapse.ok, collapse.error);
   report.collapse = collapse.result;
