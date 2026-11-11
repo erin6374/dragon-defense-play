@@ -26,22 +26,33 @@ void main(){
  #if KIND == 0
  // Crossed sheets remain rooted in the opening, not camera-facing sprites.
  float angle=particle*1.0472;
- float bend=sin(clock*2.3+vSeed+p.y*4.)*.13*p.y*p.y;
- p=vec3((p.x+bend)*w*cos(angle), (p.y+.5)*h, (p.x+bend)*w*sin(angle));
+ // Source stays fixed while individual sheets flex and rise differently.
+ float axial=clamp(p.y+.5,0.,1.);
+ float phase=clock*(1.12+.45*fract(vSeed*.61))+vSeed*1.27;
+ float bend=pow(axial,1.45)*(.22*sin(phase+axial*3.3)+
+  .11*sin(phase*.73+axial*6.4+vSeed));
+ float breadth=(1.12+.30*fract(vSeed*.23))*(1.-axial*.12);
+ float height=.84+.34*fract(vSeed*.39);
+ p=vec3((p.x*breadth+bend)*w*cos(angle),axial*h*height,
+  (p.x*breadth+bend)*w*sin(angle));
  center.z+=w*.17;
  gl_Position=projectionMatrix*modelViewMatrix*vec4(center+p,1.);
  #elif KIND == 1 || KIND == 2
  float life=vAge;
- float rise=life*life*.4+life;
- center+=vec3((sin(life*7.+vSeed)*.24+rise*.36)*w,h*.55+rise*h*2.8,w*(.3+sin(life*5.+vSeed)*.22));
+ float rise=life*(1.+life*.16);
+ center+=vec3((sin(clock*.38+vSeed)*.13+sin(life*6.+vSeed)*.12+
+  rise*.30)*w,h*.25+rise*h*2.25,w*(.24+sin(life*4.+vSeed)*.14));
  vec4 eye=modelViewMatrix*vec4(center,1.);
- float scale=(.75+life*1.8)*w;
+ float scale=w*(.72+life*.87);
  #if KIND == 2
  scale=w*.045; center.y+=life*h*1.8;eye=modelViewMatrix*vec4(center,1.);
  #endif
- // Use world opening width isotropically: the skyline has a nonuniform
- // parent scale, which must not flatten smoke volumes into horizontal discs.
- eye.xy+=p.xy*scale*length(modelMatrix[0].xyz);
+ // Elongated overlapping smoke wisps instead of separate round billboards.
+ float stretch=1.48+.58*fract(vSeed*.23);
+ #if KIND == 2
+ stretch=1.;
+ #endif
+ eye.xy+=vec2(p.x,p.y*stretch)*scale*length(modelMatrix[0].xyz);
  gl_Position=projectionMatrix*eye;
  #else
  p.xy*=vec2(w*2.6,h*1.9);p.z=0.;
@@ -58,30 +69,44 @@ ${noise}
 void main(){
  vec2 q=vUv;vec3 color;float alpha;
  #if KIND == 0
- float t=clock*(1.7+fract(vSeed)*.6);
- float n=fbm(vec3(q*vec2(5.,7.)+vec2(vSeed,-t*2.),t*.35));
- float x=(q.x-.5)*2.+(n-.5)*.62*q.y+sin(q.y*9.-t+vSeed)*.13*q.y;
- float edge=(1.-q.y)*(.78+.32*n);
- float body=1.-smoothstep(edge*.45,edge+.025,abs(x));
- float breakup=smoothstep(.26,.64,n+(1.-q.y)*.42);
- alpha=body*breakup*(1.-smoothstep(.68,1.,q.y))*smoothstep(0.,.045,q.y)*.72*vPower;
- float heat=clamp((1.-q.y)*.85+(n-.5)*.5-abs(x)*.4,0.,1.);
- color=mix(vec3(.75,.055,.006),vec3(1.,.38,.025),smoothstep(.1,.5,heat));
- color=mix(color,vec3(1.,.87,.46),smoothstep(.55,.93,heat));
+ float t=clock*(1.24+fract(vSeed*.71)*.57);
+ float n=fbm(vec3(q*vec2(4.1,6.2)+vec2(vSeed*.43,-t*1.7),t*.31));
+ float fine=fbm(vec3(q*vec2(9.3,11.7)+vec2(-t*.37,vSeed),t*.53));
+ float y=clamp(q.y,0.,1.);
+ float x=(q.x-.5)*2.+y*(.15*sin(y*7.+t+vSeed)+
+  .13*sin(y*13.-t*.7+vSeed*1.4));
+ // Hot broad shoulders and independently breaking asymmetric flame tips.
+ float edge=(1.00-.47*pow(y,1.14))*(.80+.48*n)+
+  .13*sin(y*14.+t*1.1+vSeed)+.09*sin(y*23.-t*.63+vSeed*1.7);
+ float body=1.-smoothstep(max(.03,edge*.66),max(.14,edge+.14),abs(x));
+ float breakup=smoothstep(.17,.63,fine+.27*(1.-y)+.10*n);
+ float tip=1.-smoothstep(.70,.99,y+.12*(.5-fine)+.08*fract(vSeed*.29));
+ alpha=body*breakup*tip*smoothstep(0.,.065,y)*(.74+.16*sin(t*2.1+vSeed))*vPower;
+ float heat=clamp((1.-y)*.88+(n-.5)*.48-abs(x)*.38,0.,1.);
+ color=mix(vec3(.67,.042,.006),vec3(1.,.32,.018),smoothstep(.09,.52,heat));
+ color=mix(color,vec3(1.,.89,.48),smoothstep(.56,.94,heat));
  #elif KIND == 1
- vec2 xy=(q-.5)*2.;float r2=dot(xy,xy);if(r2>1.)discard;
- // Integrate a noisy sphere: optical depth gives rounded, self-shadowed puffs.
- float depth=sqrt(max(0.,1.-r2)),density=0.,shade=0.;
+ vec2 xy=(q-.5)*2.;
+ float curl=fbm(vec3(xy*vec2(3.7,4.5)+vec2(vSeed,-clock*.13),clock*.17));
+ // Six turbulent density layers in a sheared plume, not spherical cotton balls.
+ float displaced=xy.x+.18*sin(xy.y*4.1+clock*.29+vSeed)+.11*(curl-.5)*xy.y;
+ float radius=length(vec2(displaced*.89,xy.y*.77));
+ if(radius>1.35)discard;
+ float envelope=1.-smoothstep(.40,1.18,radius+.23*(curl-.5));
+ float density=0.,shade=0.;
  for(int j=0;j<6;j++){
-  float z=mix(-depth,depth,(float(j)+.5)/6.);
-  vec3 p=vec3(xy,z)*2.7+vec3(vSeed,clock*.11,-clock*.21);
-  float d=smoothstep(.30,.72,fbm(p))*(1.-r2-z*z);
-  density+=d;shade+=d*(.55+.45*z);
+  float z=(float(j)-2.5)/2.5;
+  vec3 p=vec3(displaced*2.9,xy.y*2.4,z*2.25)+
+   vec3(vSeed*.32,-clock*.16,clock*.11);
+  float n=fbm(p),detail=fbm(p*1.83+vec3(0.,clock*.07,vSeed));
+  float d=smoothstep(.26,.73,n+.22*detail)*envelope*(.60+.40*(1.-abs(z)));
+  density+=d;shade+=d*(.52+.34*z);
  }
- float life=smoothstep(0.,.12,vAge)*(1.-smoothstep(.55,1.,vAge));
- alpha=(1.-exp(-density*.7))*life*.58*vPower;
- color=mix(vec3(.16,.17,.18),vec3(.57,.59,.60),clamp(.42+shade*.45+xy.y*.18,0.,1.));
- color+=vec3(.27,.09,.018)*exp(-vAge*8.)*(1.-r2);
+ float life=smoothstep(0.,.13,vAge)*(1.-smoothstep(.73,1.,vAge));
+ alpha=(1.-exp(-density*.58))*life*.46*vPower*envelope;
+ color=mix(vec3(.20,.22,.24),vec3(.59,.61,.63),
+  clamp(.29+shade*.28+xy.y*.12,0.,1.));
+ color+=vec3(.16,.058,.014)*exp(-vAge*9.)*(1.-min(1.,radius));
  #elif KIND == 2
  float d=length((q-.5)*2.);alpha=(1.-smoothstep(.2,1.,d))*sin(vAge*3.14159)*vPower;
  color=mix(vec3(1.,.63,.13),vec3(.8,.12,.005),vAge);

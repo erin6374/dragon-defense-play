@@ -1,8 +1,8 @@
 {
-  "build": "5.5-anchored-combustion-rc1",
-  "version": "5.5.0-rc.1",
+  "build": "5.5-sheared-plumes-rc2",
+  "version": "5.5.0-rc.2",
   "gameplay_base": "5.2.3",
-  "scope": "Replace neighborhood and skyline fire sprites with pooled GPU combustion, window and roof anchors, volume-integrated smoke, embers and soot.",
+  "scope": "Follow-up cinematic combustion: irregular broad flame shoulders, independent motion and sheared vertically stretched six-layer turbulent smoke; no new GPU batches or gameplay changes",
   "new_gameplay_features": true,
-  "release_status": "Development candidate; browser and visual validation pending"
+  "release_status": "RC2 UNVERIFIED: exact-head browser, five-clip motion and authorized Pages byte comparison required"
 }

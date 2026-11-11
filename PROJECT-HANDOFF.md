@@ -1,3 +1,11 @@
+## November 10 ~19:52 ET — v5.5 RC2 sheared smoke/flame candidate (UNVERIFIED)
+
+- **Verified predecessor RC1:** `abcf1b16cd277e1632389c8d4e0192e2cac5039a` browser QA 42926297106, independent motion 42926296872 (artifact 13813804554, five 100-frame videos, errors=[]), and automatic Pages 42927622328 (exact RC1 checkout and seven-file unauthenticated byte check) all succeeded. RC1 is a playable fallback but not cinematic-art accepted.
+- **Actual browser video review:** downloaded RC1 `houses.mp4` and `skyline.mp4` and inspected 0.6, 1.2, 2.4, 3.4, 4.8 seconds. Sources are attached and building collapse retained, but flames read as identical tapered candle cones and smoke as rounded cotton-ball puffs. Root cause: KIND0 linear flame taper and KIND1 sphere-mask density in `building-combustion.js`.
+- **RC2 change:** Replace the two shape formulas with irregular broad-shouldered, separately phased crossed flame sheets and tall, sheared, overlapping six-layer turbulent smoke. Keep source origins physically attached, existing fixed pool/4 draw batches, no new geometry/textures/impact-time allocations, and no gameplay, collision or score changes. Version `5.5.0-rc.2`, build `5.5-sheared-plumes-rc2`.
+- **REQUIRES verification:** exact-head browser QA errors=[] and warnings=[], independent five-scenario 20fps MP4 motion review at matching timestamps (especially smoke-loop transitions), Windows preview packaging, then authorized automatic Pages seven-file validation. Do not call public or art-accepted prematurely.
+- **Other user requirements still open:** research-backed North Broad left-side geographic building infill, verified-vs-approximate placement, and main-street universal progressive collapse. Do not invent map coordinates or report those as implemented. Keep PR draft; do not touch main, production, Building Explorer or main-owned Pages workflow, merge or force deployment.
+
 ## November 10 ~18:20 ET — RC25 skyline window-band art candidate (UNVERIFIED)
 
 - Verified public fallback remains RC24 `01696438ab04707cee9603fb432bbb76fb3288e0` (browser 42917909399, motion 42917909365, automatic Pages 42919539127 seven-file byte verification). Live head and PR #2 were checked before editing; no competing PR workflow was running.
