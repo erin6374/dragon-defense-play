@@ -336,11 +336,14 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
   site.width=w;site.height=h;site.active=true;
-  // Each licensed flipbook is sized relative to the physical window pitch.
-  // The prior 2.25–3.9-row, 2.1-bay cards overlapped into one bright ribbon;
-  // bounded, staggered sheets retain individual flames without new draw calls.
-  site.renderWidth=w*(1.24+.23*Math.abs(Math.sin(site.seed*.47)));
-  site.renderHeight=h*(1.28+.52*Math.abs(Math.sin(site.seed*.81)));
+  // Three separated hero, three medium and three small CC0 Flame03 window fires.
+  // Fixed atlas and four draw batches; avoids RC14 ribbon and RC14b candles.
+  const localSite=site.index%SECONDARY_BURN_SITES_PER_TOWER;
+  const hero=localSite===4||localSite===6||localSite===8;
+  const medium=localSite===1||localSite===3||localSite===5;
+  const variation=Math.abs(Math.sin(site.seed*.81));
+  site.renderWidth=w*(hero?1.88+.28*variation:medium?1.49+.19*variation:1.18+.16*variation);
+  site.renderHeight=h*(hero?2.20+.42*variation:medium?1.65+.34*variation:1.20+.33*variation);
   site.ignitedAt=renderClock;
   combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
    site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
@@ -465,7 +468,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
      (site.origin.x-tower.group.position.x)/tower.def.w+.5,
      (site.origin.y+site.height*.5)/tower.def.h,
      site.width/tower.def.w,site.height/tower.def.h,
-     signedAge<0?0:spread*pulse*.55);
+     signedAge<0?0:spread*pulse*(
+       [4,6,8].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.82:
+       [1,3,5].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.65:.42));
     combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
      site.renderWidth*(.66+.34*spread),
      site.renderHeight*(.67+.33*spread),site.seed,

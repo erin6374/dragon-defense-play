@@ -1,8 +1,8 @@
 {
-  "build": "5.5-asymmetric-licensed-firefront-rc14",
-  "version": "5.5.0-rc.14",
+  "build": "5.5-three-scale-licensed-fire-and-soot-rc15",
+  "version": "5.5.0-rc.15",
   "gameplay_base": "5.2.3",
-  "scope": "Asymmetric UV-snapped multi-floor nine-opening CC0 firefront, independently drifting atlas smoke lanes, and muted white skyline lantern; fixed 81-source pool and gameplay retained.",
+  "scope": "Three tiers of CC0 Flame03 window fire, stronger rising CC0 WispySmoke03 and size-weighted facade glow; nine impact-local contacts, fixed 81-source pool, four batches, gameplay retained.",
   "new_gameplay_features": true,
-  "release_status": "RC14 CANDIDATE, NOT VERIFIED OR VISUALLY ACCEPTED: fresh exact-head browser, five+30s motion, Windows and authorized Pages verification required."
+  "release_status": "RC15 CANDIDATE; exact-head browser, five+30s motion, Windows and Pages pending; MOT-03 not artistically accepted."
 }

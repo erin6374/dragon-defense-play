@@ -1107,11 +1107,17 @@ try {
     'multi-window combustion spans distinct physical bays rather than one narrow torch');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
-  assert.ok(towerImpact.result.secondaryBurnSites.every(site=>
-    Number.isFinite(site.renderWidth)&&Number.isFinite(site.renderHeight)&&
-    site.renderWidth>site.width*2.05&&site.renderWidth<site.width*2.40&&
-    site.renderHeight>site.width*.8),
-    'licensed combustion expands beyond its precise broken-window contacts');
+  const burnRatios=towerImpact.result.secondaryBurnSites.map(site=>site.renderWidth/site.width);
+  const burnHeightRatios=towerImpact.result.secondaryBurnSites.map(site=>site.renderHeight/site.height);
+  assert.ok(burnRatios.every(Number.isFinite)&&burnHeightRatios.every(Number.isFinite)&&
+    burnRatios.every(r=>r>1.15&&r<2.2)&&burnHeightRatios.every(r=>r>1.17&&r<2.7),
+    'licensed fire remains finite and window-scale, not an oversized ribbon');
+  assert.equal(burnRatios.filter(r=>r>=1.85).length,3,'three hero fire sources');
+  assert.equal(burnRatios.filter(r=>r>=1.45&&r<1.85).length,3,'three medium fire sources');
+  assert.equal(burnRatios.filter(r=>r<1.45).length,3,'three small broken-window fires');
+  assert.ok([4,6,8].every(i=>burnHeightRatios[i]>2.15)&&
+    [0,2,7].every(i=>burnHeightRatios[i]<1.6),
+    'irregular window contacts have distinct tall and small CC0 flame sheets');
   const budget=towerImpact.result.skylineBurnBudget.combustion;
   assert.equal(budget.capacity,81);
   assert.ok(budget.active>=1&&budget.active<=9,
