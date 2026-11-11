@@ -81,11 +81,12 @@ export function prepareFlipbookMaterial(material,kind){
     if(plumeMode>.5){
      // CC0 atlas packets form one wind-sheared, taller plume instead of
      // six short isolated wisps. Each packet retains independent age/phase.
-     float gust=.90+.18*sin(clock*.31+layer*.55);
-     float crosswind=-gust*pow(vAge,1.42)*3.8;
-     float dispersion=lane*pow(vAge,1.16)*1.25;
-     center+=vec3((sway+crosswind+dispersion)*w,
-       h*(.20+vAge*7.8),w*(.32+.16*layer));
+     float gust=.82+.20*sin(clock*.31+layer*.55)+.11*sin(clock*.73+vSeed);
+     float curl=.30*sin(vAge*10.8+clock*.22+vSeed*1.7)*vAge;
+     float crosswind=-gust*pow(vAge,1.34)*3.8;
+     float dispersion=lane*pow(vAge,1.13)*1.55;
+     center+=vec3((sway+crosswind+dispersion+curl)*w,
+       h*(.12+vAge*8.9),w*(.32+.16*layer+.23*vAge*sin(vSeed)));
     }else{
      float drift=lane*pow(vAge,1.35)*(2.0+.8*fract(vSeed*.91));
      center+=vec3((sway+drift)*w,
@@ -132,11 +133,17 @@ ${anchor}`);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
-   float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
-   color=mix(vec3(.062,.060,.060),vec3(.125,.128,.133),vAge)*
-    (.78+.22*frame.rgb);
-   alpha=frame.a*min(1.,vPower)*.96*feather*
-    smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
+   vec2 flow=vec2(.024*sin(q.y*8.3-clock*.39+vSeed*1.1),
+                  .018*sin(q.x*9.7+clock*.27+vSeed));
+   vec4 detail=flipbook(smokeAtlas,clamp(uv+flow,.014,.986),
+                        time+fract(vSeed*.731)*5.);
+   float feather=1.-smoothstep(.67,1.,abs(q.x-.5)*2.);
+   float soot=1.-smoothstep(.18,.88,vAge);
+   float density=clamp(frame.a*.72+detail.a*.48,0.,1.);
+   color=mix(vec3(.023,.025,.028),vec3(.073,.078,.084),vAge)*
+    (.73+.27*frame.rgb);
+   alpha=density*min(1.,vPower)*(1.34+.33*soot)*feather*
+    smoothstep(0.,.085,vAge)*(1.-smoothstep(.76,1.,vAge));
   }else{
    // Retain RC17 licensed smoke for controlled motion A/B.
    float soot=smoothstep(.19,.88,q.y);
