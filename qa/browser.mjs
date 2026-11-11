@@ -332,6 +332,35 @@ try {
   await page.waitForFunction(() => window.__DD_QA?.snap().frameTimes.frames >= 2 &&
     window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
   report.startup = await snap();
+  // RC23: inspect the actual low-planting InstancedMesh, not just screenshot
+  // brightness. The earlier black foreground band came from multiplying
+  // dark instance colors by an already-olive cutout foliage material.
+  report.foregroundPlanting=await page.evaluate(async()=>{
+    const THREE=await import('three');
+    const {addForegroundPlanting}=await import('./src/rendering/urban-detail.js');
+    const root=new THREE.Group(),bed=addForegroundPlanting(THREE,root);
+    const mat=new THREE.Matrix4(),pos=new THREE.Vector3(),rot=new THREE.Quaternion(),
+      scale=new THREE.Vector3(),tint=new THREE.Color();
+    let visible=0,open=0,maxHeight=0,maxCenter=-Infinity,minTint=Infinity;
+    for(let i=0;i<bed.count;i++){
+      bed.getMatrixAt(i,mat);mat.decompose(pos,rot,scale);
+      bed.getColorAt(i,tint);
+      minTint=Math.min(minTint,tint.r,tint.g,tint.b);
+      if(scale.lengthSq()<1e-9){open++;continue;}
+      visible++;maxHeight=Math.max(maxHeight,scale.y);
+      maxCenter=Math.max(maxCenter,pos.y);
+    }
+    root.remove(bed);bed.geometry.dispose();bed.material.dispose();
+    return {instances:bed.count,visible,open,maxHeight,maxCenter,minTint};
+  });
+  assert.equal(report.foregroundPlanting.instances,108,
+    'foreground curb planting remains one fixed-capacity instanced bed');
+  assert.ok(report.foregroundPlanting.open>=10,
+    'both cross-street approaches remain open');
+  assert.ok(report.foregroundPlanting.maxHeight<.36&&report.foregroundPlanting.maxCenter<0,
+    'cutout foreground vegetation stays low and below eye level');
+  assert.ok(report.foregroundPlanting.minTint>.25,
+    'cutout foliage instance tints cannot multiply olive leaves almost black');
   report.combustionPool=await page.evaluate(async()=>{
     const T=await import('three');
     const {createBuildingCombustion}=await import('./src/rendering/building-combustion.js');

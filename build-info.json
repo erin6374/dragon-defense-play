@@ -1,8 +1,8 @@
 {
-  "build": "5.5-rooted-smoke-rc22",
-  "version": "5.5.0-rc.22",
+  "build": "5.5-low-foreground-rc23",
+  "version": "5.5.0-rc.23",
   "gameplay_base": "5.2.3",
-  "scope": "RC22 visual experiment: preserve RC21 nine-slot five-storey skyscraper firefront; root two of six existing licensed CC0 smoke sheets to each facade window, maintain four rising sheets and animated atlas frames. No gameplay mechanics, new particle capacity, draw batches or textures.",
+  "scope": "RC23 whole-scene graphics: fix west-side near-camera foreground planting occlusion by shrinking/lowering cutout foliage and correcting multiplicative dark instance tint; retain RC22 rooted licensed smoke and RC21 five-storey firefront. No gameplay changes.",
   "new_gameplay_features": false,
-  "release_status": "RC22 SOURCE CANDIDATE: browser Playwright smoke-mode A/B and shader compilation, five-view capture, genuine 30-second two-tower motion art review, ZIP integrity and same-head Pages provenance REQUIRED before acceptance."
+  "release_status": "RC23 GRAPHICS CANDIDATE — exact-head browser/cinematic/focused/30s motion and licensed ZIP verification required; no art approval or production deployment."
 }
