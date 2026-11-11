@@ -318,6 +318,8 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const foliage=createFoliageCluster();
  const leafGeometry=foliage.geometry,trunkMaterial=boxMaterial(THREE,0x65503b,.94,.01);
  const foliageMaterials=[0x718358,0x8b995f,0xa0a777].map(color=>new THREE.MeshStandardMaterial({color,map:foliage.map,alphaTest:.45,side:THREE.DoubleSide,roughness:.94,metalness:0}));
+ // Replace the near-camera solid hedge lumps with the same cutout foliage.
+ neighborhood.foreground.geometry=leafGeometry;neighborhood.foreground.material=foliageMaterials[1];
  const leaves=foliageMaterials.map(m=>{const mesh=new THREE.InstancedMesh(leafGeometry,m,340);mesh.frustumCulled=false;scene.add(mesh);return mesh});const matrix=new THREE.Object3D(),windTrees=[];const leafIndex=[0,0,0];
  for(const x of [-76,-47,-27,28,46,76]){
   const root=new THREE.Group();root.position.set(x,-.05,8.95);root.scale.setScalar(1.85);street.add(root);

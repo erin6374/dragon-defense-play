@@ -65,9 +65,16 @@ export function createSchoolSourceDamage() {
     float mortar=max(smoothstep(.46-footprint.x,.46+footprint.x,joint.x),
      smoothstep(.44-footprint.y,.44+footprint.y,joint.y));
     float variation=fract(sin(dot(floor(course),vec2(31.74,17.16)))*43758.54);
-    float detail=1.0-smoothstep(.30,.85,max(footprint.x,footprint.y));
+    float detail=1.0-smoothstep(.60,1.65,max(footprint.x,footprint.y));
     vec3 masonry=mix(diffuseColor.rgb*mix(.76,1.23,variation),vec3(.19,.155,.13),mortar*.70);
     diffuseColor.rgb=mix(diffuseColor.rgb,masonry,detail*(1.0-surfaceNormal.y));
+    // Broad weathering survives gameplay distance when individual brick
+    // courses are subpixel. It stays anchored to the original model surface.
+    float weather=.5+.22*sin(horizontal*3.1+sin(schoolDamagePosition.y*2.4))+
+     .16*sin(horizontal*8.7-schoolDamagePosition.y*5.3);
+    float runoff=pow(.5+.5*sin(horizontal*9.2),5.)*.07;
+    diffuseColor.rgb*=.88+.22*weather-runoff;
+
    `);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');

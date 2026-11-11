@@ -24,6 +24,8 @@ try{
   const {png,...metrics}=await page.evaluate(()=>window.__DD_CINEMATIC_REVIEW.frame());
   assert.ok(metrics.schoolReady&&metrics.lighting.materials>10);
   assert.equal(metrics.trees,6);assert.equal(metrics.lighting.extraFramePasses,0);
+  const expectedStrength=.54*(1-state.darkness)+.16*state.darkness;
+  assert.ok(metrics.lighting.strengthRange.every(v=>Math.abs(v-expectedStrength)<.001),'reflection intensity never compounds across rescans');
   await writeFile(`${out}/${name}.png`,Buffer.from(png,'base64'));
   report.views.push({name,...state,...metrics});
  }

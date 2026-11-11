@@ -29,16 +29,23 @@ export function createCinematicLighting(renderer,scene){
  texture.needsUpdate=true;
  const pmrem=new THREE.PMREMGenerator(renderer),probe=pmrem.fromEquirectangular(texture);
  scene.environment=probe.texture;texture.dispose();pmrem.dispose();
+ return createReflectionController(scene,width,height);
+}
+export function createReflectionController(scene,width=256,height=128){
  const base=new WeakMap(),materials=new Set();let lastScan=-Infinity,clock=0;
  return {update(dt,darkness){
   clock+=Math.max(0,dt);
   if(clock-lastScan>1||dt===0){
    lastScan=clock;materials.clear();
    scene.traverse(o=>{for(const m of (Array.isArray(o.material)?o.material:[o.material])){
-    if(m?.isMeshStandardMaterial&&!materials.has(m)){base.set(m,m.envMapIntensity);materials.add(m);}
+    if(m?.isMeshStandardMaterial&&!materials.has(m)){
+     if(!base.has(m))base.set(m,m.envMapIntensity);
+     materials.add(m);
+    }
    }});
   }
-  const strength=.54*(1-darkness)+.09*darkness;
+  const strength=.54*(1-darkness)+.16*darkness;
   for(const m of materials)m.envMapIntensity=base.get(m)*strength;
- },stats:()=>({probeSize:[width,height],materials:materials.size,extraFramePasses:0})};
+ },stats:()=>({probeSize:[width,height],materials:materials.size,extraFramePasses:0,
+  strengthRange:[Math.min(...Array.from(materials,m=>m.envMapIntensity/(base.get(m)||1))),Math.max(...Array.from(materials,m=>m.envMapIntensity/(base.get(m)||1)))]})};
 }
