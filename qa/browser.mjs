@@ -360,6 +360,53 @@ try {
   assert.equal(report.combustionPool.stats.active,0);
   // The importer enables the licensed atlas only after both original ZIPs
   // have passed SHA/member/dimension validation and both WebP files exist.
+  // Exercise the complete production skyline, not only the Comcast test target.
+  // A per-tower increase must also resize the shared GPU buffer or later towers
+  // silently reject their source indices in createBuildingCombustion.set().
+  report.skylinePoolCoverage=await page.evaluate(async()=>{
+    const T=await import('three');
+    const {createPhiladelphiaSkyline}=await import('./src/rendering/philadelphia-geometry-skyline.js');
+    const skyline=createPhiladelphiaSkyline(new T.Group());
+    const pool=skyline.group.getObjectByName('skyline-combustion');
+    const resources=()=>pool.children.map(m=>[m.geometry.uuid,m.material.uuid]);
+    const before=resources();
+    skyline.update(0,.5,0);
+    for(const tower of skyline.towers)skyline.strikeNearest(tower.group.position.x);
+    skyline.update(3,.5,0);
+    const stats=skyline.getStats().combustion;
+    const contacts=skyline.towers.map(t=>({id:t.def.id,indices:t.burnSites.map(s=>s.index),
+      active:t.burnSites.filter(s=>s.active).length}));
+    const batches=pool.children.map(m=>{
+      const settings=m.geometry.attributes.settings,source=m.geometry.attributes.source;
+      let active=0;const origins=new Set();
+      for(let i=0;i<settings.count;i++)if(settings.getW(i)>0){
+        active++;origins.add([source.getX(i),source.getY(i),source.getZ(i)].join(','));
+      }
+      return {active,origins:origins.size};
+    });
+    for(const tower of skyline.towers)skyline.strikeNearest(tower.group.position.x);
+    skyline.update(6,.5,0);
+    const repeated=skyline.getStats().combustion.active;
+    skyline.reset();
+    const reset=skyline.getStats().combustion.active;
+    const stable=JSON.stringify(before)===JSON.stringify(resources());
+    const geometries=new Set(),materials=new Set();
+    skyline.group.traverse(o=>{if(o.geometry)geometries.add(o.geometry);
+      for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)materials.add(m);});
+    for(const g of geometries)g.dispose();for(const m of materials)m.dispose();
+    return {stats,contacts,batches,repeated,reset,stable};
+  });
+  const coverage=report.skylinePoolCoverage;
+  assert.equal(coverage.contacts.length,9);
+  assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
+  assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
+  assert.equal(coverage.stats.capacity,81);
+  assert.equal(coverage.stats.active,81,'every tower ignites after staggered delays');
+  assert.deepEqual(coverage.batches.map(b=>b.active),[243,405,324,81]);
+  assert.ok(coverage.batches.every(b=>b.origins===81),'all four GPU batches receive every tower origin');
+  assert.equal(coverage.repeated,81,'repeat strikes retain all allocated sources');
+  assert.equal(coverage.reset,0,'restart clears every tower source');
+  assert.ok(coverage.stable,'multi-tower strikes reuse existing GPU resources');
   report.combustionPool.licensedAtlases=await page.evaluate(async()=>{
     const {PACKAGED_FLIPBOOKS}=await import('./src/rendering/flipbook-config.js');
     if(!PACKAGED_FLIPBOOKS)return false;

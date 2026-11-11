@@ -151,7 +151,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
  const SECONDARY_BURN_SITES_PER_TOWER=9; // Three staggered damaged floors, three openings each.
- const combustion=createBuildingCombustion(group,defs.length*4,'skyline-combustion');
+ const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
  // six material groups (one draw for every face). The only distinct finish is
@@ -293,7 +293,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  }
  let time=-1,lastPhase=-1,damage=0;
  let renderClock=0,lastCombustionRefresh=-Infinity;
- // Existing fixed 36-source pool: update growing window fires only at ~6Hz,
+ // Fixed nine-sites-per-tower pool: update growing window fires only at ~6Hz,
  // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
  // Retain stable, vertically separated facade contact points between strikes.
  // Coordinates are skyline-local and do not inherit any tower damage transform.
@@ -350,8 +350,6 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // school and neighborhood health continue to use their existing simulation.
   // Repeated strikes scar and burn towers without deforming or collapsing them.
   tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07+intensity*.04);
-  // Four broken windows share a single damaged floor band. Uneven small
-  // height offsets and independent phase seeds avoid a synchronized fire wall.
   // Repeated strikes refresh one window, preserving the others' continuity.
   // A contiguous multi-floor fire rather than four isolated stationary
   // torches. Each cell maps to a different real window-grid contact. No
