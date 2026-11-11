@@ -2802,6 +2802,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    input.clear();const after=dragon.position.toArray();
    const phase=chapterSettlement.phase;
    reset();if(cinematicActive)closeChapterTransition();paused=false;
+   active=false;document.getElementById('overlay').style.display='grid';
    return {contacts,settlement:{before,after,phase},rearBoundary:DEFENSE_REAR_Z};
   }),
   setWave:(n)=>run('setWave',()=>{wave=clampWave(n);updateAtmosphere();updateHud();return snap()}),

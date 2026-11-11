@@ -1,3 +1,8 @@
+## November 11 — RC10 browser test isolation repair
+
+- Exact candidate 08492658 browser run 42973145012 reached and PASSED new real gameplay checks: three-depth interceptions at speed 64, right/up movement in settlement, actual military gas altitude/other-lane/recovery and searchlight checks. It later FAILED at qa/browser.mjs:532 because the new regression reset left active=true and overlay hidden, so the existing graphics-menu interaction timed out. No shader/asset error caused that stop.
+- QA-only bridge cleanup now restores inactive game and visible startup overlay. Keep the full existing settings interaction; do not force hidden-element selection or remove coverage. Fresh exact-head full browser run required. Independent candidate motion 42973145013 continues; do not cancel. MOT-03 artistic acceptance remains OPEN.
+
 ## November 11 — RC10 defense depth, free-flight cleanup and rising smoke candidate
 
 - User requests: fire remains visually unacceptable; retain control during round/chapter cleanup, bilateral background housing, frequent distinct background house strikes, all nearby meteors interceptable, faster fire and cross-lane military gas.
