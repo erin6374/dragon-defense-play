@@ -1119,6 +1119,11 @@ try {
   const fireXs=towerImpact.result.secondaryBurnSites.map(site=>site.position[0]);
   assert.ok(Math.max(...fireXs)-Math.min(...fireXs)>5,
     'multi-window combustion spans distinct physical bays rather than one narrow torch');
+  const fireYs=towerImpact.result.secondaryBurnSites.map(site=>site.position[1]);
+  assert.ok(Math.max(...fireYs)-Math.min(...fireYs)>12,
+    'nine fire contacts spread vertically across multiple architectural storeys, not one small patch');
+  assert.ok(new Set(fireYs.map(y=>Math.round(y/2))).size>=5,
+    'multi-storey flame origins are distinct facade window rows');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
   const burnRatios=towerImpact.result.secondaryBurnSites.map(site=>site.renderWidth/site.width);

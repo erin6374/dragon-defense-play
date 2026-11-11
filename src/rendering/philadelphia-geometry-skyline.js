@@ -337,11 +337,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Snap to the same UV window grid used by makeFacade; stay below setbacks.
   const cols=d.style==='civic'?7:11,rows=facadeRows(d);
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
-  // Reserve two additional rows above center for five-floor glass fire spread.
-  // This also prevents distinct windows merging at a roof setback.
-  const centerRow=Math.max(5,Math.min(highestSafeCenterRow(d),
-   Math.round(tower.impactLocal.y/d.h*rows)));
+  // Shift the ignition center below the highest safe window row to leave
+  // real architectural headroom for five distinct storeys of burning glazing.
   const topWallRow=Math.floor(rows*fullWidthFacadeTop(d))-1;
+  // Reserve room on BOTH sides of the source window to prevent new contacts
+  // clipping into one top row or overlapping the silhouette's setback roof.
+  const margin=Math.max(3,Math.round(rows*.11));
+  const maxCenter=Math.max(5,Math.min(highestSafeCenterRow(d),topWallRow-margin));
+  const minCenter=Math.min(maxCenter,5+margin);
+  const centerRow=Math.max(minCenter,Math.min(maxCenter,
+   Math.round(tower.impactLocal.y/d.h*rows)));
   const row=Math.max(3,Math.min(topWallRow,Math.round(centerRow+offsetY/d.h*rows)));
   const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
@@ -407,7 +412,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
    // Each final contact is snapped to its physical facade window grid.
    const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
-   const offsetY=floor*tower.def.h*.022;
+   // Spread across approximately twelve facade window rows while reusing
+   // exactly the original nine UV-snapped fire emitters and fixed GPU pools.
+   const offsetY=floor*tower.def.h*.054;
    const site=tower.burnSites[j];
    placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
    // Damage accelerates lateral spread, while fixed ignition times let the
