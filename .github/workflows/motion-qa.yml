@@ -11,7 +11,7 @@ concurrency:
 jobs:
   motion:
     runs-on: ubuntu-24.04
-    timeout-minutes: 22
+    timeout-minutes: 45
     permissions:
       contents: read
     env:
@@ -37,7 +37,7 @@ jobs:
           "$RUNNER_TEMP/motion-encoder/bin/pip" install imageio-ffmpeg==0.8.1
           encoder="$("$RUNNER_TEMP/motion-encoder/bin/python" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
           echo "QA_FFMPEG=$encoder" >> "$GITHUB_ENV"
-      - name: Capture four fixed-step gameplay videos
+      - name: Capture five fixed-step gameplay videos plus 30-second facade-fire review
         run: |
           "$QA_FFMPEG" -version
           python3 -m http.server 8765 --bind 127.0.0.1 &
@@ -47,6 +47,7 @@ jobs:
           done
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
           node qa/motion.mjs
+          node qa/long-fire.mjs
       - name: Retain playable recordings and frame diagnostics
         if: always()
         uses: actions/upload-artifact@v4
