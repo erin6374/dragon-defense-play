@@ -37,22 +37,26 @@ void main(){
   (p.x*breadth+bend)*w*sin(angle));
  center.z+=w*.17;
  gl_Position=projectionMatrix*modelViewMatrix*vec4(center+p,1.);
- #elif KIND == 1 || KIND == 2
+ #elif KIND == 1
+ // Six overlapping anchored smoke sheets form a continuous rising column.
+ // Upward-moving density and independently swaying sheets replace resetting puffs.
+ float layer=fract(particle*.6180339+fract(vSeed*.271));
+ float sway=.16*sin(clock*.21+vSeed+layer*2.3)+.09*sin(clock*.13+vSeed*1.7);
+ center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));
+ vec4 eye=modelViewMatrix*vec4(center,1.);
+ float scale=w*(1.02+.16*layer);
+ float stretch=2.65+.42*layer;
+ eye.xy+=vec2(p.x+p.y*.12*sin(clock*.27+vSeed),p.y*stretch)*scale*length(modelMatrix[0].xyz);
+ gl_Position=projectionMatrix*eye;
+ #elif KIND == 2
+ // Embers retain their original buoyant particle trajectories.
  float life=vAge;
  float rise=life*(1.+life*.16);
  center+=vec3((sin(clock*.38+vSeed)*.13+sin(life*6.+vSeed)*.12+
   rise*.38)*w,h*.25+rise*h*2.25,w*(.24+sin(life*4.+vSeed)*.14));
+ center.y+=life*h*1.8;
  vec4 eye=modelViewMatrix*vec4(center,1.);
- float scale=w*(.84+life*1.04);
- #if KIND == 2
- scale=w*.045; center.y+=life*h*1.8;eye=modelViewMatrix*vec4(center,1.);
- #endif
- // Elongated overlapping smoke wisps instead of separate round billboards.
- float stretch=1.48+.58*fract(vSeed*.23);
- #if KIND == 2
- stretch=1.;
- #endif
- eye.xy+=vec2(p.x,p.y*stretch)*scale*length(modelMatrix[0].xyz);
+ eye.xy+=p.xy*w*.045*length(modelMatrix[0].xyz);
  gl_Position=projectionMatrix*eye;
  #else
  p.xy*=vec2(w*2.6,h*1.9);p.z=0.;
@@ -87,26 +91,27 @@ void main(){
  color=mix(color,vec3(1.,.89,.48),smoothstep(.56,.94,heat));
  #elif KIND == 1
  vec2 xy=(q-.5)*2.;
- float curl=fbm(vec3(xy*vec2(3.7,4.5)+vec2(vSeed,-clock*.13),clock*.17));
- // Six turbulent density layers in a sheared plume, not spherical cotton balls.
- float displaced=xy.x+.26*sin(xy.y*4.1+clock*.29+vSeed)+.18*(curl-.5)*xy.y;
- float radius=length(vec2(displaced*.82,xy.y*.77));
- if(radius>1.35)discard;
- float envelope=1.-smoothstep(.40,1.18,radius+.23*(curl-.5));
+ float height=clamp((xy.y+1.)*.5,0.,1.);
+ float curl=fbm(vec3(xy*vec2(3.2,3.5)+vec2(vSeed,-clock*.21),clock*.13));
+ // Continuously advect density upward; avoid spherical masks and age-wrap pops.
+ float displaced=xy.x+.19*sin(xy.y*3.3+clock*.24+vSeed)+.18*(curl-.5);
+ float width=.72+.25*height+.13*(curl-.5);
+ float lateral=1.-smoothstep(.46,1.14,abs(displaced)/max(.25,width));
+ float envelope=lateral*smoothstep(-1.05,-.72,xy.y)*
+  (1.-smoothstep(.56,1.08,xy.y));
  float density=0.,shade=0.;
  for(int j=0;j<6;j++){
   float z=(float(j)-2.5)/2.5;
-  vec3 p=vec3(displaced*2.9,xy.y*2.4,z*2.25)+
-   vec3(vSeed*.32,-clock*.16,clock*.11);
+  vec3 p=vec3(displaced*2.6,xy.y*2.8,z*2.1)+
+   vec3(vSeed*.32,-clock*.29,clock*.10);
   float n=fbm(p),detail=fbm(p*1.83+vec3(0.,clock*.07,vSeed));
-  float d=smoothstep(.26,.73,n+.22*detail)*envelope*(.60+.40*(1.-abs(z)));
+  float d=smoothstep(.22,.69,n+.22*detail)*envelope*(.62+.38*(1.-abs(z)));
   density+=d;shade+=d*(.52+.34*z);
  }
- float life=smoothstep(0.,.13,vAge)*(1.-smoothstep(.73,1.,vAge));
- alpha=(1.-exp(-density*.58))*life*.42*vPower*envelope;
- color=mix(vec3(.20,.22,.24),vec3(.59,.61,.63),
-  clamp(.29+shade*.28+xy.y*.12,0.,1.));
- color+=vec3(.16,.058,.014)*exp(-vAge*9.)*(1.-min(1.,radius));
+ alpha=(1.-exp(-density*.66))*.24*vPower*envelope;
+ color=mix(vec3(.28,.30,.32),vec3(.70,.72,.73),
+  clamp(.40+shade*.17+height*.14,0.,1.));
+ color+=vec3(.13,.048,.012)*exp(-height*8.)*(1.-min(1.,abs(displaced)));
  #elif KIND == 2
  float d=length((q-.5)*2.);alpha=(1.-smoothstep(.2,1.,d))*sin(vAge*3.14159)*vPower;
  color=mix(vec3(1.,.63,.13),vec3(.8,.12,.005),vAge);

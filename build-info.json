@@ -1,8 +1,8 @@
 {
-  "build": "5.5-window-breadth-rc3",
-  "version": "5.5.0-rc.3",
+  "build": "5.5-continuous-plumes-rc4",
+  "version": "5.5.0-rc.4",
   "gameplay_base": "5.2.3",
-  "scope": "RC3 cinematic combustion: broaden short window flame shoulders, widen and laterally shear buoyant smoke, preserve capped fixed GPU batches and unchanged gameplay",
+  "scope": "RC4 art candidate: continuous vertically extended drifting off-white smoke sheets replacing resettable round puffs; fixed combustion pool, window flames, rubble and gameplay unchanged",
   "new_gameplay_features": true,
-  "release_status": "RC3 UNVERIFIED: exact-head browser, five-clip motion and authorized Pages seven-file byte comparison required"
+  "release_status": "RC4 UNVERIFIED: exact-head browser, five genuine motion MP4s and authorized Pages seven-file comparison required"
 }
