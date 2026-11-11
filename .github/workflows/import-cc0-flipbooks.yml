@@ -1,0 +1,59 @@
+name: Import licensed CC0 flame and smoke flipbooks
+on:
+  pull_request:
+    paths:
+      - 'src/rendering/flipbook-config.js'
+      - 'tools/import-unity-flipbooks.py'
+      - '.github/workflows/import-cc0-flipbooks.yml'
+permissions:
+  contents: write
+jobs:
+  import:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate exact source and required modules
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          grep -q 'PACKAGED_FLIPBOOKS=false' src/rendering/flipbook-config.js
+      - run: python -m pip install --disable-pip-version-check pillow==11.1.0
+      - name: Download, audit and convert original Unity Labs CC0 TGA flipbooks
+        run: python tools/import-unity-flipbooks.py
+      - name: Enable only after validated assets exist
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/rendering/flipbook-config.js')
+          x=p.read_text()
+          assert x.count("PACKAGED_FLIPBOOKS=false")==1
+          p.write_text(x.replace("PACKAGED_FLIPBOOKS=false","PACKAGED_FLIPBOOKS=true"))
+          assert all(Path('assets/vfx',name).exists() for name in ('flame03.webp','wispy-smoke03.webp','manifest.json'))
+          PY
+      - name: Protected fast-forward asset commit; avoid racing developer sessions
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.name "dragon-defense-cc0-importer[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/vfx src/rendering/flipbook-config.js
+          git commit -m "Import audited Unity Labs CC0 8x8 fire and smoke atlases"
+          actual="$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::warning::Branch advanced from $EXPECTED to $actual; NOT pushing stale media"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$BRANCH"
+          # A push made with GITHUB_TOKEN does not automatically trigger PR workflows.
+          # Explicit workflow_dispatch is for QA, never production Pages.
+          gh workflow run browser-qa.yml --ref "$BRANCH" || true
+          gh workflow run motion-qa.yml --ref "$BRANCH" || true

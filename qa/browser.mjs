@@ -358,6 +358,25 @@ try {
   assert.deepEqual(report.combustionPool.cleared,[0,0,0,0]);
   assert.ok(report.combustionPool.rejected&&report.combustionPool.stable,'capacity and GPU resource identities survive reuse');
   assert.equal(report.combustionPool.stats.active,0);
+  // The importer enables the licensed atlas only after both original ZIPs
+  // have passed SHA/member/dimension validation and both WebP files exist.
+  report.combustionPool.licensedAtlases=await page.evaluate(async()=>{
+    const {PACKAGED_FLIPBOOKS}=await import('./src/rendering/flipbook-config.js');
+    if(!PACKAGED_FLIPBOOKS)return false;
+    await new Promise((resolve,reject)=>{
+      const end=Date.now()+24000;
+      const inspect=()=>{
+        if(window.__DD_FIRE_VFX?.ready)resolve();
+        else if(Date.now()>end)reject(Error('CC0 atlas load failed: '+window.__DD_FIRE_VFX?.error));
+        else setTimeout(inspect,100);
+      };inspect();
+    });
+    if(window.__DD_FIRE_VFX.mode!=='flipbook')throw Error('Licensed fire flipbook not active');
+    window.__DD_FIRE_VFX.setMode('procedural');
+    if(window.__DD_FIRE_VFX.mode!=='procedural')throw Error('A/B procedural fallback failed');
+    window.__DD_FIRE_VFX.setMode('flipbook');
+    return window.__DD_FIRE_VFX.ready;
+  });
 
   const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
   assert.ok(fluidFire.ok,fluidFire.error);
@@ -1073,7 +1092,9 @@ try {
     'sources follow structural collapse to the ground');
   assert.equal(flightBudget.combustion.capacity,168);
   assert.equal(flightBudget.combustion.drawCalls,4);
-  assert.equal(flightBudget.combustion.textures,0);
+  assert.equal(flightBudget.combustion.textures,
+    report.combustionPool.licensedAtlases?2:0,
+    'licensed flipbook uses exactly two shared atlases; fallback uses none');
   assert.ok(flightBudget.combustion.active>=2&&flightBudget.combustion.active<=168);
   assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
   assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');

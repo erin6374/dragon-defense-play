@@ -1,8 +1,8 @@
 {
-  "build": "5.5-continuous-plumes-rc4",
-  "version": "5.5.0-rc.4",
+  "build": "5.5-licensed-flipbook-pipeline-rc5",
+  "version": "5.5.0-rc.5",
   "gameplay_base": "5.2.3",
-  "scope": "RC4 art candidate: continuous vertically extended drifting off-white smoke sheets replacing resettable round puffs; fixed combustion pool, window flames, rubble and gameplay unchanged",
+  "scope": "GPU flipbook material with 2 verified CC0 atlases, 8x8 frame blending, dev A/B procedural fallback; importer must complete before visual change takes effect",
   "new_gameplay_features": true,
-  "release_status": "RC4 UNVERIFIED: exact-head browser, five genuine motion MP4s and authorized Pages seven-file comparison required"
+  "release_status": "RC5 UNVERIFIED; source pipeline only until licensed asset importer successfully commits original-derived atlases and exact-head QA + motion + Pages verification pass"
 }

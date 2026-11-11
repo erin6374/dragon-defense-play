@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {prepareFlipbookMaterial,flipbookStatus} from './flipbook-bridge.js';
 
 // Fixed-capacity, texture-free combustion. Only source transforms are uploaded;
 // advection, lifetime, curl, expansion and extinction run on the GPU.
@@ -147,6 +148,7 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
   const material=new THREE.ShaderMaterial({uniforms,defines:{KIND:kind},vertexShader:vertex,fragmentShader:fragment,
    transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,
    blending:kind===2?THREE.AdditiveBlending:THREE.NormalBlending});
+   prepareFlipbookMaterial(material,kind);
   const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;
   mesh.name=name+'-'+['flames','smoke','embers','openings'][kind];mesh.renderOrder=kind===3?0:kind===0?2:1;
   group.add(mesh);return {mesh,count,geometry};
@@ -165,5 +167,6 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
  return {group,sources,set,clear,update(time){uniforms.clock.value=time;},
   reset(){for(let i=0;i<capacity;i++)clear(i);uniforms.clock.value=0;},
   stats(){return {capacity,active:sources.filter(s=>s.active).length,drawCalls:4,
-   flameCapacity:capacity*3,smokeCapacity:capacity*6,emberCapacity:capacity*5,textures:0,clock:uniforms.clock.value};}};
+   flameCapacity:capacity*3,smokeCapacity:capacity*6,emberCapacity:capacity*5,
+    textures:flipbookStatus().textures,renderer:flipbookStatus().mode,clock:uniforms.clock.value};}};
 }
