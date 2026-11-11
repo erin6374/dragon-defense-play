@@ -22,11 +22,19 @@ jobs:
       - name: Validate exact source and required modules
         run: |
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-          grep -q 'PACKAGED_FLIPBOOKS=false' src/rendering/flipbook-config.js
-      - run: python -m pip install --disable-pip-version-check pillow==11.1.0
+          if grep -q 'PACKAGED_FLIPBOOKS=true' src/rendering/flipbook-config.js; then
+            echo "NEEDS_IMPORT=false" >> "$GITHUB_ENV"
+          else
+            grep -q 'PACKAGED_FLIPBOOKS=false' src/rendering/flipbook-config.js
+            echo "NEEDS_IMPORT=true" >> "$GITHUB_ENV"
+          fi
+      - if: env.NEEDS_IMPORT == 'true'
+        run: python -m pip install --disable-pip-version-check pillow==11.1.0
       - name: Download, audit and convert original Unity Labs CC0 TGA flipbooks
+        if: env.NEEDS_IMPORT == 'true'
         run: python tools/import-unity-flipbooks.py
       - name: Enable only after validated assets exist
+        if: env.NEEDS_IMPORT == 'true'
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -37,6 +45,7 @@ jobs:
           assert all(Path('assets/vfx',name).exists() for name in ('flame03.webp','wispy-smoke03.webp','manifest.json'))
           PY
       - name: Protected fast-forward asset commit; avoid racing developer sessions
+        if: env.NEEDS_IMPORT == 'true'
         env:
           EXPECTED: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}

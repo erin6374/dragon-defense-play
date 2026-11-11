@@ -4,5 +4,5 @@
   "gameplay_base": "5.2.3",
   "scope": "GPU flipbook material with 2 verified CC0 atlases, 8x8 frame blending, dev A/B procedural fallback; importer must complete before visual change takes effect",
   "new_gameplay_features": true,
-  "release_status": "RC5 UNVERIFIED; source pipeline only until licensed asset importer successfully commits original-derived atlases and exact-head QA + motion + Pages verification pass"
+  "release_status": "Licensed original Unity Labs 64-frame CC0 Flame03 + WispySmoke03 atlases bundled; exact-head QA/motion/public preview acceptance still pending"
 }
