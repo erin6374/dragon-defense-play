@@ -374,8 +374,17 @@ try {
     for(const tower of skyline.towers)skyline.strikeNearest(tower.group.position.x);
     skyline.update(3,.5,0);
     const stats=skyline.getStats().combustion;
-    const contacts=skyline.towers.map(t=>({id:t.def.id,indices:t.burnSites.map(s=>s.index),
-      active:t.burnSites.filter(s=>s.active).length}));
+    const contacts=skyline.towers.map(t=>{
+      const rows=t.def.style==='civic'?30:56;
+      const fullWallTop={liberty:.765,cityhall:.62,comcastTech:.79,
+        comcast:.92,setback:.74}[t.def.roof]??.97;
+      return {id:t.def.id,indices:t.burnSites.map(s=>s.index),
+        active:t.burnSites.filter(s=>s.active).length,
+        wallTop:t.def.h*fullWallTop,impactY:t.impactLocal.y,
+        maxY:Math.max(...t.burnSites.map(s=>s.origin.y)),
+        maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
+        windowPitch:t.def.h/rows};
+    });
     const batches=pool.children.map(m=>{
       const settings=m.geometry.attributes.settings,source=m.geometry.attributes.source;
       let active=0;const origins=new Set();
@@ -400,6 +409,12 @@ try {
   assert.equal(coverage.contacts.length,9);
   assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
+  assert.ok(coverage.contacts.every(t=>t.maxY<t.wallTop),
+    'every nine-window cluster stays below the full-width roof setback');
+  assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*3.5),
+    'burning windows remain close to the meteor/scorch contact');
+  assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,
+    'distant skyline strikes reach upper occupied floors rather than only lower tower bays');
   assert.equal(coverage.stats.capacity,81);
   assert.equal(coverage.stats.active,81,'every tower ignites after staggered delays');
   assert.deepEqual(coverage.batches.map(b=>b.active),[243,405,324,81]);

@@ -297,16 +297,33 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
  // Retain stable, vertically separated facade contact points between strikes.
  // Coordinates are skyline-local and do not inherit any tower damage transform.
+ // Keep the complete three-floor fire cluster on full-width wall glazing,
+ // never on narrow setback crowns or an arbitrary 60%-height cutoff.
+ function fullWidthFacadeTop(d){
+  switch(d.roof){
+   case 'liberty':return .765;
+   case 'cityhall':return .62;
+   case 'comcastTech':return .79;
+   case 'comcast':return .92;
+   case 'setback':return .74;
+   default:return .97;
+  }
+ }
+ function facadeRows(d){return d.style==='civic'?30:56;}
+ function highestSafeCenterRow(d){
+  return Math.max(5,Math.floor(facadeRows(d)*fullWidthFacadeTop(d))-3);
+ }
  function placeBurnSite(tower,site,offsetX,offsetY,width){
   const d=tower.def;
   // Snap to the same UV window grid used by makeFacade; stay below setbacks.
-  const cols=d.style==='civic'?7:11,rows=d.style==='civic'?30:56;
+  const cols=d.style==='civic'?7:11,rows=facadeRows(d);
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
-  // Reserve vertical room for the whole three-floor pattern before snapping.
-  // Clamping each offset independently merges upper rows at the setback limit.
-  const centerRow=Math.max(5,Math.min(Math.floor(rows*.60)-Math.ceil(rows*.041),
+  // Reserve room for all three rows before snapping individual sources.
+  // This also prevents distinct windows merging at a roof setback.
+  const centerRow=Math.max(5,Math.min(highestSafeCenterRow(d),
    Math.round(tower.impactLocal.y/d.h*rows)));
-  const row=Math.max(3,Math.min(Math.floor(rows*.60),Math.round(centerRow+offsetY/d.h*rows)));
+  const topWallRow=Math.floor(rows*fullWidthFacadeTop(d))-1;
+  const row=Math.max(3,Math.min(topWallRow,Math.round(centerRow+offsetY/d.h*rows)));
   const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
@@ -331,7 +348,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   }
   if(!selected)return null;
   const tower=selected,impact=tower.impactSprite;
-  const heightFraction=.46+((Math.floor(Math.abs(localX)*7)%5)*.09);
+  // Distant strikes favor upper occupied floors; the roof profile still caps contact.
+  const proposedHeight=.62+((Math.floor(Math.abs(localX)*7)%5)*.055);
+  // Impact/scorch and burning windows must contact the same physical wall.
+  const heightFraction=Math.min(proposedHeight,
+   highestSafeCenterRow(tower.def)/facadeRows(tower.def));
   tower.impactLocal.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),
    tower.def.h*heightFraction,tower.def.depth/2+.55);
   // Resolve the contact before the new strike can shrink/tilt the facade.
