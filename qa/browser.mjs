@@ -447,8 +447,12 @@ try {
   assert.ok(coverage.contacts.every(t=>Number.isFinite(t.maxCardHeightRows)&&Number.isFinite(t.maxCardWidthBays)&&
     t.maxCardHeightRows<2.64&&t.maxCardWidthBays<2.18),
     'all three licensed flame tiers remain finite and physically bounded, including the intentionally larger hero flames');
-  assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*3.5),
-    'burning windows remain close to the meteor/scorch contact');
+  // A fast initial ignition remains near the strike, while subsequent licensed
+  // window sites now reach six facade rows above/below the center (RC21).
+  // Setback-roof headroom may move the center downward four additional rows.
+  assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*10.75),
+    'all fire origins remain within ten-and-three-quarter window rows of the original meteor strike: '+
+      JSON.stringify(coverage.contacts.map(t=>({id:t.id,offsetRows:t.maxContactOffset/t.windowPitch}))));
   assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,
     'distant skyline strikes reach upper occupied floors rather than only lower tower bays');
   assert.equal(coverage.stats.capacity,81);
