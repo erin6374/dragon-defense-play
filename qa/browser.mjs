@@ -388,6 +388,8 @@ try {
         distinctBays:new Set(t.burnSites.map(s=>s.origin.x.toFixed(3))).size,
         distinctFloors:new Set(t.burnSites.map(s=>s.origin.y.toFixed(3))).size,
         maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
+        maxCardHeightRows:Math.max(...t.burnSites.map(s=>s.renderHeight/s.height)),
+        maxCardWidthBays:Math.max(...t.burnSites.map(s=>s.renderWidth/s.width)),
         windowPitch:t.def.h/rows};
     });
     const batches=pool.children.map(m=>{
@@ -434,6 +436,8 @@ try {
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
   assert.ok(coverage.contacts.every(t=>t.maxY<t.wallTop),
     'every nine-window cluster stays below the full-width roof setback');
+  assert.ok(coverage.contacts.every(t=>t.maxCardHeightRows<1.81&&t.maxCardWidthBays<1.48),
+    'licensed flame sheets stay bounded to physical windows instead of overlapping into a horizontal ribbon');
   assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*3.5),
     'burning windows remain close to the meteor/scorch contact');
   assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,

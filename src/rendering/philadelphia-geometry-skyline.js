@@ -157,7 +157,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // over the following twenty seconds. This array is allocated once at setup.
  const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
  // Nine fixed, UV-snapped architectural openings; intentionally not a 3x3 grid.
- const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-2],[-2,0],[0,-1],[1,1],[-1,2],[2,-1],[0,-3]];
+ const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-1],[-2,0],[0,-1],[1,1],[-1,1],[2,-1],[2,0]];
  const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
@@ -336,10 +336,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
    (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
   site.width=w;site.height=h;site.active=true;
-  // Accurate broken-pane center, but the simulated blaze reaches adjacent
-  // glazing bays instead of looking like four isolated miniature candles.
-  site.renderWidth=w*(2.1+.25*Math.abs(Math.sin(site.seed*.47)));
-  site.renderHeight=h*(2.25+1.65*Math.abs(Math.sin(site.seed*.81)));
+  // Each licensed flipbook is sized relative to the physical window pitch.
+  // The prior 2.25–3.9-row, 2.1-bay cards overlapped into one bright ribbon;
+  // bounded, staggered sheets retain individual flames without new draw calls.
+  site.renderWidth=w*(1.24+.23*Math.abs(Math.sin(site.seed*.47)));
+  site.renderHeight=h*(1.28+.52*Math.abs(Math.sin(site.seed*.81)));
   site.ignitedAt=renderClock;
   combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
    site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
