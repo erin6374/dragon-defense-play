@@ -6,15 +6,16 @@ const registry=new Set();
 const state={started:false,ready:false,fire:null,smoke:null,error:null};
 let mode='flipbook';
 // Licensed CC0 smoke plume and RC17 smoke share the existing GPU sheets.
-let smokeMode='plume';
+let smokeMode='rooted';
 try{const params=new URLSearchParams(location.search);
  if(params.get('firevfx')==='procedural')mode='procedural';
- if(params.get('smokevfx')==='legacy')smokeMode='legacy';
+ if(['legacy','plume'].includes(params.get('smokevfx')))smokeMode=params.get('smokevfx');
 }catch{}
 function apply(){
  for(const u of registry){
   u.useFlipbook.value=state.ready&&mode==='flipbook'?1:0;
-  if(u.plumeMode)u.plumeMode.value=smokeMode==='plume'?1:0;
+  if(u.plumeMode)u.plumeMode.value=smokeMode!=='legacy'?1:0;
+  if(u.rootMode)u.rootMode.value=smokeMode==='rooted'?1:0;
   if(state.ready){u.flameAtlas.value=state.fire;u.smokeAtlas.value=state.smoke;}
  }
 }
@@ -37,7 +38,7 @@ if(typeof window!=='undefined')window.__DD_FIRE_VFX={
  get mode(){return state.ready?mode:'procedural';},get smokeMode(){return smokeMode;},get error(){return state.error;},
  setMode(next){if(next!=='procedural'&&next!=='flipbook')throw Error('Invalid fire mode');
  mode=next;apply();return this.mode;},
- setSmokeMode(next){if(next!=='legacy'&&next!=='plume')throw Error('Invalid smoke mode');
+ setSmokeMode(next){if(!['legacy','plume','rooted'].includes(next))throw Error('Invalid smoke mode');
  smokeMode=next;apply();return this.smokeMode;}
 };
 const helper=`
@@ -57,7 +58,10 @@ export function prepareFlipbookMaterial(material,kind){
  if(kind===2)return;
  const u=material.uniforms;
  if(!u.useFlipbook){u.useFlipbook={value:0};u.flameAtlas={value:null};u.smokeAtlas={value:null};registry.add(u);}
- if(kind===1&&!u.plumeMode)u.plumeMode={value:smokeMode==='plume'?1:0};
+ if(kind===1){
+  if(!u.plumeMode)u.plumeMode={value:smokeMode!=='legacy'?1:0};
+  if(!u.rootMode)u.rootMode={value:smokeMode==='rooted'?1:0};
+ }
  if(kind===3){
   const marker='color=mix(color,vec3(.025,.013,.008),opening*.85);';
   if(!material.fragmentShader.includes(marker))throw Error('Opening shader changed; review flipbook contact glow');
@@ -98,7 +102,14 @@ export function prepareFlipbookMaterial(material,kind){
   ['float stretch=2.65+.42*layer;',
    'float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;']
  ];
- let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;'+(kind===1?'\nuniform float plumeMode;':''));
+ let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;'+(kind===1?'\nuniform float plumeMode;\nuniform float rootMode;':''));
+ // Two of six preallocated smoke sheets remain near the burning window;
+ // the others rise as before. A stable lower stem eliminates detached puffs.
+ if(kind===1){
+  const anchor='vAge=fract(clock*(.16+fract(vSeed*.13)*.055)+particle*.1618+fract(vSeed));';
+  if(!revised.includes(anchor))throw Error('Combustion particle age shader changed');
+  revised=revised.replace(anchor,anchor+`\n if(useFlipbook>.5&&rootMode>.5&&particle<1.5){\n  vAge=.13+particle*.16+.022*sin(clock*1.17+vSeed);\n }`);
+ }
  for(const [before,after] of vertexChanges){
   if(!revised.includes(before))throw Error('Combustion vertex changed; review bridge scale: '+before);
   revised=revised.replace(before,after);
@@ -127,7 +138,8 @@ ${anchor}`);
   if(!patched.includes(anchor))throw Error('Missing smoke shader branch');
   patched=patched.replace(anchor,`
  if(useFlipbook>.5){
-  float time=vAge*63.;
+  // Animate CC0 density within lower rooted sheets, avoiding static cutouts.
+  float time=vAge*63.+(rootMode>.5?clock*(3.4+fract(vSeed*.19)*1.7):0.);
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
   if(plumeMode>.5){
@@ -156,7 +168,7 @@ ${anchor}`);
 ${anchor}`);
  }
  material.fragmentShader=patched.replace('void main(){',
-  (kind===1?'uniform float plumeMode;\n':'')+helper+'\nvoid main(){');
+  (kind===1?'uniform float plumeMode;\nuniform float rootMode;\n':'')+helper+'\nvoid main(){');
  start();apply();
 }
 export function flipbookStatus(){return {packaged:PACKAGED_FLIPBOOKS,ready:state.ready,

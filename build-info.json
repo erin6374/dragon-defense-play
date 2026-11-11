@@ -1,8 +1,8 @@
 {
-  "build": "5.5-architectural-firefront-rc21",
-  "version": "5.5.0-rc.21",
+  "build": "5.5-rooted-smoke-rc22",
+  "version": "5.5.0-rc.22",
   "gameplay_base": "5.2.3",
-  "scope": "Staggered multi-storey skyline firefront: nine existing licensed window contacts per tower spread vertically across five distinct facade elevations; corrected roof-safe positioning and RC21 QA coverage. Preserves RC20 licensed smoke, RC19 scene graphics and gameplay.",
-  "new_gameplay_features": true,
-  "release_status": "RC21 SOURCE CANDIDATE: exact-head Playwright QA, five-view screenshots, sustained motion art acceptance, Windows package and Pages provenance remain required."
+  "scope": "RC22 visual experiment: preserve RC21 nine-slot five-storey skyscraper firefront; root two of six existing licensed CC0 smoke sheets to each facade window, maintain four rising sheets and animated atlas frames. No gameplay mechanics, new particle capacity, draw batches or textures.",
+  "new_gameplay_features": false,
+  "release_status": "RC22 SOURCE CANDIDATE: browser Playwright smoke-mode A/B and shader compilation, five-view capture, genuine 30-second two-tower motion art review, ZIP integrity and same-head Pages provenance REQUIRED before acceptance."
 }
