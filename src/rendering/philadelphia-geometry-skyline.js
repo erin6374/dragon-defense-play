@@ -156,6 +156,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  // Five nearby bays ignite first; four peripheral windows catch progressively
  // over the following twenty seconds. This array is allocated once at setup.
  const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
+ // Nine fixed, UV-snapped architectural openings; intentionally not a 3x3 grid.
+ const BURN_WINDOW_PATTERN=[[-1,-1],[0,0],[1,-2],[-2,0],[0,-1],[1,1],[-1,2],[2,-1],[0,-2]];
  const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
  // One geometry shared by all fallen facade panels. A stock BoxGeometry has
@@ -176,7 +178,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  collapsedSlabGeo.addGroup(30,6,1); // original textured front facade
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
- const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
+ const crownMat=new THREE.MeshBasicMaterial({color:0x5d8398,transparent:true,opacity:.22,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
   const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
@@ -337,7 +339,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Accurate broken-pane center, but the simulated blaze reaches adjacent
   // glazing bays instead of looking like four isolated miniature candles.
   site.renderWidth=w*(2.1+.25*Math.abs(Math.sin(site.seed*.47)));
-  site.renderHeight=h*(3.05+.36*Math.abs(Math.sin(site.seed*.81)));
+  site.renderHeight=h*(2.25+1.65*Math.abs(Math.sin(site.seed*.81)));
   site.ignitedAt=renderClock;
   combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
    site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
@@ -386,13 +388,13 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // torches. Each cell maps to a different real window-grid contact. No
   // hit-time objects: all nine sites exist in the fixed instance buffer.
   const ignite=(j)=>{
-   const row=Math.floor(j/3),col=j%3;
-   // Broader, physically distinct broken-window bays on three real storeys.
-   // Still UV-grid snapped, roof-safe and limited to the same nine slots.
-   const offsetX=(col-1)*tower.def.w*.235+(row%2?.032:-.032)*tower.def.w;
-   const offsetY=(row-1)*tower.def.h*.050+(col===1?.004:0)*tower.def.h;
+   const [bay,floor]=BURN_WINDOW_PATTERN[j];
+   // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
+   // Each final contact is snapped to its physical facade window grid.
+   const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
+   const offsetY=floor*tower.def.h*.022;
    const site=tower.burnSites[j];
-   placeBurnSite(tower,site,offsetX,offsetY,2.55+col*.14);
+   placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
    // Damage accelerates lateral spread, while fixed ignition times let the
    // 30-second recording show a genuine evolving multi-window blaze.
    // Additional meteor strikes still re-ignite a single existing window.
@@ -486,7 +488,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   combustion.update(elapsed);
   for(let i=0;i<towers.length;i++){
    const t=towers[i];
-   if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+   if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.12+darkness*.20;
    if(t.fallActive&&!t.fallSettled){
     t.fallElapsed+=Math.max(0,Math.min(.1,dt));
     // Once every facade slab has landed and finished rotating, its pose is

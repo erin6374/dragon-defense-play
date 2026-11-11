@@ -385,6 +385,8 @@ try {
         heatedContacts:Array.from(t.facadeDamage.heat).filter(v=>v>0).length,
         wallTop:t.def.h*fullWallTop,impactY:t.impactLocal.y,
         maxY:Math.max(...t.burnSites.map(s=>s.origin.y)),
+        distinctBays:new Set(t.burnSites.map(s=>s.origin.x.toFixed(3))).size,
+        distinctFloors:new Set(t.burnSites.map(s=>s.origin.y.toFixed(3))).size,
         maxContactOffset:Math.max(...t.burnSites.map(s=>Math.abs(s.origin.y-t.impactLocal.y))),
         windowPitch:t.def.h/rows};
     });
@@ -427,6 +429,8 @@ try {
     'nine damaged openings exist immediately while five nearby windows are burning by 3 seconds');
   assert.ok(coverage.damageReset,'restart clears soot and heat contacts');
   assert.ok(coverage.contacts.every(t=>t.active===9),'each landmark reserves nine burn contacts');
+  assert.ok(coverage.contacts.every(t=>t.distinctBays>=4&&t.distinctFloors>=3),
+    'licensed skyline fire occupies an irregular multi-bay multi-floor footprint');
   assert.equal(new Set(coverage.contacts.flatMap(t=>t.indices)).size,81,'all tower slots are distinct');
   assert.ok(coverage.contacts.every(t=>t.maxY<t.wallTop),
     'every nine-window cluster stays below the full-width roof setback');
@@ -1088,7 +1092,7 @@ try {
   assert.equal(towerImpact.result.smokeVisible,true,'landmark smoke remains visible after impact');
   assert.equal(towerImpact.result.fireVisible,true,'landmark burns visibly after impact');
   assert.equal(towerImpact.result.secondaryBurnSites.length,9,
-    'nine pooled contacts form three staggered rows of damaged windows');
+    'nine pooled contacts form an uneven set of damaged facade openings');
   const ignitionTimes=towerImpact.result.secondaryBurnSites.map(site=>site.ignitedAt);
   assert.ok(ignitionTimes.every(Number.isFinite)&&
     ignitionTimes[4]===Math.min(...ignitionTimes)&&
