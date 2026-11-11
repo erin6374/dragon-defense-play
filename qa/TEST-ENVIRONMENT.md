@@ -1,3 +1,12 @@
+## November 11 ~02:47 ET — RC11 first focused MP4 reviewed (pre-version-repair head)
+
+- Focused [42979983159](https://github.com/erin6374/dragon-defense-play/actions/runs/42979983159) SUCCESS, artifact **13837161214**, actual 100-frame 20fps 960×540 `skyline.mp4`, errors=[], SHA `24d05e0`. Compared against exact RC10 `eaad457` at **1.2, 2.4, 3.4, 4.8 seconds**: the nine-window CC0 blaze moves from the lower tower to the upper occupied facade; gray soot now rises above the roofline. This visibly fixes the major contact-height mismatch and improves silhouette readability. The blaze is still a small, somewhat repetitive cluster rather than the user's full cinematic architectural fire; **MOT-03 remains visually OPEN**. The focused video is from the pre-version-repair SHA; no complete release gate is satisfied.
+- Browser 42979982945 FAILED on canonical GAME_VERSION/BUILD_ID mismatch before new architectural assertions ran; preserve assertion and fix `src/core/build-info.js`, then rerun all exact-head gates. Long motion 42979983019 remains independent and must not be cancelled. No hardware FPS or public release claim.
+
+## November 11 ~02:45 ET — RC11 canonical runtime version fix after real browser regression
+
+- Exact `24d05e0` browser [42979982945](https://github.com/erin6374/dragon-defense-play/actions/runs/42979982945) FAILED early at qa/browser.mjs:490: runtime `GAME_VERSION` still `5.5.0-rc.10` while build-info.json correctly declared `5.5.0-rc.11`. This is a genuine version/provenance mismatch, not a graphics pass or a stale QA assertion. Preserve the test. The narrow repair updates only `src/core/build-info.js` canonical GAME_VERSION/BUILD_ID to RC11, with no scene, shader, gameplay or GPU change. Exact-head fresh browser, focused fire, five+30s motion, Windows and Pages gates remain required. Earlier `24d05e0` motion recordings are historical visual evidence, not certification of the repaired head. MOT-03 remains visually OPEN.
+
 ## November 11 ~02:35 ET — RC11 roof-safe, impact-aligned licensed skyline fire (UNVERIFIED)
 
 - **Evidence:** Actual RC9 1ecd95e vs RC10 eaad457 focused skyline MP4s compared at 1.2/2.4/3.4/4.8s; RC10 frame-stepped 3.0–4.9s at 0.1s intervals. RC10 improves taller, separate CC0 flames and dark soot over RC9's horizontal white smoke band, but the blaze is still a compact lower-tower patch, with repetitive silhouettes and weak facade illumination. Earlier 76591d3 600-frame/30s video reviewed at 0/3/6/9/12/15/18/21/24/27/29.9s: same patch remains nearly stationary. **MOT-03 NOT artistically accepted.**
