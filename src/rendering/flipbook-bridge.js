@@ -5,10 +5,16 @@ import {PACKAGED_FLIPBOOKS,FLAME_ATLAS,SMOKE_ATLAS} from './flipbook-config.js';
 const registry=new Set();
 const state={started:false,ready:false,fire:null,smoke:null,error:null};
 let mode='flipbook';
-try{if(new URLSearchParams(location.search).get('firevfx')==='procedural')mode='procedural';}catch{}
+// Licensed CC0 smoke plume and RC17 smoke share the existing GPU sheets.
+let smokeMode='plume';
+try{const params=new URLSearchParams(location.search);
+ if(params.get('firevfx')==='procedural')mode='procedural';
+ if(params.get('smokevfx')==='legacy')smokeMode='legacy';
+}catch{}
 function apply(){
  for(const u of registry){
   u.useFlipbook.value=state.ready&&mode==='flipbook'?1:0;
+  if(u.plumeMode)u.plumeMode.value=smokeMode==='plume'?1:0;
   if(state.ready){u.flameAtlas.value=state.fire;u.smokeAtlas.value=state.smoke;}
  }
 }
@@ -28,9 +34,11 @@ function start(){
 }
 if(typeof window!=='undefined')window.__DD_FIRE_VFX={
  get packaged(){return PACKAGED_FLIPBOOKS;},get ready(){return state.ready;},
- get mode(){return state.ready?mode:'procedural';},get error(){return state.error;},
+ get mode(){return state.ready?mode:'procedural';},get smokeMode(){return smokeMode;},get error(){return state.error;},
  setMode(next){if(next!=='procedural'&&next!=='flipbook')throw Error('Invalid fire mode');
- mode=next;apply();return this.mode;}
+ mode=next;apply();return this.mode;},
+ setSmokeMode(next){if(next!=='legacy'&&next!=='plume')throw Error('Invalid smoke mode');
+ smokeMode=next;apply();return this.smokeMode;}
 };
 const helper=`
 uniform sampler2D flameAtlas;
@@ -49,6 +57,7 @@ export function prepareFlipbookMaterial(material,kind){
  if(kind===2)return;
  const u=material.uniforms;
  if(!u.useFlipbook){u.useFlipbook={value:0};u.flameAtlas={value:null};u.smokeAtlas={value:null};registry.add(u);}
+ if(kind===1&&!u.plumeMode)u.plumeMode={value:smokeMode==='plume'?1:0};
  if(kind===3){
   const marker='color=mix(color,vec3(.025,.013,.008),opening*.85);';
   if(!material.fragmentShader.includes(marker))throw Error('Opening shader changed; review flipbook contact glow');
@@ -69,16 +78,26 @@ export function prepareFlipbookMaterial(material,kind){
     // Independent age-dependent crosswind lanes advect the licensed
     // WispySmoke packets, without hit-time geometry or new particles.
     float lane=(fract(vSeed*.617)-.5)*2.;
-    float drift=lane*pow(vAge,1.35)*(2.0+.8*fract(vSeed*.91));
-    center+=vec3((sway+drift)*w,
-      h*(.32+vAge*4.4),w*(.38+.1*layer));
+    if(plumeMode>.5){
+     // CC0 atlas packets form one wind-sheared, taller plume instead of
+     // six short isolated wisps. Each packet retains independent age/phase.
+     float gust=.90+.18*sin(clock*.31+layer*.55);
+     float crosswind=-gust*pow(vAge,1.42)*3.8;
+     float dispersion=lane*pow(vAge,1.16)*1.25;
+     center+=vec3((sway+crosswind+dispersion)*w,
+       h*(.20+vAge*7.8),w*(.32+.16*layer));
+    }else{
+     float drift=lane*pow(vAge,1.35)*(2.0+.8*fract(vSeed*.91));
+     center+=vec3((sway+drift)*w,
+       h*(.32+vAge*4.4),w*(.38+.1*layer));
+    }
    }else{center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));}`],
   ['float scale=w*(1.02+.16*layer);',
-   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(.82+2.95*vAge):1.);'],
+   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(plumeMode>.5?(.82+3.9*vAge):(.82+2.95*vAge)):1.);'],
   ['float stretch=2.65+.42*layer;',
-   'float stretch=useFlipbook>.5?1.35:2.65+.42*layer;']
+   'float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;']
  ];
- let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;');
+ let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;'+(kind===1?'\nuniform float plumeMode;':''));
  for(const [before,after] of vertexChanges){
   if(!revised.includes(before))throw Error('Combustion vertex changed; review bridge scale: '+before);
   revised=revised.replace(before,after);
@@ -110,17 +129,27 @@ ${anchor}`);
   float time=vAge*63.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
-  // Warm gray smoke close to the burning facade, dark ash higher up;
-  // prevents the previous pale wisps reading as floating white ghosts.
-  float soot=smoothstep(.19,.88,q.y);
-  color=mix(vec3(.15,.145,.14),vec3(.075,.085,.095),soot)*
-   (.78+.22*frame.rgb);
-  alpha=frame.a*min(1.,vPower)*.64*
-   smoothstep(0.,.12,vAge)*(1.-smoothstep(.65,1.,vAge));
+  if(plumeMode>.5){
+   // CC0 WispySmoke03 density drives dark, layered billows, not generated
+   // smoke noise. Age fade prevents hard particle loop resets.
+   float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
+   color=mix(vec3(.062,.060,.060),vec3(.125,.128,.133),vAge)*
+    (.78+.22*frame.rgb);
+   alpha=frame.a*min(1.,vPower)*.96*feather*
+    smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
+  }else{
+   // Retain RC17 licensed smoke for controlled motion A/B.
+   float soot=smoothstep(.19,.88,q.y);
+   color=mix(vec3(.15,.145,.14),vec3(.075,.085,.095),soot)*
+    (.78+.22*frame.rgb);
+   alpha=frame.a*min(1.,vPower)*.64*
+    smoothstep(0.,.12,vAge)*(1.-smoothstep(.65,1.,vAge));
+  }
  }
 ${anchor}`);
  }
- material.fragmentShader=patched.replace('void main(){',helper+'\nvoid main(){');
+ material.fragmentShader=patched.replace('void main(){',
+  (kind===1?'uniform float plumeMode;\n':'')+helper+'\nvoid main(){');
  start();apply();
 }
 export function flipbookStatus(){return {packaged:PACKAGED_FLIPBOOKS,ready:state.ready,

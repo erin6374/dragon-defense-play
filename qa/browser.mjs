@@ -476,6 +476,11 @@ try {
     window.__DD_FIRE_VFX.setMode('procedural');
     if(window.__DD_FIRE_VFX.mode!=='procedural')throw Error('A/B procedural fallback failed');
     window.__DD_FIRE_VFX.setMode('flipbook');
+    if(window.__DD_FIRE_VFX.smokeMode!=='plume')throw Error('CC0 plume mode not active');
+    window.__DD_FIRE_VFX.setSmokeMode('legacy');
+    if(window.__DD_FIRE_VFX.smokeMode!=='legacy')throw Error('RC17 smoke A/B failed');
+    window.__DD_FIRE_VFX.setSmokeMode('plume');
+    if(window.__DD_FIRE_VFX.smokeMode!=='plume')throw Error('Plume A/B restoration failed');
     return window.__DD_FIRE_VFX.ready;
   });
 

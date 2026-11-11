@@ -1,8 +1,8 @@
 {
-  "build": "5.5-multifire-reflected-facade-glow-rc17",
-  "version": "5.5.0-rc.17",
+  "build": "5.5-licensed-coherent-smoke-plume-rc18",
+  "version": "5.5.0-rc.18",
   "gameplay_base": "5.2.3",
-  "scope": "Licensed Flame03/WispySmoke03 multi-facade fire with broad reflected glass light and darker smoke, five-floor impact-local contacts, 81 fixed GPU sources and four draw batches; gameplay unchanged.",
+  "scope": "Licensed CC0 WispySmoke03 coherent dark wind-sheared plume with RC17 smoke A/B, existing Flame03 facade fires, 81 fixed skyline sources and four draw batches; gameplay unchanged.",
   "new_gameplay_features": true,
-  "release_status": "RC17 CANDIDATE; exact-head browser, five+30s multi-fire motion, Windows and authorized Pages verification pending; MOT-03 not artistically accepted."
+  "release_status": "RC18 CANDIDATE; exact-head browser, five+30s motion, Windows and authorized Pages verification pending; MOT-03 not artistically accepted."
 }
