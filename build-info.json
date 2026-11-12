@@ -1,8 +1,8 @@
 {
-  "build": "5.5-low-foreground-rc23",
-  "version": "5.5.0-rc.23",
+  "build": "5.5-source-fed-fire-rc24",
+  "version": "5.5.0-rc.24",
   "gameplay_base": "5.2.3",
-  "scope": "RC23 whole-scene graphics: fix west-side near-camera foreground planting occlusion by shrinking/lowering cutout foliage and correcting multiplicative dark instance tint; retain RC22 rooted licensed smoke and RC21 five-storey firefront. No gameplay changes.",
+  "scope": "RC24 spatial fire architecture: stagger three preallocated CC0 flame tongues across each burning opening; source-fed soot stems from two of six existing smoke sheets bridge actual windows to four advecting licensed smoke packets. No new particles, draw batches, textures or gameplay changes; retain rooted/plume/legacy and procedural A/B.",
   "new_gameplay_features": false,
-  "release_status": "RC23 GRAPHICS CANDIDATE — exact-head browser/cinematic/focused/30s motion and licensed ZIP verification required; no art approval or production deployment."
+  "release_status": "RC24 GRAPHICS CANDIDATE — exact-head browser, 5-view, focused, 600-frame/30s motion and licensed ZIP verification pending; cinematic acceptance withheld."
 }

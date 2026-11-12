@@ -76,7 +76,7 @@ export function prepareFlipbookMaterial(material,kind){
   ['float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12);',
    'float breadth=(1.24+.35*fract(vSeed*.23))*(1.-axial*.12)*(useFlipbook>.5?1.15:1.);'],
   ['float height=.84+.34*fract(vSeed*.39);',
-   'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.6:1.);'],
+   'float height=(.84+.34*fract(vSeed*.39))*(useFlipbook>.5?1.95:1.);'],
   ['center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));',
    `if(useFlipbook>.5){
     // Independent age-dependent crosswind lanes advect the licensed
@@ -114,12 +114,53 @@ export function prepareFlipbookMaterial(material,kind){
   if(!revised.includes(before))throw Error('Combustion vertex changed; review bridge scale: '+before);
   revised=revised.replace(before,after);
  }
+ if(kind===0){
+  // RC24: three independent licensed flame tongues occupy different parts
+  // of each broken window. Pivot near the same opening, then grow/flex at
+  // different heights; never create particles, meshes, textures or draw calls.
+  const anchor='center.z+=w*.17;';
+  if(!revised.includes(anchor))throw Error('Missing flame root anchor');
+  revised=revised.replace(anchor,`if(useFlipbook>.5){
+   float tongueLane=particle-1.;
+   float tongueGust=.10*sin(clock*(1.1+.16*particle)+vSeed*.53);
+   center.x+=w*(tongueLane*.32+tongueGust);
+   center.y+=h*(.025+.055*fract(particle*.67));
+   p.y*=.92+.30*fract(particle*.73);
+   p.x+=w*tongueLane*.07*axial;
+   p.z+=w*tongueLane*.045;
+  }
+  `+anchor);
+ }
+ if(kind===1){
+  // RC24: retain two source-fed vertical smoke stems, while four original
+  // licensed packets travel upward. Stem cards start at the actual window,
+  // taper outward and overlap the buoyant sheets without a new GPU batch.
+  revised=revised.replace('varying float vSeed,vAge,vPower;',
+   'varying float vSeed,vAge,vPower;\nvarying float vStem;');
+  const root='vUv=uv;vSeed=settings.z+particle*7.13;vPower=settings.w;';
+  if(!revised.includes(root))throw Error('Missing smoke varying anchor');
+  revised=revised.replace(root,root+'\n vStem=(useFlipbook>.5&&rootMode>.5&&particle<1.5)?1.:0.;');
+  const eye='vec4 eye=modelViewMatrix*vec4(center,1.);';
+  if(!revised.includes(eye))throw Error('Missing smoke eye anchor');
+  revised=revised.replace(eye,`if(vStem>.5){
+   center=source+vec3((.09*sin(clock*.36+vSeed)+.05*(particle-.5))*w,
+    h*(1.12+.12*particle),w*(.26+.04*particle));
+  }
+  `+eye);
+  const scale='float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(plumeMode>.5?(.82+3.9*vAge):(.82+2.95*vAge)):1.);';
+  const stretch='float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;';
+  if(!revised.includes(scale)||!revised.includes(stretch))throw Error('Missing smoke card size anchors');
+  revised=revised.replace(scale,scale+'\n if(vStem>.5)scale=w*(1.08+.15*particle);');
+  revised=revised.replace(stretch,stretch+'\n if(vStem>.5)stretch=h/max(.20,w)*(2.75+.20*particle);');
+ }
  material.vertexShader=revised;
  const source=material.fragmentShader;
  // Patch only the flame and smoke branches; preserve embers/scorch/old fallback.
  if(!source.includes('vec2 q=vUv;vec3 color;float alpha;'))throw Error('Combustion shader changed; review flipbook bridge');
  let patched=source.replace('vec2 q=vUv;vec3 color;float alpha;',
   'vec2 q=vUv;vec3 color;float alpha;');
+ if(kind===1)patched=patched.replace('varying float vSeed,vAge,vPower;',
+  'varying float vSeed,vAge,vPower;\nvarying float vStem;');
  if(kind===0){
   const anchor=' #elif KIND == 1';
   if(!patched.includes(anchor))throw Error('Missing fire shader branch');
@@ -156,6 +197,23 @@ ${anchor}`);
     (.73+.27*frame.rgb);
    alpha=density*min(1.,vPower)*(1.34+.33*soot)*feather*
     smoothstep(0.,.085,vAge)*(1.-smoothstep(.76,1.,vAge));
+   if(vStem>.5){
+    // The lower two cards are actual continuous soot columns: a narrow
+    // source-connected foot grows into a wind-ragged upper canopy.
+    // Atlas alpha still drives interior turbulence and every visible flame
+    // keeps its licensed CC0 animation and original A/B fallback.
+    float stemY=clamp(q.y,0.,1.);
+    float stemW=.24+.40*stemY+
+     .07*sin(stemY*12.+clock*.48+vSeed)+.04*sin(stemY*23.-clock*.23);
+    float stemX=abs((q.x-.5)*2.);
+    float stemBody=1.-smoothstep(stemW*.74,stemW+.08,stemX);
+    float stemTaper=smoothstep(0.,.08,stemY)*
+     (1.-smoothstep(.84,1.,stemY));
+    float stemDensity=stemBody*stemTaper*
+     (.30+.38*frame.a+.25*detail.a);
+    alpha=max(alpha,stemDensity*.85*min(1.,vPower));
+    color=mix(color,vec3(.038,.041,.045),stemBody*.42);
+   }
   }else{
    // Retain RC17 licensed smoke for controlled motion A/B.
    float soot=smoothstep(.19,.88,q.y);
