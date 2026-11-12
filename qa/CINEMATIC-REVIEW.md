@@ -1,3 +1,10 @@
+## November 12 — RC31 health-only combustion repair (QA-only causal regression)
+Parent RC31 `18a5d0e93cbc9bd9a29dc1f5ba62ff087b60337f` completed all five Actions, including [600-frame/30s motion 43180711830](https://github.com/erin6374/dragon-defense-play/actions/runs/43180711830) (artifact 13926629976, 33 files, ZIP CRC PASS, errors=[], 585 burning frames, 380 multi-tower frames, maximum 378 software-renderer draws). Inspected 11 genuine skyline frames at 0.5–29.5s: two towers burn, but gray, billowing smoke and repeated flame patches remain below the cinematic target. Software capture does not verify Windows hardware FPS.
+
+RC31 browser artifact showed 28 ambient rooftop fires and 44 active GPU combustion sources before a visible impact when health reached zero. This patch makes `distant-neighborhood.js:setHealth` clear legacy ambient slots but never allocate combustion; gauge still controls impact frequency and severity through `game.js`. Browser QA now asserts **zero pre-impact ambient markers, smoke, impact fires and active GPU combustion**, requires all post-impact smoke to be impact-caused, and positively checks actual post-impact GPU sources. Fixed source capacities and the meteor-triggered fire path are unchanged. New exact-head five workflows, actual screenshots, Windows ZIP CRC and licensed CC0 hashes are required; this is NOT release/art acceptance. No merge, main, production, Pages, Building Explorer or original FBX edits.
+
+Art gate remains open: successful 600-frame capture establishes continuity only; smoke color, volume, and building materials do not yet match the cinematic mockup.
+
 # North Broad whole-scene cinematic review — November 11, 2026
 
 ## Visual contract

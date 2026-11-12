@@ -733,15 +733,11 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const interior of interiorBatches)interior.visible=false;
   damaged.clear();falling.clear();fireTime=0;
  }
- function setHealth(health){
-  const damage=Math.max(0,Math.min(1,1-health/100));
-  const targetCount=Math.min(28-impactSmoke.size,Math.floor(damage*28));
-  while(damageMarkers.length<targetCount){
-   const home=buildingDefs[(damageMarkers.length*41+23)%buildingDefs.length];
-   const marker={home,slot:FIRE_CAP+damageMarkers.length};
-   positionFire(home,marker.slot);damageMarkers.push(marker);
-  }
-  while(damageMarkers.length>targetCount)clearDamageMarker(damageMarkers.pop());
+ function setHealth(_health){
+  // Neighborhood health controls meteor cadence and impact strength in game.js,
+  // not combustion. Only a visible landing may allocate a distant fire source.
+  // Clear any legacy ambient slots defensively without touching impact fires.
+  while(damageMarkers.length)clearDamageMarker(damageMarkers.pop());
  }
  return {
   root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:STREET_AXIS.map(s=>s.name),

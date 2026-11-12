@@ -70,6 +70,11 @@ const launchHtml = await readFile('index.html', 'utf8');
 const launchCmd = await readFile('PLAY-PREVIEW.cmd', 'utf8');
 const gameSource = await readFile('src/game.js', 'utf8');
 const skylineSource = await readFile('src/rendering/philadelphia-geometry-skyline.js', 'utf8');
+const distantSource = await readFile('src/rendering/distant-neighborhood.js', 'utf8');
+const healthOnlySource = distantSource.slice(distantSource.indexOf(' function setHealth('),distantSource.indexOf('\n return {',distantSource.indexOf(' function setHealth(')));
+assert.ok(healthOnlySource.startsWith(' function setHealth('),'distant health setter exists');
+assert.doesNotMatch(healthOnlySource,/positionFire\s*\(|damageMarkers\.push\s*\(/,
+  'health setter cannot ignite buildings without a visible meteor impact');
 assert.match(skylineSource,/createBuildingCombustion/,'skyline uses the shared GPU combustion pool');
 assert.doesNotMatch(skylineSource,/new THREE.Sprite\(fireMaterial|secondaryFire=new/,'legacy skyline fire is removed');
 // Fireball interception must select nearest swept 3D contact rather than
@@ -1344,11 +1349,22 @@ try {
   const zeroBlock=await page.evaluate(()=>window.__DD_QA.stageZeroBlockMeteorDamage());
   assert.ok(zeroBlock.ok,zeroBlock.error);
   assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
-  assert.ok(zeroBlock.result.afterImpact.ambientRooftopFires>=6&&
-    zeroBlock.result.afterImpact.ambientRooftopFires<=28,
-    'catastrophic neighborhood damage creates bounded, visible distant rooftop fires');
-  assert.ok(zeroBlock.result.settled.ambientRooftopFires>=6,
-    'background rooftop fires persist after the impact dust clears');
+  // The gauge may increase meteor barrage severity but must never light a
+  // house on its own. Check the actual GPU source pool, not just impact counts.
+  for(const key of ['ambientRooftopFires','smoke','fires']){
+    assert.equal(zeroBlock.result.beforeImpact[key],0,
+      'zero-health alone must not create pre-impact '+key);
+  }
+  assert.equal(zeroBlock.result.beforeImpact.combustion.active,0,
+    'zero-health alone must not activate any distant GPU combustion sources');
+  for(const phase of ['afterImpact','settled']){
+    assert.equal(zeroBlock.result[phase].ambientRooftopFires,0,
+      phase+' must not create health-only rooftop combustion');
+    assert.equal(zeroBlock.result[phase].smoke,zeroBlock.result[phase].fires,
+      phase+' smoke sources must all originate from visible meteor impacts');
+    assert.ok(zeroBlock.result[phase].combustion.active>0,
+      phase+' retains real impact-triggered GPU combustion');
+  }
   assert.equal(zeroBlock.result.incoming,3,'an empty gauge launches a heavier background barrage');
   assert.equal(zeroBlock.result.nearDamage,1,'a meteor also finishes the heavily damaged nearer background building');
   assert.ok(zeroBlock.result.afterImpact.falling>=1&&zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.smoke>=1,
