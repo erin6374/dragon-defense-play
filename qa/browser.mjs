@@ -377,7 +377,8 @@ try {
     for(let i=0;i<100;i++){pool.set(i%2,1,2,3,1,1,i);pool.clear(i%2);}
     pool.reset();
     const spatialVfx={
-      licensedFlameTongues:pool.group.children[0].material.vertexShader.includes('tongueLane*.32'),
+      licensedFlameTongues:pool.group.children[0].material.vertexShader.includes('float tongueLane=particle-1.')&&
+        pool.group.children[0].material.vertexShader.includes('tongueLane*(.20+.19*fract(vSeed*.117))'),
       windowRootedSoot:pool.group.children[1].material.vertexShader.includes('vStem>.5'),
       texturedStem:pool.group.children[1].material.fragmentShader.includes('stemDensity*.85'),
       windShearedSmoke:pool.group.children[1].material.vertexShader.includes('turbulentEddy'),
