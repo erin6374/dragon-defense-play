@@ -1,5 +1,7 @@
 # Tech Freire Dragon Defense — live AI-to-AI handoff
 
+**Latest verified:** RC42 at observed base SHA `593bf6d85dcf0d6bebc12409dd060e757675b96f` passed five exact-head QA workflows and artifact/license checks. Actual 30s cinematic review ART FAIL; Windows hardware FPS unmeasured. See `qa/CURRENT-STATUS.md` and `handoff/state.json`. QA-only handoff update; live HEAD must be fetched again.
+
 **One permanent entry point:** https://github.com/erin6374/dragon-defense-play/blob/feature/north-broad-graphics/AI-HANDOFF.md
 
 **Rules of currency:** This document is a *snapshot*. Before doing any work, fetch `origin/feature/north-broad-graphics` and identify its **actual current SHA**. The live branch code and exact-SHA GitHub Actions outrank any stale SHA, claim or status in this document. Read the top of `qa/CURRENT-STATUS.md` and `CONTINUE-IN-CHATGPT.md` for later changes. Do not treat "workflow success" as proof of cinematic quality or Windows GPU FPS.
