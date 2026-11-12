@@ -1,3 +1,9 @@
+## November 12 — RC43 historic street-front window proportions
+
+Continued from RC42 docs checkpoint 0803e9a. Eight historic frontage shells now have narrow recessed upper-storey sash windows, with continuous masonry piers and correctly sized spandrels using the same existing four wall pieces per opening. School, modern apartments, campus and ground storefront glazing retain their existing proportions. Removed duplicate decorative brownstone glass/lintels that could overlay the physical openings; structural lintels/sills remain. This is a geometry/proportion pass based on previously inspected Street View, not a claim of corrected cadastral layout or completed realism.
+
+Local syntax/diff/build-label/frontage checks pass, including narrow window widths, masonry enclosing both jambs, recess, edge impact/reset and road/campus clearances. No additional structural parts/material batches for sash change; no new textures/lights. Exact-head browser and actual left/right/day/dusk/night imagery still pending. Source-model overlays may mask procedural changes on adjacent buildings; inspect rendered views. Hardware slideshow complaint remains unresolved. Preserve RC39–42 Windows telemetry and RC37 combustion cache. NEXT: inspect RC43 rendered frontage and damage; continue roofline/storefront placement and smoke motion. Not release-ready; no main/Pages/production/original FBX changes.
+
 # Tech Freire Dragon Defense — live AI-to-AI handoff
 
 **Latest verified:** RC42 at observed base SHA `593bf6d85dcf0d6bebc12409dd060e757675b96f` passed five exact-head QA workflows and artifact/license checks. Actual 30s cinematic review ART FAIL; Windows hardware FPS unmeasured. See `qa/CURRENT-STATUS.md` and `handoff/state.json`. QA-only handoff update; live HEAD must be fetched again.

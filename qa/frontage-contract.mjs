@@ -21,3 +21,17 @@ for(const b of [edges[0],edges.at(-1)]){
 }
 city.restore();assert.ok(edges.every(b=>b.damage===0&&b.parts.every(p=>p.state==='attached')));
 console.log('Frontage damage/reset/road-clearance PASS', {addedComponents:city.stats().components-base.stats().components,addedDrawBatches:city.stats().drawBatches-base.stats().drawBatches});
+
+// Historic upper-storey openings must stay narrow, recessed and enclosed by
+// masonry, while school/modern glazing retains its original proportions.
+for(const b of city.buildings.filter(b=>b.historicSash)){
+ for(const pane of b.windows.filter(p=>p.floor>0)){
+  assert.ok(pane.size.x<=1.45&&pane.size.x<=b.w/b.bays*.48+1e-8);
+  const walls=b.sections.filter(p=>p.floor===pane.floor);
+  const left=pane.position.x-pane.size.x/2,right=pane.position.x+pane.size.x/2;
+  assert.ok(walls.some(p=>Math.abs(p.position.x+p.size.x/2-left)<1e-6&&Math.abs(p.position.y-pane.position.y)<1e-6));
+  assert.ok(walls.some(p=>Math.abs(p.position.x-p.size.x/2-right)<1e-6&&Math.abs(p.position.y-pane.position.y)<1e-6));
+  assert.ok(walls.some(p=>Math.abs(p.position.x-pane.position.x)<1e-6&&p.position.z>pane.position.z));
+ }
+}
+console.log('Historic sash opening enclosure/recess PASS');

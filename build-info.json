@@ -1,8 +1,8 @@
 {
-  "build": "5.5-windows-visibility-rc42",
-  "version": "5.5.0-rc.42",
+  "build": "5.5-historic-sash-rc43",
+  "version": "5.5.0-rc.43",
   "gameplay_base": "5.2.3",
-  "scope": "Record browser tab visibility and focus alongside independent last-render and heartbeat ages in Windows CSV; display unavailable host counters as n/a rather than zero. No gameplay/rendering changes.",
+  "scope": "Recess and narrow historic upper-storey sash windows; continuous structural masonry piers; remove duplicate brownstone decorative glass.",
   "new_gameplay_features": false,
-  "release_status": "RC42 DEVELOPMENT CANDIDATE: RC41 exact-head five workflows and Windows ZIP/license checks passed; RC42 exact-head QA and physical Windows GPU FPS pending."
+  "release_status": "RC43 candidate: local structural checks pass; exact-head visual/browser verification and hardware FPS pending."
 }

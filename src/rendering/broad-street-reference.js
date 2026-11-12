@@ -45,7 +45,7 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   else if(spec.type==='brownstone'){
    for(const y of [b.h-.24,b.h-.54,b.h/3+.18,b.h*2/3+.16])bx(group,b.x,y,z,b.w+.16,.13,.26,y>b.h*.8?brickTrim:gold);
    for(const side of [-1,1])bx(group,b.x+side*(b.w/2-.15),b.h*.52,z,.19,b.h*.92,.16,brickTrim);
-   for(let floor=0;floor<3;floor++)for(const dx of [-2.0,2.0]){const centerY=4.2+floor*(b.h/3.32);bx(group,b.x+dx,centerY,z+.06,1.10,2.18,.055,glass);bx(group,b.x+dx,centerY+1.14,z+.14,1.36,.14,.17,brownstoneSill);bx(group,b.x+dx,centerY-1.12,z+.14,1.26,.12,.20,brownstoneSill);bx(group,b.x+dx,centerY,z+.17,.075,2.2,.10,shadow);} stoop(group,b,-1.75,1.55,1.9,4); stoop(group,b,1.75,1.25,1.2,3);}
+   stoop(group,b,-1.75,1.55,1.9,4); stoop(group,b,1.75,1.25,1.2,3);}
   else if(spec.type==='modern' || spec.type==='modern2'){
    const sideTrim=spec.type==='modern2'?ivory:red, middleDark=dark; for(const side of [-1,1]){bx(group,b.x+side*(b.w*.29),b.h*.48,z,.95,b.h*.84,.15,sideTrim);bx(group,b.x+side*(b.w*.17),b.h*.48,z,.72,b.h*.84,.14,spec.type==='modern2'?red:dark);} bx(group,b.x,b.h-.28,z,b.w*.95,.28,.22,ivory); bx(group,b.x,b.h*.5,z+.025,b.w*.13,b.h*.92,.075,middleDark); for(let row=0;row<Math.min(5,b.stories||5);row++){const y=(row+.5)*(b.h/(b.stories||5));bx(group,b.x,y,z+.04,b.w*.70,.12,.09,alum);} }
   else if(spec.type==='cream'){bx(group,b.x,b.h-.20,z,b.w+.16,.32,.28,warmStone);bx(group,b.x,3.65,z,b.w*.94,.20,.19,ivory);bx(group,b.x-1.15,1.15,z+.11,1.25,2.15,.06,glass);bx(group,b.x+1.10,1.15,z+.11,1.55,2.15,.06,glass);awning(group,b,0,b.w*.96,0x1c704a,'United Fund');}
