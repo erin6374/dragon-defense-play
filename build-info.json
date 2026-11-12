@@ -1,8 +1,8 @@
 {
-  "build": "5.5-per-house-parapets-rc34",
-  "version": "5.5.0-rc.34",
+  "build": "5.5-staggered-house-fire-rc35",
+  "version": "5.5.0-rc.35",
   "gameplay_base": "5.2.3",
-  "scope": "Repair RC33 row-synchronized parapets with per-house deterministic height bands and per-row QA invariants; preserve gameplay and draw budget.",
+  "scope": "Correct simultaneous upper-floor torches: lower opposite-bay secondary openings, per-house delayed spread, immediate windowless-horizon ignition, immutable QA snapshots.",
   "new_gameplay_features": false,
-  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer, 5+30s motion, Windows ZIP/license and hardware performance verification pending."
+  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer, five+30s motion, Windows ZIP/license and hardware performance verification pending."
 }

@@ -517,9 +517,15 @@ export function createDistantNeighborhood({root,flameTexture}){
  // Resolve real window geometry once. Distant LOD buildings use a roof breach.
  for(const home of buildingDefs){
   const windows=home.parts.filter(p=>p.type==='window').map(p=>instances[home.tier].window[p.index])
-   .sort((a,b)=>b.y-a.y).slice(0,2);
-  home.fireOpenings=[null,null];
-  windows.forEach((p,k)=>home.fireOpenings[k]={x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h});
+   .sort((a,b)=>b.y-a.y);
+  const primary=windows[home.id%2]||windows[0];
+  // Propagation must travel DOWN a floor and across a bay, never create two
+  // identical top-window torches on the first meteor impact.
+  const secondary=primary&&(windows.find(p=>p.y<primary.y-p.h*.8&&
+   Math.sign(p.x-home.x)!==Math.sign(primary.x-home.x))||
+   windows.find(p=>p.y<primary.y-p.h*.8)||windows.find(p=>p!==primary));
+  home.fireOpenings=[primary,secondary].map(p=>p?
+   {x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h}:null);
   home.fireOpenings[2]={x:home.x,y:home.h+.25,z:home.z+home.d*.18,w:home.w*.19,h:1.1};
  }
  function positionImpactEffects(home){
@@ -530,7 +536,13 @@ export function createDistantNeighborhood({root,flameTexture}){
   const fall=home.fall||0,shrink=1-fall*fall*.84;
   // Near-background buildings belong to StructuralCity and expose live parts.
   if(!home.fireOpenings){
-   home.fireOpenings=(home.windows||[]).slice().sort((a,b)=>b.original.position.y-a.original.position.y).slice(0,2)
+   const windows=(home.windows||[]).slice().sort((a,b)=>b.original.position.y-a.original.position.y);
+   const primary=windows[(home.id??Math.floor(Math.abs(home.x*3+home.z)))%2]||windows[0];
+   const secondary=primary&&(windows.find(part=>part.original.position.y<primary.original.position.y-part.size.y*.8&&
+    Math.sign(part.position.x-home.x)!==Math.sign(primary.position.x-home.x))||
+    windows.find(part=>part.original.position.y<primary.original.position.y-part.size.y*.8)||
+    windows.find(part=>part!==primary));
+   home.fireOpenings=[primary,secondary].filter(Boolean)
     .map(part=>({part,x:part.position.x,y:part.position.y-part.size.y*.5,z:part.position.z+.12,w:part.size.x,h:part.size.y}));
    const roof=home.parts?.find(p=>p.type==='roof');
    if(roof)home.fireOpenings.push({part:roof,x:roof.position.x,y:roof.position.y+.15,z:roof.position.z,w:Math.min(2,roof.size.x),h:1.2});
@@ -545,7 +557,16 @@ export function createDistantNeighborhood({root,flameTexture}){
    if(opening.part&&opening.part.state!=='attached'){
     x=opening.part.position.x;y=Math.max(.15,opening.part.position.y);z=opening.part.position.z+.12;
    }
-   const power=k===2&&home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2:.85;
+   const age=impactSmoke.get(home)?.age??0;
+   const fireSeed=home.id??Math.floor(Math.abs(home.x*3+home.z));
+   const secondaryDelay=1.45+(fireSeed%5)*.20;
+   const secondaryGrowth=THREE.MathUtils.smoothstep(age,secondaryDelay,secondaryDelay+1.05);
+   const roofDelay=2.5+(fireSeed%6)*.38;
+   const roofGrowth=THREE.MathUtils.smoothstep(age,roofDelay,roofDelay+1.2);
+   // The first contact burns immediately. Other windows only catch after
+   // visible propagation; a windowless horizon roof still ignites on impact.
+   const power=k===0?.85:k===1?.85*(.035+.965*secondaryGrowth):
+    home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2*roofGrowth:.85;
    combustion.set(index,x,y,z,opening.w*(1+.2*rubble),opening.h*(1.5-.25*rubble),(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,k===2||rubble>.8?1:0);
   }
  }
@@ -591,7 +612,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   if(impactSmoke.has(home)){positionImpactEffects(home);return;}
   if(impactSmoke.size===FIRE_CAP)releaseFire(impactSmoke.keys().next().value);
   const slot=fireSlots.indexOf(null);fireSlots[slot]=home;
-  impactSmoke.set(home,{slot});positionImpactEffects(home);
+  impactSmoke.set(home,{slot,age:0});positionImpactEffects(home);
  }
  function applyFall(home){
   const progress=home.fall*home.fall;
@@ -724,6 +745,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  }
  function update(dt){
   if(impactSmoke.size||damageMarkers.length){
+   for(const entry of impactSmoke.values())entry.age+=dt;
    fireTime+=dt;
    combustion.update(fireTime);
   }
@@ -744,7 +766,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     if(tail===0)releaseDust(slot);
    }
   }
-  for(const home of impactSmoke.keys())if(falling.has(home)||home.windows)positionImpactEffects(home);
+  for(const home of impactSmoke.keys())positionImpactEffects(home);
  }
 
  function restore(){
@@ -802,7 +824,9 @@ export function createDistantNeighborhood({root,flameTexture}){
    const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
     tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
    const smoke=impactSmoke.get(home);
-   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE).filter(s=>s.active):[];
+   // Copy pooled GPU-source diagnostics: snapshots must not mutate retroactively.
+   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE)
+    .filter(s=>s.active).map(s=>({...s})):[];
    const tonguePositions=sites.map(s=>[s.x,s.y,s.z]),ventSmokePositions=tonguePositions;
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
@@ -819,7 +843,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     flamePosition:sites.length?[sites[0].x,sites[0].y]:null,
     flameHeight:sites[0]?.h??null,flameWidth:sites[0]?.w??null,
     primaryFlameVisible:false,tonguePositions,ventSmokePositions,
-    smokeHeight:sites[0]?.h*3.8,combustionSites:sites,
+    smokeHeight:sites[0]?.h*3.8,fireAge:smoke?.age??null,combustionSites:sites,
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },

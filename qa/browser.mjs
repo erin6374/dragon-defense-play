@@ -1311,6 +1311,20 @@ try {
     'distant impact smoke stays visible throughout collapse');
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
   assert.ok(fireStates.every(f=>!f.primaryFlameVisible),'legacy central sprite is absent in all damage states');
+  // Regression: one immediate upper-window flame, lower opposite-bay source
+  // delayed and grown only after real simulation time; diagnostic objects must
+  // be immutable copies of the live pooled sources.
+  assert.equal(backgroundIntact.fireAge,0,'first-impact combustion clock starts at zero');
+  assert.ok(backgroundIntact.combustionSites[0].power>.7&&
+    backgroundIntact.combustionSites[1].power<.04&&
+    backgroundIntact.combustionSites[0].power>backgroundIntact.combustionSites[1].power*12,
+    'only the primary window has full fire power at impact');
+  assert.ok(backgroundIntact.tonguePositions[1][1]<backgroundIntact.tonguePositions[0][1]-1.2,
+    'secondary window must be a lower floor, not a matching upper torch');
+  assert.ok(backgroundSettled.fireAge>=3.6&&
+    backgroundSettled.combustionSites[1].power>backgroundIntact.combustionSites[1].power*8&&
+    backgroundSettled.combustionSites[1].power>.7,
+    'secondary combustion grows after the impact instead of being instantly duplicated');
   assert.ok(fireStates.every(f=>f.combustionSites.length>=2&&f.combustionSites.every(s=>[s.x,s.y,s.z,s.w,s.h].every(Number.isFinite))),
     'bounded real window/roof openings survive collapse');
   assert.ok(backgroundIntact.tonguePositions.slice(0,2).every(p=>p[1]<backgroundIntact.originalHeight),
