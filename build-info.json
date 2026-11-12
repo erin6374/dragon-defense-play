@@ -1,8 +1,8 @@
 {
-  "build": "5.5-windows-heartbeat-rc40",
-  "version": "5.5.0-rc.40",
+  "build": "5.5-windows-render-age-rc41",
+  "version": "5.5.0-rc.41",
   "gameplay_base": "5.2.3",
-  "scope": "Make Windows Performance Lab accessible and record independent host heartbeat age without expensive QA snapshots or duplicate UI telemetry; no gameplay/rendering changes.",
+  "scope": "Distinguish fresh browser telemetry from stalled requestAnimationFrame by recording actual last-render age in Windows host CSV and monitor; no gameplay/rendering changes.",
   "new_gameplay_features": false,
-  "release_status": "RC40 DEVELOPMENT CANDIDATE: six local telemetry integration tests pass; exact-head five workflows, Windows package and physical Windows FPS pending."
+  "release_status": "RC41 DEVELOPMENT CANDIDATE: RC40 five exact-head workflows and Windows ZIP/license checks pass; RC41 exact-head QA and physical Windows GPU FPS pending."
 }

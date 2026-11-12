@@ -1,6 +1,6 @@
 """Loopback-only development preview with performance CSV; Python stdlib only.
 
-The browser panel posts game metrics every two seconds. Windows CPU and RAM
+The game loop posts lightweight metrics every second. Windows CPU and RAM
 come from native OS counters; GPU utilization is explicitly unsupported.
 This is a development server, never a production endpoint.
 """
@@ -20,7 +20,7 @@ import time
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'heartbeatIndex',
+COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs', 'heartbeatIndex',
            'gameFrameCount', 'lastGameFrameUTC', 'phase', 'active',
            'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
            'stallCount', 'cpuPercent', 'ramPercent', 'ramAvailableGB',
@@ -68,6 +68,21 @@ def windows_counters(previous=None):
         available = round(mem.ullAvailPhys / (1024 ** 3), 2)
     return {'cpuPercent': cpu, 'ramPercent': ram,
             'ramAvailableGB': available}, previous
+
+
+def render_age_ms(last_render_utc, now_ms=None):
+    """Age of the last rendered frame, independent of JS heartbeat age.
+
+    A timer may keep posting while requestAnimationFrame stops; a fresh
+    heartbeat does not prove that the renderer is advancing.
+    """
+    if isinstance(last_render_utc, bool) or not isinstance(last_render_utc, (int, float)):
+        return None
+    if not math.isfinite(last_render_utc) or last_render_utc <= 0:
+        return None
+    if now_ms is None:
+        now_ms = time.time() * 1000
+    return max(0, round(now_ms - last_render_utc))
 
 
 def safe_number(value, lo, hi):
@@ -119,7 +134,8 @@ class PreviewServer(ThreadingHTTPServer):
                    if self.last_heartbeat_monotonic is not None else None)
             self.write_row({**self.game, **self.system,
                             'timestampUTC': datetime.now(timezone.utc).isoformat(),
-                            'sampleSource': 'host', 'telemetryAgeMs': age})
+                            'sampleSource': 'host', 'telemetryAgeMs': age,
+                            'renderAgeMs': render_age_ms(self.game.get('lastGameFrameUTC'))})
 
 
 class PreviewHandler(SimpleHTTPRequestHandler):
@@ -150,6 +166,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                 age = (round((time.monotonic() - self.server.last_heartbeat_monotonic) * 1000)
                        if self.server.last_heartbeat_monotonic is not None else None)
                 self.send_json({**self.server.system, 'telemetryAgeMs': age,
+                                'renderAgeMs': render_age_ms(self.server.game.get('lastGameFrameUTC')),
                                 'logFile': self.server.log_path.name})
             return
         if path == '/__system_csv':
@@ -200,6 +217,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             row['timestampUTC'] = datetime.now(timezone.utc).isoformat()
             row['sampleSource'] = 'browser'
             row['telemetryAgeMs'] = 0
+            row['renderAgeMs'] = render_age_ms(row.get('lastGameFrameUTC'))
             self.server.write_row(row)
         self.send_json({'ok': True})
 

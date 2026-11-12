@@ -56,7 +56,9 @@ export function setupSystemMonitorUI(){
     if(m.disabled){status.textContent='Windows system monitor disabled (Safe Mode / No Monitor); gameplay remains available.';}
     else status.textContent=`System CPU ${nice(m.cpuPercent)}% · RAM ${nice(m.ramPercent)}% (${nice(m.ramAvailableGB)} GB free) · `+
     `GPU 3D ${m.gpuPercent==null?'unsupported*':nice(m.gpuPercent)+'%'} · Video decode ${m.videoDecodePercent==null?'n/a':nice(m.videoDecodePercent)+'%'} · Browser RAM ${nice(m.browserRSSMB)} MB · `+
-    `game ${nice(metrics.fps)} FPS / ${metrics.drawCalls??'—'} draws · Wave ${metrics.wave??'—'} · heartbeat ${m.telemetryAgeMs==null?'not received':m.telemetryAgeMs+'ms ago'}`;
+    `game ${nice(metrics.fps)} FPS / ${metrics.drawCalls??'—'} draws · Wave ${metrics.wave??'—'} · `+
+    `heartbeat ${m.telemetryAgeMs==null?'not received':m.telemetryAgeMs+'ms ago'} · `+
+    `last rendered ${m.renderAgeMs==null?'not received':m.renderAgeMs+'ms ago'}`;
    }catch(e){if(status)status.textContent='System monitor unavailable; gameplay can continue without it.';}
   }
   // Game loop owns the single 1-second heartbeat. Do not duplicate rows

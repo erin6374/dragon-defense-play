@@ -120,6 +120,28 @@ class PreviewServerTest(unittest.TestCase):
         self.assertGreaterEqual(int(rows[-1]['telemetryAgeMs']), 3900)
         self.assertEqual(rows[-1]['gpuPercent'], '')
 
+    def test_render_age_detects_stalled_raf_with_fresh_heartbeat(self):
+        now_ms = round(time.time() * 1000)
+        sample = {'heartbeatIndex': 777, 'gameFrameCount': 3,
+                  'lastGameFrameUTC': now_ms - 6500, 'fps': 1}
+        self.assertEqual(self.post(json.dumps(sample).encode(), self.url)[0], 200)
+        metrics = json.loads(self.get('/__system_metrics')[2])
+        self.assertGreaterEqual(metrics['renderAgeMs'], 6400)
+        self.assertLess(metrics['telemetryAgeMs'], 1000)
+        with self.server.lock:
+            self.server.next_host_sample = time.monotonic()
+        for _ in range(35):
+            time.sleep(.08)
+            rows = list(csv.DictReader(io.StringIO(self.get('/__system_csv')[2].decode())))
+            if rows and rows[-1]['sampleSource'] == 'host':
+                break
+        else:
+            self.fail('No independent host sample')
+        self.assertGreaterEqual(int(rows[-1]['renderAgeMs']), 6400)
+        self.assertLess(int(rows[-1]['telemetryAgeMs']), 3000)
+        self.assertEqual(rows[-1]['heartbeatIndex'], '777')
+        self.assertEqual(rows[-1]['gpuPercent'], '')
+
     def test_launcher_enables_performance_lab(self):
         launcher = (SCRIPT.parents[1] / 'PLAY-PREVIEW.cmd').read_text()
         self.assertIn('GAME_URL=http://127.0.0.1:%PORT%/?devlab=1', launcher)

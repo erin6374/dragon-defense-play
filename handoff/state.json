@@ -7,15 +7,15 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
-  "observed_version": "5.5.0-rc.40",
-  "observed_build_id": "5.5-windows-heartbeat-rc40",
+  "observed_parent_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
+  "observed_version": "5.5.0-rc.41",
+  "observed_build_id": "5.5-windows-render-age-rc41",
   "release_status": "development_candidate_not_released",
   "pending_acceptance": [
-    "RC40 exact-head browser, cinematic, focused, importer and genuine 600-frame/30s motion QA",
-    "RC40 Windows ZIP CRC and licensed atlas SHA256 hashes",
-    "30-60s actual user Windows FPS/heartbeat-age CSV during dense fire/destruction",
-    "cinematic art acceptance"
+    "RC41 exact-head browser, cinematic, focused, CC0 importer and genuine 600-frame/30s motion QA",
+    "RC41 Windows ZIP CRC and both CC0 SHA256 hashes",
+    "Physical Windows 30–60s performance CSV including renderAgeMs and telemetryAgeMs during destruction",
+    "Cinematic art acceptance"
   ],
   "google": {
     "branch": "agent/google-antigravity-fire-calibration",
@@ -26,44 +26,44 @@
   },
   "tests_at_snapshot": [
     {
-      "name": "Dragon Defense browser QA",
-      "run_id": 43270179768,
-      "source_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
+      "name": "browser",
+      "run_id": 43280450584,
+      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43270179768"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450584"
     },
     {
-      "name": "Dragon Defense motion review",
-      "run_id": 43270180026,
-      "source_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
+      "name": "motion",
+      "run_id": 43280450558,
+      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43270180026"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450558"
     },
     {
-      "name": "Dragon Defense cinematic scene review",
-      "run_id": 43270179783,
-      "source_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
+      "name": "cinematic",
+      "run_id": 43280450660,
+      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43270179783"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450660"
     },
     {
-      "name": "Dragon Defense focused fire review",
-      "run_id": 43270179618,
-      "source_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
+      "name": "focused",
+      "run_id": 43280450814,
+      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43270179618"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450814"
     },
     {
-      "name": "Import licensed CC0 flame and smoke flipbooks",
-      "run_id": 43270179673,
-      "source_sha": "d5a75049bd203ffd9e493b6640e9e9c20eef8680",
+      "name": "CC0",
+      "run_id": 43280450704,
+      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43270179673"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450704"
     }
   ],
   "critical_user_requirements": [
@@ -92,17 +92,16 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify all five RC40 exact-head workflows and actual Windows ZIP CRC/CC0 SHA, then capture 30-60s physical Windows performance CSV during heavy fire and check host telemetryAgeMs spikes; do not claim FPS fixed.",
+  "next_task": "Verify RC41 exact-head five workflows and Windows ZIP/license, then collect 30–60s physical Windows CSV and compare renderAgeMs with telemetryAgeMs during stalled rendering; do not claim hardware FPS fixed.",
   "implemented": [
-    "RC40 Windows launcher exposes Performance Lab via ?devlab=1",
-    "Normal gameplay sends lightweight single-producer 1s heartbeat; no QA scene traversal or duplicate UI POST",
-    "Python host independently samples every 2s and CSV records heartbeat age, source, game frame count",
-    "Six local stdlib integration tests and syntax checks pass",
-    "No gameplay/rendering changes"
+    "RC41 Windows host independently reports last rendered frame age vs browser heartbeat age on host/browser CSV and /__system_metrics",
+    "RC41 Performance Lab displays both ages; local loopback regression tests fresh heartbeat with stale 6.5s rendered frame",
+    "RC40 exact-head five workflows SUCCESS; real browser, Windows, cinematic, focused and 600-frame motion artifacts CRC checked; both CC0 hashes matched",
+    "No gameplay, renderer, source pool or original FBX changes"
   ],
   "blockers": [
-    "RC40 exact-head five workflows and Windows ZIP still pending",
-    "Actual Windows hardware FPS unmeasured; severe slideshow complaint unresolved",
-    "RC39 real 30s video still fails cinematic art target"
+    "RC41 five exact-head workflows and Windows ZIP pending",
+    "Windows hardware FPS not measured; severe slideshow complaint unresolved",
+    "RC40 real video and five views fail cinematic target: repetitive gray smoke and simplified architecture"
   ]
 }
