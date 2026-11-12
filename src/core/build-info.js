@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.5.0-rc.25';
-export const BUILD_ID='5.5-event-driven-background-rc25';
+export const GAME_VERSION='5.5.0-rc.26';
+export const BUILD_ID='5.5-ballistic-debris-rc26';
