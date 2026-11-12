@@ -65,12 +65,21 @@ export function createStructuralCity(THREE,scene,bank){
     for(const side of [-1,1])addPart(b,'frame','frame',x+side*glassW*.5,wy,b.front+.08,.065,glassH+.10,.10,f);
     for(const yy of [wy-glassH*.5,wy,wy+glassH*.5])addPart(b,'frame','frame',x,yy,b.front+.08,glassW,.065,.11,f);
     addPart(b,'frame',o.school?'concrete':'stone',x,wy-glassH*.5-.07,b.front+.12,glassW+.22,.13,.33,f);
+    // Broad Street masonry relief uses the same breakable material batches.
+    // Lintels shade recessed glazing; a stepped cornice reads at game distance.
+    if(!o.school&&!o.background){
+     addPart(b,'facade','stone',x,wy+glassH*.5+.10,b.front+.13,glassW+.32,.20,.38,f);
+     if(f===b.stories-1){
+      addPart(b,'facade',wall,x,b.h+.24,b.front+.16,bw-.025,.20,.48,f);
+      addPart(b,'facade','stone',x,b.h+.49,b.front+.23,bw-.025,.12,.62,f);
+     }
+    }
     // Rear walls are segmented too; there is no full-height solid shell.
     addPart(b,'wall',wall,x,base+sh*.5,z0,bw-.03,sh-.16,.22,f);
    }
    for(const x of [x0,x0+b.w])for(let iz=0;iz<tileZ;iz++)addPart(b,'wall',wall,x,base+sh*.5,z0+(iz+.5)*b.d/tileZ,.25,sh-.15,b.d/tileZ-.03,f);
    // Rooms, corridor openings and stairs on every floor, including rear buildings.
-   const rooms=b.background?2:Math.max(2,Math.floor(b.w/4));
+   const rooms=o.exteriorOnly?0:b.background?2:Math.max(2,Math.floor(b.w/4));
    for(let room=0;room<rooms;room++){
     const cx=x0+(room+.5)*b.w/rooms;
     if(room<rooms-1){const px=x0+(room+1)*b.w/rooms;addPart(b,'partition','plaster',px,base+sh*.48,b.z+2,.10,sh-.35,b.d*.42,f);addPart(b,'partition','plaster',px,base+sh*.82,b.z-1,.10,sh*.25,2,f)}
@@ -85,7 +94,7 @@ export function createStructuralCity(THREE,scene,bank){
     addPart(b,'furniture','wood',cx,base+.65,b.z-1.6,.8,1.15,.45,f);
    }
    const stairX=x0+Math.min(1.5,b.w*.18),stairZ=z0+1.0;
-   if(f<b.stories-1){for(let step=0;step<12;step++)addPart(b,'stair','concrete',stairX,base+.22+step*sh/12,stairZ+step*.24,1.0,.14,.27,f);
+   if(!o.exteriorOnly&&f<b.stories-1){for(let step=0;step<12;step++)addPart(b,'stair','concrete',stairX,base+.22+step*sh/12,stairZ+step*.24,1.0,.14,.27,f);
    for(const side of [-1,1]){for(const step of [0,4,8,11])addPart(b,'frame','frame',stairX+side*.56,base+.70+step*sh/12,stairZ+step*.24,.045,1,.045,f);
     const rail=addPart(b,'frame','frame',stairX+side*.56,base+sh*11/24+1,stairZ+1.32,.055,.055,Math.hypot(sh,2.88),f);rail.rotation.x=-Math.atan2(sh*11/12,2.64);rail.original.rotation.copy(rail.rotation)}
    }

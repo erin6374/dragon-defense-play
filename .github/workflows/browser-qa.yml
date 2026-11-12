@@ -30,7 +30,9 @@ jobs:
         with:
           node-version: '22'
       - name: Check build labels before browser startup
-        run: node qa/check-build-info.mjs
+        run: |
+          node qa/check-build-info.mjs
+          node qa/frontage-contract.mjs
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
       - run: google-chrome --version
       - name: Run browser QA

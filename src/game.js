@@ -1722,7 +1722,7 @@ function spawnMeteor(random=Math.random,opening=null){
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
  const buildings=neighborhood.targetBuildings.filter(b=>b.z>=DEFENSE_REAR_Z&&(!(opening||fastImpact)||!b.background));
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random);
- const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-45,45);
+ const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-94,94);
  const mesh=createPlayableRock(size);
  if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
  else if(fastImpact)mesh.material=fastImpactMaterial;

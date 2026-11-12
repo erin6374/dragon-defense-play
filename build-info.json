@@ -1,8 +1,8 @@
 {
-  "build": "5.5-staggered-house-fire-rc35",
-  "version": "5.5.0-rc.35",
+  "build": "5.5-bilateral-frontage-rc36",
+  "version": "5.5.0-rc.36",
   "gameplay_base": "5.2.3",
-  "scope": "Correct simultaneous upper-floor torches: lower opposite-bay secondary openings, per-house delayed spread, immediate windowless-horizon ignition, immutable QA snapshots.",
+  "scope": "Damageable frontage extensions beyond both intersections, breakable lintels/cornices and full-width meteor entry; existing rendering budgets retained.",
   "new_gameplay_features": false,
-  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer, five+30s motion, Windows ZIP/license and hardware performance verification pending."
+  "release_status": "Candidate: local structural regression passes; browser/visual/hardware performance checks pending."
 }
