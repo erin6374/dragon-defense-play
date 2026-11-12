@@ -1,8 +1,8 @@
 {
-  "build": "5.5-event-driven-background-rc25",
-  "version": "5.5.0-rc.25",
+  "build": "5.5-ballistic-contact-rc26",
+  "version": "5.5.0-rc.26",
   "gameplay_base": "5.2.3",
-  "scope": "Event-causal background disaster pass: distant rowhouses only ignite on actual meteor impacts, neighborhood gauge controls bombardment frequency, strength, row shockwaves and crater size, realistic distance-attenuated fire and secondary explosions, independent gravity-driven roof/panel/debris motion replacing synchronized folding. RC24 licensed fire/smoke unchanged.",
+  "scope": "RC26 independent ballistic masonry and roof contact before parent collapse ends, clamped horizontal motion and rotation at ground, staggered fragment reveal. Preserves RC25 meteor-causal fire, health-controlled row shockwaves and craters; RC24 licensed fire/smoke unchanged.",
   "new_gameplay_features": true,
-  "release_status": "RC25 SOURCE CANDIDATE — exact-head browser QA, cinematic five views, focused and independent five+30s motion, Windows ZIP CRC/CC0 hashes and artist review REQUIRED before playable-release approval."
+  "release_status": "RC26 SOURCE CANDIDATE — exact-head five QA workflows, real motion visual review, ZIP CRC and CC0 hashes required; not cinematic-approved or released."
 }

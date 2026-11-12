@@ -618,9 +618,14 @@ export function createDistantNeighborhood({root,flameTexture}){
    const roofFootprint=roof?1-Math.min(1,home.fall*3)*.68:1;
    // Independent gravitational roof motion instead of synchronized folding.
    const roofTime=Math.max(0,collapseTime-.10);
-   const roofY=Math.max(.26,part.y+roofTime*(home.h*.60)-.5*(23+home.tier*2)*roofTime*roofTime);
-   const roofX=part.x+impulse*Math.min(1.8,roofTime)*(1.4+home.w*.23);
-   const roofZ=part.z+Math.min(1.8,roofTime)*home.d*.16;
+   // Ground contact occurs before fall===1 freezes the building transforms.
+   const roofLanding=Math.max(.42,1.35+home.tier*.27-.22);
+   const roofFlight=Math.min(roofTime,roofLanding);
+   const roofVelocity=home.h*.60;
+   const roofGravity=2*(part.y+roofVelocity*roofLanding-.26)/(roofLanding*roofLanding);
+   const roofY=Math.max(.26,part.y+roofVelocity*roofFlight-.5*roofGravity*roofFlight*roofFlight);
+   const roofX=part.x+impulse*Math.min(1.8,roofFlight)*(1.4+home.w*.23);
+   const roofZ=part.z+Math.min(1.8,roofFlight)*home.d*.16;
    const rupture=Math.min(1,Math.max(0,(home.fall-.07)/.28));
    // A damaged building opens toward the street. The remaining solid core
    // retreats behind the floor slabs instead of shrinking as one opaque cube.
@@ -631,8 +636,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    dummy.scale.set(part.w*trimScale*roofFootprint*(main?1-rupture*.48:1),
     part.h*heightScale*trimScale,
     part.d*trimScale*(roof?1-progress*.46:main?1-rupture*.30:1));
-   dummy.rotation.set(roof?Math.min(1.9,roofTime)*.22:0,0,
-    roof?impulse*(Math.min(1.5,roofTime)*.47+crack*.075):main?impulse*rupture*.09:0);
+   dummy.rotation.set(roof?Math.min(1.9,roofFlight)*.22:0,0,
+    roof?impulse*(Math.min(1.5,roofFlight)*.47+crack*.075):main?impulse*rupture*.09:0);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
@@ -691,22 +696,28 @@ export function createDistantNeighborhood({root,flameTexture}){
   const debris=rubbleBatches[home.tier],visibility=Math.min(1,home.fall*6);
   for(let k=0;k<home.rubbleCount;k++){
    const roofFragment=k%4===0;
-   const w=home.w*shardWidths[k]*visibility;
-   const h=home.h*shardHeights[k]*(roofFragment?.45:1)*visibility;
-   const d=home.d*shardDepths[k]*visibility;
+   const launchDelay=(k%4)*.075;
+   const flight=Math.max(0,collapseTime-launchDelay);
+   // Each chunk lands before the parent collapse finishes; no airborne freeze.
+   const reveal=Math.min(1,flight/.10);
+   const w=home.w*shardWidths[k]*visibility*reveal;
+   const h=home.h*shardHeights[k]*(roofFragment?.45:1)*visibility*reveal;
+   const d=home.d*shardDepths[k]*visibility*reveal;
    const direction=k%2===0?-1:1;
-   const flight=Math.max(0,collapseTime-(k%4)*.075);
-   const gravity=24+home.tier*2.1;
    const initialY=home.h*(.33+(k%4)*.10);
    const initialV=home.h*(2.05+(k%5)*.16);
    const ground=h*.5+.035;
-   const y=Math.max(ground,initialY+initialV*flight-.5*gravity*flight*flight);
-   const travel=Math.min(flight,1.75);
+   const available=Math.max(.42,1.35+home.tier*.27-launchDelay-.06);
+   const landing=available*(.82+.04*(k%4));
+   const gravity=2*(initialY+initialV*landing-ground)/(landing*landing);
+   const travel=Math.min(flight,landing);
+   const y=Math.max(ground,initialY+initialV*travel-.5*gravity*travel*travel);
    const vx=(direction*(.65+(k%5)*.38)+impulse*.7)*home.w*.52;
    const vz=(.40+(k%3)*.19)*home.d*.39;
    dummy.position.set(home.x+home.w*shardWidths[k]*direction+vx*travel,y,
     home.z+home.d*shardZ[k%5]+vz*travel);
-   const tumble=Math.min(1.9,flight);
+   // Horizontal slide and angular tumble stop at the physical ground contact.
+   const tumble=Math.min(1.9,travel);
    dummy.rotation.set(tumble*(k%2?-.83:.61),tumble*(k%3?-.72:.53),
     direction*tumble*(.35+(k%5)*.15));
    dummy.scale.set(w,h,d);dummy.updateMatrix();

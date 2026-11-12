@@ -1358,6 +1358,8 @@ try {
   assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
+  assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.y<backgroundIntact.originalHeight*.18),
+    'RC26: no debris freezes high above the street when collapse updates end');
   assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.49
     &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.60
     &&backgroundSettled.roof.tilt>.3
