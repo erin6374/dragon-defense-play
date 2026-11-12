@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "tech-freire-dragon-defense-ai-handoff",
+  "snapshot_date": "2026-11-12",
+  "snapshot_is_live": false,
+  "resolve_current_sha_from_branch": true,
+  "repository": "erin6374/dragon-defense-play",
+  "primary_branch": "feature/north-broad-graphics",
+  "primary_pr": 2,
+  "observed_parent_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+  "observed_version": "5.5.0-rc.38",
+  "observed_build_id": "5.5-reference-frontage-rc38",
+  "release_status": "development_candidate_not_released",
+  "pending_acceptance": [
+    "exact-head browser and motion QA",
+    "current game screenshot review",
+    "hardware Windows FPS",
+    "cinematic art acceptance"
+  ],
+  "google": {
+    "branch": "agent/google-antigravity-fire-calibration",
+    "pr": 3,
+    "observed_sha": "7032b3da46683c5821d838ea4d39b84ff96b4702",
+    "review": "needs_visual_refinement_and_rebase",
+    "may_merge": false
+  },
+  "tests_at_snapshot": [
+    {
+      "name": "Dragon Defense motion review",
+      "run_id": 43249736147,
+      "source_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+      "status": "pending",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43249736147"
+    },
+    {
+      "name": "Dragon Defense browser QA",
+      "run_id": 43249736530,
+      "source_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43249736530"
+    },
+    {
+      "name": "Dragon Defense focused fire review",
+      "run_id": 43249736378,
+      "source_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43249736378"
+    },
+    {
+      "name": "Dragon Defense cinematic scene review",
+      "run_id": 43249736541,
+      "source_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43249736541"
+    },
+    {
+      "name": "Import licensed CC0 flame and smoke flipbooks",
+      "run_id": 43249736173,
+      "source_sha": "5c387e37038996ee6dc35509c6ee4717b4a24cc8",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43249736173"
+    }
+  ],
+  "critical_user_requirements": [
+    "cinematic real Philadelphia architectural scene",
+    "causal meteor-only ignition",
+    "damageable left and right neighborhood",
+    "consistent destruction and rubble",
+    "dragon gameplay and controls",
+    "Windows GPU performance unresolved"
+  ],
+  "forbidden_actions": [
+    "edit main",
+    "edit production",
+    "force push",
+    "automatic merge",
+    "deploy Pages",
+    "alter Building Explorer",
+    "alter original school FBX"
+  ],
+  "required_source_files": [
+    "AI-HANDOFF.md",
+    "handoff/state.json",
+    "qa/CURRENT-STATUS.md",
+    "CONTINUE-IN-CHATGPT.md",
+    "PROJECT-HANDOFF.md",
+    "qa/CINEMATIC-REVIEW.md",
+    "qa/MOTION-VISUAL-REVIEW.md"
+  ],
+  "next_task": "Verify current HEAD's real QA and address Windows performance blocker, then visual review. Isolate Google work in independent draft PR."
+}
