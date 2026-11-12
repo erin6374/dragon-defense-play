@@ -1283,6 +1283,14 @@ try {
     'the new secondary dust buffer stays fixed at 96 points');
   assert.equal(flightBudget.proceduralMasonryTextureSize,128,
     'all fracture panels and rubble share one 128-pixel masonry atlas');
+  assert.deepEqual(flightBudget.nearFacadeMasonry.repeat,[2,3],
+    'nearest facades have bounded masonry UV repeats');
+  assert.equal(flightBudget.nearFacadeMasonry.tier,0,
+    'masonry texture is restricted to the closest tier');
+  assert.equal(flightBudget.nearFacadeMasonry.textureShared,true,
+    'nearest facades reuse the rubble masonry atlas');
+  assert.equal(flightBudget.nearFacadeMasonry.drawCallsAdded,0,
+    'facade masonry adds no draw batch');
   assert.ok(flightBudget.layeredDustActive>=7&&flightBudget.layeredDustActive<=96,
     'layered dust never exceeds its fixed pooled budget');
   assert.equal(settledBudget.layeredDustActive,0,

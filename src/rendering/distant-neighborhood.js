@@ -246,6 +246,19 @@ export function createDistantNeighborhood({root,flameTexture}){
  masonryTexture.wrapS=masonryTexture.wrapT=THREE.RepeatWrapping;
  masonryTexture.minFilter=THREE.LinearMipmapLinearFilter;
  masonryTexture.magFilter=THREE.LinearFilter;
+ // Reuse the existing 128px masonry atlas only on the nearest street-wall
+ // facades. Far tiers retain smooth haze-weighted materials; no new draw
+ // batches, per-building textures, meshes or impact-time allocations.
+ const nearFacadeMasonryMaterial=materials.main.clone();
+ nearFacadeMasonryMaterial.map=masonryTexture;
+ nearFacadeMasonryMaterial.roughness=.94;
+ nearFacadeMasonryMaterial.onBeforeCompile=shader=>{
+  const anchor='#include <uv_vertex>';
+  if(!shader.vertexShader.includes(anchor))throw Error('Masonry UV shader changed');
+  shader.vertexShader=shader.vertexShader.replace(anchor,
+   anchor+'\n#ifdef USE_MAP\nvMapUv *= vec2(2.0,3.0);\n#endif');
+ };
+ if(batches[0].main)batches[0].main.material=nearFacadeMasonryMaterial;
  const debrisSurface=new THREE.MeshStandardMaterial({
   map:masonryTexture,color:0xffffff,roughness:.97,metalness:0
  });
@@ -812,6 +825,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    interiorCapacity:buildingDefs.reduce((sum,b)=>sum+b.interiorCount,0),
    dustPoolCapacity:collapseDust.length,dustCloudCapacity,
    dustPointDrawCalls:1,proceduralMasonryTextureSize:128,
+   nearFacadeMasonry:{tier:0,textureShared:nearFacadeMasonryMaterial.map===masonryTexture,
+    repeat:[2,3],drawCallsAdded:0},
    layeredDustActive:collapseDust.reduce((sum,s)=>sum+(s.home&&s.home.fall<1?dustPerTier[s.home.tier]:0),0),
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),

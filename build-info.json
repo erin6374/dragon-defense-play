@@ -1,8 +1,8 @@
 {
-  "build": "5.5-performance-impact-rc31",
-  "version": "5.5.0-rc.31",
+  "build": "5.5-near-masonry-rc32",
+  "version": "5.5.0-rc.32",
   "gameplay_base": "5.2.3",
-  "scope": "Explicit render pixel budgets, inactive combustion culling and visible meteor-to-facade contact; removes timer-only background explosions.",
-  "new_gameplay_features": true,
-  "release_status": "DEVELOPMENT CANDIDATE: local regression checks pass; browser, visual and hardware performance verification pending."
+  "scope": "Reuse existing procedural masonry atlas on nearest residential facade batch only; no new textures or draw calls.",
+  "new_gameplay_features": false,
+  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, motion, focused fire, importer and hardware performance verification pending."
 }
