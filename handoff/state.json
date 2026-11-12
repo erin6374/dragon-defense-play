@@ -7,14 +7,14 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
-  "observed_version": "5.5.0-rc.41",
-  "observed_build_id": "5.5-windows-render-age-rc41",
+  "observed_parent_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
+  "observed_version": "5.5.0-rc.42",
+  "observed_build_id": "5.5-windows-visibility-rc42",
   "release_status": "development_candidate_not_released",
   "pending_acceptance": [
-    "RC41 exact-head browser, cinematic, focused, CC0 importer and genuine 600-frame/30s motion QA",
-    "RC41 Windows ZIP CRC and both CC0 SHA256 hashes",
-    "Physical Windows 30–60s performance CSV including renderAgeMs and telemetryAgeMs during destruction",
+    "RC42 exact-head browser, cinematic, focused-fire, CC0 importer and genuine 600-frame/30s motion QA",
+    "RC42 Windows ZIP CRC and both CC0 SHA256 hashes",
+    "Physical Windows 30–60s performance CSV including tab visibility, renderAgeMs and telemetryAgeMs during destruction",
     "Cinematic art acceptance"
   ],
   "google": {
@@ -27,43 +27,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43280450584,
-      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
+      "run_id": 43289995431,
+      "source_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450584"
-    },
-    {
-      "name": "motion",
-      "run_id": 43280450558,
-      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
-      "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450558"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43289995431"
     },
     {
       "name": "cinematic",
-      "run_id": 43280450660,
-      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
+      "run_id": 43289995510,
+      "source_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450660"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43289995510"
     },
     {
       "name": "focused",
-      "run_id": 43280450814,
-      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
+      "run_id": 43289995534,
+      "source_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450814"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43289995534"
     },
     {
       "name": "CC0",
-      "run_id": 43280450704,
-      "source_sha": "602c34c280e8c2d9263873bb79d5900e1ba9725c",
+      "run_id": 43289995414,
+      "source_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43280450704"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43289995414"
+    },
+    {
+      "name": "motion",
+      "run_id": 43289995502,
+      "source_sha": "505abcf79032be723b6f6a5f01d7b776063f87ae",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43289995502"
     }
   ],
   "critical_user_requirements": [
@@ -92,16 +92,17 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC41 exact-head five workflows and Windows ZIP/license, then collect 30–60s physical Windows CSV and compare renderAgeMs with telemetryAgeMs during stalled rendering; do not claim hardware FPS fixed.",
+  "next_task": "Verify RC42 exact-head five workflows and Windows ZIP/license; collect 30–60s physical Windows CSV, correlate FPS and renderAgeMs/telemetryAgeMs with tab visibility and CPU/RAM; do not claim GPU FPS fixed.",
   "implemented": [
-    "RC41 Windows host independently reports last rendered frame age vs browser heartbeat age on host/browser CSV and /__system_metrics",
-    "RC41 Performance Lab displays both ages; local loopback regression tests fresh heartbeat with stale 6.5s rendered frame",
-    "RC40 exact-head five workflows SUCCESS; real browser, Windows, cinematic, focused and 600-frame motion artifacts CRC checked; both CC0 hashes matched",
+    "RC42 once-per-second heartbeat records documentHidden/documentHasFocus in browser/independent host CSV and /__system_metrics; Performance Lab labels tab state",
+    "RC42 host monitor displays unavailable CPU/RAM counters as n/a, not fabricated 0.0",
+    "RC42 local HTTP integration and Python/JS syntax checks PASS",
+    "RC41 exact-head five workflows SUCCESS; browser/cinematic/focused/600-frame motion/Windows ZIP CRC checked; both CC0 WebP hashes matched",
     "No gameplay, renderer, source pool or original FBX changes"
   ],
   "blockers": [
-    "RC41 five exact-head workflows and Windows ZIP pending",
+    "RC42 five exact-head workflows and Windows ZIP pending",
     "Windows hardware FPS not measured; severe slideshow complaint unresolved",
-    "RC40 real video and five views fail cinematic target: repetitive gray smoke and simplified architecture"
+    "RC41 real 30s video and five views fail cinematic target: repetitive gray smoke and simplified architecture"
   ]
 }
