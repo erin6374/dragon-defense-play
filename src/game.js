@@ -3448,6 +3448,7 @@ if(!schoolQA && (location.hostname==='127.0.0.1'||location.hostname==='localhost
    stallCount:frameHealth.summary().totalLongFrames,
    phase:!active?'idle':paused?'paused':'playing',active:Boolean(active&&!paused),
    gameFrameCount:sessionStats.frames,lastGameFrameUTC:window.__DD_LAST_RENDER_UTC??null,
+   documentHidden:document.hidden,documentHasFocus:document.hasFocus(),
    heartbeatIndex:++hostHeartbeatIndex};
   fetch('./__game_telemetry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'})
    .catch(()=>{window.__DD_HOST_MONITOR_READY=false;});

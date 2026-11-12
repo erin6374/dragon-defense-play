@@ -1,8 +1,8 @@
 {
-  "build": "5.5-windows-render-age-rc41",
-  "version": "5.5.0-rc.41",
+  "build": "5.5-windows-visibility-rc42",
+  "version": "5.5.0-rc.42",
   "gameplay_base": "5.2.3",
-  "scope": "Distinguish fresh browser telemetry from stalled requestAnimationFrame by recording actual last-render age in Windows host CSV and monitor; no gameplay/rendering changes.",
+  "scope": "Record browser tab visibility and focus alongside independent last-render and heartbeat ages in Windows CSV; display unavailable host counters as n/a rather than zero. No gameplay/rendering changes.",
   "new_gameplay_features": false,
-  "release_status": "RC41 DEVELOPMENT CANDIDATE: RC40 five exact-head workflows and Windows ZIP/license checks pass; RC41 exact-head QA and physical Windows GPU FPS pending."
+  "release_status": "RC42 DEVELOPMENT CANDIDATE: RC41 exact-head five workflows and Windows ZIP/license checks passed; RC42 exact-head QA and physical Windows GPU FPS pending."
 }

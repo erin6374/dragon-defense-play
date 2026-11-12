@@ -22,6 +22,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs', 'heartbeatIndex',
            'gameFrameCount', 'lastGameFrameUTC', 'phase', 'active',
+           'documentHidden', 'documentHasFocus',
            'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
            'stallCount', 'cpuPercent', 'ramPercent', 'ramAvailableGB',
            'gpuPercent', 'browserRSSMB')
@@ -165,7 +166,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             with self.server.lock:
                 age = (round((time.monotonic() - self.server.last_heartbeat_monotonic) * 1000)
                        if self.server.last_heartbeat_monotonic is not None else None)
-                self.send_json({**self.server.system, 'telemetryAgeMs': age,
+                self.send_json({**self.server.system,
+                                'documentHidden': self.server.game.get('documentHidden'),
+                                'documentHasFocus': self.server.game.get('documentHasFocus'),
+                                'telemetryAgeMs': age,
                                 'renderAgeMs': render_age_ms(self.server.game.get('lastGameFrameUTC')),
                                 'logFile': self.server.log_path.name})
             return
@@ -204,6 +208,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                    for key in ('wave', 'fps', 'drawCalls', 'frameMs', 'stallCount')}
             row['recording'] = bool(incoming.get('recording'))
             row['active'] = bool(incoming.get('active'))
+            row['documentHidden'] = (incoming.get('documentHidden')
+                                     if isinstance(incoming.get('documentHidden'), bool) else None)
+            row['documentHasFocus'] = (incoming.get('documentHasFocus')
+                                       if isinstance(incoming.get('documentHasFocus'), bool) else None)
             row['phase'] = str(incoming.get('phase') or '')[:48]
             for key in ('heartbeatIndex', 'gameFrameCount', 'lastGameFrameUTC'):
                 row[key] = safe_number(incoming.get(key), 0, 1e15)

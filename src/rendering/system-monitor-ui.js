@@ -4,7 +4,7 @@ export function setupSystemMonitorUI(){
  const section=document.getElementById('dd-system-monitor');if(!section)return;
  const status=section.querySelector('[data-host-status]'),canvas=section.querySelector('canvas');
  const ctx=canvas?.getContext('2d');const hist=[];const MAX=120;
- const nice=v=>Number.isFinite(Number(v))?Number(v).toFixed(1):'n/a';
+ const nice=v=>v==null?'n/a':Number.isFinite(Number(v))?Number(v).toFixed(1):'n/a';
  const graph=()=>{
   if(!ctx)return;const w=canvas.width,h=canvas.height;
   ctx.fillStyle='#0a182c';ctx.fillRect(0,0,w,h);
@@ -58,7 +58,8 @@ export function setupSystemMonitorUI(){
     `GPU 3D ${m.gpuPercent==null?'unsupported*':nice(m.gpuPercent)+'%'} · Video decode ${m.videoDecodePercent==null?'n/a':nice(m.videoDecodePercent)+'%'} · Browser RAM ${nice(m.browserRSSMB)} MB · `+
     `game ${nice(metrics.fps)} FPS / ${metrics.drawCalls??'—'} draws · Wave ${metrics.wave??'—'} · `+
     `heartbeat ${m.telemetryAgeMs==null?'not received':m.telemetryAgeMs+'ms ago'} · `+
-    `last rendered ${m.renderAgeMs==null?'not received':m.renderAgeMs+'ms ago'}`;
+    `last rendered ${m.renderAgeMs==null?'not received':m.renderAgeMs+'ms ago'}`+
+    ` · tab ${m.documentHidden==null?'unknown':m.documentHidden?'hidden':m.documentHasFocus===false?'unfocused':'visible'}`;
    }catch(e){if(status)status.textContent='System monitor unavailable; gameplay can continue without it.';}
   }
   // Game loop owns the single 1-second heartbeat. Do not duplicate rows
