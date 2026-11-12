@@ -1,3 +1,7 @@
+## RC38 direct five-view/30-second review (2026-11-12)
+
+At exact `fe24dfd1211dec118b56232294a6a13949efd1dd`, five camera PNGs and 11 decoded frames of the genuine 600-frame skyline MP4 were visually inspected. Distant two-tower ignition persists through the sequence, but repeated gray cauliflower smoke and tiled bright window fires are clearly below `campaign/visual_target.png`. Cinematic technical QA PASS is **not** art approval. RC39 is diagnostics-only; visual defects remain open, as does real Windows GPU FPS. See `qa/CURRENT-STATUS.md` for five exact-head RC38 run URLs and artifact CRC.
+
 ## November 12 — RC36 bilateral damageable Broad Street frontage candidate
 
 User requests realistic main-street neighbors and damageable neighborhood extending left/right. Added four reference-inspired (not parcel-surveyed) structural frontage buildings: x=-88.5,65.8,75.4,85.5, beyond the actual cross-street clearances. These enter the same target/health/impact/destruction/reset system as existing neighbors. Edge extensions retain floors, walls, columns, glazing and roof but omit interior furniture/stairs. Add breakable stone lintels and stepped cornices to generated street-front facades, with existing material/instance batches. Meteor entry x range now follows the full playable street (-94..94), rather than funneling side-target meteors through the central -45..45 sky. Target selection already included standing neighbors; do not claim they were entirely invulnerable.

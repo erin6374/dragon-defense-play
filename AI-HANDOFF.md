@@ -28,26 +28,31 @@
 
 ## Current work snapshot (November 12, 2026)
 
+**RC39 current candidate:** Windows performance telemetry repair, based on verified RC38 HEAD `fe24dfd1211dec118b56232294a6a13949efd1dd`. The old Windows launcher used `python -m http.server`, so its Performance Lab's four `__...` endpoints could never work. RC39 adds `tools/windows-preview-server.py` with loopback-only CSV, CPU/RAM native counters, browser FPS/draw calls, and a four-test stdlib preflight. No rendering or gameplay changes. New exact-head workflows and physical Windows performance are **pending**. The user must download RC39 preview, run 30-60s with fire/destruction and export CSV; GPU utilization is unsupported and must not be inferred.
+
+**Verified RC38 exact-HEAD evidence:** [browser](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916833), [motion](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916870), [cinematic](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916929), [focused fire](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917182), [licensed CC0 importer](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917024) all SUCCESS. Real artifacts: browser CRC 78/78 errors=[] warnings=[], motion CRC 33/33 genuine 600-frame/30s video errors=[], cinematic CRC 6/6, focused CRC 7/7, Windows CRC 144/144 and both CC0 hashes match. Eleven video frames and five views inspected: ART FAIL gray repetitive smoke, simplified facades; hardware FPS unknown.
+
+
 | Item | Last observed value — recheck live |
 |---|---|
 | Repository | https://github.com/erin6374/dragon-defense-play |
 | Primary development branch | `feature/north-broad-graphics` |
 | Primary draft PR | https://github.com/erin6374/dragon-defense-play/pull/2 |
-| Observed base HEAD before this handoff document was added | `5c387e37038996ee6dc35509c6ee4717b4a24cc8` |
-| Version at snapshot | `5.5.0-rc.38` / `5.5-reference-frontage-rc38` |
+| Observed base HEAD before this handoff document was added | `fe24dfd1211dec118b56232294a6a13949efd1dd` |
+| Version at snapshot | `5.5.0-rc.39` / `5.5-windows-telemetry-rc39` (candidate; new exact-head QA pending) |
 | Google independent draft PR | https://github.com/erin6374/dragon-defense-play/pull/3 |
 | Google's observed HEAD | `7032b3da46683c5821d838ea4d39b84ff96b4702` |
 | Google's last observed mergeability | not mergeable; outdated base |
 
-### Last-observed exact-SHA GitHub Actions (not timeless results)
+### Last verified parent exact-SHA GitHub Actions (RC38; RC39 pending)
 
-| Workflow | Status when snapshot was written |
+| Workflow | RC38 result |
 |---|---|
-| [Dragon Defense motion review](https://github.com/erin6374/dragon-defense-play/actions/runs/43249736147) | pending |
-| [Dragon Defense browser QA](https://github.com/erin6374/dragon-defense-play/actions/runs/43249736530) | in_progress |
-| [Dragon Defense focused fire review](https://github.com/erin6374/dragon-defense-play/actions/runs/43249736378) | in_progress |
-| [Dragon Defense cinematic scene review](https://github.com/erin6374/dragon-defense-play/actions/runs/43249736541) | in_progress |
-| [Import licensed CC0 flame and smoke flipbooks](https://github.com/erin6374/dragon-defense-play/actions/runs/43249736173) | success |
+| [Browser QA](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916833) | success |
+| [Independent 5+30s motion](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916870) | success |
+| [Focused fire](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917182) | success |
+| [Five-view cinematic](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916929) | success |
+| [CC0 importer](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917024) | success |
 
 **Most recent implemented primary changes:** RC36 extended destructible Broad Street frontage on both sides, with shared instance budgets; RC37 caches **byte-identical combustion source state** to avoid redundant writes to four GPU buffers, without pausing the shared shader animation. RC37 adds a deterministic five-idle-tick buffer-write regression. These need actual QA artifacts and hardware profiling before calling them accepted.
 
@@ -55,7 +60,7 @@
 
 ## Immediate priority queue — recheck before selecting
 
-1. **QA gate:** Check current primary HEAD, five GitHub Actions workflows, exact-SHA report errors/warnings, screenshot artifacts, licensed CC0 hashes, Windows development-preview ZIP CRC and genuine 600-frame/30-second motion review. Fix test failures properly, do not weaken assertions to pass.
+1. **QA gate:** RC39 needs five new exact-head workflows, Windows ZIP CRC and CC0 hashes, then physical Windows CSV capture; parent RC38 five workflows passed. Check current primary HEAD, five GitHub Actions workflows, exact-SHA report errors/warnings, screenshot artifacts, licensed CC0 hashes, Windows development-preview ZIP CRC and genuine 600-frame/30-second motion review. Fix test failures properly, do not weaken assertions to pass.
 2. **Performance (release blocker):** Investigate actual game FPS and large RAF gaps on the user's Windows GPU in dense fire/destruction scenes. Source-level upload/pixel budget changes may help but are **not** measured FPS proof. Capture hardware, resolution, quality preset, FPS, draw calls, CPU and GPU behavior. Prevent per-impact allocations and shader overdraw explosions.
 3. **Cinematic realism (art blocker):** Rowhouse flames/smoke still stylized; skyline smoke repetitive/gray; facades/urban detail simplified; demolition often looks like scaled/sinking boxes rather than physically plausible rubble. Review actual 5+30s gameplay images/video and approved `campaign/visual_target.png` side-by-side.
 4. **Streetfront completeness:** Inspect both damageable frontage extensions from RC36 on left and right at gameplay distance and compare building height, texture, windows, and impact/collapse fidelity with the school.

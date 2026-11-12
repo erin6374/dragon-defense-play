@@ -32,3 +32,7 @@ Rollback point: [v5.2.1](https://github.com/erin6374/dragon-defense-play/tree/ro
 The side checks probe the restored exterior masonry at four locations and verify that the rear stair opening stays clear. The staged iron meteor must change a limited area of the front render and detach glass and façade pieces while the main structure remains standing. The total-loss check waits for all parts to settle, verifies that the front and side silhouettes have no standing shell, checks that the rubble stays below one game unit and persists, then restarts the game.
 
 Rollback point for this release is [v5.2.2](https://github.com/erin6374/dragon-defense-play/tree/rollback/v5.2.2).
+
+## RC39 Windows preview telemetry contract
+
+The packaged `PLAY-PREVIEW.cmd` must run `tools/windows-preview-server.py`, not bare `python -m http.server`: the existing Performance Lab uses `GET /__build`, `GET /__system_metrics`, `POST /__game_telemetry` and `GET /__system_csv`. A bare static server returns HTML/404 and silently disables capture. `qa/windows-preview-server-test.py` exercises all four endpoints, rejects malformed/foreign telemetry, and runs in browser workflow preflight. The server binds loopback only, uses Python stdlib and writes CSV outside the served game directory. FPS is the game's browser metric, not GPU utilization or GPU timing. Windows CPU/RAM are sampled with native OS counters; GPU percent remains `null`. Exact-head browser and actual Windows hardware capture are separate acceptance gates.

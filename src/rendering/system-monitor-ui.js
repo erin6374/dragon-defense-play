@@ -28,7 +28,7 @@ export function setupSystemMonitorUI(){
  const requestOptions={cache:'no-store'};
  const disconnect=()=>{
   endpointsAvailable=false;stopped=true;
-  if(status)status.textContent='Local game server is no longer reachable. Close this tab and relaunch START_GAME.bat; the game may be an old tab.';
+  if(status)status.textContent='Local game server is no longer reachable. Close this tab and relaunch PLAY-PREVIEW.cmd; the game may be an old tab.';
  };
  const checkServer=async()=>{
   if(!onLocalServer||stopped)return false;

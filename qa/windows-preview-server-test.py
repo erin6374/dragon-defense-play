@@ -1,0 +1,99 @@
+"""Stdlib integration checks for the packaged Windows preview server."""
+import csv
+import importlib.util
+import io
+import json
+from pathlib import Path
+import tempfile
+import threading
+import unittest
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+SCRIPT = Path(__file__).resolve().parents[1] / 'tools' / 'windows-preview-server.py'
+spec = importlib.util.spec_from_file_location('dragon_preview', SCRIPT)
+preview = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(preview)
+
+
+class PreviewServerTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        root = Path(cls.tmp.name)
+        (root / 'build-info.json').write_text(json.dumps({'version': 'test', 'build': 'test-build'}))
+        (root / 'index.html').write_text('local game fixture')
+        cls.server = preview.PreviewServer(('127.0.0.1', 0), root=root,
+                                           log_path=root / 'test-telemetry.csv')
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.url = f'http://127.0.0.1:{cls.server.server_port}'
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join(timeout=5)
+        cls.tmp.cleanup()
+
+    def get(self, path):
+        with urlopen(self.url + path, timeout=5) as response:
+            return response.status, response.headers, response.read()
+
+    def post(self, body, origin=None):
+        headers = {'Content-Type': 'application/json'}
+        if origin:
+            headers['Origin'] = origin
+        request = Request(self.url + '/__game_telemetry', body,
+                          headers=headers, method='POST')
+        with urlopen(request, timeout=5) as response:
+            return response.status, json.load(response)
+
+    def test_build_and_static_files(self):
+        status, headers, raw = self.get('/__build')
+        self.assertEqual(status, 200)
+        self.assertEqual(headers['Cache-Control'], 'no-store')
+        build = json.loads(raw)
+        self.assertEqual(build['version'], 'test')
+        self.assertEqual(build['build'], 'test-build')
+        self.assertTrue(build['directory'])
+        self.assertEqual(self.get('/index.html')[2], b'local game fixture')
+
+    def test_system_metrics_do_not_invent_gpu(self):
+        status, _, raw = self.get('/__system_metrics')
+        self.assertEqual(status, 200)
+        data = json.loads(raw)
+        self.assertIn('cpuPercent', data)
+        self.assertIn('ramPercent', data)
+        self.assertIsNone(data['gpuPercent'])
+        self.assertIsNone(data['videoDecodePercent'])
+
+    def test_telemetry_round_trip_and_csv(self):
+        sample = {'wave': 7, 'fps': 42.5, 'drawCalls': 704,
+                  'frameMs': 24.1, 'stallCount': 3, 'recording': False}
+        status, reply = self.post(json.dumps(sample).encode(), self.url)
+        self.assertEqual((status, reply['ok']), (200, True))
+        status, headers, raw = self.get('/__system_csv')
+        self.assertEqual(status, 200)
+        self.assertIn('attachment', headers['Content-Disposition'])
+        rows = list(csv.DictReader(io.StringIO(raw.decode('utf-8'))))
+        self.assertGreaterEqual(len(rows), 1)
+        self.assertEqual(rows[-1]['fps'], '42.5')
+        self.assertEqual(rows[-1]['drawCalls'], '704')
+        self.assertEqual(rows[-1]['wave'], '7')
+        self.assertTrue(rows[-1]['timestampUTC'].endswith('+00:00'))
+
+    def test_rejects_invalid_and_foreign_telemetry(self):
+        with self.assertRaises(HTTPError) as e:
+            self.post(b'not-json', self.url)
+        self.assertEqual(e.exception.code, 400)
+        with self.assertRaises(HTTPError) as e:
+            self.post(b'{}', 'https://untrusted.example')
+        self.assertEqual(e.exception.code, 403)
+        with self.assertRaises(HTTPError) as e:
+            self.post(b' ' * 4097, self.url)
+        self.assertEqual(e.exception.code, 413)
+
+
+if __name__ == '__main__':
+    unittest.main()

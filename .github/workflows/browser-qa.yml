@@ -33,6 +33,7 @@ jobs:
         run: |
           node qa/check-build-info.mjs
           node qa/frontage-contract.mjs
+          python3 qa/windows-preview-server-test.py
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
       - run: google-chrome --version
       - name: Run browser QA
@@ -79,7 +80,7 @@ jobs:
                   shutil.copytree(entry, dest, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
               elif entry.is_file():
                   shutil.copy2(entry, dest)
-          required = ('index.html', 'PLAY-PREVIEW.cmd', 'src/game.js',
+          required = ('index.html', 'PLAY-PREVIEW.cmd', 'tools/windows-preview-server.py', 'src/game.js',
                       'vendor/three/build/three.module.js', 'build-info.json',
                       'src/dragon/paulo-rig.js', 'README_WINDOWS_V5.4_RC2.txt')
           missing = [name for name in required if not (target / name).is_file()]

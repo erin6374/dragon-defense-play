@@ -42,13 +42,13 @@ if not errorlevel 1 (
   exit /b 1
 )
 
-echo Starting a local web server...
+echo Starting local preview and performance telemetry server...
 echo Keep this window open while playing. Press Ctrl+C to stop.
 echo.
 rem Open Chrome/Edge after the server starts responding. Delay is performed
 rem by an independent process so it does not block Python's HTTP server.
 start "" /min powershell -NoProfile -WindowStyle Hidden -Command "$url='%GAME_URL%'; for($i=0;$i -lt 25;$i++){try{$r=Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 2; if($r.StatusCode -eq 200){Start-Process $url; exit 0}}catch{}; Start-Sleep -Milliseconds 400}"
-%PYTHON_CMD% -m http.server %PORT% --bind 127.0.0.1
+%PYTHON_CMD% -u tools\windows-preview-server.py --port %PORT%
 echo.
 echo Preview server stopped. If the browser is open, the game will no longer load.
 pause
