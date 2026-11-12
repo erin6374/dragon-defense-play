@@ -4,7 +4,7 @@ title Dragon Defense Windows Development Preview
 cd /d "%~dp0"
 
 set "PORT=8769"
-set "GAME_URL=http://127.0.0.1:%PORT%/"
+set "GAME_URL=http://127.0.0.1:%PORT%/?devlab=1"
 set "PYTHON_CMD="
 
 echo.

@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.5.0-rc.39';
-export const BUILD_ID='5.5-windows-telemetry-rc39';
+export const GAME_VERSION='5.5.0-rc.40';
+export const BUILD_ID='5.5-windows-heartbeat-rc40';

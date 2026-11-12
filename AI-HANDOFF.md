@@ -28,7 +28,10 @@
 
 ## Current work snapshot (November 12, 2026)
 
-**RC39 current candidate:** Windows performance telemetry repair, based on verified RC38 HEAD `fe24dfd1211dec118b56232294a6a13949efd1dd`. The old Windows launcher used `python -m http.server`, so its Performance Lab's four `__...` endpoints could never work. RC39 adds `tools/windows-preview-server.py` with loopback-only CSV, CPU/RAM native counters, browser FPS/draw calls, and a four-test stdlib preflight. No rendering or gameplay changes. New exact-head workflows and physical Windows performance are **pending**. The user must download RC39 preview, run 30-60s with fire/destruction and export CSV; GPU utilization is unsupported and must not be inferred.
+**RC40 current candidate:** Windows telemetry continuity fix based on verified RC39 `d5a75049bd203ffd9e493b6640e9e9c20eef8680`. Windows launcher now opens `?devlab=1`; lightweight once-per-second gameplay heartbeat no longer trapped in motion QA and does not call expensive QA snapshots. A separate two-second Python host sampler writes CSV rows even during browser freezes, with `sampleSource`, `telemetryAgeMs`, heartbeat/frame counters; duplicate UI posts removed. Six local integration tests PASS; exact-head CI and physical Windows FPS remain pending. RC39 five exact-head workflows PASS ([browser 43270179768](https://github.com/erin6374/dragon-defense-play/actions/runs/43270179768), [cinematic 43270179783](https://github.com/erin6374/dragon-defense-play/actions/runs/43270179783), [focused 43270179618](https://github.com/erin6374/dragon-defense-play/actions/runs/43270179618), [importer 43270179673](https://github.com/erin6374/dragon-defense-play/actions/runs/43270179673), [genuine motion 43270180026](https://github.com/erin6374/dragon-defense-play/actions/runs/43270180026)). RC39 ZIPs CRC 78/78 browser, 145/145 Windows, 33/33 motion; both CC0 hashes match. Actual 11-frame motion ART FAIL gray smoke and simplified facades.
+
+
+**RC39 previous candidate:** Windows performance telemetry repair, based on verified RC38 HEAD `fe24dfd1211dec118b56232294a6a13949efd1dd`. The old Windows launcher used `python -m http.server`, so its Performance Lab's four `__...` endpoints could never work. RC39 adds `tools/windows-preview-server.py` with loopback-only CSV, CPU/RAM native counters, browser FPS/draw calls, and a four-test stdlib preflight. No rendering or gameplay changes. New exact-head workflows and physical Windows performance are **pending**. The user must download RC39 preview, run 30-60s with fire/destruction and export CSV; GPU utilization is unsupported and must not be inferred.
 
 **Verified RC38 exact-HEAD evidence:** [browser](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916833), [motion](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916870), [cinematic](https://github.com/erin6374/dragon-defense-play/actions/runs/43249916929), [focused fire](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917182), [licensed CC0 importer](https://github.com/erin6374/dragon-defense-play/actions/runs/43249917024) all SUCCESS. Real artifacts: browser CRC 78/78 errors=[] warnings=[], motion CRC 33/33 genuine 600-frame/30s video errors=[], cinematic CRC 6/6, focused CRC 7/7, Windows CRC 144/144 and both CC0 hashes match. Eleven video frames and five views inspected: ART FAIL gray repetitive smoke, simplified facades; hardware FPS unknown.
 
@@ -38,8 +41,8 @@
 | Repository | https://github.com/erin6374/dragon-defense-play |
 | Primary development branch | `feature/north-broad-graphics` |
 | Primary draft PR | https://github.com/erin6374/dragon-defense-play/pull/2 |
-| Observed base HEAD before this handoff document was added | `fe24dfd1211dec118b56232294a6a13949efd1dd` |
-| Version at snapshot | `5.5.0-rc.39` / `5.5-windows-telemetry-rc39` (candidate; new exact-head QA pending) |
+| Observed base HEAD before this handoff document was added | `d5a75049bd203ffd9e493b6640e9e9c20eef8680` |
+| Version at snapshot | `5.5.0-rc.40` / `5.5-windows-heartbeat-rc40` (candidate; new exact-head QA pending) |
 | Google independent draft PR | https://github.com/erin6374/dragon-defense-play/pull/3 |
 | Google's observed HEAD | `7032b3da46683c5821d838ea4d39b84ff96b4702` |
 | Google's last observed mergeability | not mergeable; outdated base |
@@ -60,7 +63,7 @@
 
 ## Immediate priority queue — recheck before selecting
 
-1. **QA gate:** RC39 needs five new exact-head workflows, Windows ZIP CRC and CC0 hashes, then physical Windows CSV capture; parent RC38 five workflows passed. Check current primary HEAD, five GitHub Actions workflows, exact-SHA report errors/warnings, screenshot artifacts, licensed CC0 hashes, Windows development-preview ZIP CRC and genuine 600-frame/30-second motion review. Fix test failures properly, do not weaken assertions to pass.
+1. **QA gate:** RC40 needs five new exact-head workflows, Windows ZIP CRC and CC0 hashes, then physical Windows CSV capture; parent RC39 five workflows passed. Check current primary HEAD, five GitHub Actions workflows, exact-SHA report errors/warnings, screenshot artifacts, licensed CC0 hashes, Windows development-preview ZIP CRC and genuine 600-frame/30-second motion review. Fix test failures properly, do not weaken assertions to pass.
 2. **Performance (release blocker):** Investigate actual game FPS and large RAF gaps on the user's Windows GPU in dense fire/destruction scenes. Source-level upload/pixel budget changes may help but are **not** measured FPS proof. Capture hardware, resolution, quality preset, FPS, draw calls, CPU and GPU behavior. Prevent per-impact allocations and shader overdraw explosions.
 3. **Cinematic realism (art blocker):** Rowhouse flames/smoke still stylized; skyline smoke repetitive/gray; facades/urban detail simplified; demolition often looks like scaled/sinking boxes rather than physically plausible rubble. Review actual 5+30s gameplay images/video and approved `campaign/visual_target.png` side-by-side.
 4. **Streetfront completeness:** Inspect both damageable frontage extensions from RC36 on left and right at gameplay distance and compare building height, texture, windows, and impact/collapse fidelity with the school.

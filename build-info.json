@@ -1,8 +1,8 @@
 {
-  "build": "5.5-windows-telemetry-rc39",
-  "version": "5.5.0-rc.39",
+  "build": "5.5-windows-heartbeat-rc40",
+  "version": "5.5.0-rc.40",
   "gameplay_base": "5.2.3",
-  "scope": "Restore local Windows performance collection by replacing plain http.server with a loopback-only stdlib telemetry server; no game simulation/rendering changes.",
+  "scope": "Make Windows Performance Lab accessible and record independent host heartbeat age without expensive QA snapshots or duplicate UI telemetry; no gameplay/rendering changes.",
   "new_gameplay_features": false,
-  "release_status": "RC39 DEVELOPMENT CANDIDATE: stdlib endpoint tests pass locally; exact-head browser, motion, Windows package and physical Windows FPS still pending."
+  "release_status": "RC40 DEVELOPMENT CANDIDATE: six local telemetry integration tests pass; exact-head five workflows, Windows package and physical Windows FPS pending."
 }

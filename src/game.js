@@ -3434,20 +3434,22 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
 
 
  };
- // A separate periodic heartbeat bridges the game and Windows sampler even when
- // the Performance Lab panel is closed. While the browser freezes, heartbeat
- // delivery stops and the host CSV's telemetry-age column keeps increasing.
- let benchmarkHeartbeats=0;
+}
+// RC40: lightweight, single-producer Windows heartbeat outside motion-only QA.
+// Do not call __DD_QA.snap() here: it traverses thousands of scene components.
+// The Python server logs its own samples even if this JS timer stops firing.
+let hostHeartbeatIndex=0;
+if(!schoolQA && (location.hostname==='127.0.0.1'||location.hostname==='localhost')){
  setInterval(()=>{
-  const q=window.__DD_QA?.snap(),m=window.__DD_GAME_METRICS||{};
-  if(!q)return;
-  const body={wave:q.wave,fps:m.fps??null,drawCalls:q.scene?.drawCalls??null,
-   frameMs:m.frameMs??null,recording:Boolean(window.__DD_BENCHMARK?._recorder),
+  if(window.__DD_HOST_MONITOR_READY!==true)return;
+  const m=window.__DD_GAME_METRICS||{};
+  const body={wave,fps:m.fps??null,drawCalls:m.drawCalls??null,
+   frameMs:m.frameMs??null,recording:captureLab.isRecording(),
    stallCount:frameHealth.summary().totalLongFrames,
-   phase:phase?.label||'between-phases',active:q.active,
-   gameFrameCount:q.frameTimes?.frames??0,lastGameFrameUTC:window.__DD_LAST_RENDER_UTC??null,
-   heartbeatIndex:++benchmarkHeartbeats};
+   phase:!active?'idle':paused?'paused':'playing',active:Boolean(active&&!paused),
+   gameFrameCount:sessionStats.frames,lastGameFrameUTC:window.__DD_LAST_RENDER_UTC??null,
+   heartbeatIndex:++hostHeartbeatIndex};
   fetch('./__game_telemetry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'})
-   .catch(()=>{}); // host log remains independent if browser/server stops
+   .catch(()=>{window.__DD_HOST_MONITOR_READY=false;});
  },1000);
 }

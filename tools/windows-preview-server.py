@@ -16,10 +16,13 @@ import os
 from pathlib import Path
 import tempfile
 import threading
+import time
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-COLUMNS = ('timestampUTC', 'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
+COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'heartbeatIndex',
+           'gameFrameCount', 'lastGameFrameUTC', 'phase', 'active',
+           'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
            'stallCount', 'cpuPercent', 'ramPercent', 'ramAvailableGB',
            'gpuPercent', 'browserRSSMB')
 
@@ -89,9 +92,34 @@ class PreviewServer(ThreadingHTTPServer):
                        'ramAvailableGB': None, 'gpuPercent': None,
                        'videoDecodePercent': None, 'browserRSSMB': None}
         self.game = {}
+        self.last_heartbeat_monotonic = None
+        self.next_host_sample = time.monotonic() + 2.0
         with self.log_path.open('w', newline='', encoding='utf-8') as f:
             csv.writer(f).writerow(COLUMNS)
         super().__init__(address, PreviewHandler)
+
+    def write_row(self, row):
+        with self.log_path.open('a', newline='', encoding='utf-8') as f:
+            csv.writer(f).writerow(row.get(k) for k in COLUMNS)
+
+    def service_actions(self):
+        """Independent host sampling continues while browser JS is frozen.
+
+        Called by serve_forever on its own server thread; no additional timer
+        threads, and the CSV labels stale game FPS rather than inventing frames.
+        """
+        now = time.monotonic()
+        if now < self.next_host_sample:
+            return
+        self.next_host_sample = now + 2.0
+        with self.lock:
+            counters, self.previous_cpu = windows_counters(self.previous_cpu)
+            self.system.update(counters)
+            age = (round((now - self.last_heartbeat_monotonic) * 1000)
+                   if self.last_heartbeat_monotonic is not None else None)
+            self.write_row({**self.game, **self.system,
+                            'timestampUTC': datetime.now(timezone.utc).isoformat(),
+                            'sampleSource': 'host', 'telemetryAgeMs': age})
 
 
 class PreviewHandler(SimpleHTTPRequestHandler):
@@ -119,9 +147,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             return
         if path == '/__system_metrics':
             with self.server.lock:
-                counters, self.server.previous_cpu = windows_counters(self.server.previous_cpu)
-                self.server.system.update(counters)
-                self.send_json({**self.server.system, 'logFile': self.server.log_path.name})
+                age = (round((time.monotonic() - self.server.last_heartbeat_monotonic) * 1000)
+                       if self.server.last_heartbeat_monotonic is not None else None)
+                self.send_json({**self.server.system, 'telemetryAgeMs': age,
+                                'logFile': self.server.log_path.name})
             return
         if path == '/__system_csv':
             with self.server.lock:
@@ -157,15 +186,21 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             row = {key: safe_number(incoming.get(key), 0, 1000000)
                    for key in ('wave', 'fps', 'drawCalls', 'frameMs', 'stallCount')}
             row['recording'] = bool(incoming.get('recording'))
+            row['active'] = bool(incoming.get('active'))
+            row['phase'] = str(incoming.get('phase') or '')[:48]
+            for key in ('heartbeatIndex', 'gameFrameCount', 'lastGameFrameUTC'):
+                row[key] = safe_number(incoming.get(key), 0, 1e15)
         except (ValueError, TypeError, UnicodeError):
             self.send_json({'error': 'Invalid telemetry JSON'}, 400)
             return
         with self.server.lock:
-            self.server.game = row
+            self.server.game = row.copy()
+            self.server.last_heartbeat_monotonic = time.monotonic()
             row.update(self.server.system)
             row['timestampUTC'] = datetime.now(timezone.utc).isoformat()
-            with self.server.log_path.open('a', newline='', encoding='utf-8') as f:
-                csv.writer(f).writerow(row.get(k) for k in COLUMNS)
+            row['sampleSource'] = 'browser'
+            row['telemetryAgeMs'] = 0
+            self.server.write_row(row)
         self.send_json({'ok': True})
 
 
