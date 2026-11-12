@@ -85,6 +85,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    }
  }
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
+ const nearParapetHeights=[];
  const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565];
  for(const z of [-328,-362,-397,-435,-472,-510,-546,-582]){
   street(0,z,760,8.5,slot(z));
@@ -143,7 +144,15 @@ export function createDistantNeighborhood({root,flameTexture}){
    if((ix*7+row)%23===0){
     addPart(home,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
    }
-   if(!modern)addPart(home,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
+   if(!modern){
+    if(tier<=2){
+     // Existing cornice instances become roof-rooted parapets with varied
+     // silhouettes; no new mesh, draw batch or impact-time allocation.
+     const parapetHeight=.42+((ix*5+row*3)%5)*.10;
+     nearParapetHeights.push(parapetHeight);
+     addPart(home,'cornice',x,h+.12+parapetHeight*.5,z+d/2+.02,w+.23,parapetHeight,.3);
+    }else addPart(home,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
+   }
    else addPart(home,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
     for(const bay of [-1,1]){
@@ -827,6 +836,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    dustPointDrawCalls:1,proceduralMasonryTextureSize:128,
    nearFacadeMasonry:{tier:0,textureShared:nearFacadeMasonryMaterial.map===masonryTexture,
     repeat:[2,3],drawCallsAdded:0},
+   nearRoofParapets:{count:nearParapetHeights.length,
+    minHeight:Math.min(...nearParapetHeights),maxHeight:Math.max(...nearParapetHeights),drawCallsAdded:0},
    layeredDustActive:collapseDust.reduce((sum,s)=>sum+(s.home&&s.home.fall<1?dustPerTier[s.home.tier]:0),0),
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),

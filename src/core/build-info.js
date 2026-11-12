@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.5.0-rc.32';
-export const BUILD_ID='5.5-near-masonry-rc32';
+export const GAME_VERSION='5.5.0-rc.33';
+export const BUILD_ID='5.5-roof-parapets-rc33';

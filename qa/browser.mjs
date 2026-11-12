@@ -1291,6 +1291,14 @@ try {
     'nearest facades reuse the rubble masonry atlas');
   assert.equal(flightBudget.nearFacadeMasonry.drawCallsAdded,0,
     'facade masonry adds no draw batch');
+  assert.ok(flightBudget.nearRoofParapets.count>100,
+    'near rowhouses use existing cornice instances as parapets');
+  assert.ok(flightBudget.nearRoofParapets.minHeight>=.42 &&
+    flightBudget.nearRoofParapets.maxHeight<=.83 &&
+    flightBudget.nearRoofParapets.maxHeight-flightBudget.nearRoofParapets.minHeight>=.35,
+    'parapet silhouettes vary in height within the existing LOD');
+  assert.equal(flightBudget.nearRoofParapets.drawCallsAdded,0,
+    'parapets add no draw batches');
   assert.ok(flightBudget.layeredDustActive>=7&&flightBudget.layeredDustActive<=96,
     'layered dust never exceeds its fixed pooled budget');
   assert.equal(settledBudget.layeredDustActive,0,

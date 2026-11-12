@@ -1,8 +1,8 @@
 {
-  "build": "5.5-near-masonry-rc32",
-  "version": "5.5.0-rc.32",
+  "build": "5.5-roof-parapets-rc33",
+  "version": "5.5.0-rc.33",
   "gameplay_base": "5.2.3",
-  "scope": "Reuse existing procedural masonry atlas on nearest residential facade batch only; no new textures or draw calls.",
+  "scope": "Vary near rowhouse roof parapets using existing cornice instances; preserve RC32 masonry and gameplay.",
   "new_gameplay_features": false,
   "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, motion, focused fire, importer and hardware performance verification pending."
 }
