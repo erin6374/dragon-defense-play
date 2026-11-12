@@ -2855,7 +2855,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    distantTimer=skylineEventTimer=0;
    backgroundDamageTimer=.1;
    updateDistantMeteors(0);
-   return {before,after:{streak:distantTimer,strike:skylineEventTimer,count:distantStreaks.length}};
+   return {before,after:{streak:distantTimer,strike:skylineEventTimer,count:distantStreaks.length,
+    skylineLandings:distantStreaks.filter(s=>s.landing?.skyline).length}};
   }),
   stageOpeningWave:()=>run('stageOpeningWave',()=>{
    closeChapterTransition();

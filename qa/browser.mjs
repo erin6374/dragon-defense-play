@@ -858,7 +858,10 @@ try {
     assert.ok(sample.ok,sample.error);
     assert.deepEqual(sample.result.before,{streak:3,strike:3,background:2.5,count:0},
       'restart restores the distant disaster timers and clears existing streaks');
-    assert.equal(sample.result.after.count,1,'the production update spawns a distant meteor streak');
+    assert.equal(sample.result.after.count,2,
+      'the production update creates two visible distant streaks, never a free-floating scripted explosion');
+    assert.equal(sample.result.after.skylineLandings,1,
+      'a separate non-interceptable skyline meteor must land before its tower can explode');
   }
   const [intactCadence,damagedCadence]=distantCadence.map(sample=>sample.result.after);
   assert.ok(damagedCadence.streak<intactCadence.streak && damagedCadence.strike<intactCadence.strike,
