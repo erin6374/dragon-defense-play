@@ -1,8 +1,8 @@
 {
-  "build": "5.5-ballistic-contact-rc26",
-  "version": "5.5.0-rc.26",
+  "build": "5.5-causal-fire-spread-rc27",
+  "version": "5.5.0-rc.27",
   "gameplay_base": "5.2.3",
-  "scope": "RC26 independent ballistic masonry and roof contact before parent collapse ends, clamped horizontal motion and rotation at ground, staggered fragment reveal. Preserves RC25 meteor-causal fire, health-controlled row shockwaves and craters; RC24 licensed fire/smoke unchanged.",
+  "scope": "Meteor-triggered staggered background facade fire: strike ignites one varied primary opening, secondary fires grow to different storeys and roof over 1-5s; existing licensed CC0 smoke/3-site fixed pool, distance fade, health-driven row shockwave, craters and RC26 ballistic physics all preserved.",
   "new_gameplay_features": true,
-  "release_status": "RC26 SOURCE CANDIDATE — exact-head five QA workflows, real motion visual review, ZIP CRC and CC0 hashes required; not cinematic-approved or released."
+  "release_status": "RC27 DEVELOPMENT CANDIDATE: exact-head Playwright browser, five cinematic scenes, focused and full 30s motion, Windows ZIP/CC0 hashes, human art review and authorized Pages provenance REQUIRED before release."
 }

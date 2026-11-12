@@ -494,9 +494,15 @@ export function createDistantNeighborhood({root,flameTexture}){
  // Resolve real window geometry once. Distant LOD buildings use a roof breach.
  for(const home of buildingDefs){
   const windows=home.parts.filter(p=>p.type==='window').map(p=>instances[home.tier].window[p.index])
-   .sort((a,b)=>b.y-a.y).slice(0,2);
+   .sort((a,b)=>b.y-a.y||a.x-b.x);
+  // The struck opening varies by house. The secondary opening sits on a
+  // lower floor where available, rather than synchronizing two top windows.
+  const primary=windows[home.id%2]||windows[0];
+  const secondary=windows.find(p=>primary&&p.y<primary.y-1.3&&Math.abs(p.x-primary.x)>.5)
+   ||windows.find(p=>p!==primary);
   home.fireOpenings=[null,null];
-  windows.forEach((p,k)=>home.fireOpenings[k]={x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h});
+  [primary,secondary].forEach((p,k)=>{if(p)home.fireOpenings[k]=
+   {x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h};});
   home.fireOpenings[2]={x:home.x,y:home.h+.25,z:home.z+home.d*.18,w:home.w*.19,h:1.1};
  }
  function positionImpactEffects(home){
@@ -524,7 +530,20 @@ export function createDistantNeighborhood({root,flameTexture}){
    }
    const rawPower=k===2&&home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2:.85;
    // Far flames and smoke lose opacity to haze, while retaining impact origin.
-   const power=rawPower*Math.max(.20,1-(home.tier??0)*.155);
+   // Fire begins at one meteor-struck opening, then spreads to others.
+   // Retain the fixed GPU slots; secondary heat ramps rather than suddenly
+   // lighting two symmetrical torches on the same floor at impact.
+   const age=home.fireAge??0;
+   const hasPrimary=!!home.fireOpenings[0];
+   // The near-back rowhouse type has no numeric id; derive a fixed seed
+   // from world coordinates so its stagger times are finite and repeatable.
+   const fireSeed=Number.isInteger(home.id)?home.id:
+    Math.abs(Math.floor(home.x*11+home.z*7));
+   const delay=k===0||!hasPrimary?0:k===1?1+(fireSeed%3)*.40:2.5+(fireSeed%5)*.48;
+   const spread=k===0||!hasPrimary?1:
+    k===1?.035+.965*THREE.MathUtils.smoothstep(age,delay,delay+1.45):
+    THREE.MathUtils.smoothstep(age,delay,delay+1.8);
+   const power=rawPower*spread*Math.max(.20,1-(home.tier??0)*.155);
    combustion.set(index,x,y,z,opening.w*(1+.2*rubble),opening.h*(1.5-.25*rubble),(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,k===2||rubble>.8?1:0);
   }
  }
@@ -598,6 +617,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  let fireTime=0;
  function addImpactSmoke(home){
   if(impactSmoke.has(home)){positionImpactEffects(home);return;}
+  home.fireAge=0;
   if(impactSmoke.size===FIRE_CAP)releaseFire(impactSmoke.keys().next().value);
   const slot=fireSlots.indexOf(null);fireSlots[slot]=home;
   impactSmoke.set(home,{slot});positionImpactEffects(home);
@@ -807,7 +827,13 @@ export function createDistantNeighborhood({root,flameTexture}){
     if(tail===0)releaseDust(slot);
    }
   }
-  for(const home of impactSmoke.keys())if(falling.has(home)||home.windows)positionImpactEffects(home);
+  for(const home of impactSmoke.keys()){
+   // Stop re-uploading static window source transforms after the spread.
+   // Only existing fire instances animate; no new meshes or textures.
+   const spreading=(home.fireAge??0)<7;
+   if(spreading)home.fireAge+=dt;
+   if(spreading||falling.has(home)||home.windows)positionImpactEffects(home);
+  }
  }
 
  function restore(){
@@ -816,6 +842,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const slot of collapseDust)releaseDust(slot);
 
   for(const puff of damageMarkers)clearDamageMarker(puff);
+  for(const home of impactSmoke.keys())home.fireAge=0;
   impactSmoke.clear();damageMarkers.length=0;
   for(const home of damaged){home.damage=home.fall=home.fallTime=0;home.impactDirection=1;applyFall(home);}
   for(const debris of rubbleBatches)debris.visible=false;
@@ -888,7 +915,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     flamePosition:sites.length?[sites[0].x,sites[0].y]:null,
     flameHeight:sites[0]?.h??null,flameWidth:sites[0]?.w??null,
     primaryFlameVisible:false,tonguePositions,ventSmokePositions,
-    smokeHeight:sites[0]?.h*3.8,combustionSites:sites,craterCount,impactEvents,
+    smokeHeight:sites[0]?.h*3.8,combustionSites:sites,fireAge:home.fireAge??0,craterCount,impactEvents,
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },

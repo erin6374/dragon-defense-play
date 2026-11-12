@@ -1337,6 +1337,25 @@ try {
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
+  // RC27 causal firefront: actual meteor lights ONE window first; burning
+  // then spreads at different times to lower facade openings and roof.
+  // All existing slots are reused; late fire must not erupt spontaneously.
+  assert.ok(backgroundIntact.fireAge<=.001,
+    'first-window fire begins at the moment of the first meteor impact');
+  assert.ok(backgroundIntact.combustionSites[0].power>
+    backgroundIntact.combustionSites[1].power*10,
+    'second window is initially only faintly smoking, not a matching torch');
+  assert.ok(Math.abs(backgroundIntact.tonguePositions[0][1]-
+    backgroundIntact.tonguePositions[1][1])>1.1,
+    'secondary combustion source uses a different facade floor');
+  assert.ok(backgroundSettled.fireAge>3,
+    'heat-spread timer advances while existing fire remains active');
+  assert.ok(backgroundSettled.combustionSites[1].power>
+    backgroundIntact.combustionSites[1].power*8,
+    'secondary window ignites gradually after its causal meteor hit');
+  assert.ok(fireStates.every(f=>f.combustionSites.every(s=>
+    Number.isFinite(s.power)&&s.power>=0&&s.power<=1)),
+    'all smoke/fire sources stay finite during heat spread and collapse');
   assert.ok(fireStates.every(f=>!f.primaryFlameVisible),'legacy central sprite is absent in all damage states');
   assert.ok(fireStates.every(f=>f.combustionSites.length>=2&&f.combustionSites.every(s=>[s.x,s.y,s.z,s.w,s.h].every(Number.isFinite))),
     'bounded real window/roof openings survive collapse');
