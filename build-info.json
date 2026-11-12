@@ -1,8 +1,8 @@
 {
-  "build": "5.5-bilateral-frontage-rc36",
-  "version": "5.5.0-rc.36",
+  "build": "5.5-combustion-idle-cache-rc37",
+  "version": "5.5.0-rc.37",
   "gameplay_base": "5.2.3",
-  "scope": "Damageable frontage extensions beyond both intersections, breakable lintels/cornices and full-width meteor entry; existing rendering budgets retained.",
+  "scope": "Reduce redundant GPU combustion instanced-buffer uploads with exact source-state equality; preserve causal fire, animation, collapse; regression-test stationary source writes.",
   "new_gameplay_features": false,
-  "release_status": "Candidate: local structural regression passes; browser/visual/hardware performance checks pending."
+  "release_status": "RC37 DEVELOPMENT CANDIDATE: syntax and metadata checked, exact-head browser/visual/motion/license/hardware performance verification pending. Not a release."
 }

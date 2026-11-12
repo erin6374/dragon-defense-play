@@ -136,8 +136,11 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
  const group=new THREE.Group();group.name=name;parent.add(group);
  const uniforms={clock:{value:0}};
  let activeCount=0,lastActive=-1;group.visible=false;
+ // Source GPU attributes only need new data when a contact actually changes.
+ // Shader time still advects stationary smoke and flame every render frame.
+ let sourceBufferWrites=0,unchangedSetSkips=0,unchangedActiveSkips=0;
  const counts=[3,6,5,1];
- const sources=Array.from({length:capacity},()=>({active:false,x:0,y:0,z:0,w:0,h:0,seed:0,power:0,lod:0}));
+ const sources=Array.from({length:capacity},()=>({active:false,x:0,y:0,z:0,w:0,h:0,seed:0,power:0,lod:0,surface:0}));
  const batches=counts.map((count,kind)=>{
   const plane=new THREE.PlaneGeometry(1,1);
   const geometry=new THREE.InstancedBufferGeometry();geometry.index=plane.index;
@@ -158,7 +161,18 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
  function set(index,x,y,z,w,h,seed,power=1,lod=0,surface=0){
   if(index<0||index>=capacity)throw new RangeError('Combustion pool index');
   const s=sources[index];const wasActive=s.active;
-  if(wasActive!==(power>0))activeCount+=power>0?1:-1;
+  const nextActive=power>0;
+  // Exact comparisons retain all moving rubble, fire spread and LOD changes.
+  // Skip redundant CPU writes and WebGL attribute dirty-version bumps.
+  if(wasActive===nextActive&&s.x===x&&s.y===y&&s.z===z&&
+   s.w===w&&s.h===h&&s.seed===seed&&s.power===power&&
+   s.lod===lod&&s.surface===surface){
+   unchangedSetSkips++;
+   if(nextActive)unchangedActiveSkips++;
+   return;
+  }
+  sourceBufferWrites++;
+  if(wasActive!==nextActive)activeCount+=nextActive?1:-1;
   s.active=power>0;s.x=x;s.y=y;s.z=z;s.w=w;s.h=h;s.seed=seed;s.power=power;s.lod=lod;s.surface=surface;
   if(s.active)lastActive=Math.max(lastActive,index);
   else if(index===lastActive)while(lastActive>=0&&!sources[lastActive].active)lastActive--;
@@ -173,8 +187,10 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
  }
  function clear(index){set(index,0,0,0,0,0,0,0);}
  return {group,sources,set,clear,update(time){uniforms.clock.value=time;},
-  reset(){for(let i=0;i<capacity;i++)clear(i);uniforms.clock.value=0;},
+  reset(){for(let i=0;i<capacity;i++)clear(i);uniforms.clock.value=0;
+   sourceBufferWrites=unchangedSetSkips=unchangedActiveSkips=0;},
   stats(){return {capacity,active:sources.filter(s=>s.active).length,drawCalls:4,
    flameCapacity:capacity*3,smokeCapacity:capacity*6,emberCapacity:capacity*5,
-    textures:flipbookStatus().textures,renderer:flipbookStatus().mode,clock:uniforms.clock.value};}};
+    textures:flipbookStatus().textures,renderer:flipbookStatus().mode,clock:uniforms.clock.value,
+    sourceBufferWrites,unchangedSetSkips,unchangedActiveSkips};}};
 }

@@ -1230,7 +1230,7 @@ try {
   const backgroundCollapse=await page.evaluate(()=>window.__DD_QA.stageDistantBuildingCollapse());
   assert.ok(backgroundCollapse.ok,backgroundCollapse.error);
   const {id,intact:backgroundIntact,falling:backgroundFalling,settled:backgroundSettled,
-    flightBudget,settledBudget,before:beforeCollapse,flight:flightCollapse,after:afterCollapse}=backgroundCollapse.result;
+    flightBudget,settledBudget,idleBudget,before:beforeCollapse,flight:flightCollapse,after:afterCollapse}=backgroundCollapse.result;
   assert.equal(backgroundIntact.rubbleCount,0,'an intact distant building has no visible facade debris');
   assert.ok(backgroundIntact.damage>0&&backgroundIntact.damage<1&&backgroundIntact.smoking&&Math.abs(backgroundIntact.height-backgroundIntact.originalHeight)<.001,
     'the first distant hit creates smoke while the building stays standing');
@@ -1333,6 +1333,12 @@ try {
   assert.ok(backgroundIntact.tonguePositions[0][1]>backgroundSettled.tonguePositions[0][1]+2,
     'sources follow structural collapse to the ground');
   assert.equal(flightBudget.combustion.capacity,168);
+  assert.equal(idleBudget.combustion.sourceBufferWrites,settledBudget.combustion.sourceBufferWrites,
+    'stationary fire must not rewrite instanced GPU combustion attributes');
+  assert.ok(idleBudget.combustion.unchangedActiveSkips>=settledBudget.combustion.unchangedActiveSkips+10,
+    'five zero-delta ticks avoid at least ten unchanged active flame uploads');
+  assert.ok(idleBudget.combustion.unchangedSetSkips>=idleBudget.combustion.unchangedActiveSkips,
+    'unchanged active source skips are counted among all skips');
   assert.equal(flightBudget.combustion.drawCalls,4);
   assert.equal(flightBudget.combustion.textures,
     report.combustionPool.licensedAtlases?2:0,
