@@ -898,7 +898,11 @@ export function createDistantNeighborhood({root,flameTexture}){
    const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
     tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
    const smoke=impactSmoke.get(home);
-   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE).filter(s=>s.active):[];
+   // Snapshot power/position by VALUE for staged QA. Without copying the
+   // fixed-pool source objects, an early-impact state silently changes when
+   // a later update spreads the fire, invalidating before/after comparisons.
+   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE)
+    .filter(s=>s.active).map(s=>({...s})):[];
    const tonguePositions=sites.map(s=>[s.x,s.y,s.z]),ventSmokePositions=tonguePositions;
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
