@@ -1,8 +1,8 @@
 {
-  "build": "5.5-seeded-flame-rc29",
-  "version": "5.5.0-rc.29",
+  "build": "5.5-school-light-depth-rc30",
+  "version": "5.5.0-rc.30",
   "gameplay_base": "5.2.3",
-  "scope": "RC29 source candidate: seeded Flame03 shear, variable tongue height, atlas mirroring and UV bending, rooted alpha taper to reduce repeated horizontal flame ribbons. RC28 smoke, event-causal impacts, fixed pools and gameplay preserved.",
+  "scope": "RC30 candidate: bounded room-scale emissive falloff on retained school interior surfaces; no geometry, fire, gameplay or light-count changes.",
   "new_gameplay_features": true,
-  "release_status": "RC29 DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer and 600-frame motion QA, Windows ZIP/CC0 hashes and human visual review REQUIRED; no release."
+  "release_status": "RC30 DEVELOPMENT CANDIDATE: local shader assembly and damage/reset checks pass; exact-head browser, scene/motion review and packaging pending. Not a release."
 }
