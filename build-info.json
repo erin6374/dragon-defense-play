@@ -1,8 +1,8 @@
 {
-  "build": "5.5-causal-fire-spread-rc27",
-  "version": "5.5.0-rc.27",
+  "build": "5.5-thermal-eddy-rc28",
+  "version": "5.5.0-rc.28",
   "gameplay_base": "5.2.3",
-  "scope": "Meteor-triggered staggered background facade fire: strike ignites one varied primary opening, secondary fires grow to different storeys and roof over 1-5s; existing licensed CC0 smoke/3-site fixed pool, distance fade, health-driven row shockwave, craters and RC26 ballistic physics all preserved.",
+  "scope": "RC28 candidate: phase-separated wind eddies on four existing licensed CC0 smoke cards, wider age-dependent drift, and hot-core/orange-edge Flame03 thermal gradient. RC27 staged meteor-triggered facade fires, fixed pools, row shockwaves, craters and RC26 ballistic physics preserved.",
   "new_gameplay_features": true,
-  "release_status": "RC27 DEVELOPMENT CANDIDATE: exact-head Playwright browser, five cinematic scenes, focused and full 30s motion, Windows ZIP/CC0 hashes, human art review and authorized Pages provenance REQUIRED before release."
+  "release_status": "RC28 DEVELOPMENT CANDIDATE: exact-head Playwright browser, five cinematic scenes, focused and full 30s motion, Windows ZIP/CC0 hashes, human art review and authorized Pages provenance REQUIRED before release."
 }

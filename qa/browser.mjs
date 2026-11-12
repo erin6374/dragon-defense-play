@@ -379,7 +379,9 @@ try {
     const spatialVfx={
       licensedFlameTongues:pool.group.children[0].material.vertexShader.includes('tongueLane*.32'),
       windowRootedSoot:pool.group.children[1].material.vertexShader.includes('vStem>.5'),
-      texturedStem:pool.group.children[1].material.fragmentShader.includes('stemDensity*.85')
+      texturedStem:pool.group.children[1].material.fragmentShader.includes('stemDensity*.85'),
+      windShearedSmoke:pool.group.children[1].material.vertexShader.includes('turbulentEddy'),
+      licensedThermalCore:pool.group.children[0].material.fragmentShader.includes('hotCore')
     };
     const result={near,far,anchor,after,rejected,cleared,spatialVfx,stats:pool.stats(),
       stable:JSON.stringify(ids)===JSON.stringify(pool.group.children.map(m=>[m.geometry.uuid,m.material.uuid]))};
@@ -387,8 +389,9 @@ try {
     return result;
   });
   assert.deepEqual(report.combustionPool.spatialVfx,
-    {licensedFlameTongues:true,windowRootedSoot:true,texturedStem:true},
-    'RC24 keeps three independent flame tongues and two licensed smoke stems in fixed pools');
+    {licensedFlameTongues:true,windowRootedSoot:true,texturedStem:true,
+      windShearedSmoke:true,licensedThermalCore:true},
+    'RC28 retains fixed licensed flame/smoke pools with wind-sheared eddies and a thermal core');
   assert.deepEqual(report.combustionPool.near,[3,6,5,1]);
   assert.deepEqual(report.combustionPool.far,[2,2,1,1]);
   assert.deepEqual(report.combustionPool.anchor,report.combustionPool.after,'advected particles do not move their opening');

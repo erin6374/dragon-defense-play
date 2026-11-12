@@ -86,9 +86,12 @@ export function prepareFlipbookMaterial(material,kind){
      // CC0 atlas packets form one wind-sheared, taller plume instead of
      // six short isolated wisps. Each packet retains independent age/phase.
      float gust=.82+.20*sin(clock*.31+layer*.55)+.11*sin(clock*.73+vSeed);
-     float curl=.30*sin(vAge*10.8+clock*.22+vSeed*1.7)*vAge;
+     // RC28: phase-separated counter-rotating eddies on existing CC0 sheets.
+     float turbulentEddy=sin(vAge*12.4+clock*(.24+.09*fract(vSeed*.73))+vSeed*1.7)*
+      cos(vAge*5.3-clock*.17+vSeed*.9);
+     float curl=(.36+.62*vAge)*turbulentEddy*vAge;
      float crosswind=-gust*pow(vAge,1.34)*3.8;
-     float dispersion=lane*pow(vAge,1.13)*1.55;
+     float dispersion=lane*pow(vAge,1.13)*2.15;
      center+=vec3((sway+crosswind+dispersion+curl)*w,
        h*(.12+vAge*8.9),w*(.32+.16*layer+.23*vAge*sin(vSeed)));
     }else{
@@ -169,7 +172,12 @@ export function prepareFlipbookMaterial(material,kind){
   float time=clock*(13.+fract(vSeed*.39)*5.)+fract(vSeed*.173)*64.;
   vec2 uv=clamp(q+vec2(.02*sin(q.y*5.+clock*.76+vSeed),0.),.014,.986);
   vec4 frame=flipbook(flameAtlas,uv,time);
-  color=frame.rgb*vec3(2.4,1.65,1.1);
+  // CC0 Flame03 retains its original texture/alpha; spatial temperature
+  // gives the rooted core a hot yellow center and exposed tongues orange edges.
+  float hotCore=(1.-smoothstep(.18,.86,abs(q.x-.5)*2.))*
+   (1.-smoothstep(.36,.98,q.y));
+  float thermalFlicker=.86+.14*sin(clock*(2.2+.15*fract(vSeed))+vSeed+q.y*5.1);
+  color=frame.rgb*mix(vec3(1.95,.89,.30),vec3(2.32,1.52,.74),hotCore)*thermalFlicker;
   alpha=frame.a*vPower*(.96+.12*sin(clock*2.6+vSeed));
  }
 ${anchor}`);
