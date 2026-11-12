@@ -1372,6 +1372,14 @@ try {
   assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<1),'all sources settle onto rubble');
   assert.ok(backgroundIntact.tonguePositions[0][1]>backgroundSettled.tonguePositions[0][1]+2,
     'sources follow structural collapse to the ground');
+  assert.ok(backgroundIntact.flameHeight!==null&&backgroundIntact.flameHeight<0.95,
+    'calibrated rowhouse flame height prevents oversized torches');
+  assert.ok(backgroundIntact.flameWidth!==null&&backgroundIntact.flameWidth<1.10,
+    'calibrated rowhouse flame width stays bounded within window reveal');
+  assert.ok(backgroundIntact.combustionSites[0].y+backgroundIntact.flameHeight<backgroundIntact.originalHeight,
+    'flame source envelope stays strictly below the roofline');
+  assert.ok(backgroundIntact.combustionSites[0].z<backgroundIntact.roof.z+backgroundIntact.roof.depth*.5+.25,
+    'flame base is anchored inside the window opening');
   assert.equal(flightBudget.combustion.capacity,168);
   assert.equal(flightBudget.combustion.drawCalls,4);
   assert.equal(flightBudget.combustion.textures,
