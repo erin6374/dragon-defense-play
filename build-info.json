@@ -1,8 +1,8 @@
 {
-  "build": "5.5-roof-parapets-rc33",
-  "version": "5.5.0-rc.33",
+  "build": "5.5-per-house-parapets-rc34",
+  "version": "5.5.0-rc.34",
   "gameplay_base": "5.2.3",
-  "scope": "Vary near rowhouse roof parapets using existing cornice instances; preserve RC32 masonry and gameplay.",
+  "scope": "Repair RC33 row-synchronized parapets with per-house deterministic height bands and per-row QA invariants; preserve gameplay and draw budget.",
   "new_gameplay_features": false,
-  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, motion, focused fire, importer and hardware performance verification pending."
+  "release_status": "DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer, 5+30s motion, Windows ZIP/license and hardware performance verification pending."
 }

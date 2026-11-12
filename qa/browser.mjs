@@ -1297,6 +1297,10 @@ try {
     flightBudget.nearRoofParapets.maxHeight<=.83 &&
     flightBudget.nearRoofParapets.maxHeight-flightBudget.nearRoofParapets.minHeight>=.35,
     'parapet silhouettes vary in height within the existing LOD');
+  assert.ok(flightBudget.nearRoofParapets.rows>=4,
+    'near-row parapet diversity must be checked across multiple populated rows');
+  assert.ok(flightBudget.nearRoofParapets.minDistinctHeightsPerRow>=4,
+    'each near row must contain at least four distinct parapet heights, not synchronized roof strips');
   assert.equal(flightBudget.nearRoofParapets.drawCallsAdded,0,
     'parapets add no draw batches');
   assert.ok(flightBudget.layeredDustActive>=7&&flightBudget.layeredDustActive<=96,
