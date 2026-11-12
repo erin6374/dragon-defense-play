@@ -929,7 +929,10 @@ try {
   report.meteorShootability.unopposedFastImpact=unopposedFastImpact.result;
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
+  assert.equal(restoredWave.result.active,true,'QA reset must start active gameplay');
+  assert.equal(restoredWave.result.paused,false,'QA reset must close the auto-opened chapter cinematic');
   const before = await snap();
+  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+2,before.frameTimes.frames,{timeout:15000});
   await page.keyboard.down('KeyD');
   try {
     await page.waitForFunction(x => window.__DD_QA.snap().dragon.x > x + 4, before.dragon.x);
