@@ -1,8 +1,8 @@
 {
-  "build": "5.5-source-fed-fire-rc24",
-  "version": "5.5.0-rc.24",
+  "build": "5.5-event-driven-background-rc25",
+  "version": "5.5.0-rc.25",
   "gameplay_base": "5.2.3",
-  "scope": "RC24 spatial fire architecture: stagger three preallocated CC0 flame tongues across each burning opening; source-fed soot stems from two of six existing smoke sheets bridge actual windows to four advecting licensed smoke packets. No new particles, draw batches, textures or gameplay changes; retain rooted/plume/legacy and procedural A/B.",
-  "new_gameplay_features": false,
-  "release_status": "RC24 GRAPHICS CANDIDATE — exact-head browser, 5-view, focused, 600-frame/30s motion and licensed ZIP verification pending; cinematic acceptance withheld."
+  "scope": "Event-causal background disaster pass: distant rowhouses only ignite on actual meteor impacts, neighborhood gauge controls bombardment frequency, strength, row shockwaves and crater size, realistic distance-attenuated fire and secondary explosions, independent gravity-driven roof/panel/debris motion replacing synchronized folding. RC24 licensed fire/smoke unchanged.",
+  "new_gameplay_features": true,
+  "release_status": "RC25 SOURCE CANDIDATE — exact-head browser QA, cinematic five views, focused and independent five+30s motion, Windows ZIP CRC/CC0 hashes and artist review REQUIRED before playable-release approval."
 }

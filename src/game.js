@@ -1152,7 +1152,7 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  backgroundDamageTimer=THREE.MathUtils.lerp(1.15,.36,Math.max(frontDamage*.72,blockDamage));
  const district=neighborhood.longRange;
  const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.z<DEFENSE_REAR_Z&&b.damage<1);
- const count=blockDamage>=.85?3:2;
+ const count=blockDamage>=.80?3:blockDamage>=.25?2:1;
  for(let i=0;i<count&&distantStreaks.length<58;i++){
   const near=backs.length&&i===0&&random()<.55?backs[Math.floor(random()*backs.length)]:null;
   const visible=i<2;
@@ -1166,7 +1166,8 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
   sprite.position.copy(point).add(new THREE.Vector3(-13,31,0));
   sprite.scale.set(2.2,8,1);
   scene.add(sprite);
-  distantStreaks.push({sprite,life:.82,landing:{point,near,far,strength:.43+blockDamage*.65}});
+  distantStreaks.push({sprite,life:.82,duration:.82,
+   landing:{point,near,far,skyline:false,strength:.43+blockDamage*.65}});
  }
 }
 
@@ -1186,11 +1187,21 @@ function updateDistantMeteors(dt){
  const chapterRamp=(wave===15?1.85:(.65+waveProgress*1.55))*(1+damageFraction*1.15)*(1+skylineCrisis*.45);
  skylineEventTimer-=dt;
  if(skylineEventTimer<=0){skylineEventTimer=Math.max(.35,(2.65-wave*.06)/chapterRamp)+Math.random()*.85;
-  const targetX=(Math.random()-.5)*128;
-  const targetY=18+Math.random()*18+(chapterRamp-1)*3;
-  cinematicSkyExplosion(targetX,targetY,-155);
-  if(Math.random()<.35+.38*waveProgress)cinematicSkyExplosion(targetX+(Math.random()-.5)*24,targetY+4+Math.random()*8,-155);
+  // Every skyline blast needs a visible meteor. Never spawn a purely scripted
+  // explosion or rooftop fire as a result of the health counter alone.
+  if(distantStreaks.length<58){
+   const targetX=(Math.random()-.5)*128;
+   const targetY=18+Math.random()*18+(chapterRamp-1)*3;
+   skyline.updateWorldMatrix(true,false);
+   const point=skyline.localToWorld(new THREE.Vector3(targetX,targetY,-155));
+   const sprite=new THREE.Sprite(distantVisual.material);
+   sprite.position.copy(point).add(new THREE.Vector3(-18,42,0));
+   sprite.scale.set(2.1,9,1);scene.add(sprite);
+   distantStreaks.push({sprite,life:1.25,duration:1.25,
+    landing:{point,near:null,far:null,skyline:true,strength:.46+(1-health/100)*.5}});
+  }
  }
+
  distantTimer-=dt;
  const streakCap=Math.min(58,Math.round(18+wave*2+waveProgress*18+(wave===15?8:0)));
  if(distantTimer<=0&&distantStreaks.length<streakCap){
@@ -1204,19 +1215,39 @@ function updateDistantMeteors(dt){
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
   if(s.landing){
-   const {point,near,far,strength}=s.landing;
-   const remaining=Math.max(0,s.life)/.82;
+   const {point,near,far,skyline:skylineImpact,strength}=s.landing;
+   const remaining=Math.max(0,s.life)/(s.duration||.82);
    s.sprite.position.copy(point);
-   s.sprite.position.x-=13*remaining;s.sprite.position.y+=31*remaining;
+   s.sprite.position.x-=(skylineImpact?18:13)*remaining;
+   s.sprite.position.y+=(skylineImpact?42:31)*remaining;
    if(s.life<=0){
+    const healthOnImpact=neighborhoodHealth();
+    const spectacle=backgroundImpactEffects(healthOnImpact,point.z);
+    let scarHits=0,blastPoint=point;
     if(near){
      neighborhood.city.impact(near,point,5.5,strength);
      if(strength>=.98)neighborhood.city.forceDamage(near,1);
      neighborhood.longRange.burnBackgroundBuilding(near);
      updateHud();
-    }else neighborhood.longRange.strikeTarget(far.id,strength);
-    const spectacle=backgroundImpactEffects(neighborhoodHealth());
-    if(Math.random()<spectacle.fireChance)cinematicSkyExplosion(point.x,point.y,point.z,spectacle);
+    }else if(far){
+     const result=neighborhood.longRange.strikeRow(far.id,strength,healthOnImpact);
+     scarHits=result.hits;
+    }else if(skylineImpact){
+     const local=skyline.worldToLocal(point.clone());
+     blastPoint=skylineBackdrop.strikeNearest(local.x,1-healthOnImpact/100)||point;
+    }
+    // All explosive clouds now follow an actual falling meteor.
+    if(skylineImpact||Math.random()<spectacle.fireChance)
+     cinematicSkyExplosion(blastPoint.x,blastPoint.y,blastPoint.z,spectacle);
+    // Secondary blasts may result from the same event's rowhouse shockwave.
+    for(let k=1;k<Math.min(scarHits,4);k++){
+     if(Math.random()<.20+(1-healthOnImpact/100)*.40){
+      const side=k%2?1:-1;
+      cinematicSkyExplosion(point.x+side*k*6,Math.max(2,point.y*.40),
+       point.z,{...spectacle,scale:spectacle.scale*(.40+.12*k),
+        mushroomChance:spectacle.mushroomChance*.25});
+     }
+    }
    }
   }else{
    s.sprite.position.x+=dt*s.v*.18;s.sprite.position.y-=dt*s.v;
@@ -1240,15 +1271,17 @@ function updateDistantMeteors(dt){
 const skyBurstGeometry=new THREE.PlaneGeometry(1,1);
 const skyBurstMat=new THREE.MeshBasicMaterial({map:visualBank.images.flash,color:0xffc18e,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
 const skyBursts=[];let skylineEventTimer=3;
-function backgroundImpactEffects(health){
+function backgroundImpactEffects(health,z=-100){
  const damage=1-THREE.MathUtils.clamp(health/100,0,1);
- return {fireChance:.38+.57*damage,mushroomChance:.04+.46*damage,scale:.8+1.9*damage};
+ const depth=THREE.MathUtils.clamp((-z-75)/480,0,1);
+ return {fireChance:.38+.57*damage,mushroomChance:.04+.46*damage,
+  scale:(.8+1.9*damage)*(1-depth*.48),opacityFade:1-depth*.68};
 }
 function cinematicSkyExplosion(x,y,z,effects=backgroundImpactEffects(neighborhoodHealth())){if(skyBursts.length>=40)return;
  if(Math.random()<effects.mushroomChance&&skyBursts.length<25){ // Occasional distant mushroom plume: rising column and broad crown.
-  for(let j=0;j<7;j++){const smoke=smokePuff(x,y+j*1.8,z,j<3?2.5:4.3);smoke.material.color.setHex(j<3?0xff9951:0x45474d);smoke.position.set(x+(Math.random()-.5)*2,y+j*1.8*effects.scale,z);smoke.scale.set((j<3?2.5+j*.8:4+(j-3)*1.4)*effects.scale,(j<3?3+j:5+(j-3)*1.6)*effects.scale,1);scene.add(smoke);skyBursts.push({m:smoke,life:2.5,initialLife:2.5,smoke:true});}
+  for(let j=0;j<7;j++){const smoke=smokePuff(x,y+j*1.8,z,j<3?2.5:4.3);smoke.material.color.setHex(j<3?0xff9951:0x45474d);smoke.position.set(x+(Math.random()-.5)*2,y+j*1.8*effects.scale,z);smoke.scale.set((j<3?2.5+j*.8:4+(j-3)*1.4)*effects.scale,(j<3?3+j:5+(j-3)*1.6)*effects.scale,1);scene.add(smoke);skyBursts.push({m:smoke,life:2.5,initialLife:2.5,smoke:true,opacityFade:effects.opacityFade??1});}
  }
- const m=new THREE.Mesh(skyBurstGeometry,skyBurstMat.clone());m.position.set(x,y,z);scene.add(m);skyBursts.push({m,life:.8,initialLife:.8,scale:effects.scale});if(skyBursts.length>40){const b=skyBursts.shift();scene.remove(b.m);b.m.material.dispose();}}
+ const m=new THREE.Mesh(skyBurstGeometry,skyBurstMat.clone());m.position.set(x,y,z);scene.add(m);skyBursts.push({m,life:.8,initialLife:.8,scale:effects.scale,opacityFade:effects.opacityFade??1});if(skyBursts.length>40){const b=skyBursts.shift();scene.remove(b.m);b.m.material.dispose();}}
 function updateSkyBursts(dt){for(let i=skyBursts.length-1;i>=0;i--){const b=skyBursts[i];b.life-=dt;if(b.smoke){b.m.position.y+=dt*1.5;
  const proximity=b.m.position.distanceTo(dragon.position);
  if(proximity<15){const strength=(1-proximity/15)*dt*(3+Math.abs(Math.sin(elapsed*9))*5);
@@ -1268,7 +1301,7 @@ function updateSkyBursts(dt){for(let i=skyBursts.length-1;i>=0;i--){const b=skyB
   }
  }
  b.m.scale.multiplyScalar(1+dt*.18);
- b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58*(1-(b.windThin||0));}else{b.m.scale.setScalar(b.scale*(1+(1-b.life/.8)*5));b.m.material.opacity=Math.max(0,b.life/.8)*.75;}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
+ b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58*(b.opacityFade??1)*(1-(b.windThin||0));}else{b.m.scale.setScalar(b.scale*(1+(1-b.life/.8)*5));b.m.material.opacity=Math.max(0,b.life/.8)*.75*(b.opacityFade??1);}if(b.life<=0){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose();skyBursts.splice(i,1)}}}
 function addCrater(x,z,radius=3){
  const mesh=new THREE.Mesh(new THREE.RingGeometry(radius*.55,radius,20),new THREE.MeshBasicMaterial({color:0x23180e,side:THREE.DoubleSide,depthWrite:false}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.11,z);scene.add(mesh);
@@ -2988,6 +3021,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    updateHud();
    const district=neighborhood.longRange;
    backgroundDamageTimer=0;
+   const beforeImpact=neighborhood.longRange.stats();
    escalateBackgroundNeighborhood(0,()=>.25);
    const incoming=distantStreaks.filter(streak=>streak.landing);
    updateDistantMeteors(.83);
@@ -2998,7 +3032,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    camera.position.copy(point).add(new THREE.Vector3(4,14,28));
    camera.lookAt(point.x,point.y*.5,point.z);
    renderer.render(scene,camera);
-   return {health:neighborhoodHealth(),incoming:incoming.length,nearDamage:near.damage,afterImpact,settled:district.stats(),
+   return {health:neighborhoodHealth(),beforeImpact,incoming:incoming.length,nearDamage:near.damage,afterImpact,settled:district.stats(),
     png:renderer.domElement.toDataURL('image/png')};
   }),
   qaSettleAtmosphere:()=>run('qaSettleAtmosphere',()=>{

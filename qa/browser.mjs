@@ -1349,7 +1349,9 @@ try {
     'licensed flipbook uses exactly two shared atlases; fallback uses none');
   assert.ok(flightBudget.combustion.active>=2&&flightBudget.combustion.active<=168);
   assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
-  assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');
+  assert.ok(backgroundFalling.airborneCount>0,'individual blast-driven fragments rise above the roofline');
+  assert.ok(new Set(backgroundFalling.rubblePieces.map(p=>p.y.toFixed(2))).size>=5,
+    'independent gravity and launch delays avoid lockstep airborne masonry');
   assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
@@ -1357,7 +1359,7 @@ try {
     &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.60
     &&backgroundSettled.roof.tilt>.3
     &&backgroundSettled.roof.x>backgroundIntact.roof.x+.5,
-    'settled roof folds, shifts and tilts instead of covering debris as a full-size slab');
+    'detached roof falls, shears and rotates separately instead of folding the intact shell');
   assert.ok(backgroundSettled.rubblePieces.filter(piece=>
     piece.height>.04&&piece.height<backgroundIntact.originalHeight*.20).length>=6,
     'small masonry fragments persist after settlement without oversized wall slabs');
@@ -1396,11 +1398,20 @@ try {
   const zeroBlock=await page.evaluate(()=>window.__DD_QA.stageZeroBlockMeteorDamage());
   assert.ok(zeroBlock.ok,zeroBlock.error);
   assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
-  assert.ok(zeroBlock.result.afterImpact.ambientRooftopFires>=6&&
-    zeroBlock.result.afterImpact.ambientRooftopFires<=28,
-    'catastrophic neighborhood damage creates bounded, visible distant rooftop fires');
-  assert.ok(zeroBlock.result.settled.ambientRooftopFires>=6,
-    'background rooftop fires persist after the impact dust clears');
+  // A depleted gauge increases impact intensity; it cannot fabricate a fire
+  // or crater without a visible meteor. This is a causal-gameplay contract.
+  assert.equal(zeroBlock.result.beforeImpact.ambientRooftopFires,0,
+    'no health-driven ambient rooftop fires');
+  assert.equal(zeroBlock.result.beforeImpact.fires,0,
+    'empty neighborhood gauge alone cannot ignite distant rowhouses');
+  assert.equal(zeroBlock.result.beforeImpact.craters,0,
+    'empty gauge without meteor has no new landscape crater');
+  assert.equal(zeroBlock.result.afterImpact.ambientRooftopFires,0,
+    'ambient fire remains disabled after actual meteor impacts');
+  assert.ok(zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.craters>=1,
+    'a real meteor creates burning damage and a persistent crater');
+  assert.ok(zeroBlock.result.afterImpact.impactEvents>=2,
+    'actual multi-target meteor strikes cause the background damage');
   assert.equal(zeroBlock.result.incoming,3,'an empty gauge launches a heavier background barrage');
   assert.equal(zeroBlock.result.nearDamage,1,'a meteor also finishes the heavily damaged nearer background building');
   assert.ok(zeroBlock.result.afterImpact.falling>=1&&zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.smoke>=1,
