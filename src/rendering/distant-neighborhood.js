@@ -393,20 +393,17 @@ export function createDistantNeighborhood({root,flameTexture}){
    const home=particleSlots[i].home;
    if(!home)continue;
    if(home.fall>=1){releaseParticles(i);continue;}
-   const t=home.fallTime||0;
+   const t=home.fall,arc=Math.sin(Math.PI*t);
    for(const pool of particlePools){
     for(let k=0;k<pool.perTier[home.tier];k++){
      const idx=i*pool.max+k,base=idx*3,seed=idx*5;
      const a=pool.seeds[seed]*Math.PI*2;
-     const flight=Math.max(0,t-.10*pool.seeds[seed+3]);
-     const launchY=home.h*(.13+pool.seeds[seed+1]*.64);
-     const launchV=home.h*(1.65+pool.seeds[seed+2]*1.0);
-     const gravity=26+home.tier*2;
-     const scatter=(.10+pool.seeds[seed+3]*.78)*Math.min(2,flight);
-     pool.positions[base]=home.x+Math.cos(a)*home.w*scatter;
-     pool.positions[base+1]=Math.max(.17,launchY+launchV*flight-.5*gravity*flight*flight);
+     const spread=(.10+pool.seeds[seed+3]*.78)*t;
+     pool.positions[base]=home.x+Math.cos(a)*home.w*spread;
+     pool.positions[base+1]=.17+home.h*(.13+pool.seeds[seed+1]*.64)*(1-t)
+       +home.h*(.27+pool.seeds[seed+2]*.69)*arc;
      pool.positions[base+2]=home.z+home.d*(.35+pool.seeds[seed+4]*.16)
-       +Math.sin(a)*home.d*(.12+pool.seeds[seed+3]*.34)*Math.min(2,flight);
+       +Math.sin(a)*home.d*(.12+pool.seeds[seed+3]*.34)*t;
     }
     pool.geometry.attributes.position.needsUpdate=true;
    }
@@ -494,15 +491,9 @@ export function createDistantNeighborhood({root,flameTexture}){
  // Resolve real window geometry once. Distant LOD buildings use a roof breach.
  for(const home of buildingDefs){
   const windows=home.parts.filter(p=>p.type==='window').map(p=>instances[home.tier].window[p.index])
-   .sort((a,b)=>b.y-a.y||a.x-b.x);
-  // The struck opening varies by house. The secondary opening sits on a
-  // lower floor where available, rather than synchronizing two top windows.
-  const primary=windows[home.id%2]||windows[0];
-  const secondary=windows.find(p=>primary&&p.y<primary.y-1.3&&Math.abs(p.x-primary.x)>.5)
-   ||windows.find(p=>p!==primary);
+   .sort((a,b)=>b.y-a.y).slice(0,2);
   home.fireOpenings=[null,null];
-  [primary,secondary].forEach((p,k)=>{if(p)home.fireOpenings[k]=
-   {x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h};});
+  windows.forEach((p,k)=>home.fireOpenings[k]={x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h});
   home.fireOpenings[2]={x:home.x,y:home.h+.25,z:home.z+home.d*.18,w:home.w*.19,h:1.1};
  }
  function positionImpactEffects(home){
@@ -528,22 +519,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    if(opening.part&&opening.part.state!=='attached'){
     x=opening.part.position.x;y=Math.max(.15,opening.part.position.y);z=opening.part.position.z+.12;
    }
-   const rawPower=k===2&&home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2:.85;
-   // Far flames and smoke lose opacity to haze, while retaining impact origin.
-   // Fire begins at one meteor-struck opening, then spreads to others.
-   // Retain the fixed GPU slots; secondary heat ramps rather than suddenly
-   // lighting two symmetrical torches on the same floor at impact.
-   const age=home.fireAge??0;
-   const hasPrimary=!!home.fireOpenings[0];
-   // The near-back rowhouse type has no numeric id; derive a fixed seed
-   // from world coordinates so its stagger times are finite and repeatable.
-   const fireSeed=Number.isInteger(home.id)?home.id:
-    Math.abs(Math.floor(home.x*11+home.z*7));
-   const delay=k===0||!hasPrimary?0:k===1?1+(fireSeed%3)*.40:2.5+(fireSeed%5)*.48;
-   const spread=k===0||!hasPrimary?1:
-    k===1?.035+.965*THREE.MathUtils.smoothstep(age,delay,delay+1.45):
-    THREE.MathUtils.smoothstep(age,delay,delay+1.8);
-   const power=rawPower*spread*Math.max(.20,1-(home.tier??0)*.155);
+   const power=k===2&&home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2:.85;
    combustion.set(index,x,y,z,opening.w*(1+.2*rubble),opening.h*(1.5-.25*rubble),(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,k===2||rubble>.8?1:0);
   }
  }
@@ -579,37 +555,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   advanceDust(slot);
  }
 
- // Health is a risk multiplier, NEVER a source of spontaneous fire.
  const damageMarkers=[],impactSmoke=new Map();
- let healthFraction=1,impactEvents=0,rowScarHits=0;
- // Persistent meteor blast scars use two fixed instanced draw calls; no hit-time geometry.
- const craterCapacity=48;
- const craterRing=new THREE.InstancedMesh(new THREE.RingGeometry(.59,1,18),
-  new THREE.MeshBasicMaterial({color:0x594639,transparent:true,opacity:.66,depthWrite:false,side:THREE.DoubleSide}),craterCapacity);
- const craterCore=new THREE.InstancedMesh(new THREE.CircleGeometry(1,18),
-  new THREE.MeshBasicMaterial({color:0x191512,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide}),craterCapacity);
- craterRing.name='meteor-crater-rim';craterCore.name='meteor-crater-scorch';
- craterRing.frustumCulled=craterCore.frustumCulled=false;
- craterRing.visible=craterCore.visible=false;
- let craterCount=0,craterCursor=0;
- for(let i=0;i<craterCapacity;i++){
-  dummy.position.set(0,-10000,0);dummy.scale.set(0,0,0);
-  dummy.rotation.set(0,0,0);dummy.updateMatrix();
-  craterRing.setMatrixAt(i,dummy.matrix);craterCore.setMatrixAt(i,dummy.matrix);
- }
- craterRing.instanceMatrix.needsUpdate=craterCore.instanceMatrix.needsUpdate=true;
- root.add(craterRing,craterCore);drawCalls+=2;
- function stampCrater(x,z,strength){
-  const radius=Math.min(8,1.1+strength*2.5),idx=craterCursor++%craterCapacity;
-  craterCount=Math.min(craterCapacity,craterCount+1);
-  dummy.rotation.set(-Math.PI/2,0,(idx%9)*.23);
-  dummy.position.set(x,-.345,z);dummy.scale.set(radius,radius,1);
-  dummy.updateMatrix();craterRing.setMatrixAt(idx,dummy.matrix);
-  dummy.position.y=-.344;dummy.scale.set(radius*.57,radius*.57,1);
-  dummy.updateMatrix();craterCore.setMatrixAt(idx,dummy.matrix);
-  craterRing.instanceMatrix.needsUpdate=craterCore.instanceMatrix.needsUpdate=true;
-  craterRing.visible=craterCore.visible=backgroundVisible;
- }
  function clearDamageMarker(marker){
   for(let k=0;k<SITES_PER_FIRE;k++)combustion.clear(marker.slot*SITES_PER_FIRE+k);
  }
@@ -617,7 +563,6 @@ export function createDistantNeighborhood({root,flameTexture}){
  let fireTime=0;
  function addImpactSmoke(home){
   if(impactSmoke.has(home)){positionImpactEffects(home);return;}
-  home.fireAge=0;
   if(impactSmoke.size===FIRE_CAP)releaseFire(impactSmoke.keys().next().value);
   const slot=fireSlots.indexOf(null);fireSlots[slot]=home;
   impactSmoke.set(home,{slot});positionImpactEffects(home);
@@ -625,7 +570,6 @@ export function createDistantNeighborhood({root,flameTexture}){
  function applyFall(home){
   const progress=home.fall*home.fall;
   const heightScale=1-progress*.84;
-  const collapseTime=home.fallTime||0,impulse=home.impactDirection??1;
   for(const {type,index} of home.parts){
    const part=instances[home.tier][type][index];
    const mesh=batches[home.tier][type];
@@ -635,29 +579,18 @@ export function createDistantNeighborhood({root,flameTexture}){
    // A full-size flat black roof hid the new wall fragments in the settled
    // screenshot. Fold the roof inward and cant it over the debris instead.
    // These are existing instance transforms: no new mesh or draw call.
-   const roofFootprint=roof?1-Math.min(1,home.fall*3)*.68:1;
-   // Independent gravitational roof motion instead of synchronized folding.
-   const roofTime=Math.max(0,collapseTime-.10);
-   // Ground contact occurs before fall===1 freezes the building transforms.
-   const roofLanding=Math.max(.42,1.35+home.tier*.27-.22);
-   const roofFlight=Math.min(roofTime,roofLanding);
-   const roofVelocity=home.h*.60;
-   const roofGravity=2*(part.y+roofVelocity*roofLanding-.26)/(roofLanding*roofLanding);
-   const roofY=Math.max(.26,part.y+roofVelocity*roofFlight-.5*roofGravity*roofFlight*roofFlight);
-   const roofX=part.x+impulse*Math.min(1.8,roofFlight)*(1.4+home.w*.23);
-   const roofZ=part.z+Math.min(1.8,roofFlight)*home.d*.16;
+   const roofFootprint=roof?1-progress*.58:1;
    const rupture=Math.min(1,Math.max(0,(home.fall-.07)/.28));
    // A damaged building opens toward the street. The remaining solid core
    // retreats behind the floor slabs instead of shrinking as one opaque cube.
    const main=type==='main';
-   dummy.position.set(roof?roofX:part.x+(main?impulse*home.w*.23*rupture:0),
-    roof?roofY:part.y*heightScale,
-    roof?roofZ:part.z+(main?-home.d*.24*rupture:0));
+   dummy.position.set(part.x+(roof?progress*home.w*.24:main?(home.id%2?-.25:.25)*home.w*rupture:0),
+    part.y*heightScale,
+    part.z+(roof?progress*home.d*.09:main?-home.d*.24*rupture:0));
    dummy.scale.set(part.w*trimScale*roofFootprint*(main?1-rupture*.48:1),
     part.h*heightScale*trimScale,
     part.d*trimScale*(roof?1-progress*.46:main?1-rupture*.30:1));
-   dummy.rotation.set(roof?Math.min(1.9,roofFlight)*.22:0,0,
-    roof?impulse*(Math.min(1.5,roofFlight)*.47+crack*.075):main?impulse*rupture*.09:0);
+   dummy.rotation.set(roof?progress*.10:0,0,roof?progress*.39+crack*.075:0);
    dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
    mesh.instanceMatrix.needsUpdate=true;
@@ -665,9 +598,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   // The dark cavity and fractured facade reveal real horizontal floor layers.
   // Each damaged home updates only its reserved slots in ONE instanced
   // batch for the tier. No runtime mesh creation or interior physics.
-  // Expose real floor dimensions rapidly after the blast; do not grow panels
-  // slowly out of a collapsing building as a choreographed unfolding effect.
-  const breach=Math.min(1,Math.max(0,(home.fall-.025)/.06));
+  const breach=Math.min(1,Math.max(0,(home.fall-.07)/.28));
   const interior=interiorBatches[home.tier];
   for(let k=0;k<home.interiorCount;k++){
    if(breach<=0){
@@ -680,8 +611,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     dummy.scale.set(home.w*.79*breach,wallHeight*breach,.13);
    }else if(k<=home.interiorFloors){
     const fraction=k/(home.interiorFloors+1);
-    const floorT=Math.max(0,collapseTime-.10*(k%3));
-    const floorY=Math.max(.13+.08*k,home.h*fraction-.5*(8+k*.95)*floorT*floorT);
+    const floorY=.13+home.h*heightScale*fraction;
     dummy.position.set(home.x+home.w*.05*Math.sin(home.id+k),floorY,
      home.z+home.d*.17);
     dummy.rotation.set(.025*home.fall,0,(k%2?-.085:.11)*home.fall);
@@ -693,53 +623,40 @@ export function createDistantNeighborhood({root,flameTexture}){
     const panelOffset=index/Math.max(1,home.fracturePanels-1);
     const panelWidth=home.w*(home.fracturePanels>2?.16+.03*(index%2):.22);
     const panelHeight=home.h*(.20+.08*(index%3))*(1-home.fall*.16);
-    // Separate wall panels respond to the blast at different times and fall
-    // independently under gravity instead of pivoting on one shared hinge.
-    const panelT=Math.max(0,collapseTime-.08*(index%3));
-    const panelGround=panelHeight*.5+.04;
-    const panelY=Math.max(panelGround,home.h*(.18+.15*(index%3))+
-      panelT*home.h*(.9+.08*index)-.5*(24+index*2)*panelT*panelT);
-    dummy.position.set(home.x+direction*home.w*(.10+panelOffset*.26)+
-     impulse*panelT*(.70+index*.16),panelY,
-     home.z+home.d*(.40+.10*panelOffset)+Math.min(2,panelT)*home.d*.055);
-    dummy.rotation.set(panelT*(.22+index*.07),0,
-     direction*(.18+Math.min(2,panelT)*(.30+.07*panelOffset)));
+    dummy.position.set(home.x+direction*home.w*(.10+panelOffset*.26+home.fall*.10),
+     panelHeight*.5+home.h*(.12+.12*(index%3))*(1-home.fall*.32),
+     home.z+home.d*(.40+.10*panelOffset+home.fall*.08));
+    dummy.rotation.set(.08*home.fall+.04*panelOffset,0,direction*(.18+.34*home.fall+.09*panelOffset));
     dummy.scale.set(panelWidth*breach,panelHeight*breach,.14*breach);
    }
    dummy.updateMatrix();interior.setMatrixAt(home.interiorStart+k,dummy.matrix);
   }
   interior.instanceMatrix.needsUpdate=true;
   if(breach>0)interior.visible=true;
-  // Each facade shard has an independent launch delay, horizontal impulse,
-  // gravity, ground contact and angular tumble. Reuses existing GPU slots.
-  // No shared sin(PI*fall) arc; buildings cannot all fold in lockstep.
-  const debris=rubbleBatches[home.tier],visibility=Math.min(1,home.fall*6);
+  // Shared instanced chunks rise ABOVE the roofline on a stylized ballistic arc.
+  // They drift and rotate toward the street, leaving settled masonry and roof
+  // fragments. Distant LOD deliberately uses a slower visual clock than
+  // foreground structural destruction; physics and gameplay are unaffected.
+  const debris=rubbleBatches[home.tier];
+  const visibility=Math.min(1,home.fall*6);
+  const airborne=Math.sin(Math.PI*home.fall);
+  const horizontalSpread=home.w*(.12+.44*airborne);
   for(let k=0;k<home.rubbleCount;k++){
    const roofFragment=k%4===0;
-   const launchDelay=(k%4)*.075;
-   const flight=Math.max(0,collapseTime-launchDelay);
-   // Each chunk lands before the parent collapse finishes; no airborne freeze.
-   const reveal=Math.min(1,flight/.10);
-   const w=home.w*shardWidths[k]*visibility*reveal;
-   const h=home.h*shardHeights[k]*(roofFragment?.45:1)*visibility*reveal;
-   const d=home.d*shardDepths[k]*visibility*reveal;
+   const w=home.w*shardWidths[k]*visibility;
+   const h=home.h*shardHeights[k]*(roofFragment?.45:1)*visibility;
+   const d=home.d*shardDepths[k]*visibility;
    const direction=k%2===0?-1:1;
-   const initialY=home.h*(.33+(k%4)*.10);
-   const initialV=home.h*(2.05+(k%5)*.16);
-   const ground=h*.5+.035;
-   const available=Math.max(.42,1.35+home.tier*.27-launchDelay-.06);
-   const landing=available*(.82+.04*(k%4));
-   const gravity=2*(initialY+initialV*landing-ground)/(landing*landing);
-   const travel=Math.min(flight,landing);
-   const y=Math.max(ground,initialY+initialV*travel-.5*gravity*travel*travel);
-   const vx=(direction*(.65+(k%5)*.38)+impulse*.7)*home.w*.52;
-   const vz=(.40+(k%3)*.19)*home.d*.39;
-   dummy.position.set(home.x+home.w*shardWidths[k]*direction+vx*travel,y,
-    home.z+home.d*shardZ[k%5]+vz*travel);
-   // Horizontal slide and angular tumble stop at the physical ground contact.
-   const tumble=Math.min(1.9,travel);
-   dummy.rotation.set(tumble*(k%2?-.83:.61),tumble*(k%3?-.72:.53),
-    direction*tumble*(.35+(k%5)*.15));
+   const side=(.13+(k%5)*.12)*direction;
+   const landingHeight=h*.5+.035;
+   const loft=airborne*home.h*(.72+(k%4)*.13);
+   const y=landingHeight+(1-home.fall)*home.h*(.34+(k%3)*.11)+loft;
+   const settleX=home.w*(side*.80);
+   const settleZ=home.d*shardZ[k%5];
+   dummy.position.set(home.x+settleX+direction*horizontalSpread*airborne,y,
+    home.z+settleZ+airborne*home.d*.10);
+   dummy.rotation.set(airborne*(k%2?-.68:.54)+home.fall*.22,
+    home.fall*(k%2?-.70:.58),home.fall*(k%2?-.48:.41)+airborne*.49*direction);
    dummy.scale.set(w,h,d);dummy.updateMatrix();
    debris.setMatrixAt(home.rubbleStart+k,dummy.matrix);
   }
@@ -765,44 +682,19 @@ export function createDistantNeighborhood({root,flameTexture}){
   }
   return nearest?{id:nearest.id,x:nearest.x,y:nearest.h,z:nearest.z}:null;
  }
- function strikeTarget(id,strength,impactX=null){
+ function strikeTarget(id,strength){
   const home=buildingDefs[id];
   if(!home||home.damage>=1||falling.size>=8)return false;
-  home.damage=Math.min(1,home.damage+Math.max(0,strength));
-  damaged.add(home);impactEvents++;
-  addImpactSmoke(home); // ONLY an impact can start a fire.
-  if(home.damage===1){
-   home.fallTime=0;home.impactDirection=impactX===null?1:impactX>=home.x?1:-1;
-   falling.add(home);beginDust(home);assignParticles(home);
-  }else applyFall(home);
+  home.damage=Math.min(1,home.damage+strength);
+  damaged.add(home);
+  addImpactSmoke(home);
+  if(home.damage===1){falling.add(home);beginDust(home);assignParticles(home);}
+  else applyFall(home); // visible progressive roof/cornice cracks before collapse
   return true;
- }
- function strikeRow(id,strength,health=healthFraction*100){
-  const target=buildingDefs[id];if(!target)return {hits:0,crater:false};
-  const danger=THREE.MathUtils.clamp(1-health/100,0,1);
-  const hit=strikeTarget(id,strength,target.x);
-  stampCrater(target.x,target.z+target.d*.28,strength*(.7+danger*.9));
-  let hits=hit?1:0;
-  const neighbors=danger>.78?4:danger>.42?2:danger>.15?1:0;
-  // A row scar is made by THIS meteor's shockwave, not a separate timed fire.
-  for(let k=1;k<=neighbors;k++){
-   const dir=k%2?1:-1,offset=Math.ceil(k/2)*7.5;
-   const next=targetAt(target.x+dir*offset,target.z);
-   if(!next||next.id===id||Math.abs(next.z-target.z)>5)continue;
-   if(strikeTarget(next.id,strength*(.75-k*.10),target.x)){
-    hits++;
-    // At severe neighborhood damage, adjoining masonry leaves a continuous
-    // scorched footprint across several houses from one real meteor shockwave.
-    if(danger>.65)stampCrater(next.x,next.z+next.d*.28,
-     strength*(.24+.16*danger));
-   }
-  }
-  rowScarHits+=Math.max(0,hits-1);
-  return {hits,crater:true};
  }
  function strike(x,z,strength){
   const target=targetAt(x,z);
-  return target&&strikeTarget(target.id,strength,x)?target:null;
+  return target&&strikeTarget(target.id,strength)?target:null;
  }
  function update(dt){
   if(impactSmoke.size||damageMarkers.length){
@@ -811,7 +703,6 @@ export function createDistantNeighborhood({root,flameTexture}){
   }
   for(const home of falling){
    home.fall=Math.min(1,home.fall+dt/(1.35+home.tier*.27));
-   home.fallTime=(home.fallTime||0)+dt;
    applyFall(home);
    if(home.fall===1)falling.delete(home);
   }
@@ -827,13 +718,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     if(tail===0)releaseDust(slot);
    }
   }
-  for(const home of impactSmoke.keys()){
-   // Stop re-uploading static window source transforms after the spread.
-   // Only existing fire instances animate; no new meshes or textures.
-   const spreading=(home.fireAge??0)<7;
-   if(spreading)home.fireAge+=dt;
-   if(spreading||falling.has(home)||home.windows)positionImpactEffects(home);
-  }
+  for(const home of impactSmoke.keys())if(falling.has(home)||home.windows)positionImpactEffects(home);
  }
 
  function restore(){
@@ -842,28 +727,25 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const slot of collapseDust)releaseDust(slot);
 
   for(const puff of damageMarkers)clearDamageMarker(puff);
-  for(const home of impactSmoke.keys())home.fireAge=0;
   impactSmoke.clear();damageMarkers.length=0;
-  for(const home of damaged){home.damage=home.fall=home.fallTime=0;home.impactDirection=1;applyFall(home);}
+  for(const home of damaged){home.damage=home.fall=0;applyFall(home);}
   for(const debris of rubbleBatches)debris.visible=false;
   for(const interior of interiorBatches)interior.visible=false;
-  damaged.clear();falling.clear();fireTime=0;healthFraction=1;
-  impactEvents=0;rowScarHits=0;craterCount=craterCursor=0;
-  for(let i=0;i<craterCapacity;i++){
-   dummy.position.set(0,-10000,0);dummy.rotation.set(0,0,0);
-   dummy.scale.set(0,0,0);dummy.updateMatrix();
-   craterRing.setMatrixAt(i,dummy.matrix);craterCore.setMatrixAt(i,dummy.matrix);
-  }
-  craterRing.instanceMatrix.needsUpdate=craterCore.instanceMatrix.needsUpdate=true;
-  craterRing.visible=craterCore.visible=false;
+  damaged.clear();falling.clear();fireTime=0;
  }
  function setHealth(health){
-  // Health affects the NEXT meteor, never fabricates a burn in an intact home.
-  healthFraction=THREE.MathUtils.clamp(health/100,0,1);
+  const damage=Math.max(0,Math.min(1,1-health/100));
+  const targetCount=Math.min(28-impactSmoke.size,Math.floor(damage*28));
+  while(damageMarkers.length<targetCount){
+   const home=buildingDefs[(damageMarkers.length*41+23)%buildingDefs.length];
+   const marker={home,slot:FIRE_CAP+damageMarkers.length};
+   positionFire(home,marker.slot);damageMarkers.push(marker);
+  }
+  while(damageMarkers.length>targetCount)clearDamageMarker(damageMarkers.pop());
  }
  return {
   root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:STREET_AXIS.map(s=>s.name),
-  setHealth,targetAt,strikeTarget,strikeRow,strike,update,restore,
+  setHealth,targetAt,strikeTarget,strike,update,restore,
   burnBackgroundBuilding(home){
    addImpactSmoke(home);
    positionImpactEffects(home,1-home.damage**2*.84);
@@ -871,7 +753,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   setVisible(on){backgroundVisible=on;base.visible=on;for(const t of tiers)t.group.visible=on;
    for(const pool of particlePools)pool.mesh.visible=on&&activeParticleSlots>0;
    dustPoints.visible=on&&collapseDust.some(s=>s.home&&s.home.fall<1);
-   combustion.group.visible=on;craterRing.visible=craterCore.visible=on&&craterCount>0},
+   combustion.group.visible=on},
   buildingState(id){
    const home=buildingDefs[id];
    const {index}=home.parts[0];
@@ -898,11 +780,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    const roof={width:Math.hypot(re[0],re[1],re[2]),depth:Math.hypot(re[8],re[9],re[10]),
     tilt:Math.atan2(re[1],re[0]),x:re[12],z:re[14]};
    const smoke=impactSmoke.get(home);
-   // Snapshot power/position by VALUE for staged QA. Without copying the
-   // fixed-pool source objects, an early-impact state silently changes when
-   // a later update spreads the fire, invalidating before/after comparisons.
-   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE)
-    .filter(s=>s.active).map(s=>({...s})):[];
+   const sites=smoke?combustion.sources.slice(smoke.slot*SITES_PER_FIRE,(smoke.slot+1)*SITES_PER_FIRE).filter(s=>s.active):[];
    const tonguePositions=sites.map(s=>[s.x,s.y,s.z]),ventSmokePositions=tonguePositions;
    return {damage:home.damage,fall:home.fall,height:mainHeight,originalHeight:home.h,roof,
     rubbleCount:rubblePieces.filter(piece=>piece.height>.01).length,rubblePieces,
@@ -919,15 +797,14 @@ export function createDistantNeighborhood({root,flameTexture}){
     flamePosition:sites.length?[sites[0].x,sites[0].y]:null,
     flameHeight:sites[0]?.h??null,flameWidth:sites[0]?.w??null,
     primaryFlameVisible:false,tonguePositions,ventSmokePositions,
-    smokeHeight:sites[0]?.h*3.8,combustionSites:sites,fireAge:home.fireAge??0,craterCount,impactEvents,
+    smokeHeight:sites[0]?.h*3.8,combustionSites:sites,
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },
   stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
-   smoke:impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
-   impactEvents,rowScarHits,craters:craterCount,craterCapacity,healthFraction,
+   smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    combustion:combustion.stats(),
-   ambientRooftopFires:0, // health-only changes are NEVER ignition events
+   ambientRooftopFires:damageMarkers.length,
    rubbleBatches:rubbleBatches.length,rubbleCapacity:buildingDefs.reduce((sum,b)=>sum+b.rubbleCount,0),
    debrisLodByTier:rubblePerTier,
    exposedFloorLodByTier:floorsPerTier,facadeFractureLodByTier:panelsPerTier,

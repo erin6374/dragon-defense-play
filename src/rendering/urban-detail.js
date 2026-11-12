@@ -104,17 +104,14 @@ export function addStreetSetDressing(THREE,root){
  return set;
 }
 
-// Low planting at the camera-side edge. Keep it subordinate to the street,
-// not a band of oversized near-black silhouettes across the screen.
-// The cinematic upgrade installs an olive cutout-leaf material here, so the
-// existing instance colors should be pale tints, not second darkening coats.
+// Low planting at the camera-side edge, inspired by the cinematic mockup.
 export function addForegroundPlanting(THREE,root){
  const geometry=new THREE.IcosahedronGeometry(1,1);
  const material=new THREE.MeshLambertMaterial({color:0xffffff});
  const bed=new THREE.InstancedMesh(geometry,material,108);
  bed.name='West sidewalk foreground planting';
  const leaf=new THREE.Object3D();
- const colors=[0xa4b5a3,0xb6bfaa,0xc5cdb7,0xadb9a3];
+ const colors=[0x333b28,0x414b2a,0x56613b,0x4a552f];
  for(let i=0;i<bed.count;i++){
   const x=-122+i*2.3;
   // Keep both crosswalk approaches open.
@@ -122,11 +119,9 @@ export function addForegroundPlanting(THREE,root){
    leaf.scale.setScalar(0);
   }else{
    const spread=(i*7%11)/11;
-   // Lower, narrower clumps sit rooted just behind the West sidewalk curb.
-   // Preserve gaps at both intersections and the single instanced draw batch.
-   leaf.position.set(x,-.16+spread*.05,47.1+(i*17%9)*.18);
-   leaf.scale.set(.98+spread*.43,.23+spread*.12,.42+spread*.15);
-   leaf.rotation.set(spread*.14,i*1.22,spread*.08);
+   leaf.position.set(x,.25+spread*.38,47.7+(i*17%9)*.22);
+   leaf.scale.set(1.8+spread,.67+spread*.72,.93+spread);
+   leaf.rotation.set(spread,i*1.22,spread*.31);
   }
   leaf.updateMatrix();
   bed.setMatrixAt(i,leaf.matrix);

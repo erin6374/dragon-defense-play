@@ -20,6 +20,7 @@ varying vec2 vUv;
 varying float vSeed,vAge,vPower;
 void main(){
  vUv=uv;vSeed=settings.z+particle*7.13;vPower=settings.w;
+ if(vPower<=0.){vAge=0.;gl_Position=vec4(2.,2.,2.,1.);return;}
  float w=settings.x,h=settings.y;
  vec3 p=position;
  vec3 center=source;
@@ -134,13 +135,14 @@ void main(){
 export function createBuildingCombustion(parent,capacity,name='building-combustion'){
  const group=new THREE.Group();group.name=name;parent.add(group);
  const uniforms={clock:{value:0}};
+ let activeCount=0,lastActive=-1;group.visible=false;
  const counts=[3,6,5,1];
  const sources=Array.from({length:capacity},()=>({active:false,x:0,y:0,z:0,w:0,h:0,seed:0,power:0,lod:0}));
  const batches=counts.map((count,kind)=>{
   const plane=new THREE.PlaneGeometry(1,1);
   const geometry=new THREE.InstancedBufferGeometry();geometry.index=plane.index;
   geometry.attributes.position=plane.attributes.position;geometry.attributes.uv=plane.attributes.uv;
-  geometry.instanceCount=capacity*count;
+  geometry.instanceCount=0;
   geometry.setAttribute('source',new THREE.InstancedBufferAttribute(new Float32Array(capacity*count*3),3).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute('settings',new THREE.InstancedBufferAttribute(new Float32Array(capacity*count*4),4).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute('surface',new THREE.InstancedBufferAttribute(new Float32Array(capacity*count),1).setUsage(THREE.DynamicDrawUsage));
@@ -155,8 +157,14 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
  });
  function set(index,x,y,z,w,h,seed,power=1,lod=0,surface=0){
   if(index<0||index>=capacity)throw new RangeError('Combustion pool index');
-  const s=sources[index];s.active=power>0;s.x=x;s.y=y;s.z=z;s.w=w;s.h=h;s.seed=seed;s.power=power;s.lod=lod;s.surface=surface;
+  const s=sources[index];const wasActive=s.active;
+  if(wasActive!==(power>0))activeCount+=power>0?1:-1;
+  s.active=power>0;s.x=x;s.y=y;s.z=z;s.w=w;s.h=h;s.seed=seed;s.power=power;s.lod=lod;s.surface=surface;
+  if(s.active)lastActive=Math.max(lastActive,index);
+  else if(index===lastActive)while(lastActive>=0&&!sources[lastActive].active)lastActive--;
+  group.visible=activeCount>0;
   batches.forEach(({geometry,count},kind)=>{
+   geometry.instanceCount=(lastActive+1)*count;
    const a=geometry.attributes.source,b=geometry.attributes.settings;
    const budget=kind===1?Math.max(2,6-lod):kind===2?Math.max(1,5-lod):kind===0?(lod>=4?2:3):1;
    for(let k=0;k<count;k++){const i=index*count+k;a.setXYZ(i,x,y,z);b.setXYZW(i,w,h,seed,k<budget?power:0);geometry.attributes.surface.setX(i,surface);}

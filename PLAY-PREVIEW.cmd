@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title Dragon Defense v5.5 RC1 Windows Preview
+title Dragon Defense Windows Development Preview
 cd /d "%~dp0"
 
 set "PORT=8769"

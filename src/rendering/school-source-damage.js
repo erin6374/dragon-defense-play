@@ -35,7 +35,6 @@ export function createSchoolSourceDamage() {
  const patch=material=>{
   const glass=material.name==='school-glass';
   const brick=material.name==='school-brick';
-  const interior=material.name==='school-interior';
   material.onBeforeCompile=shader=>{
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
@@ -77,23 +76,10 @@ export function createSchoolSourceDamage() {
     diffuseColor.rgb*=.88+.22*weather-runoff;
 
    `);
-   if(interior)shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`
-    #include <emissivemap_fragment>
-    // The retained FBX interior previously emitted uniformly across every
-    // surface. Stable room-scale light pools give the glazing real depth;
-    // they do not add fake window planes or change the model/damage mask.
-    vec3 roomCell=floor((schoolDamagePosition+vec3(18.,7.,68.))/vec3(5.2,6.1,7.4));
-    float roomSeed=fract(sin(dot(roomCell,vec3(17.13,43.71,29.57)))*43758.5453);
-    float roomLight=mix(.18,.82,smoothstep(.20,.78,roomSeed));
-    vec2 roomLocal=fract((schoolDamagePosition.xz+vec2(18.,68.))/vec2(5.2,7.4));
-    vec2 lightPool=sin(roomLocal*3.14159265);
-    float interiorFalloff=.48+.52*lightPool.x*lightPool.y;
-    totalEmissiveRadiance*=roomLight*interiorFalloff;
-   `);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-room-light-v2-'+glass+'-'+brick+'-'+interior;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass+'-'+brick;
  };
  return {stamp,patch,strikes:()=>strikes,reset:()=>{
   pixels.fill(0);

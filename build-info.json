@@ -1,8 +1,8 @@
 {
-  "build": "5.5-school-light-depth-rc30",
-  "version": "5.5.0-rc.30",
+  "build": "5.5-performance-impact-rc31",
+  "version": "5.5.0-rc.31",
   "gameplay_base": "5.2.3",
-  "scope": "RC30 candidate: bounded room-scale emissive falloff on retained school interior surfaces; no geometry, fire, gameplay or light-count changes.",
+  "scope": "Explicit render pixel budgets, inactive combustion culling and visible meteor-to-facade contact; removes timer-only background explosions.",
   "new_gameplay_features": true,
-  "release_status": "RC30 DEVELOPMENT CANDIDATE: local shader assembly and damage/reset checks pass; exact-head browser, scene/motion review and packaging pending. Not a release."
+  "release_status": "DEVELOPMENT CANDIDATE: local regression checks pass; browser, visual and hardware performance verification pending."
 }

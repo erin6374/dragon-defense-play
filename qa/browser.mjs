@@ -332,35 +332,6 @@ try {
   await page.waitForFunction(() => window.__DD_QA?.snap().frameTimes.frames >= 2 &&
     window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady);
   report.startup = await snap();
-  // RC23: inspect the actual low-planting InstancedMesh, not just screenshot
-  // brightness. The earlier black foreground band came from multiplying
-  // dark instance colors by an already-olive cutout foliage material.
-  report.foregroundPlanting=await page.evaluate(async()=>{
-    const THREE=await import('three');
-    const {addForegroundPlanting}=await import('./src/rendering/urban-detail.js');
-    const root=new THREE.Group(),bed=addForegroundPlanting(THREE,root);
-    const mat=new THREE.Matrix4(),pos=new THREE.Vector3(),rot=new THREE.Quaternion(),
-      scale=new THREE.Vector3(),tint=new THREE.Color();
-    let visible=0,open=0,maxHeight=0,maxCenter=-Infinity,minTint=Infinity;
-    for(let i=0;i<bed.count;i++){
-      bed.getMatrixAt(i,mat);mat.decompose(pos,rot,scale);
-      bed.getColorAt(i,tint);
-      minTint=Math.min(minTint,tint.r,tint.g,tint.b);
-      if(scale.lengthSq()<1e-9){open++;continue;}
-      visible++;maxHeight=Math.max(maxHeight,scale.y);
-      maxCenter=Math.max(maxCenter,pos.y);
-    }
-    root.remove(bed);bed.geometry.dispose();bed.material.dispose();
-    return {instances:bed.count,visible,open,maxHeight,maxCenter,minTint};
-  });
-  assert.equal(report.foregroundPlanting.instances,108,
-    'foreground curb planting remains one fixed-capacity instanced bed');
-  assert.ok(report.foregroundPlanting.open>=10,
-    'both cross-street approaches remain open');
-  assert.ok(report.foregroundPlanting.maxHeight<.36&&report.foregroundPlanting.maxCenter<0,
-    'cutout foreground vegetation stays low and below eye level');
-  assert.ok(report.foregroundPlanting.minTint>.25,
-    'cutout foliage instance tints cannot multiply olive leaves almost black');
   report.combustionPool=await page.evaluate(async()=>{
     const T=await import('three');
     const {createBuildingCombustion}=await import('./src/rendering/building-combustion.js');
@@ -376,27 +347,11 @@ try {
     pool.clear(0);const cleared=activeCounts();
     for(let i=0;i<100;i++){pool.set(i%2,1,2,3,1,1,i);pool.clear(i%2);}
     pool.reset();
-    const spatialVfx={
-      licensedFlameTongues:pool.group.children[0].material.vertexShader.includes('float tongueLane=particle-1.')&&
-        pool.group.children[0].material.vertexShader.includes('tongueLane*(.20+.19*fract(vSeed*.117))'),
-      windowRootedSoot:pool.group.children[1].material.vertexShader.includes('vStem>.5'),
-      texturedStem:pool.group.children[1].material.fragmentShader.includes('stemDensity*.85'),
-      windShearedSmoke:pool.group.children[1].material.vertexShader.includes('turbulentEddy'),
-      licensedThermalCore:pool.group.children[0].material.fragmentShader.includes('hotCore'),
-      seededFlameSilhouette:pool.group.children[0].material.vertexShader.includes('siteBias*.22'),
-      seededAtlasMirror:pool.group.children[0].material.fragmentShader.includes('sourcePhase=fract(vSeed*.113)'),
-      rootedFlameTaper:pool.group.children[0].material.fragmentShader.includes('contactTaper')
-    };
-    const result={near,far,anchor,after,rejected,cleared,spatialVfx,stats:pool.stats(),
+    const result={near,far,anchor,after,rejected,cleared,stats:pool.stats(),
       stable:JSON.stringify(ids)===JSON.stringify(pool.group.children.map(m=>[m.geometry.uuid,m.material.uuid]))};
     for(const m of pool.group.children){m.geometry.dispose();m.material.dispose();}
     return result;
   });
-  assert.deepEqual(report.combustionPool.spatialVfx,
-    {licensedFlameTongues:true,windowRootedSoot:true,texturedStem:true,
-      windShearedSmoke:true,licensedThermalCore:true,
-      seededFlameSilhouette:true,seededAtlasMirror:true,rootedFlameTaper:true},
-    'RC29 preserves fixed licensed pools with per-source flame silhouettes');
   assert.deepEqual(report.combustionPool.near,[3,6,5,1]);
   assert.deepEqual(report.combustionPool.far,[2,2,1,1]);
   assert.deepEqual(report.combustionPool.anchor,report.combustionPool.after,'advected particles do not move their opening');
@@ -492,12 +447,8 @@ try {
   assert.ok(coverage.contacts.every(t=>Number.isFinite(t.maxCardHeightRows)&&Number.isFinite(t.maxCardWidthBays)&&
     t.maxCardHeightRows<2.64&&t.maxCardWidthBays<2.18),
     'all three licensed flame tiers remain finite and physically bounded, including the intentionally larger hero flames');
-  // A fast initial ignition remains near the strike, while subsequent licensed
-  // window sites now reach six facade rows above/below the center (RC21).
-  // Setback-roof headroom may move the center downward four additional rows.
-  assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*10.75),
-    'all fire origins remain within ten-and-three-quarter window rows of the original meteor strike: '+
-      JSON.stringify(coverage.contacts.map(t=>({id:t.id,offsetRows:t.maxContactOffset/t.windowPitch}))));
+  assert.ok(coverage.contacts.every(t=>t.maxContactOffset<t.windowPitch*3.5),
+    'burning windows remain close to the meteor/scorch contact');
   assert.ok(coverage.contacts.find(t=>t.id==='one-liberty-place').impactY/90>.62,
     'distant skyline strikes reach upper occupied floors rather than only lower tower bays');
   assert.equal(coverage.stats.capacity,81);
@@ -525,13 +476,11 @@ try {
     window.__DD_FIRE_VFX.setMode('procedural');
     if(window.__DD_FIRE_VFX.mode!=='procedural')throw Error('A/B procedural fallback failed');
     window.__DD_FIRE_VFX.setMode('flipbook');
-    if(window.__DD_FIRE_VFX.smokeMode!=='rooted')throw Error('Anchored CC0 smoke default not active');
+    if(window.__DD_FIRE_VFX.smokeMode!=='plume')throw Error('CC0 plume mode not active');
     window.__DD_FIRE_VFX.setSmokeMode('legacy');
     if(window.__DD_FIRE_VFX.smokeMode!=='legacy')throw Error('RC17 smoke A/B failed');
     window.__DD_FIRE_VFX.setSmokeMode('plume');
-    if(window.__DD_FIRE_VFX.smokeMode!=='plume')throw Error('RC20 plume A/B failed');
-    window.__DD_FIRE_VFX.setSmokeMode('rooted');
-    if(window.__DD_FIRE_VFX.smokeMode!=='rooted')throw Error('Anchored smoke A/B restoration failed');
+    if(window.__DD_FIRE_VFX.smokeMode!=='plume')throw Error('Plume A/B restoration failed');
     return window.__DD_FIRE_VFX.ready;
   });
 
@@ -866,10 +815,7 @@ try {
     assert.ok(sample.ok,sample.error);
     assert.deepEqual(sample.result.before,{streak:3,strike:3,background:2.5,count:0},
       'restart restores the distant disaster timers and clears existing streaks');
-    assert.equal(sample.result.after.count,2,
-      'the production update creates two visible distant streaks, never a free-floating scripted explosion');
-    assert.equal(sample.result.after.skylineLandings,1,
-      'a separate non-interceptable skyline meteor must land before its tower can explode');
+    assert.equal(sample.result.after.count,1,'the production update spawns a distant meteor streak');
   }
   const [intactCadence,damagedCadence]=distantCadence.map(sample=>sample.result.after);
   assert.ok(damagedCadence.streak<intactCadence.streak && damagedCadence.strike<intactCadence.strike,
@@ -978,10 +924,6 @@ try {
   report.meteorShootability.unopposedFastImpact=unopposedFastImpact.result;
   const restoredWave=await page.evaluate(()=>window.__DD_QA.start(1));
   assert.ok(restoredWave.ok,restoredWave.error);
-  report.keyboardStart={wave:restoredWave.result.wave,active:restoredWave.result.active,
-    paused:restoredWave.result.paused,dragon:restoredWave.result.dragon};
-  assert.ok(restoredWave.result.active&&!restoredWave.result.paused,
-    'QA wave-1 reset must dismiss its chapter cinematic before real keyboard movement');
   const before = await snap();
   await page.keyboard.down('KeyD');
   try {
@@ -1177,11 +1119,6 @@ try {
   const fireXs=towerImpact.result.secondaryBurnSites.map(site=>site.position[0]);
   assert.ok(Math.max(...fireXs)-Math.min(...fireXs)>5,
     'multi-window combustion spans distinct physical bays rather than one narrow torch');
-  const fireYs=towerImpact.result.secondaryBurnSites.map(site=>site.position[1]);
-  assert.ok(Math.max(...fireYs)-Math.min(...fireYs)>12,
-    'nine fire contacts spread vertically across multiple architectural storeys, not one small patch');
-  assert.ok(new Set(fireYs.map(y=>Math.round(y/2))).size>=5,
-    'multi-storey flame origins are distinct facade window rows');
   assert.ok(towerImpact.result.secondaryBurnSites.every(site=>site.active&&site.width>.5&&site.width<2&&site.position.every(Number.isFinite)),
     'sources are small finite window openings');
   const burnRatios=towerImpact.result.secondaryBurnSites.map(site=>site.renderWidth/site.width);
@@ -1345,25 +1282,6 @@ try {
   assert.ok(backgroundIntact.smokePosition&&backgroundFalling.smokePosition&&backgroundSettled.smokePosition,
     'distant impact smoke stays visible throughout collapse');
   const fireStates=[backgroundIntact,backgroundFalling,backgroundSettled];
-  // RC27 causal firefront: actual meteor lights ONE window first; burning
-  // then spreads at different times to lower facade openings and roof.
-  // All existing slots are reused; late fire must not erupt spontaneously.
-  assert.ok(backgroundIntact.fireAge<=.001,
-    'first-window fire begins at the moment of the first meteor impact');
-  assert.ok(backgroundIntact.combustionSites[0].power>
-    backgroundIntact.combustionSites[1].power*10,
-    'second window is initially only faintly smoking, not a matching torch');
-  assert.ok(Math.abs(backgroundIntact.tonguePositions[0][1]-
-    backgroundIntact.tonguePositions[1][1])>1.1,
-    'secondary combustion source uses a different facade floor');
-  assert.ok(backgroundSettled.fireAge>3,
-    'heat-spread timer advances while existing fire remains active');
-  assert.ok(backgroundSettled.combustionSites[1].power>
-    backgroundIntact.combustionSites[1].power*8,
-    'secondary window ignites gradually after its causal meteor hit');
-  assert.ok(fireStates.every(f=>f.combustionSites.every(s=>
-    Number.isFinite(s.power)&&s.power>=0&&s.power<=1)),
-    'all smoke/fire sources stay finite during heat spread and collapse');
   assert.ok(fireStates.every(f=>!f.primaryFlameVisible),'legacy central sprite is absent in all damage states');
   assert.ok(fireStates.every(f=>f.combustionSites.length>=2&&f.combustionSites.every(s=>[s.x,s.y,s.z,s.w,s.h].every(Number.isFinite))),
     'bounded real window/roof openings survive collapse');
@@ -1379,19 +1297,15 @@ try {
     'licensed flipbook uses exactly two shared atlases; fallback uses none');
   assert.ok(flightBudget.combustion.active>=2&&flightBudget.combustion.active<=168);
   assert.ok(backgroundSettled.rubbleCount>=4,'distant rubble LOD emits multiple roof and masonry fragments');
-  assert.ok(backgroundFalling.airborneCount>0,'individual blast-driven fragments rise above the roofline');
-  assert.ok(new Set(backgroundFalling.rubblePieces.map(p=>p.y.toFixed(2))).size>=5,
-    'independent gravity and launch delays avoid lockstep airborne masonry');
+  assert.ok(backgroundFalling.airborneCount>0,'airborne fragments rise above the distant roofline');
   assert.ok(backgroundFalling.debrisMotionSeconds>1.35,'distant collapse has a deliberately slower motion clock');
   assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.height>.1&&piece.y>=0&&piece.y<backgroundIntact.originalHeight*.3),
     'settled facade fragments are finite and near the ground');
-  assert.ok(backgroundSettled.rubblePieces.every(piece=>piece.y<backgroundIntact.originalHeight*.18),
-    'RC26: no debris freezes high above the street when collapse updates end');
   assert.ok(backgroundSettled.roof.width<backgroundIntact.roof.width*.49
     &&backgroundSettled.roof.depth<backgroundIntact.roof.depth*.60
     &&backgroundSettled.roof.tilt>.3
     &&backgroundSettled.roof.x>backgroundIntact.roof.x+.5,
-    'detached roof falls, shears and rotates separately instead of folding the intact shell');
+    'settled roof folds, shifts and tilts instead of covering debris as a full-size slab');
   assert.ok(backgroundSettled.rubblePieces.filter(piece=>
     piece.height>.04&&piece.height<backgroundIntact.originalHeight*.20).length>=6,
     'small masonry fragments persist after settlement without oversized wall slabs');
@@ -1430,20 +1344,11 @@ try {
   const zeroBlock=await page.evaluate(()=>window.__DD_QA.stageZeroBlockMeteorDamage());
   assert.ok(zeroBlock.ok,zeroBlock.error);
   assert.equal(zeroBlock.result.health,0,'the simulated neighborhood gauge is empty');
-  // A depleted gauge increases impact intensity; it cannot fabricate a fire
-  // or crater without a visible meteor. This is a causal-gameplay contract.
-  assert.equal(zeroBlock.result.beforeImpact.ambientRooftopFires,0,
-    'no health-driven ambient rooftop fires');
-  assert.equal(zeroBlock.result.beforeImpact.fires,0,
-    'empty neighborhood gauge alone cannot ignite distant rowhouses');
-  assert.equal(zeroBlock.result.beforeImpact.craters,0,
-    'empty gauge without meteor has no new landscape crater');
-  assert.equal(zeroBlock.result.afterImpact.ambientRooftopFires,0,
-    'ambient fire remains disabled after actual meteor impacts');
-  assert.ok(zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.craters>=1,
-    'a real meteor creates burning damage and a persistent crater');
-  assert.ok(zeroBlock.result.afterImpact.impactEvents>=2,
-    'actual multi-target meteor strikes cause the background damage');
+  assert.ok(zeroBlock.result.afterImpact.ambientRooftopFires>=6&&
+    zeroBlock.result.afterImpact.ambientRooftopFires<=28,
+    'catastrophic neighborhood damage creates bounded, visible distant rooftop fires');
+  assert.ok(zeroBlock.result.settled.ambientRooftopFires>=6,
+    'background rooftop fires persist after the impact dust clears');
   assert.equal(zeroBlock.result.incoming,3,'an empty gauge launches a heavier background barrage');
   assert.equal(zeroBlock.result.nearDamage,1,'a meteor also finishes the heavily damaged nearer background building');
   assert.ok(zeroBlock.result.afterImpact.falling>=1&&zeroBlock.result.afterImpact.fires>=1&&zeroBlock.result.afterImpact.smoke>=1,

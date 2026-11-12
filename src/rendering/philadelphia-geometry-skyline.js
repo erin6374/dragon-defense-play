@@ -337,16 +337,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   // Snap to the same UV window grid used by makeFacade; stay below setbacks.
   const cols=d.style==='civic'?7:11,rows=facadeRows(d);
   const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
-  // Shift the ignition center below the highest safe window row to leave
-  // real architectural headroom for five distinct storeys of burning glazing.
-  const topWallRow=Math.floor(rows*fullWidthFacadeTop(d))-1;
-  // Reserve room on BOTH sides of the source window to prevent new contacts
-  // clipping into one top row or overlapping the silhouette's setback roof.
-  const margin=Math.max(3,Math.round(rows*.11));
-  const maxCenter=Math.max(5,Math.min(highestSafeCenterRow(d),topWallRow-margin));
-  const minCenter=Math.min(maxCenter,5+margin);
-  const centerRow=Math.max(minCenter,Math.min(maxCenter,
+  // Reserve two additional rows above center for five-floor glass fire spread.
+  // This also prevents distinct windows merging at a roof setback.
+  const centerRow=Math.max(5,Math.min(highestSafeCenterRow(d),
    Math.round(tower.impactLocal.y/d.h*rows)));
+  const topWallRow=Math.floor(rows*fullWidthFacadeTop(d))-1;
   const row=Math.max(3,Math.min(topWallRow,Math.round(centerRow+offsetY/d.h*rows)));
   const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
   site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
@@ -365,24 +360,27 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
 
  }
- function strikeNearest(localX,intensity=0){
-  intensity=Math.max(0,Math.min(1,intensity));
-  // The skyline's towers share this group's local coordinates. Snap a distant
-  // streak to the nearest tower facade rather than exploding in empty sky.
+ function resolveStrike(localX){
   let selected=towers[0],distance=Infinity;
   for(const tower of towers){
    const delta=Math.abs(tower.group.position.x-localX);
    if(delta<distance){selected=tower;distance=delta;}
   }
   if(!selected)return null;
-  const tower=selected,impact=tower.impactSprite;
+  const tower=selected;
   // Distant strikes favor upper occupied floors; the roof profile still caps contact.
   const proposedHeight=.62+((Math.floor(Math.abs(localX)*7)%5)*.055);
   // Impact/scorch and burning windows must contact the same physical wall.
   const heightFraction=Math.min(proposedHeight,
    highestSafeCenterRow(tower.def)/facadeRows(tower.def));
-  tower.impactLocal.set(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),
-   tower.def.h*heightFraction,tower.def.depth/2+.55);
+  return {tower,point:new THREE.Vector3(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55)};
+ }
+ function targetPoint(localX){const hit=resolveStrike(localX);return hit?hit.tower.group.localToWorld(hit.point):null;}
+ function strikeNearest(localX,intensity=0){
+  intensity=Math.max(0,Math.min(1,intensity));
+  const hit=resolveStrike(localX);if(!hit)return null;
+  const tower=hit.tower,impact=tower.impactSprite;
+  tower.impactLocal.copy(hit.point);
   // Resolve the contact before the new strike can shrink/tilt the facade.
   // The explosion sprite stays in skyline space at this exact contact point.
   const impactWorld=tower.group.localToWorld(tower.impactLocal.clone());
@@ -412,9 +410,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
    // Each final contact is snapped to its physical facade window grid.
    const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
-   // Spread across approximately twelve facade window rows while reusing
-   // exactly the original nine UV-snapped fire emitters and fixed GPU pools.
-   const offsetY=floor*tower.def.h*.054;
+   const offsetY=floor*tower.def.h*.022;
    const site=tower.burnSites[j];
    placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
    // Damage accelerates lateral spread, while fixed ignition times let the
@@ -573,7 +569,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   return {active:sites.length>0,position:s?s.origin.clone():t.smokeOrigin.clone(),
    parentStable:combustion.group.parent===group,width:s?.width??0,height:s?.height??0,clock:combustion.stats().clock};
  }
- return {group,towers,setTime,setDamage,strikeNearest,reset,update,fireState,getStats:()=>({
+ return {group,towers,setTime,setDamage,strikeNearest,targetPoint,reset,update,fireState,getStats:()=>({
   landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],
   distantHelicopters:distantHelis.length,beacons:beacons.length,combustion:combustion.stats(),
   activeBurnSites:combustion.stats().active,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
