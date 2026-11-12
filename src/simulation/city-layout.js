@@ -18,15 +18,11 @@ export function populateCity(city){
  house({name:'north-modern-white-red',x:32.0,w:9.6,h:18.8,stories:5,bays:4,kind:'creamWarm'});
  house({name:'north-red-brick-shop',x:39.1,w:3.5,h:11.4,stories:3,bays:2,kind:'brickRed'});
  house({name:'susquehanna-crown-chicken',x:43.2,w:3.5,h:7.4,stories:2,bays:3,kind:'brickTan'});
- // Continued Broad Street frontage beyond both intersections. These are
- // damageable structures, not decorative skyline blocks. Lot sizes are
- // reference-inspired approximations; reserve both cross-street corridors.
- for(const o of [
-  {name:'broad-west-edge-brick',x:-88.5,w:9,h:13.4,kind:'brickBrown',stories:3,bays:3},
-  {name:'broad-east-corner-stone',x:65.8,w:9,h:14.2,kind:'stoneGray',stories:3,bays:3},
-  {name:'broad-east-brick-shops',x:75.4,w:9.4,h:12.8,kind:'brickRed',stories:3,bays:3},
-  {name:'broad-east-edge-cream',x:85.5,w:9.8,h:15.5,kind:'creamWarm',stories:4,bays:3}
- ])house({...o,exteriorOnly:true});
+ // Reference-led extensions: north remains attached historic frontage;
+ // south of Susquehanna is a LOW, SET-BACK institutional footprint, not shops.
+ // See qa/NORTH-BROAD-REFERENCE.md for image evidence and remaining uncertainty.
+ house({name:'broad-north-historic-extension',x:-88.5,w:9,h:12.9,kind:'stone',stories:3,bays:3,projectingBays:true,exteriorOnly:true});
+ house({name:'broad-south-low-institution',x:77,w:28,h:5.8,d:21,z:-15.5,kind:'stoneGray',stories:1,bays:9,institutional:true,exteriorOnly:true});
  // Detailed collision-enabled near neighborhood. Farther blocks use instanced LOD.
  const palette=['brick','cream','stone','brickBrown','brickTan'];
  const depthRows=[-25,-41,-57,-73];
@@ -36,7 +32,7 @@ export function populateCity(city){
   for(let i=0;i<count;i++){
    const x=-78+i*8.2+((row%2)*1.4);
    const width=7.1+((i+row)%4)*.7;
-   if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80))continue; // keep Dauphin and Susquehanna physically open
+   if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80) || (x+width*.5>63&&z+7.25>-26&&z-7.25<-5))continue; // keep Dauphin and Susquehanna physically open
    const stories=2+((i*3+row)%3);
    const h=3.3+stories*2.7+((i+row)%3)*.34;
    house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});

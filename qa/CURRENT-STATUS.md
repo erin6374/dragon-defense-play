@@ -1,3 +1,9 @@
+## November 12 — RC38 reference-led frontage correction
+
+Corrected RC36 speculative south shop row using supplied Google Street View 135256 and aerial 172740: low broad set-back institutional footprint, horizontal glazing, pale fascia. Removed overlapping generated rear houses. North extension uses stone and actual projecting facade bays, all damageable. See qa/NORTH-BROAD-REFERENCE.md for evidence and explicit remaining errors, including Doll Museum placement and missing ornate north roofline. Live Maps retrieval inaccessible; no fresh Google panorama inspection claimed.
+
+Actual Three frontage test passes both edge impacts/reset, cross-street clearance and no campus overlaps; 567 components, zero extra batches versus layout without extensions. Preserves RC37 combustion upload cache. Local metadata/syntax/diff pass. Exact-head rendered QA, recognizable architecture acceptance and hardware FPS still pending; NOT release-ready. Main/Pages/FBX/Building Explorer untouched.
+
 ## November 12 — RC37 GPU combustion source no-change fast path (exact-head QA pending)
 
 Each active distant burning house previously called `combustion.set` every frame, marking four instanced source buffers dirty even if every source parameter was unchanged. The new strict equality fast path skips identical writes without freezing shader time or delaying moving fires and collapse. QA captures a fully settled impact and advances five zero-delta simulation ticks, requiring zero new buffer writes and at least ten skipped active writes. Counters `sourceBufferWrites`, `unchangedSetSkips` and `unchangedActiveSkips` reset with the pool. No new shaders, draws, textures, geometry, FBX or gameplay semantics. **Exact-head browser, cinematic, focused, licensed CC0 importer, genuine 5+30s motion and Windows GPU hardware FPS are pending.** No release claim; Google's PR #3 remains independent. Do not merge or touch main, production, Pages, Building Explorer or original FBX.

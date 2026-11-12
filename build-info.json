@@ -1,8 +1,8 @@
 {
-  "build": "5.5-combustion-idle-cache-rc37",
-  "version": "5.5.0-rc.37",
+  "build": "5.5-reference-frontage-rc38",
+  "version": "5.5.0-rc.38",
   "gameplay_base": "5.2.3",
-  "scope": "Reduce redundant GPU combustion instanced-buffer uploads with exact source-state equality; preserve causal fire, animation, collapse; regression-test stationary source writes.",
+  "scope": "Correct speculative south shop extension to low set-back institutional massing from supplied Google imagery; structural horizontal glazing and north projecting bays.",
   "new_gameplay_features": false,
-  "release_status": "RC37 DEVELOPMENT CANDIDATE: syntax and metadata checked, exact-head browser/visual/motion/license/hardware performance verification pending. Not a release."
+  "release_status": "RC38 DEVELOPMENT CANDIDATE: local frontage/metadata checks pass; exact-head browser, visual acceptance and hardware performance pending."
 }

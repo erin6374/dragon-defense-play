@@ -57,22 +57,32 @@ export function createStructuralCity(THREE,scene,bank){
    for(let ix=0;ix<=bayCount;ix++)for(const z of [b.front-.25,b.z,z0+.25])addPart(b,'column','concrete',x0+ix*bw,base+sh*.5,z,.24,sh,.27,f);
    // Front elevation assembled around separate window openings.
    for(let ix=0;ix<bayCount;ix++){
-    const entry=f===0&&ix===Math.floor(bayCount/2),x=x0+(ix+.5)*bw,glassW=bw-(o.school?.38:.68),glassH=sh-(entry?.62:o.school?1.05:1.6),wy=base+(entry?.12:o.school?.62:.95)+glassH*.5;
-    if(!entry)b.sections.push(addPart(b,'facade',wall,x,base+.48,b.front,bw,.90,.28,f));
-    b.sections.push(addPart(b,'facade',wall,x,base+sh-.27,b.front,bw,.52,.32,f));
-    for(const edge of [-1,1])b.sections.push(addPart(b,'facade',wall,x+edge*(bw*.5-.10),base+sh*.5,b.front,.2,sh-.6,.32,f));
-    const pane=addPart(b,'window','glass',x,wy,b.front+.04,glassW,glassH,.035,f);b.windows.push(pane);
-    for(const side of [-1,1])addPart(b,'frame','frame',x+side*glassW*.5,wy,b.front+.08,.065,glassH+.10,.10,f);
-    for(const yy of [wy-glassH*.5,wy,wy+glassH*.5])addPart(b,'frame','frame',x,yy,b.front+.08,glassW,.065,.11,f);
-    addPart(b,'frame',o.school?'concrete':'stone',x,wy-glassH*.5-.07,b.front+.12,glassW+.22,.13,.33,f);
+    // Historic projecting bays and the campus's low strip glazing are part of
+    // the damageable shell, so trim cannot survive as a floating overlay.
+    const bayProjection=o.projectingBays&&ix!==1?.48:0,front=b.front+bayProjection;
+    const entry=f===0&&ix===Math.floor(bayCount/2),x=x0+(ix+.5)*bw,glassW=bw-(o.school?.38:.68),glassH=o.institutional?(entry?3.1:1.65):sh-(entry?.62:o.school?1.05:1.6),wy=base+(o.institutional?(entry?.12:1.35):(entry?.12:o.school?.62:.95))+glassH*.5;
+    if(!entry)b.sections.push(addPart(b,'facade',wall,x,base+.48,front,bw,.90,.28,f));
+    b.sections.push(addPart(b,'facade',wall,x,base+sh-.27,front,bw,.52,.32,f));
+    for(const edge of [-1,1])b.sections.push(addPart(b,'facade',wall,x+edge*(bw*.5-.10),base+sh*.5,front,.2,sh-.6,.32,f));
+    const pane=addPart(b,'window','glass',x,wy,front+.04,glassW,glassH,.035,f);b.windows.push(pane);
+    for(const side of [-1,1])addPart(b,'frame','frame',x+side*glassW*.5,wy,front+.08,.065,glassH+.10,.10,f);
+    for(const yy of [wy-glassH*.5,wy,wy+glassH*.5])addPart(b,'frame','frame',x,yy,front+.08,glassW,.065,.11,f);
+    addPart(b,'frame',o.school?'concrete':'stone',x,wy-glassH*.5-.07,front+.12,glassW+.22,.13,.33,f);
     // Broad Street masonry relief uses the same breakable material batches.
     // Lintels shade recessed glazing; a stepped cornice reads at game distance.
-    if(!o.school&&!o.background){
-     addPart(b,'facade','stone',x,wy+glassH*.5+.10,b.front+.13,glassW+.32,.20,.38,f);
+    if(!o.school&&!o.background&&!o.institutional){
+     addPart(b,'facade','stone',x,wy+glassH*.5+.10,front+.13,glassW+.32,.20,.38,f);
      if(f===b.stories-1){
-      addPart(b,'facade',wall,x,b.h+.24,b.front+.16,bw-.025,.20,.48,f);
-      addPart(b,'facade','stone',x,b.h+.49,b.front+.23,bw-.025,.12,.62,f);
+      addPart(b,'facade',wall,x,b.h+.24,front+.16,bw-.025,.20,.48,f);
+      addPart(b,'facade','stone',x,b.h+.49,front+.23,bw-.025,.12,.62,f);
      }
+    }
+    if(bayProjection){for(const side of [-1,1])addPart(b,'facade',wall,x+side*(bw*.5-.10),base+sh*.5,b.front+bayProjection*.5,.20,sh-.6,bayProjection,f);}
+    if(o.institutional){
+     // Broad pale fascia and mullioned horizontal windows visible in Street View.
+     addPart(b,'facade','stoneGray',x,base+sh-.9,front,bw,1.25,.34,f);
+     if(!entry)addPart(b,'facade','stoneGray',x,base+.66,front,bw,1.25,.28,f);
+     addPart(b,'frame','frame',x,wy,front+.08,.065,glassH,.10,f);
     }
     // Rear walls are segmented too; there is no full-height solid shell.
     addPart(b,'wall',wall,x,base+sh*.5,z0,bw-.03,sh-.16,.22,f);
