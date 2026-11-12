@@ -1,8 +1,8 @@
 {
-  "build": "5.5-thermal-eddy-rc28",
-  "version": "5.5.0-rc.28",
+  "build": "5.5-seeded-flame-rc29",
+  "version": "5.5.0-rc.29",
   "gameplay_base": "5.2.3",
-  "scope": "RC28 candidate: phase-separated wind eddies on four existing licensed CC0 smoke cards, wider age-dependent drift, and hot-core/orange-edge Flame03 thermal gradient. RC27 staged meteor-triggered facade fires, fixed pools, row shockwaves, craters and RC26 ballistic physics preserved.",
+  "scope": "RC29 source candidate: seeded Flame03 shear, variable tongue height, atlas mirroring and UV bending, rooted alpha taper to reduce repeated horizontal flame ribbons. RC28 smoke, event-causal impacts, fixed pools and gameplay preserved.",
   "new_gameplay_features": true,
-  "release_status": "RC28 DEVELOPMENT CANDIDATE: exact-head Playwright browser, five cinematic scenes, focused and full 30s motion, Windows ZIP/CC0 hashes, human art review and authorized Pages provenance REQUIRED before release."
+  "release_status": "RC29 DEVELOPMENT CANDIDATE: exact-head browser, cinematic, focused, importer and 600-frame motion QA, Windows ZIP/CC0 hashes and human visual review REQUIRED; no release."
 }

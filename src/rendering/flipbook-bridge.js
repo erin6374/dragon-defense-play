@@ -125,10 +125,13 @@ export function prepareFlipbookMaterial(material,kind){
   if(!revised.includes(anchor))throw Error('Missing flame root anchor');
   revised=revised.replace(anchor,`if(useFlipbook>.5){
    float tongueLane=particle-1.;
-   float tongueGust=.10*sin(clock*(1.1+.16*particle)+vSeed*.53);
-   center.x+=w*(tongueLane*.32+tongueGust);
-   center.y+=h*(.025+.055*fract(particle*.67));
-   p.y*=.92+.30*fract(particle*.73);
+   // RC29: per-contact shear and staggered heights reduce repeated torches.
+   float siteBias=fract(vSeed*.173)-.5;
+   float tongueGust=.09*sin(clock*(.84+.34*fract(vSeed*.091))+vSeed*.53);
+   center.x+=w*(tongueLane*(.20+.19*fract(vSeed*.117))+
+    siteBias*.22+tongueGust);
+   center.y+=h*(.025+.065*fract(vSeed*.221+particle*.67));
+   p.y*=.82+.38*fract(vSeed*.211+particle*.19);
    p.x+=w*tongueLane*.07*axial;
    p.z+=w*tongueLane*.045;
   }
@@ -170,7 +173,14 @@ export function prepareFlipbookMaterial(material,kind){
   patched=patched.replace(anchor,`
  if(useFlipbook>.5){
   float time=clock*(13.+fract(vSeed*.39)*5.)+fract(vSeed*.173)*64.;
-  vec2 uv=clamp(q+vec2(.02*sin(q.y*5.+clock*.76+vSeed),0.),.014,.986);
+  // RC29: source-seeded orientation and bend preserve the CC0 atlas.
+  float sourcePhase=fract(vSeed*.113);
+  float mirrored=step(.5,sourcePhase);
+  float bend=(.038*sin(q.y*3.4+clock*.61+vSeed)+
+   .035*(sourcePhase-.5))*q.y*q.y;
+  vec2 uv=vec2(mix(q.x,1.-q.x,mirrored)+bend,
+   pow(clamp(q.y,0.,1.),.86+.32*fract(vSeed*.37)));
+  uv=clamp(uv,.014,.986);
   vec4 frame=flipbook(flameAtlas,uv,time);
   // CC0 Flame03 retains its original texture/alpha; spatial temperature
   // gives the rooted core a hot yellow center and exposed tongues orange edges.
@@ -178,7 +188,12 @@ export function prepareFlipbookMaterial(material,kind){
    (1.-smoothstep(.36,.98,q.y));
   float thermalFlicker=.86+.14*sin(clock*(2.2+.15*fract(vSeed))+vSeed+q.y*5.1);
   color=frame.rgb*mix(vec3(1.95,.89,.30),vec3(2.32,1.52,.74),hotCore)*thermalFlicker;
-  alpha=frame.a*vPower*(.96+.12*sin(clock*2.6+vSeed));
+  // Reduce repeated bright ribbons while retaining CC0 interior detail.
+  float edge=abs(q.x-.5)*2.;
+  float contactTaper=1.-smoothstep(.55+.13*sourcePhase,.98,edge);
+  float flameFoot=smoothstep(0.,.075,q.y);
+  alpha=frame.a*vPower*(.96+.12*sin(clock*2.6+vSeed))*
+   mix(1.,contactTaper,.26+.18*sourcePhase)*flameFoot;
  }
 ${anchor}`);
  }
