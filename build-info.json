@@ -1,8 +1,8 @@
 {
-  "build": "5.5-smoke-variance-rc45",
-  "version": "5.5.0-rc.45",
+  "build": "5.5-street-world-mapping-rc46",
+  "version": "5.5.0-rc.46",
   "gameplay_base": "5.2.3",
-  "scope": "Seed-phased plume gust and source-dependent wind shear; soot-to-ash gradient and opacity variation within existing six CC0 smoke sheets. No new geometry, materials, textures, lights or particle pools.",
+  "scope": "Consistent world-space asphalt and sidewalk texture scale; preserves RC45 smoke variation.",
   "new_gameplay_features": false,
-  "release_status": "RC45 development candidate: exact-head QA and physical Windows FPS pending; not cinematic approved."
+  "release_status": "RC46 candidate: local checks pass; GPU shader compilation, rendered review and hardware FPS pending."
 }

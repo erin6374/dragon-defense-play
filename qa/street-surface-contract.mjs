@@ -13,3 +13,15 @@ assert.equal(broad.material,bank.asphalt);assert.equal(cross.material,bank.aspha
 [facade,stripe,ground].forEach((o,i)=>assert.equal(o.material,untouched[i]));
 assert.equal(root.children.length,6,'no geometry added');
 console.log('Street PBR assignment/cross-street/geometry exclusions PASS');
+
+for(const material of Object.values(bank)){
+ const shader={vertexShader:THREE.ShaderLib.standard.vertexShader};
+ material.onBeforeCompile(shader);
+ assert.ok(shader.vertexShader.includes('streetWorld = instanceMatrix * streetWorld'));
+ assert.ok(shader.vertexShader.includes('streetWorld = modelMatrix * streetWorld'));
+ for(const name of ['vMapUv','vNormalMapUv','vRoughnessMapUv'])assert.ok(shader.vertexShader.includes(name+' = streetUv;'));
+}
+assert.equal(bank.asphalt.customProgramCacheKey(),bank.asphaltCross.customProgramCacheKey());
+const version=bank.asphalt.version;applyStreetSurfaceMaterials(root,bank);
+assert.equal(bank.asphalt.version,version,'repeated assignment does not recompile materials');
+console.log('Street world mapping shader injection/channel alignment PASS (GPU compile pending)');

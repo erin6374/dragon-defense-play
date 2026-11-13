@@ -1,6 +1,36 @@
+// World-space UVs keep aggregate size constant on long road slabs, cross
+// streets and merged/instanced static batches. All PBR channels stay aligned.
+export function configureStreetMapping(material,tilesPerUnit){
+ if(material.userData.streetTilesPerUnit===tilesPerUnit)return;
+ material.userData.streetTilesPerUnit=tilesPerUnit;
+ material.onBeforeCompile=shader=>{
+  shader.vertexShader=shader.vertexShader.replace('#include <uv_vertex>',`#include <uv_vertex>
+   vec4 streetWorld = vec4(position, 1.0);
+   #ifdef USE_INSTANCING
+   streetWorld = instanceMatrix * streetWorld;
+   #endif
+   streetWorld = modelMatrix * streetWorld;
+   vec2 streetUv = streetWorld.xz * ${tilesPerUnit.toFixed(4)};
+   #ifdef USE_MAP
+   vMapUv = streetUv;
+   #endif
+   #ifdef USE_NORMALMAP
+   vNormalMapUv = streetUv;
+   #endif
+   #ifdef USE_ROUGHNESSMAP
+   vRoughnessMapUv = streetUv;
+   #endif`);
+ };
+ material.customProgramCacheKey=()=>`street-world-uv-v1-${tilesPerUnit}`;
+ material.needsUpdate=true;
+}
+
 // Apply existing PBR maps before static geometry is batched. Three BoxGeometry
 // identifies itself via type; it has no isBoxGeometry flag in our vendored build.
 export function applyStreetSurfaceMaterials(root,bank){
+ configureStreetMapping(bank.asphalt,.35);
+ configureStreetMapping(bank.asphaltCross,.35);
+ configureStreetMapping(bank.sidewalk,.25);
  const counts={asphalt:0,crossStreet:0,sidewalk:0};
  root.traverse(o=>{
   if(!o.isMesh||o.geometry?.type!=='BoxGeometry'||Array.isArray(o.material))return;
