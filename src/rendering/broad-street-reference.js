@@ -1,12 +1,19 @@
 // Broad Street frontage enrichment from user-supplied Google Street View snapshots
-// (April 2025 & September 2026) and a satellite screenshot. This is decorative
-// architecture over the structural shells, tuned to preserve the real hierarchy.
+// (April 2025 & September 2026) and Google Earth 3D oblique views (Images 5 & 6).
+// Real-world location: 2221 N Broad St, Philadelphia PA.
+// Real hierarchy: Tech Freire Charter School in center (x=0);
+// North side (x < 0): Grands As Parents (2227), Maximus Cares Foundation (2235-2239),
+//   tan historic rowhouses, Philadelphia Doll Museum (2253), Dauphin corner & 2300 block;
+// South side (x > 0): 2215 Brownstone, alley courtyard, 2210 modern apartment (white/red),
+//   2206 brick deli shop, 2200 Crown Chicken with billboard, Susquehanna Ave,
+//   Philadelphia Military Academy / Makkah Mosque institutional campus.
 import * as THREE from 'three';
+
 export function createBroadStreetReferenceFacades(scene, buildings){
  const root=new THREE.Group();root.name='BROAD-STREET-REFERENCE-2026';scene.add(root);
  const boxGeometry=new THREE.BoxGeometry(1,1,1),planeGeometry=new THREE.PlaneGeometry(1,1);
  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.84,metalness:.05});
- const brickTrim=mat(0x4a302b),warmStone=mat(0xc9b9a0),ivory=mat(0xe6dfcf),alum=mat(0x8aa2a8),red=mat(0xb93f3d),dark=mat(0x2a2e31),gold=mat(0xb69a61),brownstoneSill=mat(0xb58f74),glass=mat(0x5c8793),shadow=mat(0x1b232b),green=mat(0x1a6a4b),blue=mat(0x1f4574),cream=mat(0xd5c7b1),black=mat(0x16181b),tan=mat(0x9e7454);
+ const brickTrim=mat(0x4a302b),warmStone=mat(0xc9b9a0),ivory=mat(0xe6dfcf),alum=mat(0x8aa2a8),red=mat(0xb93f3d),dark=mat(0x2a2e31),gold=mat(0xb69a61),brownstoneSill=mat(0xb58f74),glass=mat(0x5c8793),shadow=mat(0x1b232b),green=mat(0x1a6a4b),blue=mat(0x1f4574),cream=mat(0xd5c7b1),black=mat(0x16181b),tan=mat(0x9e7454),slate=mat(0x38414a);
  const objects=[];
  function bx(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(boxGeometry,m);o.scale.set(w,h,d);o.position.set(x,y,z);parent.add(o);objects.push(o);return o;}
  function plane(parent,x,y,z,w,h,m){const o=new THREE.Mesh(planeGeometry,m);o.position.set(x,y,z);o.scale.set(w,h,1);parent.add(o);objects.push(o);return o;}
@@ -14,26 +21,33 @@ export function createBroadStreetReferenceFacades(scene, buildings){
  function makeSign(parent,b,text,bg,fg,y=2.5,wScale=.88,h=.95){const g=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(b.w*wScale,10),h),new THREE.MeshBasicMaterial({map:signTexture(text,bg,fg),side:THREE.DoubleSide,transparent:true}));g.position.set(b.x,y,b.front+.25);parent.add(g);objects.push(g);return g;}
  function stoop(parent,b,offsetX,width=1.5,depth=1.8,steps=3){for(let i=0;i<steps;i++)bx(parent,b.x+offsetX,.10+i*.10,b.front+.75+depth*.2*(steps-i),width+.2*i,.10,depth*.38,warmStone);}
  function awning(parent,b,offsetX,width,colorHex,text){bx(parent,b.x+offsetX,2.15,b.front+.62,width,.17,1.10,mat(colorHex));if(text){const t=makeSign(parent,{...b,x:b.x+offsetX,w:width},[text],'#00000000','#f6f1e3',2.17,.96,.42);t.position.z=b.front+1.12;}}
+
  const specs={
   'tech-freire-school':{type:'school',label:['TECH Freire Charter School'],bg:'#b89456',fg:'#fff6d8'},
-  'united-fund-cream':{label:['United Fund','of Philadelphia, Inc.'],bg:'#19704c',fg:'#f9efcc',type:'cream'},
-  'south-cream-rowhouse':{type:'stone'},
-  'south-tan-brick':{type:'brick'},
-  'south-modern-red-gray':{type:'modern'},
-  'north-doll-museum':{label:['DOLL MUSEUM'],bg:'#1f5a41',fg:'#efe7bf',type:'store'},
-  'south-dolmuseum-across-dauphin':{label:['DOLL MUSEUM'],bg:'#1f5a41',fg:'#efe7bf',type:'store'},
-  'north-dauphin-historic-corner':{type:'stone'},
+  'united-fund-cream':{type:'grandsAsParents',label:['GRANDS AS PARENTS','FOUNDATION'],bg:'#19704c',fg:'#f9efcc'},
+  'south-cream-rowhouse':{type:'maximusCares',label:['MAXIMUS CARES','FOUNDATION'],bg:'#1f4574',fg:'#f8edd0'},
+  'south-tan-brick':{type:'tanHistoricRowhouse'},
+  'north-doll-museum':{type:'dollMuseum',label:['DOLL MUSEUM'],bg:'#1f5a41',fg:'#efe7bf'},
+  'north-dauphin-historic-corner':{type:'dauphinCorner',label:['HISTORIC CORNER','2300 BROAD'],bg:'#1e2936',fg:'#f8f0d8'},
+  'south-dauphin-historic':{type:'dauphinCommerce',label:['PHILA COMMERCE','2300 BROAD'],bg:'#203042',fg:'#fff4cf'},
+  'broad-north-historic-extension':{type:'historicExtension',label:['HISTORIC NORTH','BROAD CORRIDOR'],bg:'#342218',fg:'#f5e8c4'},
+  'north-2300-historic-shop-1':{type:'apothecary',label:['BROAD APOTHECARY'],bg:'#1b4532',fg:'#f8edd0'},
+  'north-2300-historic-shop-2':{type:'hardware',label:['NORTH BROAD HARDWARE'],bg:'#4a2820',fg:'#ffefc8'},
   'north-brownstone':{type:'brownstone'},
-  'north-modern-white-red':{type:'modern2'},
-  'north-red-brick-shop':{type:'brickShop'},
-  'susquehanna-crown-chicken':{label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9',type:'crown'},
-  'south-dauphin-historic':{label:['PHILA COMMERCE','2300 BROAD'],bg:'#203042',fg:'#fff4cf',type:'store'},
-  'broad-north-historic-extension':{label:['HISTORIC NORTH','BROAD CORRIDOR'],bg:'#342218',fg:'#f5e8c4',type:'stone'},
-  'north-2300-historic-shop-1':{label:['BROAD APOTHECARY'],bg:'#1b4532',fg:'#f8edd0',type:'brickShop'},
-  'north-2300-historic-shop-2':{label:['NORTH BROAD HARDWARE'],bg:'#4a2820',fg:'#ffefc8',type:'store'}
+  'north-modern-white-red':{type:'modernApartment'},
+  'north-red-brick-shop':{type:'deliMarket',label:['BROAD DELI & MARKET'],bg:'#7c2424',fg:'#fff4cf'},
+  'susquehanna-crown-chicken':{type:'crown',label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9'},
+  'broad-south-low-institution':{type:'campusInstitution',label:['PHILADELPHIA','MILITARY ACADEMY'],bg:'#192738',fg:'#f5e6be'}
  };
+
  const mapping=[];const externalFacadeNames=new Set();
- for(const b of buildings){const spec=specs[b.name];if(!spec)continue;const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);mapping.push({group,building:b});const z=b.front+.13; if(spec.label&&spec.type!=='school')makeSign(group,b,spec.label,spec.bg,spec.fg,b.h<8?3.2:2.30,spec.type==='crown'?.95:.9,spec.type==='crown'?.82:.95);
+ for(const b of buildings){
+  const spec=specs[b.name];if(!spec)continue;
+  const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);
+  mapping.push({group,building:b});
+  const z=b.front+.13;
+  if(spec.label&&spec.type!=='school'&&spec.type!=='crown'&&spec.type!=='grandsAsParents'&&spec.type!=='maximusCares'&&spec.type!=='campusInstitution')makeSign(group,b,spec.label,spec.bg,spec.fg,b.h<8?3.2:2.30,.9,.95);
+
   if(spec.type==='school'){
    const floorH=b.h/5;
    for(const edge of [-1,1])bx(group,b.x+edge*(b.w/2-.25),b.h*.52,z,.28,b.h*.96,.22,brickTrim);
@@ -55,26 +69,177 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    sign.position.set(b.x,3.85,b.front+2.02);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
   }
+  else if(spec.type==='grandsAsParents'){
+   // 2227 N Broad (immediately North of Tech Freire): Grands As Parents Foundation
+   bx(group,b.x,b.h-.22,z,b.w+.16,.30,.25,warmStone);
+   bx(group,b.x,b.h*2/3,z,b.w+.08,.16,.20,warmStone);
+   awning(group,b,0,b.w*.88,0x1a6a4b,'GRANDS AS PARENTS');
+   makeSign(group,b,['GRANDS AS PARENTS','FOUNDATION'],'#184e36','#fff7de',3.15,.92,.72);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.62)*(b.h/b.stories);
+    for(const dx of [-b.w*.26,b.w*.26]){
+     bx(group,b.x+dx,y+.82,z+.08,1.45,.22,.28,warmStone);
+     bx(group,b.x+dx,y-.82,z+.08,1.45,.14,.26,brownstoneSill);
+     bx(group,b.x+dx,y,z+.04,1.25,1.5,.05,glass);
+    }
+   }
+   bx(group,b.x,1.42,z+.06,b.w*.84,2.4,.05,shadow);
+   bx(group,b.x-b.w*.24,1.38,z+.12,1.2,2.0,.06,glass);
+   bx(group,b.x+b.w*.24,1.38,z+.12,1.2,2.0,.06,glass);
+   stoop(group,b,b.w*.22,1.55,1.8,4);
+  }
+  else if(spec.type==='maximusCares'){
+   // 2235-2239 N Broad: Maximus Cares Foundation
+   bx(group,b.x,b.h-.20,z,b.w+.18,.28,.26,ivory);
+   awning(group,b,0,b.w*.92,0x1f4574,'MAXIMUS CARES');
+   makeSign(group,b,['MAXIMUS CARES','FOUNDATION'],'#163259','#f5edd6',3.1,.92,.68);
+   bx(group,b.x,1.42,z+.06,b.w*.88,2.4,.055,shadow);
+   for(const dx of [-b.w*.28,0,b.w*.28])bx(group,b.x+dx,1.40,z+.14,b.w*.22,2.05,.06,glass);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.62)*(b.h/b.stories);
+    for(const dx of [-b.w*.25,b.w*.25]){
+     bx(group,b.x+dx,y+.82,z+.08,1.5,.20,.26,ivory);
+     bx(group,b.x+dx,y-.82,z+.08,1.5,.12,.24,warmStone);
+     bx(group,b.x+dx,y,z+.04,1.3,1.5,.05,glass);
+    }
+   }
+  }
+  else if(spec.type==='tanHistoricRowhouse'){
+   // 2243-2247 N Broad: Historic tan brick rowhouse
+   bx(group,b.x,b.h-.22,z,b.w+.20,.32,.30,warmStone);
+   for(let k=0;k<5;k++)bx(group,b.x+(k-2)*(b.w*.22),b.h-.42,z+.08,.22,.32,.24,warmStone);
+   bx(group,b.x,b.h*.66,z,b.w+.10,.14,.18,gold);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.60)*(b.h/b.stories);
+    for(const dx of [-b.w*.26,b.w*.26]){
+     bx(group,b.x+dx,y+.80,z+.08,1.55,.24,.28,warmStone);
+     bx(group,b.x+dx,y-.80,z+.08,1.55,.14,.26,warmStone);
+     bx(group,b.x+dx,y,z+.04,1.35,1.45,.05,glass);
+    }
+   }
+   bx(group,b.x-b.w*.22,1.4,z+.08,1.3,2.2,.06,dark);
+   bx(group,b.x+b.w*.22,1.4,z+.08,1.5,2.0,.06,glass);
+   stoop(group,b,-b.w*.22,1.6,1.9,4);
+  }
+  else if(spec.type==='dollMuseum'){
+   // 2253 N Broad: Philadelphia Doll Museum (4 stories)
+   bx(group,b.x,b.h-.18,z,b.w+.22,.32,.32,warmStone);
+   for(let k=0;k<6;k++)bx(group,b.x+(k-2.5)*(b.w*.18),b.h-.38,z+.09,.20,.30,.22,brickTrim);
+   awning(group,b,0,b.w*.92,0x1f5a41,'PHILADELPHIA DOLL MUSEUM');
+   makeSign(group,b,['PHILADELPHIA','DOLL MUSEUM'],'#184532','#f8eed2',3.65,.92,.85);
+   bx(group,b.x,1.45,z+.06,b.w*.84,2.45,.06,shadow);
+   for(const dx of [-b.w*.26,0,b.w*.26])bx(group,b.x+dx,1.42,z+.14,b.w*.18,2.05,.06,glass);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.58)*(b.h/b.stories);
+    for(const dx of [-b.w*.30,0,b.w*.30]){
+     bx(group,b.x+dx,y+.78,z+.08,1.35,.22,.28,brickTrim);
+     bx(group,b.x+dx,y-.78,z+.08,1.35,.14,.26,warmStone);
+     bx(group,b.x+dx,y,z+.04,1.15,1.4,.05,glass);
+    }
+   }
+   stoop(group,b,-b.w*.28,1.45,1.8,4);
+  }
+  else if(spec.type==='dauphinCorner'){
+   // 2300 Block North Broad corner building with mansard roof & projecting bays
+   bx(group,b.x,b.h+.65,b.front-.2,b.w*.94,1.3,b.d*.4,slate);
+   bx(group,b.x,b.h+1.32,b.front+.12,b.w*.96,.18,.14,gold);
+   bx(group,b.x,b.h-.22,z,b.w+.28,.36,.36,warmStone);
+   for(let k=0;k<6;k++)bx(group,b.x+(k-2.5)*(b.w*.18),b.h-.45,z+.12,.22,.36,.26,warmStone);
+   for(const side of [-1,1]){
+    const bxPos=b.x+side*(b.w*.28);
+    bx(group,bxPos,b.h*.52,b.front+.42,b.w*.28,b.h*.58,.58,warmStone);
+    bx(group,bxPos,b.h*.52,b.front+.68,b.w*.24,b.h*.52,.08,glass);
+   }
+   bx(group,b.x,1.45,z+.08,b.w*.88,2.45,.06,shadow);
+   for(const dx of [-b.w*.30,0,b.w*.30])bx(group,b.x+dx,1.42,z+.15,b.w*.22,2.05,.06,glass);
+   awning(group,b,0,b.w*.94,0x243242,'BROAD & DAUPHIN');
+   makeSign(group,b,['HISTORIC CORNER','2300 BROAD'],'#1e2936','#f8f0d8',b.h<8?3.2:2.45,.92,.85);
+  }
+  else if(spec.type==='dauphinCommerce'){
+   // 2308-2312 N Broad commercial frontage
+   bx(group,b.x,b.h-.20,z,b.w+.18,.30,.30,warmStone);
+   bx(group,b.x,1.45,z+.06,b.w*.86,2.4,.06,shadow);
+   for(const dx of [-b.w*.26,0,b.w*.26])bx(group,b.x+dx,1.42,z+.14,b.w*.18,2.05,.06,glass);
+   awning(group,b,0,b.w*.92,0x203042,'PHILA COMMERCE');
+   makeSign(group,b,['PHILA COMMERCE','2300 BROAD'],'#203042','#fff4cf',b.h<8?3.2:2.4,.92,.85);
+  }
+  else if(spec.type==='historicExtension'){
+   // Historic North Broad masonry extension
+   bx(group,b.x,b.h-.20,z,b.w+.18,.30,.30,warmStone);
+   bx(group,b.x,3.75,z,b.w*.92,.20,.20,ivory);
+   stoop(group,b,0,1.55,1.7,4);
+   makeSign(group,b,['HISTORIC NORTH','BROAD CORRIDOR'],'#342218','#f5e8c4',b.h<8?3.2:2.4,.92,.85);
+  }
+  else if(spec.type==='apothecary'){
+   // 2300 block historic apothecary
+   bx(group,b.x,b.h-.20,z,b.w+.18,.28,.28,brickTrim);
+   awning(group,b,0,b.w*.92,0x1b4532,'BROAD APOTHECARY');
+   makeSign(group,b,['BROAD APOTHECARY','EST. 1898'],'#1b4532','#f8edd0',b.h<8?3.2:2.4,.92,.85);
+   bx(group,b.x,1.42,z+.08,b.w*.86,2.35,.055,shadow);
+   for(const dx of [-b.w*.26,b.w*.26])bx(group,b.x+dx,1.40,z+.14,b.w*.22,1.95,.06,glass);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.60)*(b.h/b.stories);
+    for(const dx of [-b.w*.26,b.w*.26]){
+     bx(group,b.x+dx,y+.75,z+.08,1.4,.20,.26,gold);
+     bx(group,b.x+dx,y-.75,z+.08,1.4,.12,.24,warmStone);
+     bx(group,b.x+dx,y,z+.04,1.2,1.4,.05,glass);
+    }
+   }
+  }
+  else if(spec.type==='hardware'){
+   // 2300 block historic hardware
+   bx(group,b.x,b.h-.20,z,b.w+.18,.30,.30,warmStone);
+   awning(group,b,0,b.w*.92,0x4a2820,'NORTH BROAD HARDWARE');
+   makeSign(group,b,['NORTH BROAD','HARDWARE & SUPPLY'],'#4a2820','#ffefc8',b.h<8?3.2:2.4,.92,.85);
+   bx(group,b.x,1.42,z+.08,b.w*.86,2.35,.055,shadow);
+   for(const dx of [-b.w*.26,b.w*.26])bx(group,b.x+dx,1.40,z+.14,b.w*.22,1.95,.06,glass);
+  }
   else if(spec.type==='brownstone'){
-   for(const y of [b.h-.24,b.h-.54,b.h/3+.18,b.h*2/3+.16])bx(group,b.x,y,z,b.w+.16,.13,.26,y>b.h*.8?brickTrim:gold);
-   for(const side of [-1,1])bx(group,b.x+side*(b.w/2-.15),b.h*.52,z,.19,b.h*.92,.16,brickTrim);
-   awning(group,b,0,b.w*.72,0x1f5c3b,'GRANDS AS PARENTS');
-   stoop(group,b,-1.75,1.55,1.9,4); stoop(group,b,1.75,1.25,1.2,3);}
-  else if(spec.type==='modern' || spec.type==='modern2'){
-   const sideTrim=spec.type==='modern2'?ivory:red, middleDark=dark; for(const side of [-1,1]){bx(group,b.x+side*(b.w*.29),b.h*.48,z,.95,b.h*.84,.15,sideTrim);bx(group,b.x+side*(b.w*.17),b.h*.48,z,.72,b.h*.84,.14,spec.type==='modern2'?red:dark);} bx(group,b.x,b.h-.28,z,b.w*.95,.28,.22,ivory); bx(group,b.x,b.h*.5,z+.025,b.w*.13,b.h*.92,.075,middleDark); for(let row=0;row<Math.min(5,b.stories||5);row++){const y=(row+.5)*(b.h/(b.stories||5));bx(group,b.x,y,z+.04,b.w*.70,.12,.09,alum);} }
-  else if(spec.type==='cream'){bx(group,b.x,b.h-.20,z,b.w+.16,.32,.28,warmStone);bx(group,b.x,3.65,z,b.w*.94,.20,.19,ivory);bx(group,b.x-1.15,1.15,z+.11,1.25,2.15,.06,glass);bx(group,b.x+1.10,1.15,z+.11,1.55,2.15,.06,glass);awning(group,b,0,b.w*.96,0x1c704a,'United Fund');}
-  else if(spec.type==='stone'){bx(group,b.x,b.h-.22,z,b.w+.16,.30,.25,warmStone);bx(group,b.x,3.78,z,b.w*.94,.20,.20,ivory);stoop(group,b,0,1.55,1.7,4);} 
-  else if(spec.type==='store'){bx(group,b.x,b.h-.16,z,b.w+.08,.2,.22,warmStone);bx(group,b.x,3.9,z,b.w*.95,.22,.25,alum);bx(group,b.x,1.48,z+.06,b.w*.82,2.55,.055,shadow);for(const dx of [-b.w*.23,0,b.w*.23])bx(group,b.x+dx,1.45,z+.14,b.w*.14,2.25,.06,glass);awning(group,b,0,b.w*.92,0x224d39,'DOLL MUSEUM');}
-  else if(spec.type==='brickShop'){
-   bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);
-   bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);
-   awning(group,b,0,b.w*.92,0x1f3c6e,'MAXIMUS CARES');
-   bx(group,b.x,1.40,z+.08,b.w*.82,2.35,.055,shadow);
-   for(const dx of [-b.w*.26,b.w*.26])bx(group,b.x+dx,1.40,z+.14,b.w*.18,1.95,.06,glass);
+   // 2215 N Broad (immediately South of Tech Freire): Pure Philadelphia brownstone
+   bx(group,b.x,b.h-.24,z,b.w+.24,.36,.36,brickTrim);
+   bx(group,b.x,b.h-.52,z,b.w+.14,.16,.28,brownstoneSill);
+   for(let k=0;k<6;k++)bx(group,b.x+(k-2.5)*(b.w*.18),b.h-.40,z+.10,.20,.24,.24,brownstoneSill);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.62)*(b.h/b.stories);
+    for(const dx of [-b.w*.26,b.w*.26]){
+     bx(group,b.x+dx,y+.82,z+.10,1.65,.26,.32,brickTrim);
+     bx(group,b.x+dx,y-.82,z+.10,1.65,.16,.30,brownstoneSill);
+     bx(group,b.x+dx,y,z+.04,1.35,1.5,.05,glass);
+    }
+   }
+   bx(group,b.x-b.w*.24,1.7,z+.06,1.4,2.5,.12,dark);
+   bx(group,b.x-b.w*.24,2.8,z+.14,1.55,.32,.22,brickTrim);
+   stoop(group,b,-b.w*.24,1.8,2.2,4);
+   stoop(group,b,b.w*.24,1.4,1.6,3);
+  }
+  else if(spec.type==='modernApartment'){
+   // 2210 N Broad: Striking 5-story modern apartment with white panels & bold red accents
+   for(const side of [-1,1]){
+    bx(group,b.x+side*(b.w*.32),b.h*.50,z+.08,.95,b.h*.94,.20,red);
+    bx(group,b.x+side*(b.w*.16),b.h*.50,z+.06,.75,b.h*.90,.16,ivory);
+   }
+   bx(group,b.x,b.h-.25,z+.08,b.w*.98,.32,.24,ivory);
+   bx(group,b.x,b.h*.50,z+.04,b.w*.14,b.h*.94,.08,dark);
+   for(let row=0;row<5;row++){
+    const y=(row+.5)*(b.h/5);
+    bx(group,b.x,y,z+.06,b.w*.78,.14,.12,alum);
+    for(const dx of [-b.w*.22,b.w*.22])bx(group,b.x+dx,y,z+.04,b.w*.18,b.h/6,.05,glass);
+   }
+   bx(group,b.x,1.45,z+.10,b.w*.65,2.4,.10,glass);
+   bx(group,b.x,2.7,z+.20,b.w*.72,.14,.8,alum);
+  }
+  else if(spec.type==='deliMarket'){
+   // 2206 N Broad: Brick commercial storefront
+   bx(group,b.x,b.h-.20,z,b.w+.18,.26,.28,brickTrim);
+   awning(group,b,0,b.w*.92,0x7c2424,'BROAD DELI & MARKET');
+   makeSign(group,b,['BROAD DELI','& CONVENIENCE'],'#1a2430','#fff4cf',b.h<8?3.2:2.4,.92,.85);
+   bx(group,b.x,1.40,z+.08,b.w*.84,2.35,.055,shadow);
+   for(const dx of [-b.w*.26,b.w*.26])bx(group,b.x+dx,1.40,z+.14,b.w*.20,1.95,.06,glass);
   }
   else if(spec.type==='crown'){
+   // 2200 N Broad: Crown Chicken & Grill corner commercial building with rooftop billboard
    bx(group,b.x,b.h-.14,z,b.w+.06,.16,.22,warmStone);
-   awning(group,b,0,b.w*.98,0x7c2424,'OPEN');
+   awning(group,b,0,b.w*.98,0x7c2424,'CROWN CHICKEN & GRILL');
    bx(group,b.x,1.35,z+.06,b.w*.90,2.15,.055,shadow);
    for(const dx of [-b.w*.28,0,b.w*.28])bx(group,b.x+dx,1.35,z+.14,b.w*.16,1.95,.06,glass);
    // Prominent rooftop commercial billboard framing Broad & Susquehanna
@@ -84,7 +249,25 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const bb=makeSign(group,{...b,x:b.x,w:b.w*.82},['PHILADELPHIA','COMMUNITY BOARD'],'#1a2838','#f5d272',b.h+.88,.96,1.18);
    bb.position.z=b.front+.24;
   }
-  else if(spec.type==='brick'){bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);stoop(group,b,0,1.45,1.6,3);}
+  else if(spec.type==='campusInstitution'){
+   // South of Susquehanna: Philadelphia Military Academy / Makkah Mosque campus
+   bx(group,b.x,b.h-.20,z+.10,b.w+.24,.36,.36,warmStone);
+   bx(group,b.x,b.h*.55,z+.08,b.w+.12,.18,.24,ivory);
+   bx(group,b.x,2.2,b.front+.25,4.5,4.0,.35,warmStone);
+   bx(group,b.x,1.8,b.front+.30,2.8,3.2,.08,dark);
+   bx(group,b.x,3.6,b.front+.32,3.2,.45,.28,gold);
+   makeSign(group,{...b,x:b.x,w:6},['PHILADELPHIA','MILITARY ACADEMY'],'#192738','#f5e6be',4.1,.95,.75);
+   for(let bay=-3;bay<=3;bay++){
+    if(Math.abs(bay)<=1)continue;
+    const wx=b.x+bay*(b.w*.13);
+    bx(group,wx,2.8,b.front+.14,2.2,2.8,.20,warmStone);
+    bx(group,wx,2.8,b.front+.18,1.8,2.4,.06,glass);
+   }
+   bx(group,b.x,.5,10.2,b.w+4,.95,.42,warmStone);
+   bx(group,b.x,1.0,10.2,b.w+4.2,.12,.48,ivory);
+   bx(group,b.x,-.28,6.0,b.w+2,.12,8.0,green);
+  }
+
   // Decorative signs, trim, glass and stoops lose visibility when their
   // nearest physical facade support detaches. Bind once during construction.
   const supports=b.sections?.length?b.sections:(b.structuralParts||[]);
@@ -103,12 +286,14 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   });
   mapping[mapping.length-1].bindings=bindings;
  }
+
  function synchronize(entry){
   const {group,building,bindings}=entry;
   group.visible=building.damage<.74&&!externalFacadeNames.has(building.name);
   if(!group.visible)return;
   for(const {mesh,support} of bindings)mesh.visible=!support||support.state==='attached';
  }
+
  return {root,referenceBuildings:mapping.length,drawObjects:objects.length,
   update(){for(const entry of mapping)synchronize(entry);},
   setExternalFacade(name,loaded){if(loaded)externalFacadeNames.add(name);else externalFacadeNames.delete(name);

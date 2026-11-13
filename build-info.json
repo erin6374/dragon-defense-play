@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc53",
-  "version": "5.5.0-rc.53",
+  "build": "5.5-north-broad-refinement-rc54",
+  "version": "5.5.0-rc.54",
   "gameplay_base": "5.2.3",
-  "scope": "Full widescreen boulevard extension (1300 units wide, dual curb & sidewalk), complete residential fabric filling the FOV across North Broad to far-left horizon, continuous convergence of distant rowhouses onto the skyline plane (z=-710 to z=-740), authentic North Broad 2300 block storefronts and stoops, and progressive background neighborhood meteor strikes with smoke plumes.",
+  "scope": "Authentic Google Earth real-world alignment for North Broad corridor (2221 N Broad St): Grands As Parents (2227 N Broad) & Maximus Cares Foundation (2235 N Broad) positioned north of school with custom awnings and historic facades; 2215 N Broad restored to authentic Philadelphia brownstone with ornate sills/lintels/double stoop; 2210 N Broad modern white/red apartment; 2200 N Broad Crown Chicken billboard; Susquehanna institutional campus grounds detailing (Philadelphia Military Academy / Makkah Mosque); 1600-unit boulevard extension; continuous horizon convergence of rowhouses onto Center City skyline plane (z=-735 to z=-740) across 1800-unit base; expanded Center City skyline panorama; expanded shadow coverage.",
   "new_gameplay_features": false,
-  "release_status": "RC53 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC54 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

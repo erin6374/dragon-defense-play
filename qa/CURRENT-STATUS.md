@@ -1,3 +1,33 @@
+## November 13 — RC54 Authentic North Broad real-world alignment (Google Earth), 1600-unit boulevard, skyline panorama & shadow coverage
+
+Parent verified baseline SHA: ab2f310 (RC53 5.5.0-rc.53, build 5.5-north-broad-refinement-rc53).
+
+RC54 brings authentic real-world geographic alignment with Google Earth 3D oblique views (Images 5 & 6) for 2221 North Broad Street:
+1. Authentic Real-World Alignment Along North Broad Street (`src/rendering/broad-street-reference.js`):
+   - **Grands As Parents Foundation (2227 N Broad):** Correctly situated immediately North of Tech Freire (between $x = 0$ and $x = -20$). Added distinctive dark green storefront awning with "GRANDS AS PARENTS", raised Philadelphia stone stoop, carved stone window lintels, projecting sills, and stepped historic cornice.
+   - **Maximus Cares Foundation (2235-2239 N Broad):** Situated north of Grands As Parents. Added royal blue commercial facade, awning with "MAXIMUS CARES", anodized aluminum display glass windows, and upper-floor buff brick detailing.
+   - **Historic Tan Brick Rowhouse (2243-2247 N Broad):** Bracketed warm stone cornice, stone lintels/sills, and classic raised stoop.
+   - **Philadelphia Doll Museum (2253 N Broad):** Forest green awning, gold signage, street-level showcase display glass, 4-story Victorian brick facade, arched headers, and bracketed cornice.
+   - **Dauphin Corner & 2300 Block Commercial:** Mansard roof with slate cresting, 3D projecting bay windows, wrap-around corner commercial glass, "HISTORIC CORNER 2300 BROAD", "BROAD APOTHECARY", and "NORTH BROAD HARDWARE" storefronts.
+   - **Historic Brownstone (2215 N Broad):** Situated immediately South of Tech Freire. Restored to an authentic Philadelphia brownstone with heavy carved brownstone lintels, deep projecting sills, grand raised double stoop with carved stone balustrades, and dentil cornice (Grands As Parents awning moved to its real home at 2227 N Broad).
+   - **Modern Apartment Building (2210 N Broad):** Geometric white facade panels with bold red vertical accent frames, modern horizontal aluminum window mullions across 5 stories, and street-level glass entrance lobby matching Google Earth Image 6.
+   - **Alley Courtyard Detailing (x = 25.6):** Added brick retaining wall pier and perimeter gate between the brownstone and modern apartments.
+   - **South Institutional Campus (x > 53, across Susquehanna):** Detail for Philadelphia Military Academy / Makkah Mosque campus: Romanesque arched entryway with keystones, warm limestone belt courses, heavy decorative cornice, arched institutional window surrounds, low stone perimeter wall, and sidewalk green lawn.
+2. Boulevard & Street Span Expansion (`src/neighborhood.js` & `src/rendering/cinematic-assets.js`):
+   - Expanded Broad Street road slabs, near curb lane, sidewalks, and curb to 1,600 units ($x \in [-800, +800]$), providing unbroken street coverage across ultra-wide aspect ratios and dynamic camera angles.
+   - Expanded double yellow center lines and white lane divider dashes to 1,560 units.
+   - Expanded grand boulevard twin-lantern lampposts with vertical navy/gold banners across $x \in [-480, +480]$.
+3. Distant Grid Fill & Skyline Horizon Convergence (`src/rendering/distant-neighborhood.js`):
+   - Expanded lot counts to 190 (near), 200 (mid), and 220 (horizon) lots per row ($x \in [-750, +750]$), completely filling the field of view to the far left with no empty voids.
+   - Added deeper row centers to $z = -735$ (`[-100, -127, -158, -189, -219, -249, -280, -311, -345, -379, -416, -453, -491, -529, -565, -602, -638, -674, -705, -735]`), seamlessly meeting the Center City skyline ($z = -740$) on an expanded 1,800-unit base plane.
+   - Frontage avoidance at $z = -10$ ensures generic instanced boxes never overlap the authentic detailed storefronts ($x \in [-115, -60]$) or southern campus grounds ($x \in [53, 95]$).
+4. Center City Skyline Panorama Expansion (`src/rendering/philadelphia-geometry-skyline.js`):
+   - Expanded ambient skyline buildings to $x \in [-220, +220]$ local (scaling to $x \approx \pm 715$ world units), presenting a continuous, grand Philadelphia skyline panorama.
+5. Expanded Shadow Frustum (`src/game.js`):
+   - Expanded directional sunlight shadow camera frustum from $\pm 55$ to $\pm 140$ units to cast realistic, crisp shadows across all street-facing architecture.
+6. Contract & Performance Invariants:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and windows-preview-server-test (8/8) pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC53 Full boulevard extension, horizon convergence on skyline, North Broad storefronts & neighborhood meteor strikes
 
 Parent verified baseline SHA: 1c6ec38 (RC52 5.5.0-rc.52, build 5.5-north-broad-refinement-rc52).

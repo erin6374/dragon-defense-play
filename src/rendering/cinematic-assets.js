@@ -297,13 +297,13 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const addBox=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(box,mat);m.position.set(x,y,z);m.scale.set(w,h,d);street.add(m);return m;};
  const decal=(x,y,z,w,d,mat)=>{const m=new THREE.Mesh(plane,mat);m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.scale.set(w,d,1);street.add(m);return m;};
  // True four-lane layout: two lanes per direction, yellow center separation.
- for(let x=-580;x<=580;x+=6.6){
+ for(let x=-750;x<=750;x+=6.6){
   if(Math.abs(Math.abs(x)-53)<9)continue;
   decal(x,-.284,18.55,3.8,.095,lineWhite);decal(x,-.283,28.5,3.8,.095,lineWhite);
  }
- for(const z of [23.35,24.35])decal(0,-.283,z,1240,.11,lineYellow);
+ for(const z of [23.35,24.35])decal(0,-.283,z,1560,.11,lineYellow);
  // Curb caps: dashed curb at the sidewalk edge.
- for(const z of [12.5,35.7])addBox(0,-.18,z,1240,.18,.16,concrete);
+ for(const z of [12.5,35.7])addBox(0,-.18,z,1560,.18,.16,concrete);
  // Storm drains, pavement repairs, tire tracks and manholes.
  const drain=bank.metal,paint=new THREE.MeshBasicMaterial({color:0x53575b,transparent:true,opacity:.63,depthWrite:false});
  for(const x of [-64,-43,-14,15,37,65]){
@@ -320,7 +320,7 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const lampMetal=bank.blackMetal;const led=new THREE.MeshBasicMaterial({color:0xffddb0,transparent:true,opacity:.94});
  const bannerMat=new THREE.MeshStandardMaterial({color:0x1b3558,roughness:.75,metalness:.05});
  const bannerGold=new THREE.MeshStandardMaterial({color:0xd4af37,roughness:.55,metalness:.25});
- for(const x of [-280,-210,-150,-105,-75,-45,-22,19,43,73,105,150,210,280]){
+ for(const x of [-480,-410,-350,-280,-210,-150,-105,-75,-45,-22,19,43,73,105,150,210,280,350,410,480]){
   addBox(x,3.50,10.5,.14,7.0,.14,lampMetal);
   // Twin grand-boulevard luminaire arms and lanterns
   addBox(x+1.0,6.97,10.5,2.0,.095,.095,lampMetal);
