@@ -37,7 +37,7 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   'north-modern-white-red':{type:'modernApartment'},
   'north-red-brick-shop':{type:'deliMarket',label:['BROAD DELI & MARKET'],bg:'#7c2424',fg:'#fff4cf'},
   'susquehanna-crown-chicken':{type:'crown',label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9'},
-  'broad-south-low-institution':{type:'campusInstitution',label:['PHILADELPHIA','MILITARY ACADEMY'],bg:'#192738',fg:'#f5e6be'}
+  'broad-south-low-institution':{type:'campusInstitution',label:['PHILADELPHIA','MILITARY ACADEMY'],bg:'#192738',fg:'#f5e6be'},
    'north-2300-historic-shop-3':{type:'dauphinCommerce',label:['KEYSTONE PRINTING','2320 BROAD'],bg:'#1e3226',fg:'#f8edd0'},
    'north-2300-corner-commercial':{type:'dauphinCorner',label:['NORTH BROAD PLAZA','2330 BROAD'],bg:'#202838',fg:'#fff4cf'},
    'north-2400-broad-station':{type:'dauphinCommerce',label:['BROAD & YORK','METRO STATION'],bg:'#1c2a38',fg:'#f5e8c4'},
