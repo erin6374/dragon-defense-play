@@ -17,4 +17,10 @@ assert.ok(bridge.includes("const proceduralStart=' #if KIND == 0"),'RC48 flame g
 assert.ok(bridge.includes("const proceduralStart=' #elif KIND == 1"),'RC48 smoke guard missing');
 assert.equal(bridge.split('if(useFlipbook<=.5){').length-1,2,'RC48 must gate both procedural FBM branches');
 assert.equal(bridge.split('patched.replace(proceduralStart').length-1,2,'RC48 shader source substitutions missing');
-console.log('RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');
+for(const token of [
+ 'float time=clamp(vAge*63.+(fract(vSeed*.317)-.5)*5.,0.,63.);',
+ 'float lean=(fract(vSeed*.283)-.5)*.12*(q.y-.2);',
+ 'vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean,0.),.014,.986);'
+])assert.ok(bridge.includes(token),'RC49 atlas decorrelation missing: '+token);
+assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC49 must preserve one smoke atlas sample');
+console.log('RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');

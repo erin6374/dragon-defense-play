@@ -138,8 +138,11 @@ ${anchor}`);
  }
 
  if(useFlipbook>.5){
-  float time=vAge*63.;
-  vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);
+  // Source-seeded atlas phase and height-dependent shear break up
+  // repeated billow silhouettes without extra sheets or texture reads.
+  float time=clamp(vAge*63.+(fract(vSeed*.317)-.5)*5.,0.,63.);
+  float lean=(fract(vSeed*.283)-.5)*.12*(q.y-.2);
+  vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean,0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated

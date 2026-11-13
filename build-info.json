@@ -1,8 +1,8 @@
 {
-  "build": "5.5-licensed-vfx-branch-gate-rc48",
-  "version": "5.5.0-rc.48",
+  "build": "5.5-smoke-atlas-decorrelation-rc49",
+  "version": "5.5.0-rc.49",
   "gameplay_base": "5.2.3",
-  "scope": "Avoid redundant procedural FBM shader evaluation when licensed CC0 flame/smoke atlases are active; preserve fallback and fixed GPU pools.",
+  "scope": "Decorrelate licensed CC0 smoke billows with source-seeded atlas phase and height-dependent UV shear, preserving six-sheet pool and procedural fallback.",
   "new_gameplay_features": false,
-  "release_status": "RC48 development candidate: local shader-generation/cache and source contracts pass; exact-head GPU compile/QA, visual identity and physical Windows FPS pending."
+  "release_status": "RC49 candidate: local syntax/source contracts passed; exact-head visual QA and physical Windows FPS pending."
 }
