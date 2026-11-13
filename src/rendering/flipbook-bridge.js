@@ -141,13 +141,20 @@ ${anchor}`);
   // Source-seeded atlas phase and height-dependent shear break up
   // repeated billow silhouettes without extra sheets or texture reads.
   float time=clamp(vAge*63.+(fract(vSeed*.317)-.5)*5.,0.,63.);
+  if(plumeMode>.5){
+   // Six source-seeded atlas clocks desynchronize repeated smoke silhouettes.
+   // flipbook() already wraps the time; no extra atlas samples or particles.
+   time=clock*(5.8+2.4*fract(vSeed*.229))+fract(vSeed*.317)*64.;
+  }
   float lean=(fract(vSeed*.283)-.5)*.12*(q.y-.2);
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean,0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
-   float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
+   // Low-amplitude seeded shear softens the repeated symmetric cone edge.
+   float edgeWarp=.095*sin(q.y*8.1+clock*.19+vSeed*.73);
+   float feather=1.-smoothstep(.62,.98,abs((q.x-.5)*2.+edgeWarp));
    float ashBlend=smoothstep(.12,.88,vAge);
    // Dense CC0 alpha reads as soot; diffuse packets aloft become cooler ash.
    // Source seed changes soot loading without additional sheets or samples.

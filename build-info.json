@@ -1,8 +1,8 @@
 {
-  "build": "5.5-structural-historic-reveals-rc53",
-  "version": "5.5.0-rc.53",
+  "build": "5.5-async-smoke-silhouette-rc54",
+  "version": "5.5.0-rc.54",
   "gameplay_base": "5.2.3",
-  "scope": "Active damageable Broad Street historic upper-storey windows gain breakable stone keystones and jamb reveals in existing structural instancing batches; no new materials, draw batches or gameplay systems.",
+  "scope": "Licensed CC0 plume-only independent atlas clocks and asymmetric smoke edge feathering; six-sheet GPU pools, meteor-only ignition, gameplay, school FBX and damage unchanged.",
   "new_gameplay_features": false,
-  "release_status": "RC53 candidate: source and bilateral damage/reset contract added; exact-head CI, rendered screenshot delta, art approval and physical Windows FPS pending."
+  "release_status": "RC54 candidate; exact-head shader/browser QA, cinematic motion art comparison, Windows preview ZIP/license hashes and physical Windows FPS pending."
 }

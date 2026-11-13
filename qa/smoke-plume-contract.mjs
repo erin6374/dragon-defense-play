@@ -28,4 +28,16 @@ for(const token of [
  'vec3(.033,.032,.031),vec3(.088,.099,.109)'
 ])assert.ok(bridge.includes(token),'RC50 soot density missing: '+token);
 assert.equal(bridge.split('float densityShade=').length-1,1,'RC50 soot shade should run once');
+// RC54: the licensed plume alone gains independent texture clocks and asymmetric edges.
+for(const token of [
+ 'time=clock*(5.8+2.4*fract(vSeed*.229))+fract(vSeed*.317)*64.;',
+ 'float edgeWarp=.095*sin(q.y*8.1+clock*.19+vSeed*.73);',
+ 'float feather=1.-smoothstep(.62,.98,abs((q.x-.5)*2.+edgeWarp));'
+])assert.ok(bridge.includes(token),'RC54 licensed plume missing: '+token);
+const fract=x=>x-Math.floor(x);
+const rates=Array.from({length:6},(_,i)=>5.8+2.4*fract((13+i*7.13)*.229));
+assert.equal(new Set(rates.map(x=>x.toFixed(4))).size,6,'smoke atlas clocks synchronized');
+assert.ok(rates.every(x=>x>=5.8&&x<8.2),'smoke atlas rate out of range');
+assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'extra smoke atlas fetch');
+console.log('RC54 plume clock and silhouette source contract PASS');
 console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');

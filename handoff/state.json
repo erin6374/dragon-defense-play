@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
-  "observed_version": "5.5.0-rc.53",
-  "observed_build_id": "5.5-structural-historic-reveals-rc53",
-  "release_status": "rc53_exact_source_five_actions_success_artifact_verified_visible_change_confirmed_art_fail_physical_windows_fps_unmeasured",
+  "observed_parent_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
+  "observed_version": "5.5.0-rc.54",
+  "observed_build_id": "5.5-async-smoke-silhouette-rc54",
+  "release_status": "rc54_candidate_exact_head_qa_pending_art_fail_windows_hardware_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43452928976,
-      "source_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
+      "run_id": 43473382778,
+      "source_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43452928976"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43473382778"
     },
     {
       "name": "cinematic",
-      "run_id": 43452928755,
-      "source_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
+      "run_id": 43473383617,
+      "source_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43452928755"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43473383617"
     },
     {
       "name": "focused fire",
-      "run_id": 43452928817,
-      "source_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
+      "run_id": 43473385630,
+      "source_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43452928817"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43473385630"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43452928743,
-      "source_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
+      "run_id": 43473382714,
+      "source_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43452928743"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43473382714"
     },
     {
       "name": "genuine motion",
-      "run_id": 43452928959,
-      "source_sha": "9e1a5f63bd595d396b088265e43dff9338adb220",
+      "run_id": 43473382711,
+      "source_sha": "3a373980d34652eb357bcb5399e790ffb0f277c6",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43452928959"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43473382711"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,10 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Capture physical Windows 30–60s heavy-destruction Performance Lab FPS/CPU/RAM CSV; analyze with tools/analyze-windows-performance.py; select one measured bottleneck or bounded cinematic art improvement. Verify fresh QA/documentation commit exact HEAD.",
+  "next_task": "Complete RC54 exact-HEAD five Actions and inspect browser/cinematic/focused/motion reports, 600-frame smoke video and screenshot comparison to RC53, Windows preview CRC/CC0 hashes; then capture physical Windows 30-60s heavy-destruction FPS/CPU/RAM CSV.",
   "implemented": [
+    "RC54 candidate: licensed plume-only independent per-sheet atlas clocks and subtle asymmetric edge feather; six fixed smoke sheets, single atlas sample and gameplay preserved; exact-head shader/art QA pending.",
+    "RC53 exact HEAD 3a373980 five Actions success; downloaded latest browser retry CRC 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 149/149; clean reports, licensed hashes match, actual 600-frame/30s video inspected; art FAIL and Windows FPS unmeasured.",
     "RC53 exact-source five Actions SUCCESS, actual CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 148/148; clean reports; two CC0 hashes; 600-frame long MP4 and five 100-frame clips; RC52/RC53 five-camera pixel changes 3430/3431/3404/4950/2252. New tools/compare-cinematic-screenshots.py verified with positive and identical-image negative test. ART FAIL, physical Windows FPS unmeasured.",
     "RC53 candidate: active structural-city historic upper-sash keystone plus two jamb reveals, existing stone instanced facade parts on both sides; QA frontage contract tests count, bilateral full damage and restore; exact-head CI/screenshots pending. RC52 verified base ce7de10: five workflows success, CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148, long 600-frame MP4, clean reports, CC0 hashes matched; ART FAIL, Windows hardware FPS unmeasured.",
     "RC52 independent exact-source technical QA PASS (five workflows; CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148; 600-frame MP4; CC0 hashes). New qa/facade-reachability.mjs proves atlas is imported but not invoked by game; five RC51/RC52 cinematic PNGs byte-identical. ART FAIL; physical Windows FPS unmeasured.",
