@@ -1,8 +1,8 @@
 {
-  "build": "5.5-facade-atlas-variation-rc52",
-  "version": "5.5.0-rc.52",
+  "build": "5.5-structural-historic-reveals-rc53",
+  "version": "5.5.0-rc.53",
   "gameplay_base": "5.2.3",
-  "scope": "Texture-baked seeded window blinds/curtains, masonry lintels and sill weathering on existing facade atlases; no new geometry, draw calls or gameplay changes.",
+  "scope": "Active damageable Broad Street historic upper-storey windows gain breakable stone keystones and jamb reveals in existing structural instancing batches; no new materials, draw batches or gameplay systems.",
   "new_gameplay_features": false,
-  "release_status": "RC52 candidate: local deterministic facade atlas contract PASS; exact-head browser/cinematic/fire/CC0/30-second motion and Windows ZIP verification pending; art acceptance and physical Windows FPS unmeasured."
+  "release_status": "RC53 candidate: source and bilateral damage/reset contract added; exact-head CI, rendered screenshot delta, art approval and physical Windows FPS pending."
 }
