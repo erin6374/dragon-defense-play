@@ -113,7 +113,7 @@ void main(){
  alpha=(1.-exp(-density*.66))*.24*vPower*envelope;
  color=mix(vec3(.28,.30,.32),vec3(.70,.72,.73),
   clamp(.40+shade*.17+height*.14,0.,1.));
- color+=vec3(.13,.048,.012)*exp(-height*8.)*(1.-min(1.,abs(displaced)));
+ color+=vec3(.48,.16,.028)*exp(-height*6.5)*(1.-min(1.,abs(displaced)))*vPower;
  #elif KIND == 2
  float d=length((q-.5)*2.);alpha=(1.-smoothstep(.2,1.,d))*sin(vAge*3.14159)*vPower;
  color=mix(vec3(1.,.63,.13),vec3(.8,.12,.005),vAge);

@@ -1,3 +1,24 @@
+## November 13 — RC51 Cinematic atmospheric lighting, smoke under-glow & North Broad storefronts
+
+Parent verified baseline SHA: 79294af (RC50 5.5.0-rc.50, build 5.5-north-broad-refinement-rc50).
+
+RC50 eliminated frame stutters, extended the far-left neighborhood, and calibrated skyscraper fires. RC51 advances visual realism toward campaign/visual_target.png:
+1. Warm Fire-Scatter Smoke Under-Lighting:
+   - In `src/rendering/flipbook-bridge.js`, added golden-amber scatter (`fireGlow = exp(-vAge * 4.2) * (1. - smoothstep(.05, .45, vAge)); color += vec3(1.15, .42, .05) * fireGlow * min(1., vPower) * frame.a;`) at plume bases where billowing soot meets raging window flames, eliminating flat gray cauliflower puffs without extra draw calls.
+   - In `src/rendering/building-combustion.js`, upgraded procedural smoke under-light with concentrated basal warmth (`color += vec3(.48, .16, .028) * exp(-height * 6.5) * (1. - min(1., abs(displaced))) * vPower;`).
+2. Authentic North Broad Street Storefront Architecture:
+   - In `src/rendering/broad-street-reference.js`, added:
+     - Susquehanna & Broad Crown Chicken corner rooftop commercial billboard framing Broad Street with steel support posts.
+     - Grands As Parents Foundation emerald awning and signage on the North Broad brownstone (x ~ 19.6).
+     - Maximus Cares Foundation royal blue storefront awning and glass display frontage on the red brick shop (x ~ 39.1).
+     - Tech Freire Charter School central projecting entrance canopy with architectural support columns and illuminated signage.
+     - All decorative elements automatically bind to underlying structural wall segments and detach upon physical collapse.
+3. Twilight Disaster Sky & Wet Reflective Asphalt:
+   - In `src/rendering/cinematic-environment.js`, enriched dusk sky gradient and layered horizon disaster haze.
+   - In `src/rendering/cinematic-environment.js` and `src/rendering/cinematic-assets.js`, calibrated pavement roughness to 0.52 and metalness to 0.10 for wet specular road sheen catching headlights, beacons, and fires without post-process passes.
+4. Contract & Performance Invariants:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and preview-server-test (8/8) pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC50 Far-left background extension, skyscraper fire calibration & stutter optimization
 
 Parent verified baseline SHA: bfa05d5c07b7b9f36f345aa7051df551aa7434fa (RC49 5.5.0-rc.49, build 5.5-north-broad-refinement-rc49).

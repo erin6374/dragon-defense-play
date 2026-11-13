@@ -29,7 +29,7 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   'susquehanna-crown-chicken':{label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9',type:'crown'}
  };
  const mapping=[];const externalFacadeNames=new Set();
- for(const b of buildings){const spec=specs[b.name];if(!spec)continue;const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);mapping.push({group,building:b});const z=b.front+.13; if(spec.label)makeSign(group,b,spec.label,spec.bg,spec.fg,b.h<8?3.2:2.30,spec.type==='crown'?.95:.9,spec.type==='crown'?.82:.95);
+ for(const b of buildings){const spec=specs[b.name];if(!spec)continue;const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);mapping.push({group,building:b});const z=b.front+.13; if(spec.label&&spec.type!=='school')makeSign(group,b,spec.label,spec.bg,spec.fg,b.h<8?3.2:2.30,spec.type==='crown'?.95:.9,spec.type==='crown'?.82:.95);
   if(spec.type==='school'){
    const floorH=b.h/5;
    for(const edge of [-1,1])bx(group,b.x+edge*(b.w/2-.25),b.h*.52,z,.28,b.h*.96,.22,brickTrim);
@@ -41,20 +41,45 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    bx(group,b.x-b.w*.28,1.9,z+.11,b.w*.20,3.7,.06,glass);
    bx(group,b.x+b.w*.29,1.55,z+.48,b.w*.28,2.95,1.55,new THREE.MeshStandardMaterial({color:0x88a8ad,roughness:.15,metalness:.1,transparent:true,opacity:.42,depthWrite:false}));
    bx(group,b.x+b.w*.29,.18,z+1.12,b.w*.32,.16,2.35,warmStone);
-   const sign=makeSign(group,{...b,x:b.x,w:b.w*.48},['TECH FREIRE','CHARTER SCHOOL'],'#735428','#fff4cf',3.15,.98,.92); sign.position.x=b.x; sign.position.z=b.front+.46;
+   // Tech Freire Charter School central projecting entrance canopy and illuminated signage
+   bx(group,b.x,3.45,b.front+1.05,b.w*.38,.20,1.85,ivory);
+   bx(group,b.x,3.45,b.front+1.98,b.w*.38+.08,.24,.08,alum);
+   bx(group,b.x-b.w*.16,1.72,b.front+1.90,.20,3.25,.20,alum);
+   bx(group,b.x+b.w*.16,1.72,b.front+1.90,.20,3.25,.20,alum);
+   bx(group,b.x,1.60,z+.18,b.w*.26,3.0,.08,glass);
+   const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2836','#fff5d0',3.85,.98,.76);
+   sign.position.set(b.x,3.85,b.front+2.02);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
   }
   else if(spec.type==='brownstone'){
    for(const y of [b.h-.24,b.h-.54,b.h/3+.18,b.h*2/3+.16])bx(group,b.x,y,z,b.w+.16,.13,.26,y>b.h*.8?brickTrim:gold);
    for(const side of [-1,1])bx(group,b.x+side*(b.w/2-.15),b.h*.52,z,.19,b.h*.92,.16,brickTrim);
+   awning(group,b,0,b.w*.72,0x1f5c3b,'GRANDS AS PARENTS');
    stoop(group,b,-1.75,1.55,1.9,4); stoop(group,b,1.75,1.25,1.2,3);}
   else if(spec.type==='modern' || spec.type==='modern2'){
    const sideTrim=spec.type==='modern2'?ivory:red, middleDark=dark; for(const side of [-1,1]){bx(group,b.x+side*(b.w*.29),b.h*.48,z,.95,b.h*.84,.15,sideTrim);bx(group,b.x+side*(b.w*.17),b.h*.48,z,.72,b.h*.84,.14,spec.type==='modern2'?red:dark);} bx(group,b.x,b.h-.28,z,b.w*.95,.28,.22,ivory); bx(group,b.x,b.h*.5,z+.025,b.w*.13,b.h*.92,.075,middleDark); for(let row=0;row<Math.min(5,b.stories||5);row++){const y=(row+.5)*(b.h/(b.stories||5));bx(group,b.x,y,z+.04,b.w*.70,.12,.09,alum);} }
   else if(spec.type==='cream'){bx(group,b.x,b.h-.20,z,b.w+.16,.32,.28,warmStone);bx(group,b.x,3.65,z,b.w*.94,.20,.19,ivory);bx(group,b.x-1.15,1.15,z+.11,1.25,2.15,.06,glass);bx(group,b.x+1.10,1.15,z+.11,1.55,2.15,.06,glass);awning(group,b,0,b.w*.96,0x1c704a,'United Fund');}
   else if(spec.type==='stone'){bx(group,b.x,b.h-.22,z,b.w+.16,.30,.25,warmStone);bx(group,b.x,3.78,z,b.w*.94,.20,.20,ivory);stoop(group,b,0,1.55,1.7,4);} 
   else if(spec.type==='store'){bx(group,b.x,b.h-.16,z,b.w+.08,.2,.22,warmStone);bx(group,b.x,3.9,z,b.w*.95,.22,.25,alum);bx(group,b.x,1.48,z+.06,b.w*.82,2.55,.055,shadow);for(const dx of [-b.w*.23,0,b.w*.23])bx(group,b.x+dx,1.45,z+.14,b.w*.14,2.25,.06,glass);awning(group,b,0,b.w*.92,0x224d39,'DOLL MUSEUM');}
-  else if(spec.type==='brickShop'){bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);bx(group,b.x,1.40,z+.08,b.w*.82,2.35,.055,shadow);}
-  else if(spec.type==='crown'){bx(group,b.x,b.h-.14,z,b.w+.06,.16,.22,warmStone);awning(group,b,0,b.w*.98,0x7c2424,'OPEN');bx(group,b.x,1.35,z+.06,b.w*.90,2.15,.055,shadow);for(const dx of [-b.w*.28,0,b.w*.28])bx(group,b.x+dx,1.35,z+.14,b.w*.16,1.95,.06,glass);}
+  else if(spec.type==='brickShop'){
+   bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);
+   bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);
+   awning(group,b,0,b.w*.92,0x1f3c6e,'MAXIMUS CARES');
+   bx(group,b.x,1.40,z+.08,b.w*.82,2.35,.055,shadow);
+   for(const dx of [-b.w*.26,b.w*.26])bx(group,b.x+dx,1.40,z+.14,b.w*.18,1.95,.06,glass);
+  }
+  else if(spec.type==='crown'){
+   bx(group,b.x,b.h-.14,z,b.w+.06,.16,.22,warmStone);
+   awning(group,b,0,b.w*.98,0x7c2424,'OPEN');
+   bx(group,b.x,1.35,z+.06,b.w*.90,2.15,.055,shadow);
+   for(const dx of [-b.w*.28,0,b.w*.28])bx(group,b.x+dx,1.35,z+.14,b.w*.16,1.95,.06,glass);
+   // Prominent rooftop commercial billboard framing Broad & Susquehanna
+   bx(group,b.x-b.w*.26,b.h+.65,b.front+.20,.16,1.32,.16,dark);
+   bx(group,b.x+b.w*.26,b.h+.65,b.front+.20,.16,1.32,.16,dark);
+   bx(group,b.x,b.h+.88,b.front+.18,b.w*.84,1.26,.08,dark);
+   const bb=makeSign(group,{...b,x:b.x,w:b.w*.82},['PHILADELPHIA','COMMUNITY BOARD'],'#1a2838','#f5d272',b.h+.88,.96,1.18);
+   bb.position.z=b.front+.24;
+  }
   else if(spec.type==='brick'){bx(group,b.x,b.h-.2,z,b.w+.18,.25,.28,brickTrim);bx(group,b.x,b.h*.68,z,b.w*.86,.14,.16,gold);stoop(group,b,0,1.45,1.6,3);}
   // Decorative signs, trim, glass and stoops lose visibility when their
   // nearest physical facade support detaches. Bind once during construction.

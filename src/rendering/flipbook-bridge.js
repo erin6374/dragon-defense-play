@@ -149,6 +149,10 @@ ${anchor}`);
    float sootVariation=.85+.24*fract(vSeed*.413);
    color=mix(vec3(.051,.046,.044),vec3(.123,.133,.141),ashBlend)*
     sootVariation*(.78+.22*frame.rgb);
+    // Warm fire-scatter underlighting: intense golden-orange near window origin,
+    // rolling into dark billowing soot as the smoke ascends and expands.
+    float fireGlow=exp(-vAge*4.2)*(1.-smoothstep(.05,.45,vAge));
+    color+=vec3(1.15,.42,.05)*fireGlow*min(1.,vPower)*frame.a;
    alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*
     smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
   }else{

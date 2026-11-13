@@ -16,7 +16,7 @@ export function createCinematicSky(THREE,scene){
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
  void main(){float night=darkness;float dusk=exp(-pow((phase-.34)*12.,2.))+exp(-pow((phase-.84)*12.,2.));
  vec3 horizon=mix(vec3(.81,.86,.90),vec3(.14,.17,.26),night),zenith=mix(vec3(.33,.49,.67),vec3(.012,.022,.065),night);
- horizon=mix(horizon,vec3(.93,.52,.33),dusk*.72);zenith=mix(zenith,vec3(.27,.23,.35),dusk*.58);
+ horizon=mix(horizon,vec3(.95,.48,.26),dusk*.78);zenith=mix(zenith,vec3(.22,.17,.33),dusk*.64);
  vec3 col=mix(horizon,zenith,pow(vUv.y,.72));
  vec2 uv=vUv*vec2(aspect,1.);
  vec2 cloudUV=uv*vec2(2.6,8.5)+vec2(time*.0015,0.);
@@ -41,14 +41,15 @@ export function createCinematicSky(THREE,scene){
  float impactEast=exp(-pow((vUv.x-.68)*6.8,2.)-pow((vUv.y-.55)*7.2,2.));
  float emberPulse=.80+.12*sin(time*.95)+.08*sin(time*1.73+2.);
  float distantFire=disaster*(impactWest*.34+impactEast*.43)*emberPulse*(.62+.38*night);
- col+=vec3(.90,.24,.08)*distantFire;
+ float horizonHaze=exp(-pow((vUv.y-.36)*8.5,2.))*disaster*.26;
+ col+=vec3(.90,.24,.08)*distantFire+vec3(.85,.34,.10)*horizonHaze;
  gl_FragColor=vec4(col,1.);}`});
  const plane=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);plane.frustumCulled=false;plane.renderOrder=-1000;scene.add(plane);
  return {mesh:plane,setPhase(p,d=0,dt=0,disasterLevel=.12){uniforms.phase.value=p;uniforms.darkness.value=d;uniforms.disaster.value=Math.max(0,Math.min(1,disasterLevel));uniforms.aspect.value=globalThis.innerWidth/Math.max(1,globalThis.innerHeight);uniforms.time.value+=dt}};
 }
 
 function pavementMaterial(THREE,color,kind){
- const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='road'?.95:.89,metalness:0});
+ const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='road'?.54:.86,metalness:kind==='road'?.08:0});
  mat.onBeforeCompile=(shader)=>{
   shader.vertexShader='varying vec3 vRoadPos;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>

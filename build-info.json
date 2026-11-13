@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc50",
-  "version": "5.5.0-rc.50",
+  "build": "5.5-north-broad-refinement-rc51",
+  "version": "5.5.0-rc.51",
   "gameplay_base": "5.2.3",
-  "scope": "Extend background buildings westward to far-left horizon, enforce flaming-meteor causality for skyscraper fires (<= 75% health gating, debris/smoke for smaller meteors), naturalize background building collapse pacing, eliminate CPU combustion buffer rewrites and explosion material thrashing.",
+  "scope": "Atmospheric disaster twilight sky with layered horizon glow, warm fire-scatter smoke under-lighting at combustion plume origins, authentic North Broad Street storefronts (Crown Chicken rooftop billboard, Grands As Parents & Maximus Cares awnings, Tech Freire projecting entrance canopy), and wet reflective asphalt sheen.",
   "new_gameplay_features": false,
-  "release_status": "RC50 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC51 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

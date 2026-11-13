@@ -132,7 +132,7 @@ export function createVisualMaterials(THREE){
   roadStripe:new THREE.MeshBasicMaterial({color:0xe6e2d1,transparent:true,opacity:.86,depthWrite:false}),
   yellowStripe:new THREE.MeshBasicMaterial({color:0xd5aa51,transparent:true,opacity:.9,depthWrite:false})
  };
- bank.asphalt.roughness=.62;bank.asphaltCross.roughness=.62;
+ bank.asphalt.roughness=.52;bank.asphaltCross.roughness=.52;bank.asphalt.metalness=.10;bank.asphaltCross.metalness=.10;
  const fluidFire=createFluidCombustionAtlases(THREE);
  bank.images={flame:fluidFire.flame,smoke:fluidFire.smoke,dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
  bank.advanceFireVisuals=fluidFire.update;
