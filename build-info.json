@@ -1,8 +1,8 @@
 {
-  "build": "5.5-street-pbr-repair-rc44",
-  "version": "5.5.0-rc.44",
+  "build": "5.5-smoke-variance-rc45",
+  "version": "5.5.0-rc.45",
   "gameplay_base": "5.2.3",
-  "scope": "Repair skipped road and sidewalk PBR material assignment; use existing cross-street material for perpendicular roads.",
+  "scope": "Seed-phased plume gust and source-dependent wind shear; soot-to-ash gradient and opacity variation within existing six CC0 smoke sheets. No new geometry, materials, textures, lights or particle pools.",
   "new_gameplay_features": false,
-  "release_status": "RC44 development candidate: local regression passes; exact-head browser/visual tests and hardware performance pending."
+  "release_status": "RC45 development candidate: exact-head QA and physical Windows FPS pending; not cinematic approved."
 }

@@ -81,8 +81,8 @@ export function prepareFlipbookMaterial(material,kind){
     if(plumeMode>.5){
      // CC0 atlas packets form one wind-sheared, taller plume instead of
      // six short isolated wisps. Each packet retains independent age/phase.
-     float gust=.90+.18*sin(clock*.31+layer*.55);
-     float crosswind=-gust*pow(vAge,1.42)*3.8;
+     float gust=.90+.18*sin(clock*.31+layer*.55+vSeed*.41);
+     float crosswind=-gust*(.76+.40*fract(vSeed*.193))*pow(vAge,1.42)*3.8;
      float dispersion=lane*pow(vAge,1.16)*1.25;
      center+=vec3((sway+crosswind+dispersion)*w,
        h*(.20+vAge*7.8),w*(.32+.16*layer));
@@ -133,9 +133,11 @@ ${anchor}`);
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
    float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
-   color=mix(vec3(.062,.060,.060),vec3(.125,.128,.133),vAge)*
-    (.78+.22*frame.rgb);
-   alpha=frame.a*min(1.,vPower)*.96*feather*
+   float ashBlend=smoothstep(.12,.88,vAge);
+   float sootVariation=.85+.24*fract(vSeed*.413);
+   color=mix(vec3(.051,.046,.044),vec3(.123,.133,.141),ashBlend)*
+    sootVariation*(.78+.22*frame.rgb);
+   alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*
     smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
   }else{
    // Retain RC17 licensed smoke for controlled motion A/B.
