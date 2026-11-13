@@ -60,6 +60,22 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIsNone(report['host_active']['median_system_cpu_percent'])
         self.assertIsNone(report['host_active']['median_system_ram_percent'])
 
+    def test_foreground_fps_excludes_hidden_and_unfocused_browser_samples(self):
+        self.write([self.row('browser', 0, fps='60'),
+                    self.row('browser', 1, fps='1', documentHidden='true'),
+                    self.row('browser', 2, fps='10', documentHasFocus='false')])
+        report = analyzer.summarize(self.path)
+        self.assertEqual(report['browser_foreground']['median_fps'], 60)
+        self.assertEqual(report['browser_active']['median_fps'], 10)
+        self.assertEqual(report['samples']['background_browser'], 2)
+
+    def test_unknown_visibility_not_assumed_foreground(self):
+        self.write([self.row('browser', 0, fps='30', documentHidden=''),
+                    self.row('browser', 1, fps='60')])
+        report = analyzer.summarize(self.path)
+        self.assertEqual(report['samples']['unknown_browser_visibility'], 1)
+        self.assertEqual(report['browser_foreground']['median_fps'], 60)
+
     def test_missing_columns_rejected(self):
         self.write([], ['timestampUTC', 'sampleSource'])
         with self.assertRaisesRegex(ValueError, 'Missing Windows Performance Lab CSV columns'):

@@ -62,6 +62,11 @@ def summarize(path):
     host = [r for r in rows if r['sampleSource'] == 'host']
     active_browser = [r for r in browser if truth(r.get('active')) is True]
     active_host = [r for r in host if truth(r.get('active')) is True]
+    foreground_browser = [r for r in active_browser if truth(r.get('documentHidden')) is False
+                          and truth(r.get('documentHasFocus')) is True]
+    background_browser = [r for r in active_browser if truth(r.get('documentHidden')) is True
+                          or truth(r.get('documentHasFocus')) is False]
+    unknown_browser_visibility = len(active_browser) - len(foreground_browser) - len(background_browser)
     visible_host = [r for r in active_host if truth(r.get('documentHidden')) is False
                     and truth(r.get('documentHasFocus')) is True]
     hidden_host = [r for r in active_host if truth(r.get('documentHidden')) is True
@@ -80,6 +85,12 @@ def summarize(path):
     findings = []
     if not active_browser:
         findings.append('No active browser heartbeat samples: FPS cannot be evaluated.')
+    if not foreground_browser:
+        findings.append('No visible, focused browser heartbeat samples: foreground FPS unavailable.')
+    if background_browser:
+        findings.append('Hidden/unfocused browser samples excluded from foreground FPS statistics.')
+    if unknown_browser_visibility:
+        findings.append('Browser samples with unknown tab visibility/focus excluded from foreground FPS statistics.')
     if not active_host:
         findings.append('No active independent host samples: browser freezes cannot be distinguished reliably.')
     if not visible_host:
@@ -94,12 +105,19 @@ def summarize(path):
     return {
         'source': str(path), 'duration_seconds': duration,
         'samples': {'total': len(rows), 'browser': len(browser), 'host': len(host),
-                    'active_browser': len(active_browser), 'active_host': len(active_host),
+                    'active_browser': len(active_browser), 'foreground_browser': len(foreground_browser),
+                    'background_browser': len(background_browser),
+                    'unknown_browser_visibility': unknown_browser_visibility,
+                    'active_host': len(active_host),
                     'visible_focused_host': len(visible_host), 'hidden_or_unfocused_host': len(hidden_host)},
         'browser_active': {'median_fps': median(active_browser, 'fps'),
                            'p10_fps': percentile(active_browser, 'fps', .10),
                            'p95_frame_ms': percentile(active_browser, 'frameMs', .95),
                            'median_draw_calls': median(active_browser, 'drawCalls')},
+        'browser_foreground': {'median_fps': median(foreground_browser, 'fps'),
+                               'p10_fps': percentile(foreground_browser, 'fps', .10),
+                               'p95_frame_ms': percentile(foreground_browser, 'frameMs', .95),
+                               'median_draw_calls': median(foreground_browser, 'drawCalls')},
         'host_active': {'median_system_cpu_percent': median(active_host, 'cpuPercent'),
                         'median_system_ram_percent': median(active_host, 'ramPercent'),
                         'max_render_age_ms': max((number(r.get('renderAgeMs')) for r in active_host
@@ -127,7 +145,8 @@ def main():
     else:
         print('Dragon Defense Windows Performance Lab diagnostic (not a GPU benchmark)')
         print('Capture seconds:', report['duration_seconds'], 'samples:', report['samples'])
-        print('Active browser FPS median/p10:', report['browser_active']['median_fps'], '/', report['browser_active']['p10_fps'])
+        print('Foreground browser FPS median/p10:', report['browser_foreground']['median_fps'], '/', report['browser_foreground']['p10_fps'])
+        print('All active browser FPS median/p10 (includes background):', report['browser_active']['median_fps'], '/', report['browser_active']['p10_fps'])
         print('Active browser frame p95 ms / median draw calls:', report['browser_active']['p95_frame_ms'], '/', report['browser_active']['median_draw_calls'])
         print('System CPU/RAM median %:', report['host_active']['median_system_cpu_percent'], '/', report['host_active']['median_system_ram_percent'])
         print('Foreground stalls:', report['foreground_stall_samples'])
