@@ -35,3 +35,24 @@ for(const b of city.buildings.filter(b=>b.historicSash)){
  }
 }
 console.log('Historic sash opening enclosure/recess PASS');
+
+// RC53 live structural frontage contract: every historic upper-storey sash has
+// three breakable stone details. Both sides of the school must shed those
+// details under severe damage, with no detached pieces surviving restart.
+const historic=city.buildings.filter(b=>b.historicSash&&!b.background);
+assert.ok(historic.some(b=>b.x<0)&&historic.some(b=>b.x>0),'both sides of Broad frontage must be active');
+for(const b of historic){
+ const upper=b.windows.filter(p=>p.floor>0);
+ assert.ok(upper.length>0);
+ const details=b.parts.filter(p=>p.detail==='historic-keystone'||p.detail==='historic-jamb');
+ assert.equal(details.length,upper.length*3,'each upper historic sash has three physical reveals');
+ assert.ok(details.every(p=>p.type==='facade'&&p.mat==='stone'&&b.structuralParts.includes(p)&&b.sections.includes(p)));
+}
+for(const b of [historic.find(b=>b.x<0),historic.find(b=>b.x>0)]){
+ const details=b.parts.filter(p=>p.detail);
+ city.forceDamage(b,1);
+ assert.ok(details.every(p=>p.state!=='attached'),'severe damage must remove all physical reveals');
+}
+city.restore();
+assert.ok(historic.every(b=>b.damage===0&&b.parts.filter(p=>p.detail).every(p=>p.state==='attached')),'restart restores breakable window masonry');
+console.log('RC53 active historic reveals, left/right damage, restore and existing instancing PASS');
