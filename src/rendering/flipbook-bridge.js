@@ -149,9 +149,12 @@ ${anchor}`);
    // smoke noise. Age fade prevents hard particle loop resets.
    float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
    float ashBlend=smoothstep(.12,.88,vAge);
-   float sootVariation=.85+.24*fract(vSeed*.413);
-   color=mix(vec3(.051,.046,.044),vec3(.123,.133,.141),ashBlend)*
-    sootVariation*(.78+.22*frame.rgb);
+   // Dense CC0 alpha reads as soot; diffuse packets aloft become cooler ash.
+   // Source seed changes soot loading without additional sheets or samples.
+   float sootVariation=.76+.36*fract(vSeed*.413);
+   float densityShade=mix(1.10,.73,smoothstep(.24,.84,frame.a));
+   color=mix(vec3(.033,.032,.031),vec3(.088,.099,.109),ashBlend)*
+    sootVariation*densityShade*(.78+.22*frame.rgb);
    alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*
     smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
   }else{

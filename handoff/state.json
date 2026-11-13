@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
-  "observed_version": "5.5.0-rc.49",
-  "observed_build_id": "5.5-smoke-atlas-decorrelation-rc49",
-  "release_status": "rc48_b321_exact_source_fully_verified_rc49_smoke_atlas_decorrelation_candidate_pending_exact_head",
+  "observed_parent_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+  "observed_version": "5.5.0-rc.50",
+  "observed_build_id": "5.5-smoke-soot-density-rc50",
+  "release_status": "rc49_exact_source_fully_verified_rc50_soot_density_pending_exact_head",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,56 +25,56 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43378977602,
-      "artifact_id": 14016815159,
+      "run_id": 43385659748,
+      "artifact_id": 14019215598,
       "crc_members": 78,
-      "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
+      "crc_pass": true,
+      "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43378977602",
-      "crc_pass": true
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43385659748"
     },
     {
       "name": "cinematic",
-      "run_id": 43378977695,
-      "artifact_id": 14016181357,
+      "run_id": 43385659656,
+      "artifact_id": 14017913668,
       "crc_members": 6,
-      "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
+      "crc_pass": true,
+      "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43378977695",
-      "crc_pass": true
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43385659656"
     },
     {
       "name": "focused",
-      "run_id": 43378977589,
-      "artifact_id": 14015662076,
+      "run_id": 43385659654,
+      "artifact_id": 14017609559,
       "crc_members": 7,
-      "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
+      "crc_pass": true,
+      "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43378977589",
-      "crc_pass": true
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43385659654"
     },
     {
       "name": "cc0",
-      "run_id": 43378977663,
+      "run_id": 43385659661,
       "note": "Validated existing licensed CC0 assets; no fresh import",
-      "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
+      "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43378977663"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43385659661"
     },
     {
       "name": "motion",
-      "run_id": 43378977694,
-      "artifact_id": 14016644437,
+      "run_id": 43385659758,
+      "artifact_id": 14019458142,
       "crc_members": 33,
-      "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
+      "crc_pass": true,
+      "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43378977694",
-      "crc_pass": true
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43385659758"
     }
   ],
   "critical_user_requirements": [
@@ -103,8 +103,10 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC49 exact-head five Actions, report errors/warnings, screenshot/motion visual changes, 600-frame long MP4, Windows ZIP CRC and licensed CC0 hashes; then obtain 30–60s physical Windows Performance Lab CSV. Do not claim hardware FPS or cinematic art acceptance.",
+  "next_task": "Verify RC50 exact-HEAD five workflows and actual reports/ZIP CRC/screenshots/600-frame MP4/licensed hashes; obtain 30–60s physical Windows Performance Lab CSV. Do not claim hardware FPS or cinematic art acceptance.",
   "implemented": [
+    "RC49 a124883 exact-source five Actions SUCCESS; real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, CC0 hashes match, genuine 600-frame MP4 inspected; ART FAIL, physical Windows FPS unknown",
+    "RC50 candidate: licensed smoke denser atlas-alpha soot and cooler upper ash with source variation; six-sheet pool and original school FBX unchanged; local source checks PASS, exact-head QA pending",
     "b321 exact-source five Actions SUCCESS, real browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147 CRC; reports clean, licensed CC0 hashes matched, 600-frame/30s MP4 plus five 100-frame clips checked; ART FAIL, Windows hardware FPS unknown",
     "RC49 candidate: source-seeded licensed smoke atlas phase and subtle height-dependent UV shear; no extra texture samples, six-sheet pool unchanged; local syntax and source/phase bounds checks pass; exact-head QA pending",
     "Exact-base 1d6c407: five workflows SUCCESS, real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; reports errors/warnings empty and CC0 hashes matched",
@@ -123,12 +125,12 @@
     "Cinematic ART FAIL: gray/repetitive smoke, stylized facades and procedural house damage"
   ],
   "windows_preview": {
-    "artifact_id": 14015449584,
+    "artifact_id": 14018178155,
     "crc_members": 147,
     "crc_pass": true,
-    "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
-    "version": "5.5.0-rc.48",
-    "build": "5.5-licensed-vfx-branch-gate-rc48",
+    "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+    "version": "5.5.0-rc.49",
+    "build": "5.5-smoke-atlas-decorrelation-rc49",
     "cc0_sha256_match": true,
     "analyzer_included": true
   },
@@ -138,23 +140,24 @@
     "short_clips": 5,
     "burning_frames": 585,
     "multi_tower_frames": 380,
-    "max_software_draw_calls": 382,
-    "frames_inspected": 11,
+    "max_software_draw_calls": 381,
+    "frames_inspected": 7,
     "art_acceptance": "fail",
-    "artifact_id": 14016644437,
-    "source_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
-    "rc47_comparison": "all 1100 decoded video frames match RC47 across 6 clips; all five cinematic PNG files byte-identical"
+    "artifact_id": 14019458142,
+    "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+    "rc47_comparison": "all 1100 decoded video frames match RC47 across 6 clips; all five cinematic PNG files byte-identical",
+    "rc48_comparison": "600/600 long decoded frames changed vs b321; subtle differences do not establish art improvement"
   },
-  "verified_baseline_sha": "b321b62b2bf409698167ba314096e96247fcbcd0",
-  "verified_baseline_version": "5.5.0-rc.48",
+  "verified_baseline_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+  "verified_baseline_version": "5.5.0-rc.49",
   "candidate_tests_pending": [
-    "RC49 browser exact-new-HEAD",
-    "RC49 cinematic exact-new-HEAD",
-    "RC49 focused-fire exact-new-HEAD",
-    "RC49 licensed CC0 exact-new-HEAD",
-    "RC49 genuine 600-frame motion exact-new-HEAD",
-    "RC49 Windows preview CRC/hash/source labels exact-new-HEAD",
-    "RC49 art review versus b321"
+    "RC50 browser exact-new-HEAD",
+    "RC50 cinematic exact-new-HEAD",
+    "RC50 focused-fire exact-new-HEAD",
+    "RC50 licensed CC0 exact-new-HEAD",
+    "RC50 genuine 600-frame motion exact-new-HEAD",
+    "RC50 Windows preview CRC/hash/source labels exact-new-HEAD",
+    "RC50 art review versus RC49"
   ],
   "verified_visual_equivalence": {
     "comparison_source_sha": "5e98dab13d62520142e0460215a292a520195c54",

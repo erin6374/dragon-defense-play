@@ -1,8 +1,8 @@
 {
-  "build": "5.5-smoke-atlas-decorrelation-rc49",
-  "version": "5.5.0-rc.49",
+  "build": "5.5-smoke-soot-density-rc50",
+  "version": "5.5.0-rc.50",
   "gameplay_base": "5.2.3",
-  "scope": "Decorrelate licensed CC0 smoke billows with source-seeded atlas phase and height-dependent UV shear, preserving six-sheet pool and procedural fallback.",
+  "scope": "Darker dense licensed CC0 smoke with source-seeded soot and upper ash variation; unchanged six-sheet pool, atlas and fallback.",
   "new_gameplay_features": false,
-  "release_status": "RC49 candidate: local syntax/source contracts passed; exact-head visual QA and physical Windows FPS pending."
+  "release_status": "RC50 candidate: local source checks passed; exact-head Actions and physical Windows FPS pending."
 }

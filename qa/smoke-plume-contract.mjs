@@ -23,4 +23,10 @@ for(const token of [
  'vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean,0.),.014,.986);'
 ])assert.ok(bridge.includes(token),'RC49 atlas decorrelation missing: '+token);
 assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC49 must preserve one smoke atlas sample');
-console.log('RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');
+for(const token of [
+ 'float sootVariation=.76+.36*fract(vSeed*.413);',
+ 'float densityShade=mix(1.10,.73,smoothstep(.24,.84,frame.a));',
+ 'vec3(.033,.032,.031),vec3(.088,.099,.109)'
+])assert.ok(bridge.includes(token),'RC50 soot density missing: '+token);
+assert.equal(bridge.split('float densityShade=').length-1,1,'RC50 soot shade should run once');
+console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');
