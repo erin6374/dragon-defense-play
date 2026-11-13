@@ -147,14 +147,23 @@ ${anchor}`);
    time=clock*(5.8+2.4*fract(vSeed*.229))+fract(vSeed*.317)*64.;
   }
   float lean=(fract(vSeed*.283)-.5)*.12*(q.y-.2);
-  vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean,0.),.014,.986);
+  // Seeded height-varying eddies change the atlas silhouette without extra sheets.
+  // Legacy smoke remains unchanged for the A/B comparison.
+  float eddy=plumeMode>.5 ? .045*sin(q.y*(6.3+3.*fract(vSeed*.257))-
+   clock*(.23+.07*fract(vSeed*.491))+vSeed*.67) : 0.;
+  vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean+eddy,0.),.014,.986);
   vec4 frame=flipbook(smokeAtlas,uv,time);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
    // Low-amplitude seeded shear softens the repeated symmetric cone edge.
-   float edgeWarp=.095*sin(q.y*8.1+clock*.19+vSeed*.73);
-   float feather=1.-smoothstep(.62,.98,abs((q.x-.5)*2.+edgeWarp));
+   // Two drifting frequencies and a one-sided height bias avoid six
+   // synchronized, mirror-symmetric cone silhouettes.
+   float edgeWarp=.11*sin(q.y*(7.1+3.4*fract(vSeed*.29))+
+    clock*(.14+.09*fract(vSeed*.37))+vSeed*.73)
+    +.055*sin(q.y*16.7-clock*.11+vSeed*1.19);
+   float sideBias=(fract(vSeed*.611)-.5)*.20*(q.y-.2);
+   float feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));
    float ashBlend=smoothstep(.12,.88,vAge);
    // Dense CC0 alpha reads as soot; diffuse packets aloft become cooler ash.
    // Source seed changes soot loading without additional sheets or samples.
