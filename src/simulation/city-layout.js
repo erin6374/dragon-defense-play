@@ -28,9 +28,10 @@ export function populateCity(city){
  const depthRows=[-25,-41,-57,-73];
  for(let row=0;row<depthRows.length;row++){
   const z=depthRows[row];
-  const count=17;
+  // Extend rowhouses westward to far left (negative x) across North Broad and Dauphin corridors
+  const count=27;
   for(let i=0;i<count;i++){
-   const x=-78+i*8.2+((row%2)*1.4);
+   const x=-152+i*8.2+((row%2)*1.4);
    const width=7.1+((i+row)%4)*.7;
    if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80) || (x+width*.5>63&&z+7.25>-26&&z-7.25<-5))continue; // keep Dauphin and Susquehanna physically open
    const stories=2+((i*3+row)%3);

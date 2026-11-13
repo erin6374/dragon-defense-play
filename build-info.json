@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc49",
-  "version": "5.5.0-rc.49",
+  "build": "5.5-north-broad-refinement-rc50",
+  "version": "5.5.0-rc.50",
   "gameplay_base": "5.2.3",
-  "scope": "Correct north-block Doll Museum location, add historic projecting bays and ornate roofline at 2300 Broad, calibrate visible window-anchored rowhouse flames and bounds.",
+  "scope": "Extend background buildings westward to far-left horizon, enforce flaming-meteor causality for skyscraper fires (<= 75% health gating, debris/smoke for smaller meteors), naturalize background building collapse pacing, eliminate CPU combustion buffer rewrites and explosion material thrashing.",
   "new_gameplay_features": false,
-  "release_status": "RC49 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS unresolved."
+  "release_status": "RC50 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

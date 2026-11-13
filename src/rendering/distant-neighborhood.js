@@ -94,7 +94,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
   const horizon=tier===tiers.length-1;
-  const lots=horizon?90:tier>=3?66:50;
+  // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
+  const lots=horizon?96:tier>=3?80:74;
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate

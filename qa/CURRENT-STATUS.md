@@ -1,3 +1,25 @@
+## November 13 — RC50 Far-left background extension, skyscraper fire calibration & stutter optimization
+
+Parent verified baseline SHA: bfa05d5c07b7b9f36f345aa7051df551aa7434fa (RC49 5.5.0-rc.49, build 5.5-north-broad-refinement-rc49).
+
+RC50 implements key gameplay rules, real-world framing, and critical rendering performance fixes based on owner telemetry:
+1. Far-Left Background Building Extension:
+   - Extended mid-distance neighborhood rows in `src/simulation/city-layout.js` westward from x = -78 to x = -152 (27 lots per row across 4 depth tiers), eliminating empty voids on the far left. Preserves Dauphin and Susquehanna cross-street clearance and the southern campus setback.
+   - Extended distant instanced rowhouses in `src/rendering/distant-neighborhood.js` from 50 to 74 lots for near tiers (x reaching ~ -274), 80 lots for mid tiers (x reaching ~ -296), and 96 lots for horizon (x reaching ~ -356) for complete widescreen horizon coverage.
+2. Skyscraper Fire & Flaming Meteor Causality:
+   - Skyscraper towers now only catch fire from a direct hit by a flaming meteor.
+   - Gated distant meteors in `src/game.js`: flaming meteors only start streaking across the background when neighborhood health reaches <= 75%.
+   - Smaller meteors hitting background skyscrapers cause particle debris, smoke puffs, and localized scorch, but skip `ignite()` and do NOT trigger sustained window combustion.
+   - Removed the spontaneous unbatched `skylineFlameMat` fire sprite loop from `updateSkylineDamage`.
+3. Natural Background Rowhouse Destruction Pacing:
+   - Replaced the synthetic 0.36–1.15s timer loop in `escalateBackgroundNeighborhood` with distress-gated pacing (2.8–5.8s interval, only active when health <= 75% or frontDamage >= 0.35).
+   - Targets 1 building at a time with calibrated progressive strength (.28 + blockDamage * .48) so background rowhouses take cohesive physical hits rather than sporadic scripted collapses.
+4. Frame Stutter & Buffer Optimization:
+   - Eliminated the CPU sine pulse from `combustion.set` in `philadelphia-geometry-skyline.js` that caused 57,741 InstancedBufferAttribute writes and 150-167ms pauses. Flame flickering is handled entirely on the GPU via uniform `clock`. GPU attribute writes only occur during the initial spread phase and cease once mature.
+   - Pooled `skyBursts` meshes and `smokePuff` sprites in `cinematicSkyExplosion` and `updateSkyBursts`, eliminating runtime material cloning, `material.dispose()`, and WebGL state thrashing.
+5. Invariants & Regression Results:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and windows-preview-server-test (8/8) pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC49 North Broad architectural refinement & flame calibration candidate
 
 Parent verified baseline SHA: 5ff7c1b88458db90259c5d51ed935d61e1d81cf6 (RC48 5.5.0-rc.48, build 5.5-licensed-vfx-branch-gate-rc48). Preserved RC48 licensed VFX procedural FBM gate.
