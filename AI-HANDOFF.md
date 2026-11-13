@@ -1,3 +1,20 @@
+## November 13 — RC52 Authentic Philadelphia vehicle liveries, North Broad banners & crater embers
+
+Parent verified baseline SHA: 505066a (RC51 5.5.0-rc.51, build 5.5-north-broad-refinement-rc51).
+
+RC52 advances the scene toward campaign/visual_target.png with authentic Philadelphia municipal and street details:
+1. North Broad District Grand Boulevard Lampposts & Banners:
+   - In `src/rendering/cinematic-assets.js`, upgraded sidewalk lampposts with twin grand-boulevard luminaire brackets/lanterns.
+   - Added authentic North Broad Street District vertical navy-and-gold banners (`bannerMat` / `bannerGold`) mounted on upper and lower steel brackets along the avenue.
+2. Authentic Philadelphia Municipal Vehicle Detailing:
+   - In `src/rendering/cinematic-assets.js`:
+     - **SEPTA Bus Livery:** Added the iconic Southeastern Pennsylvania Transportation Authority red and blue horizontal striping along the white bus body and roof-mounted HVAC climate pods.
+     - **Philadelphia Police Patrol Cruiser:** Added roof-mounted dual-color emergency lightbar (red flashing on driver side, blue on passenger side) and front push bumper.
+3. Smoldering Molten Crater Embers:
+   - In `src/game.js`, upgraded asphalt impact craters with a pulsating molten ember core (`RingGeometry`, `0xff4810`, transparent opacity pulsating with elapsed time) that smolders inside the shattered asphalt rim before cooling. Complete cleanup and disposal on crater expiration and game reset.
+4. Contract & Performance Invariants:
+   - All regression suites (`check-build-info`, `frontage-contract`, `smoke-plume-contract`, `street-surface-contract`, and `windows-preview-server-test` 8/8) pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC51 Cinematic atmospheric lighting, smoke under-glow & North Broad storefronts
 
 Parent verified baseline SHA: 79294af (RC50 5.5.0-rc.50, build 5.5-north-broad-refinement-rc50).

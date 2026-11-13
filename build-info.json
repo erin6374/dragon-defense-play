@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc51",
-  "version": "5.5.0-rc.51",
+  "build": "5.5-north-broad-refinement-rc52",
+  "version": "5.5.0-rc.52",
   "gameplay_base": "5.2.3",
-  "scope": "Atmospheric disaster twilight sky with layered horizon glow, warm fire-scatter smoke under-lighting at combustion plume origins, authentic North Broad Street storefronts (Crown Chicken rooftop billboard, Grands As Parents & Maximus Cares awnings, Tech Freire projecting entrance canopy), and wet reflective asphalt sheen.",
+  "scope": "Authentic Philadelphia visual dressing: North Broad District vertical lamppost banners and twin-globe luminaires, authentic SEPTA bus red/blue livery with roof HVAC pods, police patrol cruiser emergency dual lightbar, and smoldering molten cores for street impact craters.",
   "new_gameplay_features": false,
-  "release_status": "RC51 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC52 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

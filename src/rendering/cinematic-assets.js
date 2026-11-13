@@ -255,8 +255,22 @@ export function enhanceCar(THREE,root,{length,bus,truck,van,police,ambulance,eme
   tire.rotation.x=Math.PI/2;tire.position.set(x,.26,s*.95);root.add(tire);
   const hub=new THREE.Mesh(kit.hubGeo,chrome);hub.rotation.x=Math.PI/2;hub.position.set(x,.26,s*1.065);root.add(hub);
  }
- if(bus){const stripe=kit.yellow;for(const s of [-1,1])part(0,1.10,s*.96,length*.87,.15,.045,stripe);}
- if(police){const stripe=kit.blue;for(const s of [-1,1])part(-.2,.78,s*.97,length*.72,.22,.04,stripe);}
+ if(bus){
+  // Authentic Philadelphia SEPTA bus livery: bold red accent stripe, royal blue body stripe, and roof HVAC pods
+  for(const s of [-1,1]){
+   part(0,1.22,s*.96,length*.88,.075,.045,kit.red);
+   part(0,1.10,s*.96,length*.88,.09,.045,kit.blue);
+  }
+  part(0,cabY+.46,0,length*.42,.20,.88,trim);
+ }
+ if(police){
+  const stripe=kit.blue;
+  for(const s of [-1,1])part(-.2,.78,s*.97,length*.72,.22,.04,stripe);
+  // Roof-mounted dual-color emergency lightbar (red on driver side, blue on passenger side)
+  part(0,cabY+.22,0,.38,.12,1.05,trim);
+  part(0,cabY+.26,-.32,.32,.10,.40,kit.red);
+  part(0,cabY+.26,.32,.32,.10,.40,kit.blue);
+ }
  if(ambulance){const red=kit.red;for(const s of [-1,1]){part(.18,1.12,s*1.03,.15,.66,.05,red);part(.18,1.12,s*1.08,.72,.15,.05,red);}}
  return root;
 }
@@ -304,9 +318,20 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  for(const [x,z] of [[-27,27],[-7,20],[43,30]])decal(x,-.280,z,7,1.8,paint);
  // Warm street lamps with height-appropriate arms, light bulbs, but only two dynamic lights.
  const lampMetal=bank.blackMetal;const led=new THREE.MeshBasicMaterial({color:0xffddb0,transparent:true,opacity:.94});
+ const bannerMat=new THREE.MeshStandardMaterial({color:0x1b3558,roughness:.75,metalness:.05});
+ const bannerGold=new THREE.MeshStandardMaterial({color:0xd4af37,roughness:.55,metalness:.25});
  for(const x of [-75,-45,-22,19,43,73]){
-  addBox(x,3.50,10.5,.14,7.0,.14,lampMetal);addBox(x+1.0,6.97,10.5,2.0,.095,.095,lampMetal);
+  addBox(x,3.50,10.5,.14,7.0,.14,lampMetal);
+  // Twin grand-boulevard luminaire arms and lanterns
+  addBox(x+1.0,6.97,10.5,2.0,.095,.095,lampMetal);
   addBox(x+1.9,6.86,10.5,.58,.09,.34,led);
+  addBox(x-1.0,6.97,10.5,2.0,.095,.095,lampMetal);
+  addBox(x-1.9,6.86,10.5,.58,.09,.34,led);
+  // North Broad Street District vertical banner and support mounting rods
+  addBox(x+.46,5.35,10.5,.78,.04,.04,lampMetal);
+  addBox(x+.46,3.15,10.5,.78,.04,.04,lampMetal);
+  addBox(x+.46,4.25,10.5,.74,2.16,.025,bannerMat);
+  addBox(x+.46,4.25,10.5,.76,.12,.03,bannerGold);
  }
  // Bus stop shelters, railings, benches, utility boxes, street trees with organic canopies.
  const bench=boxMaterial(THREE,0x765f4c,.88,.02);
