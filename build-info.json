@@ -1,8 +1,8 @@
 {
-  "build": "5.5-street-world-mapping-rc46",
-  "version": "5.5.0-rc.46",
+  "build": "5.5-school-room-lighting-rc47",
+  "version": "5.5.0-rc.47",
   "gameplay_base": "5.2.3",
-  "scope": "Consistent world-space asphalt and sidewalk texture scale; preserves RC45 smoke variation.",
+  "scope": "Vary existing school interior emission by stable classroom bays and ceiling bounce; preserve source geometry and damage.",
   "new_gameplay_features": false,
-  "release_status": "RC46 candidate: local checks pass; GPU shader compilation, rendered review and hardware FPS pending."
+  "release_status": "RC47 candidate: syntax/metadata/local regressions pass; GPU compilation/night visual review pending. Hardware FPS unresolved."
 }

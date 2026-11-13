@@ -76,10 +76,24 @@ export function createSchoolSourceDamage() {
     diffuseColor.rgb*=.88+.22*weather-runoff;
 
    `);
+   // Light the existing interior surfaces by classroom bay, rather than
+   // making every retained surface an equally bright beige rectangle.
+   // Stable building coordinates keep light variation fixed during camera motion.
+   if(material.name==='school-interior')shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`
+    #include <emissivemap_fragment>
+    vec3 roomCoord=(schoolDamagePosition-schoolDamageMin)/max(schoolDamageSize,vec3(.001));
+    vec2 roomCell=floor(vec2(clamp(roomCoord.x,0.0,.999)*4.0,clamp(roomCoord.y,0.0,.999)*5.0));
+    float roomSeed=fract(sin(dot(roomCell,vec2(17.17,91.73)))*43758.54);
+    float roomHeight=fract(clamp(roomCoord.y,0.0,.999)*5.0);
+    float ceilingBounce=smoothstep(.50,.88,roomHeight);
+    float occupied=mix(.18,1.0,step(.24,roomSeed));
+    totalEmissiveRadiance*=occupied*(.30+.70*ceilingBounce);
+    totalEmissiveRadiance*=mix(vec3(1.0,.84,.66),vec3(.94,.98,1.0),roomSeed);
+   `);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass+'-'+brick;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v2-'+material.name;
  };
  return {stamp,patch,strikes:()=>strikes,reset:()=>{
   pixels.fill(0);
