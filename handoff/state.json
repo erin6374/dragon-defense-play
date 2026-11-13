@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "9e547862e1604601def0b7717280c86de76115aa",
-  "observed_version": "5.5.0-rc.45",
-  "observed_build_id": "5.5-smoke-variance-rc45",
-  "release_status": "rc45_candidate_pending_exact_head_qa_not_cinematic_approved",
+  "observed_parent_sha": "5e98dab13d62520142e0460215a292a520195c54",
+  "observed_version": "5.5.0-rc.48",
+  "observed_build_id": "5.5-licensed-vfx-branch-gate-rc48",
+  "release_status": "rc48_candidate_pending_exact_head_qa_not_cinematic_approved",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,53 +25,53 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43334318308,
-      "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
+      "run_id": 43346232523,
+      "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43334318308",
-      "artifact_id": 13995999572,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43346232523",
+      "artifact_id": 14002800703,
       "crc_members": 78,
       "crc_pass": true
     },
     {
       "name": "cinematic",
-      "run_id": 43334318692,
-      "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
+      "run_id": 43346232626,
+      "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43334318692",
-      "artifact_id": 13995818425,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43346232626",
+      "artifact_id": 14001991242,
       "crc_members": 6,
       "crc_pass": true
     },
     {
       "name": "focused",
-      "run_id": 43334318424,
-      "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
+      "run_id": 43346232660,
+      "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43334318424",
-      "artifact_id": 13996562807,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43346232660",
+      "artifact_id": 14001787255,
       "crc_members": 7,
       "crc_pass": true
     },
     {
       "name": "CC0",
-      "run_id": 43334318329,
-      "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
+      "run_id": 43346232643,
+      "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43334318329"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43346232643"
     },
     {
       "name": "motion",
-      "run_id": 43334318262,
-      "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
+      "run_id": 43346232547,
+      "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43334318262",
-      "artifact_id": 13997068016,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43346232547",
+      "artifact_id": 14003584452,
       "crc_members": 33,
       "crc_pass": true
     }
@@ -102,25 +102,27 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Complete RC45 exact-head five workflows and actual artifact reports/CRC/CC0 hashes/11-frame smoke comparison; then obtain physical Windows 30–60s Performance Lab CSV under destruction.",
+  "next_task": "Verify RC48 exact-head five workflows, artifacts/CRC/browser warnings, licensed CC0 hashes and genuine 600-frame motion versus RC47; then obtain real 30–60s physical Windows Performance Lab CSV under destruction.",
   "implemented": [
+    "RC48 candidate: licensed flame/smoke fragment shaders guard unused procedural FBM when CC0 atlas is active; original procedural fallback unchanged; no additional geometry/textures/pools/draws",
+    "RC48 local actual-Three shader generation, unchanged-state cache and smoke source contract pass; GPU compile/pixel identity/physical FPS unverified",
+    "RC47 fully verified: five exact-head workflows, ZIP CRC, errors/warnings, 600-frame MP4, licensed CC0 hashes and five camera views; cinematic ART FAIL",
     "RC45 candidate: source-seeded plume gust and crosswind strength, age-based soot-to-ash color and opacity within six existing CC0 smoke sheets; no geometry/textures/pool growth",
     "RC45 smoke shader source contract added to browser preflight; exact-head visual QA pending",
-    "RC44 verified: five exact-head workflows SUCCESS, browser/cinematic/focused/motion/Windows ZIP CRC checked, 600-frame MP4 inspected, CC0 hashes matched",
-    "RC37 unchanged-state GPU cache and RC39–42 Windows telemetry preserved; gameplay/FBX untouched"
+    "RC44 verified: five exact-head workflows SUCCESS, browser/cinematic/focused/motion/Windows ZIP CRC checked, 600-frame MP4 inspected, CC0 hashes matched"
   ],
   "blockers": [
-    "RC45 exact-head five workflows, screenshots and long motion inspection pending",
-    "Physical Windows hardware FPS unmeasured; severe slideshow complaint unresolved",
-    "Cinematic ART FAIL repetitive gray smoke and stylized facades"
+    "RC48 exact-head five workflows, shader compilation, Windows ZIP/CC0 hashes and 11+ frame motion comparison pending",
+    "Physical Windows FPS/CPU/RAM not measured; severe slideshow complaint unresolved",
+    "Cinematic ART FAIL: gray/repetitive smoke, stylized facades and house damage"
   ],
   "windows_preview": {
-    "artifact_id": 13996648791,
+    "artifact_id": 14002352334,
     "crc_members": 146,
     "crc_pass": true,
-    "source_sha": "9e547862e1604601def0b7717280c86de76115aa",
-    "version": "5.5.0-rc.44",
-    "build": "5.5-street-pbr-repair-rc44",
+    "source_sha": "5e98dab13d62520142e0460215a292a520195c54",
+    "version": "5.5.0-rc.47",
+    "build": "5.5-school-room-lighting-rc47",
     "cc0_sha256_match": true
   },
   "motion_review": {
@@ -132,11 +134,11 @@
     "max_software_draw_calls": 382,
     "frames_inspected": 11,
     "art_acceptance": "fail",
-    "artifact_id": 13997068016,
-    "source_sha": "9e547862e1604601def0b7717280c86de76115aa"
+    "artifact_id": 14003584452,
+    "source_sha": "5e98dab13d62520142e0460215a292a520195c54"
   },
-  "verified_baseline_sha": "9e547862e1604601def0b7717280c86de76115aa",
-  "verified_baseline_version": "5.5.0-rc.44",
+  "verified_baseline_sha": "5e98dab13d62520142e0460215a292a520195c54",
+  "verified_baseline_version": "5.5.0-rc.47",
   "candidate_tests_pending": [
     "browser",
     "cinematic",

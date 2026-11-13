@@ -110,8 +110,14 @@ export function prepareFlipbookMaterial(material,kind){
   'vec2 q=vUv;vec3 color;float alpha;');
  if(kind===0){
   const anchor=' #elif KIND == 1';
-  if(!patched.includes(anchor))throw Error('Missing fire shader branch');
+  const proceduralStart=' #if KIND == 0\n float t=';
+  if(!patched.includes(anchor)||!patched.includes(proceduralStart))throw Error('Missing fire shader branch');
+  // Licensed flame atlases previously evaluated procedural FBM then discarded it.
+  // Gate that work, preserving the exact fallback when the atlas is not ready.
+  patched=patched.replace(proceduralStart,' #if KIND == 0\n if(useFlipbook<=.5){\n float t=');
   patched=patched.replace(anchor,`
+ }
+
  if(useFlipbook>.5){
   float time=clock*(13.+fract(vSeed*.39)*5.)+fract(vSeed*.173)*64.;
   vec2 uv=clamp(q+vec2(.02*sin(q.y*5.+clock*.76+vSeed),0.),.014,.986);
@@ -123,8 +129,14 @@ ${anchor}`);
  }
  if(kind===1){
   const anchor=' #elif KIND == 2';
-  if(!patched.includes(anchor))throw Error('Missing smoke shader branch');
+  const proceduralStart=' #elif KIND == 1\n vec2 xy=';
+  if(!patched.includes(anchor)||!patched.includes(proceduralStart))throw Error('Missing smoke shader branch');
+  // Licensed smoke previously evaluated six procedural FBM layers per fragment.
+  // Gate that work, preserving the exact fallback when the atlas is not ready.
+  patched=patched.replace(proceduralStart,' #elif KIND == 1\n if(useFlipbook<=.5){\n vec2 xy=');
   patched=patched.replace(anchor,`
+ }
+
  if(useFlipbook>.5){
   float time=vAge*63.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed),0.),.014,.986);

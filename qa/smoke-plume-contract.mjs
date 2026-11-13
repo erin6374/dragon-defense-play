@@ -13,4 +13,8 @@ for(const token of [
 ])assert.ok(bridge.includes(token),'RC45 smoke bridge missing: '+token);
 assert.ok(combustion.includes('const counts=[3,6,5,1];'),'GPU pool geometry budgets changed');
 assert.ok(combustion.includes('sourceBufferWrites,unchangedSetSkips,unchangedActiveSkips'),'unchanged-state diagnostics missing');
-console.log('RC45 smoke shader variance / six-sheet GPU budget source contract PASS');
+assert.ok(bridge.includes("const proceduralStart=' #if KIND == 0"),'RC48 flame guard missing');
+assert.ok(bridge.includes("const proceduralStart=' #elif KIND == 1"),'RC48 smoke guard missing');
+assert.equal(bridge.split('if(useFlipbook<=.5){').length-1,2,'RC48 must gate both procedural FBM branches');
+assert.equal(bridge.split('patched.replace(proceduralStart').length-1,2,'RC48 shader source substitutions missing');
+console.log('RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');
