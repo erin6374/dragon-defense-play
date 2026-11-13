@@ -175,8 +175,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  for(const side of [-1,1]){
   for(const z of [-10,-31,-53,-75]){
    for(let i=0;i<22;i++){
-    if(z===-10&&(side===-1?x>-115:x<95))continue; // preserve authentic Broad Street frontage
     const x=side*(70+i*9.4);
+    if(z===-10&&(side===-1?x>-115:x<95))continue; // preserve authentic Broad Street frontage
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);
