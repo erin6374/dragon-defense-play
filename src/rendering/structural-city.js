@@ -80,6 +80,13 @@ export function createStructuralCity(THREE,scene,bank){
      if(f===b.stories-1){
       addPart(b,'facade',wall,x,b.h+.24,front+.16,bw-.025,.20,.48,f);
       addPart(b,'facade','stone',x,b.h+.49,front+.23,bw-.025,.12,.62,f);
+      if(o.ornateRoofline){
+       addPart(b,'facade','stone',x,b.h+.74,front+.25,bw-.025,.24,.52,f);
+       if(ix===0||ix===bayCount-1){
+        addPart(b,'facade','stone',x,b.h+1.12,front+.20,bw*.86,.52,.44,f);
+        addPart(b,'roof','roof',x,b.h+1.02,b.z+.5,bw*.88,.62,b.d*.35,f);
+       }
+      }
      }
     }
     if(bayProjection){for(const side of [-1,1])addPart(b,'facade',wall,x+side*(bw*.5-.10),base+sh*.5,b.front+bayProjection*.5,.20,sh-.6,bayProjection,f);}
