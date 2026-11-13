@@ -82,6 +82,17 @@ export function createStructuralCity(THREE,scene,bank){
       addPart(b,'facade','stone',x,b.h+.49,front+.23,bw-.025,.12,.62,f);
      }
     }
+    // Active Broad Street upper-storey masonry reveals, not the unused facade atlas.
+    // These are real facade parts in existing stone instancing batches: impacts,
+    // structural collapse and restart affect them exactly like surrounding walls.
+    if(historicSash&&!o.background&&!o.institutional){
+     const cap=addPart(b,'facade','stone',x,wy+glassH*.5+.22,front+.34,Math.min(.36,glassW*.26),.31,.28,f);
+     cap.detail='historic-keystone';b.sections.push(cap);
+     for(const side of [-1,1]){
+      const jamb=addPart(b,'facade','stone',x+side*(glassW*.5+.10),wy,front+.29,.15,glassH*.91,.24,f);
+      jamb.detail='historic-jamb';b.sections.push(jamb);
+     }
+    }
     if(bayProjection){for(const side of [-1,1])addPart(b,'facade',wall,x+side*(bw*.5-.10),base+sh*.5,b.front+bayProjection*.5,.20,sh-.6,bayProjection,f);}
     if(o.institutional){
      // Broad pale fascia and mullioned horizontal windows visible in Street View.
