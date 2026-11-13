@@ -176,7 +176,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   for(const z of [-10,-31,-53,-75]){
    for(let i=0;i<22;i++){
     const x=side*(70+i*9.4);
-    if(z===-10&&(side===-1?x>-115:x<95))continue; // preserve authentic Broad Street frontage
+    if(z===-10&&(side===-1?x>-225:x<225))continue; // preserve authentic Broad Street frontage
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);
@@ -192,6 +192,24 @@ export function createDistantNeighborhood({root,flameTexture}){
  addPart(civic,'main',72,2.7,-12,20,5.4,19,0x85847a);
  addPart(civic,'roof',72,5.5,-12,20.4,.2,19.2);
  add(0,'green',68,-.40,-.8,13,.08,4.6);
+  // Real-world surrounding neighborhood landmarks from aerial Google Earth references:
+  // 1. Edberg-Olson Football Complex (Temple University Football facility, East at Susquehanna/10th)
+  add(2,'green',138,-.42,-158,52,.08,88); // Regulation green turf field
+  add(2,'roof',138,-.40,-118,50,.10,10);  // Cherry red north endzone
+  add(2,'roof',138,-.40,-198,50,.10,10);  // Cherry red south endzone
+  for(let q=0;q<9;q++)add(2,'walk',138,-.38,-158+(q-4)*8.2,46,.04,.7); // White yard markings
+  const edberg=registerBuilding(2,106,-158,16,8.2,36);
+  addPart(edberg,'main',106,4.1,-158,16,8.2,36,0x8a9192);
+  addPart(edberg,'roof',106,8.3,-158,16.4,.28,36.4);
+  // 2. Penrose Recreation Center (North of Dauphin behind 2300 block)
+  add(1,'green',-125,-.42,-116,54,.08,40); // Rec center park & play fields
+  const recHall=registerBuilding(1,-125,-101,24,6.4,16);
+  addPart(recHall,'main',-125,3.2,-101,24,6.4,16,0xb7afa1);
+  addPart(recHall,'roof',-125,6.5,-101,24.4,.26,16.4);
+  for(let t=0;t<5;t++){add(1,'trunk',-145+t*10,2.1,-132,.5,4.2,.5);add(1,'canopy',-145+t*10,5.1,-132,5.2,4.4,5.2,0x687d5b);}
+  // 3. Fotterall Square & diagonal rail corridor (Northwest toward York)
+  add(0,'green',-178,-.42,-88,48,.08,44);
+  for(let r=0;r<6;r++){add(0,'road',-155-r*12,-.28,-68-r*11,8,.22,14);add(0,'walk',-155-r*12,-.25,-68-r*11,1.2,.26,14);}
  let drawCalls=0;
  const batches=tiers.map(()=>({}));
  for(let ti=0;ti<tiers.length;ti++){

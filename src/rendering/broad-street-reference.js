@@ -38,6 +38,15 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   'north-red-brick-shop':{type:'deliMarket',label:['BROAD DELI & MARKET'],bg:'#7c2424',fg:'#fff4cf'},
   'susquehanna-crown-chicken':{type:'crown',label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9'},
   'broad-south-low-institution':{type:'campusInstitution',label:['PHILADELPHIA','MILITARY ACADEMY'],bg:'#192738',fg:'#f5e6be'}
+   'north-2300-historic-shop-3':{type:'dauphinCommerce',label:['KEYSTONE PRINTING','2320 BROAD'],bg:'#1e3226',fg:'#f8edd0'},
+   'north-2300-corner-commercial':{type:'dauphinCorner',label:['NORTH BROAD PLAZA','2330 BROAD'],bg:'#202838',fg:'#fff4cf'},
+   'north-2400-broad-station':{type:'dauphinCommerce',label:['BROAD & YORK','METRO STATION'],bg:'#1c2a38',fg:'#f5e8c4'},
+   'north-york-commercial':{type:'dauphinCommerce',label:['YORK HARDWARE','2400 BROAD'],bg:'#342218',fg:'#ffefc8'},
+   'south-temple-broad-corner':{type:'dauphinCorner',label:['TEMPLE CORNER','2130 BROAD'],bg:'#4a1820',fg:'#fff5d8'},
+   'south-temple-broad-shop':{type:'dauphinCommerce',label:['UNIVERSITY DELI','2120 BROAD'],bg:'#1c2d42',fg:'#f8f0d8'},
+   'south-norris-corner':{type:'dauphinCorner',label:['NORRIS PLAZA','2110 BROAD'],bg:'#282038',fg:'#f5ecd0'},
+   'south-temple-campus-hall':{type:'campusInstitution',label:['TEMPLE UNIVERSITY','CAMPUS RESIDENCE'],bg:'#38141c',fg:'#f8edd0'},
+   'south-diamond-corner':{type:'dauphinCorner',label:['BROAD & DIAMOND','COMMUNITY BANK'],bg:'#183226',fg:'#fff6d8'},
  };
 
  const mapping=[];const externalFacadeNames=new Set();

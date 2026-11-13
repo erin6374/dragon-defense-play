@@ -18,6 +18,12 @@ export function createCinematicSky(THREE,scene){
  vec3 horizon=mix(vec3(.81,.86,.90),vec3(.14,.17,.26),night),zenith=mix(vec3(.33,.49,.67),vec3(.012,.022,.065),night);
  horizon=mix(horizon,vec3(.95,.48,.26),dusk*.78);zenith=mix(zenith,vec3(.22,.17,.33),dusk*.64);
  vec3 col=mix(horizon,zenith,pow(vUv.y,.72));
+ vec3 stratosphere=mix(vec3(.08,.15,.28),vec3(.003,.005,.018),night);
+ stratosphere=mix(stratosphere,vec3(.06,.03,.13),dusk*.82);
+ float upperAtmo=smoothstep(.52,1.0,vUv.y);
+ col=mix(col,stratosphere,upperAtmo*.74);
+ float airglow=smoothstep(.78,1.0,vUv.y);
+ col+=mix(vec3(.025,.055,.095),vec3(.035,.015,.065),dusk)*airglow*(1.-night*.55);
  vec2 uv=vUv*vec2(aspect,1.);
  vec2 cloudUV=uv*vec2(2.6,8.5)+vec2(time*.0015,0.);
  float cloud=0.,weight=.5;
@@ -34,6 +40,8 @@ export function createCinematicSky(THREE,scene){
  vec2 grid=uv*340.,cell=floor(grid),st=fract(grid)-.5;float chance=hash(cell);
  float star=(1.-smoothstep(.025,.20,length(st)))*step(.991,chance)*( .5+.5*hash(cell+5.));
  col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
+ float highStar=(1.-smoothstep(.025,.18,length(st)))*step(.994,chance);
+ col+=vec3(.85,.9,.98)*highStar*smoothstep(.70,1.,vUv.y)*(1.-sheet)*(.15+.85*night);
  float sun=exp(-length((vUv-vec2(.25,.66))*vec2(aspect,1.))*32.);col+=vec3(.9,.55,.22)*sun*(1.-night)*(.3+dusk);
  // Distant skyline impact glows extend above the roofline instead of
  // disappearing behind the foreground. Restrained radiance, no extra draw calls.

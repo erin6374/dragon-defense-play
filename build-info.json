@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc54",
-  "version": "5.5.0-rc.54",
+  "build": "5.5-north-broad-refinement-rc55",
+  "version": "5.5.0-rc.55",
   "gameplay_base": "5.2.3",
-  "scope": "Authentic Google Earth real-world alignment for North Broad corridor (2221 N Broad St): Grands As Parents (2227 N Broad) & Maximus Cares Foundation (2235 N Broad) positioned north of school with custom awnings and historic facades; 2215 N Broad restored to authentic Philadelphia brownstone with ornate sills/lintels/double stoop; 2210 N Broad modern white/red apartment; 2200 N Broad Crown Chicken billboard; Susquehanna institutional campus grounds detailing (Philadelphia Military Academy / Makkah Mosque); 1600-unit boulevard extension; continuous horizon convergence of rowhouses onto Center City skyline plane (z=-735 to z=-740) across 1800-unit base; expanded Center City skyline panorama; expanded shadow coverage.",
+  "scope": "RC55: Authentic North Philadelphia aerial/oblique alignment from Google Earth references (Edberg-Olson football complex, Penrose Rec Center, Fotterall Square & rail corridor); 1 full screen street extension left (North 2300-2400 blocks toward York St) and right (South 2100-2000 blocks toward Diamond St & Temple University); 1 full screen vertical view extension with high-altitude atmospheric transition shader to stratosphere/airglow; elevated meteor spawn heights entering from extended upper atmosphere; realistic end-of-round cleanup construction crane vehicles with telescoping articulated booms, outriggers, rotating beacons, and active facade repair work; road-based vehicle exit routing eliminating despawn blinking; and calibrated meteor storm difficulty where undefended hard-level strikes reduce both school and neighborhood gauges to 0 HP.",
   "new_gameplay_features": false,
-  "release_status": "RC54 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC55 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

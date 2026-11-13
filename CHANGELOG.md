@@ -1,3 +1,33 @@
+## November 13 — RC55 Authentic neighborhood architecture, 1-screen street/sky extensions, realistic cleanup cranes & hard difficulty storm scaling
+
+Parent verified baseline SHA: 84ca134 (RC54 5.5.0-rc.54, build 5.5-north-broad-refinement-rc54).
+
+RC55 fulfills all user requests from the 7 high-resolution aerial and oblique Google Earth reference images:
+1. Authentic Surrounding Neighborhood & Architecture (`src/rendering/distant-neighborhood.js`, `src/simulation/city-layout.js`):
+   - **Edberg-Olson Football Complex:** Added Temple University's football practice facility to the eastern neighborhood grid (Susquehanna/10th), complete with regulation green turf, Temple cherry red endzones, and white 10-yard markings.
+   - **Penrose Recreation Center:** Situated behind the North Broad 2300 block with community rec building, athletic playfields, and surrounding tree groves.
+   - **Fotterall Square & Rail Corridor:** Situated northwest park green space with diagonal rail embankment cutting across between Fotterall Square and Penrose Rec Center.
+   - **Extended North Broad Streetfront (1 Full Screen Left):** Added 2300-2400 blocks continuing north toward York Street (`north-2300-historic-shop-3`, `north-2300-historic-residence`, `north-2300-corner-commercial`, `north-2400-broad-station`, `north-2400-commercial-1`, `north-2400-commercial-2`, `north-2400-historic-corner`, `north-york-commercial`, `north-york-station`).
+   - **Extended South Broad Streetfront (1 Full Screen Right):** Added 2100-2000 blocks continuing south toward Diamond Street & Temple University (`south-temple-broad-corner`, `south-temple-broad-shop`, `south-broad-mixed-use-1`, `south-broad-mixed-use-2`, `south-norris-corner`, `south-temple-campus-hall`, `south-2100-broad-apartments`, `south-2100-broad-commercial`, `south-diamond-corner`, `south-diamond-mixed-use`).
+   - Zero added draw batches: all additions reuse instanced geometry and materials, maintaining the strict 2-edge `broad-` frontage contract.
+2. Vertical View Extension & Atmospheric Sky Transition (`src/game.js`, `src/rendering/cinematic-environment.js`):
+   - Camera vertical view expanded upward by 1 full screen (`streetView = {x: 19, y: 31, z: 114, targetY: 26, targetZ: -6, fov: 52}`), giving double the vertical sky space above the rooflines while anchoring the street level.
+   - Screen-space sky shader now includes an upper-atmosphere transition (`vUv.y > .52`): deep stratospheric indigo/navy gradient with high-altitude airglow and subtle twinkling stars.
+   - Elevated meteor spawn altitudes ($y \in [105, 130]$): every meteor and dragon-hunter visibly enters from this extended high-altitude upper atmosphere.
+3. Realistic End-of-Round Construction Cleanup Cranes (`src/simulation/chapter-staging.js`):
+   - Replaced simple boxes with realistic heavy commercial construction crane trucks: dual rear axles, driver cab with chrome grille, flashing amber emergency beacon, and 4 hydraulic outrigger stabilizer pads that extend to the street upon parking.
+   - 360-degree rotating crane turret with two-stage articulated telescoping boom and worker repair platform.
+   - Vehicles pull up directly to the street curb in front of damaged buildings (Tech Freire, Grands As Parents, Brownstone), lower outriggers, elevate booms up to facade levels, and emit active welding/repair sparks and dust while clearing rubble.
+   - At departure, booms and outriggers retract and vehicles drive away smoothly along the roadway.
+4. Road-Based Vehicle Exit Routing & Despawn Fix (`src/game.js`):
+   - Eliminated vehicle "blinking out of existence": despawn boundaries pushed from $|x| > 104$ to $|x| > 450$ (well off-screen).
+   - Vehicles with expired lifespans dynamically route onto cross streets (Dauphin $x = -53$, Susquehanna $x = 53$) or continue along the road until safely off-screen.
+5. Meteor Storm Difficulty Scaling (`src/core/balance.js`, `src/game.js`):
+   - Calibrated storm intensity so that on Hard difficulty, an undefended wave delivers $> 100\%$ total damage to BOTH Tech Freire School and neighborhood target buildings, reducing both gauges to 0 HP if the player destroys no meteors.
+   - Scaled Normal (~65-75% undefended damage) and Easy (~30-40% undefended damage) appropriately.
+6. Contract & Performance Invariants:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and windows-preview-server-test (8/8) pass. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC54 Authentic North Broad real-world alignment (Google Earth), 1600-unit boulevard, skyline panorama & shadow coverage
 
 Parent verified baseline SHA: ab2f310 (RC53 5.5.0-rc.53, build 5.5-north-broad-refinement-rc53).

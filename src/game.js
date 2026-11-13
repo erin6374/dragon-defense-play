@@ -80,21 +80,21 @@ for(const id of ['game-build','hud-version','start-build']){
 const visualBank=createVisualMaterials(THREE);
 const scene=new THREE.Scene();
 const chapterStaging=createChapterStaging(scene);scene.background=new THREE.Color(0xa9c8e0);scene.fog=new THREE.FogExp2(0xacc9dc,.00175);
-const streetView={x:19,y:23,z:112,targetY:19,targetZ:-6,fov:35};
+const streetView={x:19,y:31,z:114,targetY:26,targetZ:-6,fov:52};
 const skyScreenHeight=2*streetView.z*Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5));
 const flightCeiling=44+skyScreenHeight;
 function skyCameraLift(altitude){
  const original=Math.max(0,Math.min(44,altitude)-25)*.62;
  return original+Math.max(0,altitude-44);
 }
-function meteorEntryHeight(z,size,minimum){
+function meteorEntryHeight(z,size,minimum=105){
  // The top frustum plane is independent of aspect ratio. Allow for the
  // horizontal camera pan, finale zoom and the rock's irregular silhouette.
  const pitch=Math.atan2(streetView.y-streetView.targetY,streetView.z-streetView.targetZ);
  const halfFov=Math.atan(Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5))/.86);
  const depth=streetView.z-z+40;
  const skyTop=streetView.y+skyCameraLift(dragon.position.y)+depth*Math.tan(halfFov-pitch);
- return Math.max(minimum,skyTop+size*1.6+4);
+ return Math.max(minimum,skyTop+size*1.6+8);
 }
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1250),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
@@ -955,7 +955,11 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
   }
   animateVehicleSteering(c,dt);
   if(c.emergency&&!c.frozen&&c.stun===0&&c.blink>2.4){sound('siren');c.blink=0;}
-  if(!c.frozen&&(Math.abs(c.root.position.x)>104||(c.life<=0&&Math.abs(c.root.position.x)>80))){recycleCar(c);cars.splice(i,1)}
+  if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
+   if(Math.abs(c.root.position.x-53)<22)c.turnAt=53;
+   else if(Math.abs(c.root.position.x-(-53))<22)c.turnAt=-53;
+  }
+  if(!c.frozen&&(Math.abs(c.root.position.x)>450||(c.life<=0&&Math.abs(c.root.position.x)>350)||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
  }
 }
 // Dynamic arcade city activity. Stylized, not real-world simulation.
@@ -1567,7 +1571,7 @@ function updateMeteorRadar(dt){
  }
 }
 let bossSpawned=false,bossDefeated=false;let dragonMeteorTimer=8;const input=createInputState();
-const difficulty=()=>({easy:.38,normal:1,hard:1.55}[document.getElementById('difficulty')?.value]||1);
+const difficulty=()=>({easy:.40,normal:1.0,hard:2.2}[document.getElementById('difficulty')?.value]||1);
 const easyMode=()=>document.getElementById('difficulty')?.value==='easy';
 let facing=1,turnTime=0;const explosionLights=[];let pointer=new THREE.Vector3(0,17,0);const ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,0,1),0);
 // Pointer events can arrive many times per frame. Reuse raycast scratch values.
@@ -1738,7 +1742,7 @@ const hunterMaterial=new THREE.MeshBasicMaterial({color:0xff6d22});
 function spawnDragonMeteor(){
  if(wave<=4||!active)return;
  const mesh=new THREE.Mesh(hunterGeometry,hunterMaterial);
- mesh.position.set(dragon.position.x+(Math.random()<.5?-48:48),meteorEntryHeight(dragon.position.z,.8,55+Math.random()*10),dragon.position.z);scene.add(mesh);
+ mesh.position.set(dragon.position.x+(Math.random()<.5?-48:48),meteorEntryHeight(dragon.position.z,.8,95+Math.random()*15),dragon.position.z);scene.add(mesh);
  const v=dragon.position.clone().sub(mesh.position).normalize().multiplyScalar(25+wave*2);warnHunter();
  meteors.push({mesh,target:dragon.position.clone(),vel:v,trail:0,hp:2,size:.8,damage:1,burning:true,dragonHunter:true,ttl:12,steerUntil:1.35});
 }
@@ -1792,7 +1796,7 @@ function spawnMeteor(random=Math.random,opening=null){
  if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
  else if(fastImpact)mesh.material=fastImpactMaterial;
  else if(kind==='molten')mesh.material=moltenMaterial;
- mesh.position.set(x,meteorEntryHeight(target.z-3,size,65+random()*12),target.z-3);scene.add(mesh);
+ mesh.position.set(x,meteorEntryHeight(target.z-3,size,105+random()*18),target.z-3);scene.add(mesh);
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
  meteors.push({kind,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.65),burning:kind==='flaming'||kind==='molten',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:wave===1?1:Math.max(1,Math.ceil(size*(easyMode()?.62:1.45))),size,damage:size>1.8?2:size>1.1?1.5:1});
@@ -1893,12 +1897,14 @@ function traceOpeningMeteorImpact(m,start){
 }
 function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
+ const diffMode=document.getElementById('difficulty')?.value||'normal';
+ const diffDmg=diffMode==='hard'?2.5:diffMode==='easy'?.42:1.0;
  const targetX=THREE.MathUtils.clamp(x,-90,90);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
  const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.0&&Math.abs(b.z-z)<b.d*.5+1);
  const neighbor=!!targetBuilding;
  const roadStrike=z>13&&z<36&&y<3;
- if(roadStrike){strikeParkedCars(targetX,z,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,z,Math.round(30+profile.strength*35),profile.strength);blast(targetX,1,z,profile.shockRadius);flashAt(targetX,2,z,2);if(Math.random()<profile.fire)ignite(targetX,1,z);
+ if(roadStrike){strikeParkedCars(targetX,z,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,z,Math.round(30+profile.strength*35),profile.strength);blast(targetX,1,z,profile.shockRadius);flashAt(targetX,2,z,2);if(Math.random()<profile.fire*(diffMode==='hard'?1.5:1))ignite(targetX,1,z);
   for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-z)<5)explodeCar(c);
   sound('impact');return;
  }
@@ -1907,15 +1913,15 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
  let lost=0;
  if(neighbor){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
-  lost=neighborhood.impact(targetX,targetY,hitZ,profile.radius,p=>debrisPiece(p,'brick'),profile.strength);if(targetBuilding&&!targetBuilding.roofBreached)neighborhood.roofBreach(targetX,targetY,z,profile.radius*.65);neighborhood.aftershock(targetX,targetY,hitZ,profile.shockRadius,p=>debrisPiece(p,'brick'));if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,2.0);
+  lost=neighborhood.impact(targetX,targetY,hitZ,profile.radius*(diffMode==='hard'?1.35:1),p=>debrisPiece(p,'brick'),profile.strength*diffDmg);if(targetBuilding&&!targetBuilding.roofBreached)neighborhood.roofBreach(targetX,targetY,z,profile.radius*.65);neighborhood.aftershock(targetX,targetY,hitZ,profile.shockRadius*(diffMode==='hard'?1.3:1),p=>debrisPiece(p,'brick'));if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,2.0);
   emitImpact(targetX,targetY,hitZ,155,1.32);
-  if(lost>0&&Math.random()<profile.fire){ignite(targetX,targetY,hitZ);if(Math.random()<.75)ignite(targetX+(Math.random()-.5)*3,Math.max(1,targetY-1.2),hitZ-.20);
+  if(lost>0&&Math.random()<profile.fire*(diffMode==='hard'?1.5:1)){ignite(targetX,targetY,hitZ);if(Math.random()<.75)ignite(targetX+(Math.random()-.5)*3,Math.max(1,targetY-1.2),hitZ-.20);
    if(Math.random()<.45)ignite(targetX+(Math.random()-.5)*4,Math.min(14,targetY+1.8),hitZ-.35);
   }
   if(lost>0)score=Math.max(0,score-30);
  }else if(architecturalReady){
   const r=profile.radius;
-  carveSchool(targetX,targetY,hitZ,r,profile.strength,meteor?.kind||'stone',meteor?.vel?.length?.()||0);
+  carveSchool(targetX,targetY,hitZ,r,profile.strength*diffDmg,meteor?.kind||'stone',meteor?.vel?.length?.()||0);
   if(voxelReady){
    lost=architecture.impact(new THREE.Vector3(targetX,targetY,hitZ),r,
      (pos,type)=>debrisPiece(pos,type===2?'glass':type===3?'roof':type===4?'stone':'brick'));
@@ -1924,7 +1930,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
   // Damage accumulates against the actual school. When the gauge reaches 0%,
   // the architectural building is fully removed, not just cosmetically scarred.
   const previousDamage=schoolDamage;
-  schoolDamage=Math.min(1,schoolDamage+.025*profile.strength);
+  schoolDamage=Math.min(1,schoolDamage+.055*profile.strength*diffDmg);
   // Small masonry chips and glass descend from the exact impact point, rather
   // than unrelated random locations around the roof. Reuse instanced VFX pools.
   if(performanceLab.isEnabled('particles')){
