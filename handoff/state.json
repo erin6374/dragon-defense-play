@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "5e98dab13d62520142e0460215a292a520195c54",
-  "observed_version": "5.5.0-rc.48",
-  "observed_build_id": "5.5-licensed-vfx-branch-gate-rc48",
-  "release_status": "rc48_candidate_pending_exact_head_qa_not_cinematic_approved",
+  "observed_parent_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
+  "observed_version": "5.5.0-rc.49",
+  "observed_build_id": "5.5-north-broad-refinement-rc49",
+  "release_status": "rc49_candidate_pending_exact_head_qa_not_cinematic_approved",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -102,7 +102,7 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC48 exact-head five workflows, artifacts/CRC/browser warnings, licensed CC0 hashes and genuine 600-frame motion versus RC47; then obtain real 30–60s physical Windows Performance Lab CSV under destruction.",
+  "next_task": "Verify RC49 exact-head five workflows (browser, cinematic, focused fire, CC0 flipbook, motion), inspect artifacts/screenshots, and obtain physical Windows 30-60s Performance Lab CSV under destruction.",
   "implemented": [
     "RC48 candidate: licensed flame/smoke fragment shaders guard unused procedural FBM when CC0 atlas is active; original procedural fallback unchanged; no additional geometry/textures/pools/draws",
     "RC48 local actual-Three shader generation, unchanged-state cache and smoke source contract pass; GPU compile/pixel identity/physical FPS unverified",
@@ -137,8 +137,8 @@
     "artifact_id": 14003584452,
     "source_sha": "5e98dab13d62520142e0460215a292a520195c54"
   },
-  "verified_baseline_sha": "5e98dab13d62520142e0460215a292a520195c54",
-  "verified_baseline_version": "5.5.0-rc.47",
+  "verified_baseline_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
+  "verified_baseline_version": "5.5.0-rc.48",
   "candidate_tests_pending": [
     "browser",
     "cinematic",

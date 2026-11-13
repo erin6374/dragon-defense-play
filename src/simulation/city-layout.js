@@ -10,9 +10,9 @@ export function populateCity(city){
  house({name:'united-fund-cream',historicSash:true,x:-18.8,w:5.8,h:12.3,kind:'creamWarm',stories:3,bays:2});
  house({name:'south-cream-rowhouse',historicSash:true,x:-25.5,w:7.0,h:12.9,kind:'stoneGray',stories:3,bays:2});
  house({name:'south-tan-brick',historicSash:true,x:-33.0,w:8.2,h:13.6,kind:'brickTan',stories:3,bays:2});
- house({name:'south-modern-red-gray',x:-41.5,w:7.5,h:18.6,stories:5,bays:4,kind:'brickRed'});
- house({name:'south-dolmuseum-across-dauphin',historicSash:true,x:-68.2,w:10.2,h:14.7,stories:4,bays:4,kind:'brickRed'});
- house({name:'south-dauphin-historic',historicSash:true,x:-77.5,w:11.0,h:16.2,stories:4,bays:3,kind:'stone'});
+ house({name:'north-doll-museum',historicSash:true,x:-41.5,w:7.8,h:14.8,stories:4,bays:3,kind:'brickRed'});
+ house({name:'north-dauphin-historic-corner',historicSash:true,x:-68.2,w:9.8,h:16.2,stories:4,bays:3,kind:'stone',projectingBays:true,ornateRoofline:true});
+ house({name:'south-dauphin-historic',historicSash:true,x:-77.5,w:10.5,h:15.8,stories:4,bays:3,kind:'stone',projectingBays:true});
  house({name:'north-brownstone',historicSash:true,x:19.6,w:8.9,h:14.1,stories:3,bays:2,kind:'brickBrown'});
  // Alley immediately east of brownstone intentionally left open.
  house({name:'north-modern-white-red',x:32.0,w:9.6,h:18.8,stories:5,bays:4,kind:'creamWarm'});
@@ -21,7 +21,7 @@ export function populateCity(city){
  // Reference-led extensions: north remains attached historic frontage;
  // south of Susquehanna is a LOW, SET-BACK institutional footprint, not shops.
  // See qa/NORTH-BROAD-REFERENCE.md for image evidence and remaining uncertainty.
- house({name:'broad-north-historic-extension',historicSash:true,x:-88.5,w:9,h:12.9,kind:'stone',stories:3,bays:3,projectingBays:true,exteriorOnly:true});
+ house({name:'broad-north-historic-extension',historicSash:true,x:-88.5,w:9,h:12.9,kind:'stone',stories:3,bays:3,projectingBays:true,ornateRoofline:true,exteriorOnly:true});
  house({name:'broad-south-low-institution',x:77,w:28,h:5.8,d:21,z:-15.5,kind:'stoneGray',stories:1,bays:9,institutional:true,exteriorOnly:true});
  // Detailed collision-enabled near neighborhood. Farther blocks use instanced LOD.
  const palette=['brick','cream','stone','brickBrown','brickTan'];

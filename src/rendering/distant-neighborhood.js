@@ -525,8 +525,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    Math.sign(p.x-home.x)!==Math.sign(primary.x-home.x))||
    windows.find(p=>p.y<primary.y-p.h*.8)||windows.find(p=>p!==primary));
   home.fireOpenings=[primary,secondary].map(p=>p?
-   {x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h}:null);
-  home.fireOpenings[2]={x:home.x,y:home.h+.25,z:home.z+home.d*.18,w:home.w*.19,h:1.1};
+   {x:p.x,y:p.y-p.h*.46,z:p.z-p.d*.15,w:p.w,h:p.h}:null);
+  home.fireOpenings[2]={x:home.x,y:home.h+.10,z:home.z+home.d*.12,w:home.w*.14,h:.52};
  }
  function positionImpactEffects(home){
   const entry=impactSmoke.get(home);if(!entry)return;
@@ -543,9 +543,9 @@ export function createDistantNeighborhood({root,flameTexture}){
     windows.find(part=>part.original.position.y<primary.original.position.y-part.size.y*.8)||
     windows.find(part=>part!==primary));
    home.fireOpenings=[primary,secondary].filter(Boolean)
-    .map(part=>({part,x:part.position.x,y:part.position.y-part.size.y*.5,z:part.position.z+.12,w:part.size.x,h:part.size.y}));
+    .map(part=>({part,x:part.position.x,y:part.position.y-part.size.y*.46,z:part.position.z-part.size.z*.15,w:part.size.x,h:part.size.y}));
    const roof=home.parts?.find(p=>p.type==='roof');
-   if(roof)home.fireOpenings.push({part:roof,x:roof.position.x,y:roof.position.y+.15,z:roof.position.z,w:Math.min(2,roof.size.x),h:1.2});
+   if(roof)home.fireOpenings.push({part:roof,x:roof.position.x,y:roof.position.y+.10,z:roof.position.z+roof.size.z*.12,w:Math.min(1.4,roof.size.x*.14),h:.52});
   }
   for(let k=0;k<SITES_PER_FIRE;k++){
    const opening=home.fireOpenings[k];const index=slot*SITES_PER_FIRE+k;
@@ -567,7 +567,13 @@ export function createDistantNeighborhood({root,flameTexture}){
    // visible propagation; a windowless horizon roof still ignites on impact.
    const power=k===0?.85:k===1?.85*(.035+.965*secondaryGrowth):
     home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2*roofGrowth:.85;
-   combustion.set(index,x,y,z,opening.w*(1+.2*rubble),opening.h*(1.5-.25*rubble),(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,k===2||rubble>.8?1:0);
+   const isRoof=k===2;
+   const heat=Math.min(.30,(home.damage||.25)*.35);
+   const baseW=isRoof?opening.w:opening.w*.68;
+   const baseH=isRoof?opening.h:opening.h*(.75+heat);
+   const renderW=baseW*(1+(isRoof?.2:.25)*rubble);
+   const renderH=baseH*(1-(isRoof?.1:.18)*rubble);
+   combustion.set(index,x,y,z,renderW,renderH,(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,isRoof||rubble>.8?1:0);
   }
  }
  function releaseFire(home){

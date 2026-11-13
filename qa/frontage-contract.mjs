@@ -35,3 +35,14 @@ for(const b of city.buildings.filter(b=>b.historicSash)){
  }
 }
 console.log('Historic sash opening enclosure/recess PASS');
+
+// Doll Museum at 2253 N Broad must be on the school side of Dauphin (x > -53).
+const dollMuseum=city.buildings.find(b=>b.name==='north-doll-museum');
+assert.ok(dollMuseum&&dollMuseum.x>-53&&dollMuseum.x<0&&dollMuseum.historicSash,
+ 'Philadelphia Doll Museum is situated on the school side of Dauphin with historic sash openings');
+
+// 2300 block corner across Dauphin (x < -59) features projecting stone bays and ornate roofline.
+const northCorner=city.buildings.find(b=>b.name==='north-dauphin-historic-corner');
+assert.ok(northCorner&&northCorner.x<-59&&northCorner.projectingBays&&northCorner.ornateRoofline,
+ '2300 block historic corner features projecting bays and ornate roofline');
+console.log('North Broad reference alignment (Doll Museum & 2300 corner) PASS');

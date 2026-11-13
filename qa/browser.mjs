@@ -1334,6 +1334,14 @@ try {
   assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<1),'all sources settle onto rubble');
   assert.ok(backgroundIntact.tonguePositions[0][1]>backgroundSettled.tonguePositions[0][1]+2,
     'sources follow structural collapse to the ground');
+  assert.ok(backgroundIntact.flameHeight !== null && backgroundIntact.flameHeight >= 0.85 && backgroundIntact.flameHeight <= 1.45,
+    'calibrated rowhouse flame height is visible from gameplay distance and bounded against oversized torches');
+  assert.ok(backgroundIntact.flameWidth !== null && backgroundIntact.flameWidth >= 0.60 && backgroundIntact.flameWidth <= 1.20,
+    'calibrated rowhouse flame width stays bounded within window reveal');
+  assert.ok(backgroundIntact.combustionSites[0].y + backgroundIntact.flameHeight < backgroundIntact.originalHeight,
+    'flame card vertex tips stay strictly contained below the roofline');
+  assert.ok(backgroundIntact.combustionSites[0].z < backgroundIntact.roof.z + backgroundIntact.roof.depth * .5 + .25,
+    'flame base is anchored inside the window opening');
   assert.equal(flightBudget.combustion.capacity,168);
   assert.equal(idleBudget.combustion.sourceBufferWrites,settledBudget.combustion.sourceBufferWrites,
     'stationary fire must not rewrite instanced GPU combustion attributes');
