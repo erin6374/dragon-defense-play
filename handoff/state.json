@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
+  "observed_parent_sha": "2c8b7e1b9effc2b08559d334d37d76a429824f12",
   "observed_version": "5.5.0-rc.48",
   "observed_build_id": "5.5-licensed-vfx-branch-gate-rc48",
-  "release_status": "rc48_technical_qa_verified_cinematic_art_fail_windows_hardware_fps_unmeasured",
+  "release_status": "rc48_verified_windows_csv_analyzer_candidate_exact_head_qa_pending",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -103,8 +103,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Obtain and analyze a real physical Windows 30–60-second Performance Lab CSV during heavy destruction; distinguish rAF scheduling stalls from GPU/CPU limits before making a renderer change.",
+  "next_task": "Verify exact-head five workflows and Windows preview includes CSV analyzer; obtain real 30–60-second physical Windows Performance Lab CSV during destruction, run tools/analyze-windows-performance.py, and triage before changing renderer.",
   "implemented": [
+    "Windows CSV analyzer candidate: browser-only FPS statistics, independent host render/heartbeat stall classification, visibility exclusion, missing CPU/RAM as null; six synthetic tests and browser workflow preflight",
     "RC48 technical QA: five exact-source Actions success; actual browser/cinematic/focused/motion/Windows ZIP CRC and reports verified; licensed WEBP hashes match",
     "RC48 captured pixel regression: five cinematic PNGs byte-identical to RC47; decoded frames identical for genuine 600-frame skyline plus five 100-frame clips",
     "RC48 shader change: skip redundant procedural FBM in licensed CC0 atlas paths, preserve procedural fallback and fixed pools",
@@ -141,7 +142,14 @@
   },
   "verified_baseline_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
   "verified_baseline_version": "5.5.0-rc.48",
-  "candidate_tests_pending": [],
+  "candidate_tests_pending": [
+    "browser exact-head",
+    "cinematic exact-head",
+    "focused-fire exact-head",
+    "licensed CC0 exact-head",
+    "genuine 600-frame motion exact-head",
+    "Windows preview analyzer inclusion and hashes"
+  ],
   "verified_visual_equivalence": {
     "comparison_source_sha": "5e98dab13d62520142e0460215a292a520195c54",
     "source_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",

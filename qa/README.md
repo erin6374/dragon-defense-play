@@ -36,3 +36,14 @@ Rollback point for this release is [v5.2.2](https://github.com/erin6374/dragon-d
 ## RC39 Windows preview telemetry contract
 
 The packaged `PLAY-PREVIEW.cmd` must run `tools/windows-preview-server.py`, not bare `python -m http.server`: the existing Performance Lab uses `GET /__build`, `GET /__system_metrics`, `POST /__game_telemetry` and `GET /__system_csv`. A bare static server returns HTML/404 and silently disables capture. `qa/windows-preview-server-test.py` exercises all four endpoints, rejects malformed/foreign telemetry, and runs in browser workflow preflight. The server binds loopback only, uses Python stdlib and writes CSV outside the served game directory. FPS is the game's browser metric, not GPU utilization or GPU timing. Windows CPU/RAM are sampled with native OS counters; GPU percent remains `null`. Exact-head browser and actual Windows hardware capture are separate acceptance gates.
+
+## Windows Performance Lab CSV triage (development only)
+
+Run the Windows preview's Performance Lab during 30–60 seconds of active meteor/fire/destruction, export `dragon-defense-performance.csv`, then from the unpacked preview folder run:
+
+```powershell
+python tools/analyze-windows-performance.py dragon-defense-performance.csv
+python tools/analyze-windows-performance.py dragon-defense-performance.csv --json
+```
+
+The analyzer uses **browser rows only** for FPS and frame-time statistics; host rows repeat the last known browser values and continue independently during browser freezes. It counts stale render frames only when the tab is explicitly visible and focused, separating fresh JS heartbeats from stalled requestAnimationFrame. Missing CPU/RAM is reported as unavailable, never zero. Whole-system CPU/RAM cannot identify which process or GPU is responsible; the analyzer is not a GPU benchmark. Save the original CSV and report together. Six synthetic tests run in browser QA preflight.
