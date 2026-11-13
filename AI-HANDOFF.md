@@ -1,3 +1,25 @@
+## November 13 — RC53 Full boulevard extension, horizon convergence on skyline, North Broad storefronts & neighborhood meteor strikes
+
+Parent verified baseline SHA: 1c6ec38 (RC52 5.5.0-rc.52, build 5.5-north-broad-refinement-rc52).
+
+RC53 directly addresses user feedback and real-world Google Earth oblique references (Images 5 & 6) for 2221 North Broad Street:
+1. Widescreen Boulevard & Sidewalk Extension:
+   - In `src/neighborhood.js` and `src/rendering/cinematic-assets.js`, expanded Broad Street road slabs, near curb lanes, and sidewalks from 200/230 units to 1,300 units ($x \in [-600, +600]$), eliminating abrupt road cutoffs on both sides of the screen.
+   - Extended double yellow center road markings, white lane stripes, and curb caps across the full 1,240-unit roadway.
+   - Extended grand-boulevard twin-lantern lampposts and North Broad district banners across the wider street corridor ($x = \pm 280, \pm 210, \pm 150, \pm 105, \dots$).
+2. Dense Neighborhood FOV Fill & Horizon Convergence on Skyline:
+   - In `src/rendering/distant-neighborhood.js`, expanded lots per row from 74/80/96 to 130/140/160 lots ($x$ spanning over 1,200 units to $x \approx \pm 600$), completely filling the field of view to the far left and right.
+   - Added deeper row centers extending to $z = -710$ (`[-100, -127, -158, -189, -219, -249, -280, -311, -345, -379, -416, -453, -491, -529, -565, -602, -638, -674, -710]`) and widened the ground base plane to 1,500 units ($z \in [-740, 0]$).
+   - Dense rowhouses now converge directly onto the plane of the Center City Philadelphia skyline ($z = -740$), matching Google Earth views without empty horizon gaps.
+3. Mid-Ground Depth Rows & Google Earth North Broad Realism:
+   - In `src/simulation/city-layout.js`, expanded mid-ground depth rows from 27 to 64 lots ($x \in [-280, +220]$), maintaining Dauphin, Susquehanna, and southern campus clearance.
+   - Added street-facing historic 2300 block commercial storefronts (`north-2300-historic-shop-1`, `north-2300-historic-shop-2`) north of Dauphin with historic sash openings, projecting bays, and ornate rooflines.
+   - In `src/rendering/broad-street-reference.js`, registered detailed reference facades, awnings, glass display windows, and stoops for `south-dauphin-historic`, `broad-north-historic-extension`, and the 2300 block shops with structural wall detachment binding.
+4. Background Neighborhood Meteor Strikes & Smoke:
+   - In `src/game.js`, removed the early health-gate suppression that prevented background rowhouses from taking damage. Background neighborhood houses now take progressive meteor strikes, crumble into debris, and billow smoke plumes throughout the attack, while preserving the skyscraper flaming-meteor threshold (<= 75% health).
+5. Contract & Performance Invariants:
+   - All regression suites (`check-build-info`, `frontage-contract`, `smoke-plume-contract`, `street-surface-contract`, and `windows-preview-server-test` 8/8) pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC52 Authentic Philadelphia vehicle liveries, North Broad banners & crater embers
 
 Parent verified baseline SHA: 505066a (RC51 5.5.0-rc.51, build 5.5-north-broad-refinement-rc51).

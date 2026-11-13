@@ -1147,7 +1147,8 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  if(backgroundDamageTimer>0)return;
  // Only escalate background damage when neighborhood health is under distress (<= 75) or in QA force mode.
  // Paced naturally so background rowhouses take gradual, cohesive damage rather than sporadic scripted collapses.
- if(health>75&&frontDamage<.35){backgroundDamageTimer=2.5;return;}
+ // Background neighborhood houses take progressive meteor strikes and smoke throughout the attack
+ backgroundDamageTimer=THREE.MathUtils.lerp(5.2,2.4,Math.max(frontDamage*.72,blockDamage));
  backgroundDamageTimer=THREE.MathUtils.lerp(5.8,2.8,Math.max(frontDamage*.72,blockDamage));
  const district=neighborhood.longRange;
  const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.z<DEFENSE_REAR_Z&&b.damage<1);

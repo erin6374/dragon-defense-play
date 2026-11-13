@@ -33,7 +33,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   {name:'camac-11th',min:-199,max:-135},
   {name:'11th-9th',min:-261,max:-199},
   {name:'9th-8th',min:-326,max:-261},
-  {name:'horizon',min:-590,max:-326}
+  {name:'horizon',min:-750,max:-326}
  ];
  const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
@@ -48,8 +48,8 @@ export function createDistantNeighborhood({root,flameTexture}){
   canopy:new THREE.MeshLambertMaterial({color:0x647c5e}),
   trunk:new THREE.MeshLambertMaterial({color:0x685746}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(790,.2,638),materials.walk);
- base.position.set(0,-.63,-311);root.add(base);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(1500,.2,770),materials.walk);
+ base.position.set(0,-.63,-375);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
@@ -71,8 +71,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  const cross=CROSS_STREETS.map(s=>s.x);
  for(let k=0;k<STREET_AXIS.length;k++){
   const s=STREET_AXIS[k],tier=Math.max(0,slot(s.z));
-  if(k>0)street(0,s.z,600,8.5,tier);
-  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,600,.15,1.45);
+  if(k>0)street(0,s.z,1300,8.5,tier);
+  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,1300,.15,1.45);
   // Intersections and crossings are an inexpensive white instanced pattern.
   for(const xx of cross)for(let q=0;q<4;q++)add(tier,'walk',xx+(q-1.5)*1.35,-.25,s.z,0.52,.02,6.4);
  }
@@ -87,15 +87,15 @@ export function createDistantNeighborhood({root,flameTexture}){
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
  const nearParapetHeights=[];
   const nearParapetBandsByRow=new Map();
- const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565];
- for(const z of [-328,-362,-397,-435,-472,-510,-546,-582]){
-  street(0,z,760,8.5,slot(z));
+ const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565,-602,-638,-674,-710];
+ for(const z of [-328,-362,-397,-435,-472,-510,-546,-582,-620,-656,-692]){
+  street(0,z,1300,8.5,slot(z));
  }
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
   const horizon=tier===tiers.length-1;
   // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
-  const lots=horizon?96:tier>=3?80:74;
+  const lots=horizon?160:tier>=3?140:130;
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate

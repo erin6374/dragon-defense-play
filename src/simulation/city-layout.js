@@ -22,6 +22,8 @@ export function populateCity(city){
  // south of Susquehanna is a LOW, SET-BACK institutional footprint, not shops.
  // See qa/NORTH-BROAD-REFERENCE.md for image evidence and remaining uncertainty.
  house({name:'broad-north-historic-extension',historicSash:true,x:-88.5,w:9,h:12.9,kind:'stone',stories:3,bays:3,projectingBays:true,ornateRoofline:true,exteriorOnly:true});
+ house({name:'north-2300-historic-shop-1',historicSash:true,x:-98.2,w:8.8,h:13.2,kind:'brickRed',stories:3,bays:3,exteriorOnly:true});
+ house({name:'north-2300-historic-shop-2',historicSash:true,x:-107.5,w:9.2,h:13.8,kind:'stone',stories:3,bays:3,ornateRoofline:true,exteriorOnly:true});
  house({name:'broad-south-low-institution',x:77,w:28,h:5.8,d:21,z:-15.5,kind:'stoneGray',stories:1,bays:9,institutional:true,exteriorOnly:true});
  // Detailed collision-enabled near neighborhood. Farther blocks use instanced LOD.
  const palette=['brick','cream','stone','brickBrown','brickTan'];
@@ -29,11 +31,11 @@ export function populateCity(city){
  for(let row=0;row<depthRows.length;row++){
   const z=depthRows[row];
   // Extend rowhouses westward to far left (negative x) across North Broad and Dauphin corridors
-  const count=27;
+  const count=64;
   for(let i=0;i<count;i++){
-   const x=-152+i*8.2+((row%2)*1.4);
+   const x=-280+i*8.2+((row%2)*1.4);
    const width=7.1+((i+row)%4)*.7;
-   if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80) || (x+width*.5>63&&z+7.25>-26&&z-7.25<-5))continue; // keep Dauphin and Susquehanna physically open
+   if(occupiesCrossStreet(x,width)|| (Math.abs(x)<17&&z>-80) || (x+width*.5>63&&x-width*.5<93&&z+7.25>-26&&z-7.25<-5))continue; // keep Dauphin and Susquehanna open and preserve south campus
    const stories=2+((i*3+row)%3);
    const h=3.3+stories*2.7+((i+row)%3)*.34;
    house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});

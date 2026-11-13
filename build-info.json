@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc52",
-  "version": "5.5.0-rc.52",
+  "build": "5.5-north-broad-refinement-rc53",
+  "version": "5.5.0-rc.53",
   "gameplay_base": "5.2.3",
-  "scope": "Authentic Philadelphia visual dressing: North Broad District vertical lamppost banners and twin-globe luminaires, authentic SEPTA bus red/blue livery with roof HVAC pods, police patrol cruiser emergency dual lightbar, and smoldering molten cores for street impact craters.",
+  "scope": "Full widescreen boulevard extension (1300 units wide, dual curb & sidewalk), complete residential fabric filling the FOV across North Broad to far-left horizon, continuous convergence of distant rowhouses onto the skyline plane (z=-710 to z=-740), authentic North Broad 2300 block storefronts and stoops, and progressive background neighborhood meteor strikes with smoke plumes.",
   "new_gameplay_features": false,
-  "release_status": "RC52 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC53 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

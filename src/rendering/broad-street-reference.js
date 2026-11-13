@@ -26,7 +26,11 @@ export function createBroadStreetReferenceFacades(scene, buildings){
   'north-brownstone':{type:'brownstone'},
   'north-modern-white-red':{type:'modern2'},
   'north-red-brick-shop':{type:'brickShop'},
-  'susquehanna-crown-chicken':{label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9',type:'crown'}
+  'susquehanna-crown-chicken':{label:['CROWN CHICKEN & GRILL'],bg:'#8f2728',fg:'#fff8d9',type:'crown'},
+  'south-dauphin-historic':{label:['PHILA COMMERCE','2300 BROAD'],bg:'#203042',fg:'#fff4cf',type:'store'},
+  'broad-north-historic-extension':{label:['HISTORIC NORTH','BROAD CORRIDOR'],bg:'#342218',fg:'#f5e8c4',type:'stone'},
+  'north-2300-historic-shop-1':{label:['BROAD APOTHECARY'],bg:'#1b4532',fg:'#f8edd0',type:'brickShop'},
+  'north-2300-historic-shop-2':{label:['NORTH BROAD HARDWARE'],bg:'#4a2820',fg:'#ffefc8',type:'store'}
  };
  const mapping=[];const externalFacadeNames=new Set();
  for(const b of buildings){const spec=specs[b.name];if(!spec)continue;const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);mapping.push({group,building:b});const z=b.front+.13; if(spec.label&&spec.type!=='school')makeSign(group,b,spec.label,spec.bg,spec.fg,b.h<8?3.2:2.30,spec.type==='crown'?.95:.9,spec.type==='crown'?.82:.95);
