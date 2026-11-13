@@ -1,3 +1,11 @@
+## November 12 — RC44 existing street texture assignment repair
+
+RC43 5cf4f833 passed all five Actions (browser 43325817370, cinematic 43325817317, focused 43325817429, motion 43325817411, CC0 43325817439). Downloaded cinematic artifact 13991983665; ZIP CRC passes. Inspected actual day/left views: historic sash reads narrower, but school remains flat and whole scene still stylized. Workflow success is not visual approval or measured hardware FPS.
+
+Found a concrete visual defect: enhanceEnvironment tested geometry.isBoxGeometry, absent from vendored Three BoxGeometry. Entire road/sidewalk PBR assignment was skipped. Extracted assignment into street-surface-materials.js, use geometry.type, and assign existing asphaltCross to perpendicular streets. Reuses existing loaded maps; adds no geometry, lights, texture assets or particle work. Enabling normal/roughness sampling and another material bucket may affect GPU cost; measure rather than claim zero-cost or fixed slideshow. Existing fog/lighting and FBX remain unchanged.
+
+Local real-Three regression covers the missing flag, actual asphalt/crossstreet/sidewalk assignment and exclusion of facades/stripes/base ground. Added browser workflow preflight. Syntax, metadata and frontage regression pass. Exact RC44 rendered day/dusk/night/left/right and browser checks pending. NEXT: visually inspect road scale/specular appearance; correct mapping if stretched; keep hardware FPS issue open. No release/main/Pages/production change. Gemini should start from current branch, preserve RC37 cache and RC39–42 telemetry.
+
 ## November 12 — RC43 historic street-front window proportions
 
 Continued from RC42 docs checkpoint 0803e9a. Eight historic frontage shells now have narrow recessed upper-storey sash windows, with continuous masonry piers and correctly sized spandrels using the same existing four wall pieces per opening. School, modern apartments, campus and ground storefront glazing retain their existing proportions. Removed duplicate decorative brownstone glass/lintels that could overlay the physical openings; structural lintels/sills remain. This is a geometry/proportion pass based on previously inspected Street View, not a claim of corrected cadastral layout or completed realism.

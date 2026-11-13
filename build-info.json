@@ -1,8 +1,8 @@
 {
-  "build": "5.5-historic-sash-rc43",
-  "version": "5.5.0-rc.43",
+  "build": "5.5-street-pbr-repair-rc44",
+  "version": "5.5.0-rc.44",
   "gameplay_base": "5.2.3",
-  "scope": "Recess and narrow historic upper-storey sash windows; continuous structural masonry piers; remove duplicate brownstone decorative glass.",
+  "scope": "Repair skipped road and sidewalk PBR material assignment; use existing cross-street material for perpendicular roads.",
   "new_gameplay_features": false,
-  "release_status": "RC43 candidate: local structural checks pass; exact-head visual/browser verification and hardware FPS pending."
+  "release_status": "RC44 development candidate: local regression passes; exact-head browser/visual tests and hardware performance pending."
 }

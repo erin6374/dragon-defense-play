@@ -1,3 +1,4 @@
+import {applyStreetSurfaceMaterials} from './street-surface-materials.js';
 import {createFoliageCluster} from './foliage-cluster.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Dragon Defense 4.4 — coherent visual asset library, browser-native WebGL/PBR.
@@ -346,16 +347,9 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
   if(building.cap)building.cap.material=bank.roof;
   updated++;
  }
- // Road and sidewalks use normal/roughness mapped textures rather than featureless Lambert slabs.
- root.traverse(o=>{
-  if(!o.isMesh||!o.geometry?.isBoxGeometry)return;
-  const y=o.position.y,s=o.scale;
-  if(y<-.27&&y>-.72&&s.x>9&&s.y<.32&&s.z>3){
-   if([0x34373b,0x414249,0x35383f].includes(o.material.color?.getHex())||o.material.userData?.pbrType==='asphalt')o.material=bank.asphalt;
-   else if([0xa9a8a0,0xb0a99d,0xb8b1a6].includes(o.material.color?.getHex())||o.material.userData?.pbrType==='limestone')o.material=bank.sidewalk;
-  }
- });
- return {street,updated,windTrees};
+ // Share the existing albedo/normal/roughness maps across street surfaces.
+ const surfaceMaterials=applyStreetSurfaceMaterials(root,bank);
+ return {street,updated,windTrees,surfaceMaterials};
 }
 
 // Weather layer: particle strip in the camera-visible street, with low fixed draw cost.
