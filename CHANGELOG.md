@@ -1,3 +1,23 @@
+## November 13 — RC56 Google Earth roof realism, Fotterall residential towers, SEPTA bus shelter & Broad/Dauphin subway entrance
+
+Parent verified baseline SHA: e652714 (RC55 5.5.0-rc.55, build 5.5-north-broad-refinement-rc55).
+
+RC56 enhances visual realism and street-level Philadelphia infrastructure based on Google Earth 3D oblique views:
+1. Google Earth Silver-White Elastomeric Roofscape (`src/rendering/distant-neighborhood.js`):
+   - Transformed generic dark brown roofs into authentic reflective silver-white elastomeric coatings (`0xcbd1d5`, `0xcfd5d9`, `0xc5cbd0`, `0xd7dde0`) with lot-to-lot tonality, distance haze, and dark perimeter copings.
+   - ~85% of rowhouse roofs now reflect bright silver-white elastomeric bitumen and ~15% feature weathered dark bitumen tar, matching Google Earth aerial photography.
+   - Added front cornices, roof parapet copings, and window sills to side-street blocks ($z = -31, -53, -75$).
+2. Fotterall / Northgate High-Rise Residential Slabs (`src/rendering/distant-neighborhood.js`):
+   - Added two 14-story residential towers (Fotterall / Northgate Apartments) at 11th & Cumberland at Fotterall Square ($x \in [-198, -174], z \in [-168, -152]$) with brick masonry facades, vertical window bays across 14 stories, and rooftop elevator bulkheads, matching Google Earth skyline silhouettes with 0 added draw batches.
+3. Authentic SEPTA Transit Bus Shelter at Tech Freire (`src/rendering/broad-street-reference.js`):
+   - Situated an authentic Philadelphia SEPTA transit bus shelter on the curb directly in front of Tech Freire (2221 N Broad) with curved tempered glass canopy, dark stanchions, rear windbreak panel, transit bench, and "SEPTA Route 4 Broad St" route sign.
+4. Broad & Dauphin SEPTA Subway Entrance Headhouse (`src/rendering/broad-street-reference.js`):
+   - Added the North Broad subway entrance portal at Broad & Dauphin with steel handrails, descending stairwell opening, and illuminated blue/orange SEPTA transit globe pylon.
+5. West Side Broad Street Parking Lot Apron (`src/rendering/distant-neighborhood.js`):
+   - Added the commercial parking asphalt apron with white painted parking stall stripes directly across Broad Street from Tech Freire ($z \in [14, 26]$).
+6. Contract & Performance Invariants:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and windows-preview-server-test (8/8) pass. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC55 Authentic neighborhood architecture, 1-screen street/sky extensions, realistic cleanup cranes & hard difficulty storm scaling
 
 Parent verified baseline SHA: 84ca134 (RC54 5.5.0-rc.54, build 5.5-north-broad-refinement-rc54).

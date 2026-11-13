@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc55",
-  "version": "5.5.0-rc.55",
+  "build": "5.5-north-broad-refinement-rc56",
+  "version": "5.5.0-rc.56",
   "gameplay_base": "5.2.3",
-  "scope": "RC55: Authentic North Philadelphia aerial/oblique alignment from Google Earth references (Edberg-Olson football complex, Penrose Rec Center, Fotterall Square & rail corridor); 1 full screen street extension left (North 2300-2400 blocks toward York St) and right (South 2100-2000 blocks toward Diamond St & Temple University); 1 full screen vertical view extension with high-altitude atmospheric transition shader to stratosphere/airglow; elevated meteor spawn heights entering from extended upper atmosphere; realistic end-of-round cleanup construction crane vehicles with telescoping articulated booms, outriggers, rotating beacons, and active facade repair work; road-based vehicle exit routing eliminating despawn blinking; and calibrated meteor storm difficulty where undefended hard-level strikes reduce both school and neighborhood gauges to 0 HP.",
+  "scope": "RC56: Google Earth photographic roof realism with authentic silver-white elastomeric coatings; two Fotterall Square 14-story residential apartment towers; SEPTA transit bus shelter at Tech Freire with curved glass canopy and route sign; Broad & Dauphin SEPTA subway entrance headhouse; and West-side commercial parking apron striping.",
   "new_gameplay_features": false,
-  "release_status": "RC55 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC56 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

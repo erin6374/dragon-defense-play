@@ -38,7 +38,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
   main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
-  roof:new THREE.MeshStandardMaterial({color:0x4a4441,roughness:.95}),
+  roof:new THREE.MeshStandardMaterial({color:0xcbd1d5,roughness:.88,metalness:.08}),
   cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.85}),
   rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.82,metalness:.14}),
   window:new THREE.MeshStandardMaterial({color:0x567383,roughness:.45,metalness:.06}),
@@ -119,7 +119,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    const color=facades[(ix*3+row*5)%facades.length];
    const home=registerBuilding(tier,x,z,w,h,d);
    addPart(home,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
-   addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   const roofColor=((ix+row*3)%7===0)?0x524e4b:atmosphericFacade([0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3,0xafb5b9][(ix+row*5)%5],tier,row,ix);
+   addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18,roofColor);
    // Google Earth reference: dense street-wall roofs punctuated by mature
    // rear-yard trees. Deterministic instancing adds depth, not per-tree meshes.
    if((ix+row*3)%3===0){
@@ -181,9 +182,14 @@ export function createDistantNeighborhood({root,flameTexture}){
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);
     addPart(home,'main',x,h/2,z,8.2,h,14,color);
-    addPart(home,'roof',x,h+.14,z,8.5,.28,14.2);
+    const sideRoofColor=((i+Math.abs(z))%6===0)?0x524e4b:[0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3][(i+Math.abs(z))%4];
+    addPart(home,'roof',x,h+.14,z,8.5,.28,14.2,sideRoofColor);
+    addPart(home,'cornice',x,h+.28,z+7.1,8.6,.36,.42);
     for(const floor of [1,2,3]){
-     for(const dx of [-1.75,1.75])addPart(home,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
+     for(const dx of [-1.75,1.75]){
+      addPart(home,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
+      addPart(home,'cornice',x+dx,h*floor/4-.92,z+7.12,1.5,.12,.24); // window sill
+     }
     }
    }
   }
@@ -210,6 +216,30 @@ export function createDistantNeighborhood({root,flameTexture}){
   // 3. Fotterall Square & diagonal rail corridor (Northwest toward York)
   add(0,'green',-178,-.42,-88,48,.08,44);
   for(let r=0;r<6;r++){add(0,'road',-155-r*12,-.28,-68-r*11,8,.22,14);add(0,'walk',-155-r*12,-.25,-68-r*11,1.2,.26,14);}
+  // 4. Fotterall / Northgate High-Rise Residential Slabs (11th & Cumberland at Fotterall Square)
+  // Prominent 14-story residential towers standing tall over the rowhouse canopy in Google Earth
+  const towerDefs=[
+   {x:-174,z:-152,w:19,h:42,d:15,color:0x8a5c48,tier:2},
+   {x:-198,z:-168,w:19,h:42,d:15,color:0x7d5350,tier:2}
+  ];
+  for(const td of towerDefs){
+   const tower=registerBuilding(td.tier,td.x,td.z,td.w,td.h,td.d);
+   addPart(tower,'main',td.x,td.h/2,td.z,td.w,td.h,td.d,td.color);
+   addPart(tower,'roof',td.x,td.h+.14,td.z,td.w+.2,.28,td.d+.2,0xcad0d4);
+   addPart(tower,'rooftop',td.x,td.h+1.6,td.z,td.w*.42,3.0,td.d*.42,0x777d7c);
+   for(let fl=1;fl<=13;fl++){
+    const wy=fl*(td.h/14);
+    for(let bx=-td.w*.36;bx<=td.w*.36;bx+=td.w*.24){
+     addPart(tower,'window',td.x+bx,wy,td.z+td.d/2+.08,1.4,1.8,.08);
+    }
+   }
+  }
+  // 5. West Side Broad Street commercial apron & parking stalls (facing Tech Freire)
+  add(0,'road',0,-.44,22,120,.12,18);
+  for(let s=-45;s<=45;s+=3.6){
+   add(0,'walk',s,-.37,22,.12,.04,6.2);
+  }
+  add(0,'walk',0,-.31,12.5,1600,.15,1.5);
  let drawCalls=0;
  const batches=tiers.map(()=>({}));
  for(let ti=0;ti<tiers.length;ti++){

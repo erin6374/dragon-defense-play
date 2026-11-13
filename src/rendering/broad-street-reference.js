@@ -77,6 +77,15 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2836','#fff5d0',3.85,.98,.76);
    sign.position.set(b.x,3.85,b.front+2.02);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
+   // SEPTA Transit Bus Shelter directly in front of Tech Freire (Google Earth Images 5 & 10)
+   const shelterX=b.x-7.5,shelterZ=b.front+1.85;
+   for(const sx of [-1.8,1.8])for(const sz of [-.75,.75])bx(group,shelterX+sx,1.4,shelterZ+sz,.10,2.6,.10,alum);
+   bx(group,shelterX,2.75,shelterZ,4.2,.12,1.85,new THREE.MeshStandardMaterial({color:0x7a9ea6,roughness:.15,metalness:.2,transparent:true,opacity:.45,depthWrite:false}));
+   bx(group,shelterX,1.4,shelterZ-.72,3.8,2.2,.04,new THREE.MeshStandardMaterial({color:0x6b8d96,roughness:.2,metalness:.1,transparent:true,opacity:.38,depthWrite:false}));
+   bx(group,shelterX,.48,shelterZ-.35,2.8,.08,.48,dark);
+   for(const bxLeg of [-1.2,1.2])bx(group,shelterX+bxLeg,.24,shelterZ-.35,.08,.46,.44,dark);
+   const busSign=makeSign(group,{...b,x:shelterX-2.1,w:1.8},['SEPTA ROUTE 4','BROAD ST BUS'],'#1a4574','#fff5d0',2.9,.9,.52);
+   busSign.position.set(shelterX-2.1,2.9,shelterZ);
   }
   else if(spec.type==='grandsAsParents'){
    // 2227 N Broad (immediately North of Tech Freire): Grands As Parents Foundation
@@ -163,6 +172,20 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    for(const dx of [-b.w*.30,0,b.w*.30])bx(group,b.x+dx,1.42,z+.15,b.w*.22,2.05,.06,glass);
    awning(group,b,0,b.w*.94,0x243242,'BROAD & DAUPHIN');
    makeSign(group,b,['HISTORIC CORNER','2300 BROAD'],'#1e2936','#f8f0d8',b.h<8?3.2:2.45,.92,.85);
+   if(b.name==='north-dauphin-historic-corner'){
+    // Broad & Dauphin SEPTA Subway Entrance Headhouse (Google Earth Image 8)
+    const subX=b.x+6.8,subZ=b.front+1.6;
+    bx(group,subX,.08,subZ,2.4,.16,3.2,warmStone);
+    bx(group,subX,-.15,subZ,2.0,.30,2.8,shadow);
+    for(const edge of [-1,1]){
+     bx(group,subX+edge*1.1,.55,subZ,.06,.90,3.1,dark);
+     for(const sz of [-1.2,0,1.2])bx(group,subX+edge*1.1,.55,subZ+sz,.08,.92,.08,dark);
+    }
+    bx(group,subX,.55,subZ-1.5,2.2,.90,.06,dark);
+    bx(group,subX-1.1,1.5,subZ+1.5,.12,2.0,.12,alum);
+    bx(group,subX-1.1,2.5,subZ+1.5,.38,.38,.38,new THREE.MeshStandardMaterial({color:0x1a4574,roughness:.3,emissive:0x1a4574,emissiveIntensity:.4}));
+    bx(group,subX-1.1,2.4,subZ+1.5,.36,.12,.36,new THREE.MeshStandardMaterial({color:0xd96820,roughness:.3,emissive:0xd96820,emissiveIntensity:.4}));
+   }
   }
   else if(spec.type==='dauphinCommerce'){
    // 2308-2312 N Broad commercial frontage
