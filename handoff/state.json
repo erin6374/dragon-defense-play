@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
-  "observed_version": "5.5.0-rc.52",
-  "observed_build_id": "5.5-facade-atlas-variation-rc52",
-  "release_status": "rc52_technical_qa_pass_facade_atlas_unreachable_art_fail_physical_windows_fps_unmeasured",
+  "observed_parent_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
+  "observed_version": "5.5.0-rc.53",
+  "observed_build_id": "5.5-structural-historic-reveals-rc53",
+  "release_status": "rc53_active_breakable_historic_masonry_candidate_exact_head_qa_pending_art_fail_physical_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43434692190,
-      "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+      "run_id": 43444249537,
+      "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43434692190"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43444249537"
     },
     {
       "name": "cinematic",
-      "run_id": 43434692203,
-      "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+      "run_id": 43444249540,
+      "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43434692203"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43444249540"
     },
     {
       "name": "focused fire",
-      "run_id": 43434692198,
-      "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+      "run_id": 43444249798,
+      "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43434692198"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43444249798"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43434692283,
-      "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+      "run_id": 43444249538,
+      "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43434692283"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43444249538"
     },
     {
       "name": "motion",
-      "run_id": 43434692194,
-      "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+      "run_id": 43444249543,
+      "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43434692194"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43444249543"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Make one visible bounded change in active damageable Broad Street frontage (broad-street-reference.js / structural-city.js), prove same-camera screenshot delta and damage cleanup; physical Windows heavy-destruction CSV remains required before FPS claim.",
+  "next_task": "Verify RC53 exact-HEAD five workflows and real artifacts, compare identical-camera RC52/RC53 screenshots for nonzero visible pixel delta, verify left/right damage and Windows CRC/license hashes; physical Windows heavy-destruction CSV remains mandatory before FPS claims.",
   "implemented": [
+    "RC53 candidate: active structural-city historic upper-sash keystone plus two jamb reveals, existing stone instanced facade parts on both sides; QA frontage contract tests count, bilateral full damage and restore; exact-head CI/screenshots pending. RC52 verified base ce7de10: five workflows success, CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148, long 600-frame MP4, clean reports, CC0 hashes matched; ART FAIL, Windows hardware FPS unmeasured.",
     "RC52 independent exact-source technical QA PASS (five workflows; CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148; 600-frame MP4; CC0 hashes). New qa/facade-reachability.mjs proves atlas is imported but not invoked by game; five RC51/RC52 cinematic PNGs byte-identical. ART FAIL; physical Windows FPS unmeasured.",
     "RC52 candidate: deterministic facade atlas baked blinds/curtains, cast-stone lintels/keystone and subtle runoff; existing canvas textures only, no new geometry/draw calls/shader work or gameplay. New qa/facade-atlas-contract.mjs in browser preflight; local Node contract and syntax PASS. Exact-head CI and art review pending.",
     "Parent 2af10f6 RC51 exact-head five Actions SUCCESS; independently downloaded ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 148/148; clean reports, 600-frame long MP4 and six 100-frame clips ffprobe, licensed CC0 hashes matched, causal fire/reset checks pass; ART FAIL, physical Windows FPS unmeasured.",
@@ -115,22 +116,23 @@
     "RC44 verified: five exact-head workflows SUCCESS, browser/cinematic/focused/motion/Windows ZIP CRC checked, 600-frame MP4 inspected, CC0 hashes matched"
   ],
   "blockers": [
-    "RC52 facade atlas has no live game invocation: five cinematic screenshots byte-identical to RC51; canvas contract PASS is not rendered art progress",
+    "RC53 visible same-camera screenshot delta and full exact-head QA still unverified",
+    "RC52 atlas remains unreachable; its baked details are not live art",
     "Cinematic ART FAIL: repetitive smoke, stylized facade and house destruction",
     "Physical Windows FPS/CPU/RAM not measured; severe slideshow complaint unresolved"
   ],
   "windows_preview": {
-    "artifact_id": 14043293401,
+    "artifact_id": 14047479312,
     "crc_members": 148,
     "crc_pass": true,
-    "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+    "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
     "version": "5.5.0-rc.52",
     "build": "5.5-facade-atlas-variation-rc52",
     "licensed_cc0_sha256_match": true
   },
   "motion_review": {
-    "artifact_id": 14043624063,
-    "source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+    "artifact_id": 14048363132,
+    "source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
     "skyline_frames": 600,
     "seconds": 30,
     "short_clips": 5,
@@ -140,9 +142,16 @@
     "frames_inspected": 7,
     "art_acceptance": "fail"
   },
-  "verified_baseline_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+  "verified_baseline_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
   "verified_baseline_version": "5.5.0-rc.52",
-  "candidate_tests_pending": [],
+  "candidate_tests_pending": [
+    "browser",
+    "cinematic",
+    "focused fire",
+    "licensed CC0",
+    "genuine five+30-second motion",
+    "Windows preview CRC/license hash and screenshot delta"
+  ],
   "verified_visual_equivalence": {
     "comparison_source_sha": "5e98dab13d62520142e0460215a292a520195c54",
     "source_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
@@ -156,8 +165,8 @@
     "rc52_source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
     "facade_atlas_runtime_active": false
   },
-  "last_verified_base_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
-  "last_verified_source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+  "last_verified_base_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
+  "last_verified_source_sha": "ce7de10acc4f111973ad475e6d24d92953ae8aab",
   "motion_evidence": {
     "frames": 600,
     "fps": 20,
