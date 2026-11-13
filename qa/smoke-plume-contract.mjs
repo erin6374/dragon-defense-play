@@ -7,7 +7,6 @@ for(const token of [
  'float gust=.90+.18*sin(clock*.31+layer*.55+vSeed*.41);',
  'float crosswind=-gust*(.76+.40*fract(vSeed*.193))*pow(vAge,1.42)*3.8;',
  'float ashBlend=smoothstep(.12,.88,vAge);',
- 'float sootVariation=.85+.24*fract(vSeed*.413);',
  'alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*',
  'if(plumeMode>.5){','if(useFlipbook>.5){','setSmokeMode(next)'
 ])assert.ok(bridge.includes(token),'RC45 smoke bridge missing: '+token);

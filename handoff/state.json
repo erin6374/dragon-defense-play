@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+  "observed_parent_sha": "f1476cd8187168c102b07fab0a0b7053f207d272",
   "observed_version": "5.5.0-rc.50",
   "observed_build_id": "5.5-smoke-soot-density-rc50",
-  "release_status": "rc49_exact_source_fully_verified_rc50_soot_density_pending_exact_head",
+  "release_status": "rc50_browser_preflight_legacy_contract_failure_corrected_pending_exact_head",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -103,8 +103,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC50 exact-HEAD five workflows and actual reports/ZIP CRC/screenshots/600-frame MP4/licensed hashes; obtain 30–60s physical Windows Performance Lab CSV. Do not claim hardware FPS or cinematic art acceptance.",
+  "next_task": "Verify corrected RC50 exact-head browser preflight, then all five Actions and actual artifacts/ZIP CRC/screenshots/600-frame MP4/licensed hashes; obtain physical Windows FPS CSV. Do not claim art acceptance or hardware FPS.",
   "implemented": [
+    "RC50 f1476cd browser preflight failed because obsolete RC45 smoke source-contract asserted superseded soot numeric constant; removed stale assertion, preserved RC45/RC48/RC49 and new RC50 assertions; no shader or gameplay changes",
     "RC49 a124883 exact-source five Actions SUCCESS; real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, CC0 hashes match, genuine 600-frame MP4 inspected; ART FAIL, physical Windows FPS unknown",
     "RC50 candidate: licensed smoke denser atlas-alpha soot and cooler upper ash with source variation; six-sheet pool and original school FBX unchanged; local source checks PASS, exact-head QA pending",
     "b321 exact-source five Actions SUCCESS, real browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147 CRC; reports clean, licensed CC0 hashes matched, 600-frame/30s MP4 plus five 100-frame clips checked; ART FAIL, Windows hardware FPS unknown",
@@ -122,7 +123,8 @@
   ],
   "blockers": [
     "Physical Windows FPS/CPU/RAM not measured; severe slideshow complaint unresolved",
-    "Cinematic ART FAIL: gray/repetitive smoke, stylized facades and procedural house damage"
+    "Cinematic ART FAIL: gray/repetitive smoke, stylized facades and procedural house damage",
+    "RC50 full exact-head browser QA and artifacts pending after obsolete assertion fix"
   ],
   "windows_preview": {
     "artifact_id": 14018178155,
