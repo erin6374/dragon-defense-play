@@ -1,8 +1,8 @@
 {
-  "build": "5.5-meteor-causal-skyline-rc51",
-  "version": "5.5.0-rc.51",
+  "build": "5.5-facade-atlas-variation-rc52",
+  "version": "5.5.0-rc.52",
   "gameplay_base": "5.2.3",
-  "scope": "Remove legacy random skyline fire sprites and unused smoke-canvas startup work; meteor-contact skyline fires and fixed GPU pools remain.",
+  "scope": "Texture-baked seeded window blinds/curtains, masonry lintels and sill weathering on existing facade atlases; no new geometry, draw calls or gameplay changes.",
   "new_gameplay_features": false,
-  "release_status": "RC51 candidate: static source contract passed; exact-head CI, visual motion, and Windows FPS pending."
+  "release_status": "RC52 candidate: local deterministic facade atlas contract PASS; exact-head browser/cinematic/fire/CC0/30-second motion and Windows ZIP verification pending; art acceptance and physical Windows FPS unmeasured."
 }
