@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
+  "observed_parent_sha": "717c3b9c27e674509c031cde083239b4373ad695",
   "observed_version": "5.5.0-rc.55",
   "observed_build_id": "5.5-turbulent-plume-edge-rc55",
-  "release_status": "rc55_turbulent_smoke_candidate_exact_head_qa_pending_rc54_tool_head_technical_pass_art_fail_windows_fps_unmeasured",
+  "release_status": "rc55_preflight_obsolete_rc49_uv_contract_fixed_browser_reverification_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43510751786,
-      "source_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
+      "run_id": 43519015569,
+      "source_sha": "717c3b9c27e674509c031cde083239b4373ad695",
       "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43510751786"
+      "conclusion": "failure",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43519015569"
     },
     {
       "name": "cinematic",
-      "run_id": 43510751806,
-      "source_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
-      "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43510751806"
+      "run_id": 43519015464,
+      "source_sha": "717c3b9c27e674509c031cde083239b4373ad695",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43519015464"
     },
     {
       "name": "focused fire",
-      "run_id": 43510751842,
-      "source_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
-      "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43510751842"
+      "run_id": 43519015669,
+      "source_sha": "717c3b9c27e674509c031cde083239b4373ad695",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43519015669"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43510751811,
-      "source_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
+      "run_id": 43519015723,
+      "source_sha": "717c3b9c27e674509c031cde083239b4373ad695",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43510751811"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43519015723"
     },
     {
       "name": "genuine motion",
-      "run_id": 43510751838,
-      "source_sha": "f4f73c21beeed2191f4ed0b930fa9f11fa665d37",
-      "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43510751838"
+      "run_id": 43519015468,
+      "source_sha": "717c3b9c27e674509c031cde083239b4373ad695",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43519015468"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC55 exact-HEAD browser/cinematic/focused-fire/licensed-CC0/genuine-motion reports, inspect real long MP4 and screenshot differences, Windows ZIP CRC/labels and CC0 hashes; then obtain physical Windows 30-60s Performance Lab CSV.",
+  "next_task": "Complete all five exact-head workflows after RC55 QA preflight fix; inspect browser errors/warnings, cinematic and 5+30s motion, Windows ZIP CRC/build labels, licensed hashes, compare plume against RC54; physical Windows FPS CSV remains missing.",
   "implemented": [
+    "RC55 QA preflight fix: replace stale RC49 smoke UV literal assertion with active +lean+eddy expression; no shader/gameplay change. Parent 717c3b9 browser run 43519015569 failed before browser startup; licensed CC0 success; cinematic/focused/motion still running at snapshot. Exact-head verification pending.",
     "RC55 candidate: source-seeded height-dependent smoke UV eddies plus two-frequency asymmetric feather drift in active licensed CC0 plume shader; legacy A/B, atlas fetch count, GPU pool budget, bilateral damage, meteor-only ignition and original FBX preserved. RC54 QA-tool HEAD f4f73c21 five workflows success; ZIP CRC browser 78, cinematic 6, focused 7, motion 33, Windows 150; CC0 hashes matched; 600-frame/30s and five 100-frame clips; ART FAIL, physical Windows FPS unmeasured. RC55 exact-head QA pending.",
     "RC54 exact-source five Actions success, downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 149/149; clean reports, exact SHA/labels, CC0 hashes; real 600-frame/30s and five 100-frame/5s videos. New compare-motion-recordings.py tested on RC53 vs RC54: 9/9 sampled frames changed >10 RGB; identical-input negative test correctly fails. ART FAIL, Windows hardware FPS unmeasured.",
     "RC54 candidate: licensed plume-only independent per-sheet atlas clocks and subtle asymmetric edge feather; six fixed smoke sheets, single atlas sample and gameplay preserved; exact-head shader/art QA pending.",
