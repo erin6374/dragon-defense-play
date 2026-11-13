@@ -694,7 +694,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  // Deliberately fictionalized landmark alignment: keep the skyline visible,
  // but entirely behind the expanded North Philadelphia rowhouse horizon.
  skyline.position.set(0,-15,-740);skyline.scale.set(3.25,2.10,1.15);
- const skylineFires=[];let skylineDamage=0;
+ let skylineDamage=0;
  const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke});
  const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
  skylineBackdrop.group.position.x-=landmarkCenter/skyline.scale.x;
@@ -707,43 +707,16 @@ skylineAir.position.set(0,47,12);skylineAir.name='atmospheric-depth-veil';skylin
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
 // The entire game now shares a time-animated, turbulence-driven flame field.
 const flameTexture=visualBank.images.flame;
-const skylineFlameMat=new THREE.SpriteMaterial({map:flameTexture,color:0xffffff,transparent:true,opacity:.89,depthWrite:false,blending:THREE.NormalBlending});
-// Volumetric-looking, irregular alpha cloud sprites rather than opaque geometric spheres.
-const smokeCanvas=document.createElement('canvas');smokeCanvas.width=128;smokeCanvas.height=128;
-const smokeCtx=smokeCanvas.getContext('2d'),smokeImage=smokeCtx.createImageData(128,128);
-for(let yy=0;yy<128;yy++)for(let xx=0;xx<128;xx++){
- const dx=(xx-63.5)/63.5,dy=(yy-63.5)/63.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
- const edge=r+.105*Math.sin(a*7+Math.cos(a*4)*2)+.065*Math.sin(a*13);
- const grain=(Math.sin(xx*.29+yy*.18)*Math.sin(yy*.27-xx*.16)+1)*.5;
- const opacity=Math.max(0,Math.min(1,(1.03-edge)*3.5))*Math.min(1,Math.max(0,(1.05-r)*4));
- const v=Math.floor(178+grain*44),i=(yy*128+xx)*4;
- smokeImage.data[i]=v;smokeImage.data[i+1]=v;smokeImage.data[i+2]=v;smokeImage.data[i+3]=Math.round(255*opacity*.78);
-}
-smokeCtx.putImageData(smokeImage,0,0);
 const smokeTexture=visualBank.images.smoke;
 const skylineSmokeMat=new THREE.SpriteMaterial({map:smokeTexture,color:0x393d43,transparent:true,opacity:.31,depthWrite:false});
 function smokePuff(x,y,z,scale=3){const mat=skylineSmokeMat.clone(),sprite=new THREE.Sprite(mat);sprite.position.set(x,y,z);sprite.scale.set(scale,scale*1.13,1);return sprite;}
-function updateSkylineDamage(dt){
+function updateSkylineDamage(){
  if(!performanceLab.isEnabled('skyline'))return;
  const neighborhoodDamage=neighborhood.targetBuildings.reduce((sum,b)=>sum+(b.damage||0),0)/Math.max(1,neighborhood.targetBuildings.length);
  const severity=Math.max(neighborhoodDamage,schoolDamage*.78);
  skylineDamage=Math.max(skylineDamage,severity);
  skylineBackdrop.setDamage(skylineDamage);
- if(performanceLab.isEnabled('fires')&&skylineDamage>.08&&skylineFires.length<Math.min(7,Math.floor(skylineDamage*10)+1)&&Math.random()<dt*.8){
-  const x=(Math.random()-.5)*150,y=10+Math.random()*34;
-  const fire=new THREE.Sprite(skylineFlameMat.clone());
-  const puffs=Array.from({length:5},(_,i)=>smokePuff(x+(Math.random()-.5)*2,y+2+i*1.25,3-i*.25,2.4+i*.8));
-  fire.position.set(x,y,3);skyline.add(fire,...puffs);skylineFires.push({fire,puffs,phase:Math.random()*7});
- }
- for(const f of skylineFires){
-  f.fire.scale.set(2.5+.37*Math.sin(elapsed*5+f.phase),4.2+.60*Math.sin(elapsed*7+f.phase),1);
-  f.puffs.forEach((p,i)=>{const flow=(elapsed*(.38+i*.055)+i*.22+f.phase*.08)%5;
-   p.position.y=f.fire.position.y+1.2+i*1.1+flow*.5;
-   p.position.x=f.fire.position.x+Math.sin(elapsed*.45+i*1.3+f.phase)*(1+i*.35);
-   const width=2.3+i*.85+flow*.34;p.scale.set(width,width*1.2,1);
-   p.material.opacity=.42*(1-flow/6);p.material.color.setHex(i>1?0x555a61:0x34383e);
-  });
- }
+ // Meteor-contact skyline backdrop owns ignition; no random post-damage fires.
 }
 // Restrained, camera-relative silhouette framing, inspired by layered depth in Hollow Knight.
 // Keep the center and dragon flight corridor unobstructed; avoid large floating roof blocks.
@@ -1282,7 +1255,7 @@ function addCrater(x,z,radius=3){
 function updateCraters(dt){streetStop=Math.max(0,streetStop-dt);for(let i=craters.length-1;i>=0;i--){const c=craters[i];c.life-=dt;if(c.life<=0){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose();craters.splice(i,1)}}}
 function updateWorld(dt){
  if(chapterSettlement.active)militaryOccupation.suppress(1);
- militaryOccupation.update(dt,meteors,shots);updateCraters(dt);if(performanceLab.isEnabled('backgroundMeteors'))updateSkyBursts(dt);updateSignals();updateSkylineDamage(dt);
+ militaryOccupation.update(dt,meteors,shots);updateCraters(dt);if(performanceLab.isEnabled('backgroundMeteors'))updateSkyBursts(dt);updateSignals();updateSkylineDamage();
  if(performanceLab.isEnabled('backgroundMeteors')){updateDistantMeteors(dt);escalateBackgroundNeighborhood(dt);}
  for(let i=dangerZones.length-1;i>=0;i--)if((dangerZones[i].ttl-=dt)<=0)dangerZones.splice(i,1);
  const previousStun=dragonStun;invulnerable=Math.max(0,invulnerable-dt);dragonStun=Math.max(0,dragonStun-dt);if(previousStun>0&&dragonStun===0){recoveryLift=2.5;dragonGroundImpact=false;message('PAULO GETS UP, FLAPS HIS WINGS AND TAKES FLIGHT');}blockShield=Math.max(0,blockShield-dt);blockScene=Math.max(0,blockScene-dt);if(dragonStun>0){
@@ -2093,13 +2066,13 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
 function reset(){rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  for(const b of skyBursts){scene.remove(b.m);if(!b.m.isSprite&&b.m.geometry!==skyBurstGeometry)b.m.geometry?.dispose();b.m.material.dispose()}skyBursts.length=0;for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
- if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner);c.mesh.geometry.dispose();c.inner.geometry.dispose()}craters.length=0;updateAtmosphere();elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
 function gameOver(){if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{document.getElementById('overlay').style.display='grid';showSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
 // remove game entities; simulation toggles pause the named subsystem for A/B tests.
 function applyDiagnosticSystem(key,on){
- if(key==='skyline'){skylineBackdrop.group.visible=on;skylineAir.visible=on;for(const f of skylineFires){f.fire.visible=on&&performanceLab.isEnabled('fires');for(const p of f.puffs)p.visible=on&&performanceLab.isEnabled('fires');}}
+ if(key==='skyline'){skylineBackdrop.group.visible=on;skylineAir.visible=on;}
  if(key==='backgroundBuildings')neighborhood.setDecorativeVisible(on);
  if(key==='traffic')for(const c of parkedCars)c.root.visible=on&&!c.destroyed;
  if(key==='schoolModel'){
@@ -2115,10 +2088,7 @@ function applyDiagnosticSystem(key,on){
   for(const b of skyBursts)b.m.visible=on;
  }
  if(key==='particles'){effects.visible=on;neighborhood.setParticlesEnabled(on);cinematicFX.setVisible(on);}
- if(key==='fires'){
-  fireGroup.visible=on;
-  for(const f of skylineFires){f.fire.visible=on&&performanceLab.isEnabled('skyline');for(const p of f.puffs)p.visible=on&&performanceLab.isEnabled('skyline');}
- }
+ if(key==='fires')fireGroup.visible=on;
  if(key==='weather'&&!on)cinematicWeather.rain.visible=false;
  if(key==='shadows')applyVisualPreset();
  if(key==='rubble'){
@@ -2408,7 +2378,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   neighborhood:{damaged:neighborhood.targetBuildings.filter(b=>b.damage>.001).length,damageSum:+neighborhood.targetBuildings.reduce((sum,b)=>sum+b.damage,0).toFixed(3),targets:neighborhood.targetBuildings.filter(b=>!b.background).slice(0,12).map(b=>({name:b.name,x:b.x,y:Math.min(b.h-2,7),front:b.front,w:b.w,damage:+b.damage.toFixed(3)}))},
   schoolDamage:+schoolDamage.toFixed(3),scene:{meshes:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderScale:adaptiveResolution},
   lighting:{explosionSlots:explosionLightPool.lights.length,activeExplosions:explosionLightPool.activeCount,helicopterSlots:helicopterLightPool.lights.length,activeHelicopters:helicopterLightPool.activeCount},
-  finalSquadron:finalSquadron.stats(),counts:{meteors:meteors.length,fragmentMeteors:meteors.filter(m=>m.fragment).length,bossMeteors:meteors.filter(m=>m.boss).length,shots:shots.length,blasts:blasts.length,debris:debris.length,cars:cars.length,helicopters:helicopters.length,skylineFires:skylineFires.length},
+  finalSquadron:finalSquadron.stats(),counts:{meteors:meteors.length,fragmentMeteors:meteors.filter(m=>m.fragment).length,bossMeteors:meteors.filter(m=>m.boss).length,shots:shots.length,blasts:blasts.length,debris:debris.length,cars:cars.length,helicopters:helicopters.length,skylineFires:skylineBackdrop.towers.filter(t=>skylineBackdrop.fireState(t).active).length},
   meteors:meteors.slice(0,40).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};

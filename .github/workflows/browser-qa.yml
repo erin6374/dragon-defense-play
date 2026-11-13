@@ -35,6 +35,7 @@ jobs:
           node qa/frontage-contract.mjs
           node qa/street-surface-contract.mjs
           node qa/smoke-plume-contract.mjs
+          node qa/skyline-ignition-contract.mjs
           python3 qa/windows-preview-server-test.py
           python3 qa/windows-performance-analysis-test.py
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1

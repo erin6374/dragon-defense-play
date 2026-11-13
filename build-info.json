@@ -1,8 +1,8 @@
 {
-  "build": "5.5-smoke-soot-density-rc50",
-  "version": "5.5.0-rc.50",
+  "build": "5.5-meteor-causal-skyline-rc51",
+  "version": "5.5.0-rc.51",
   "gameplay_base": "5.2.3",
-  "scope": "Darker dense licensed CC0 smoke with source-seeded soot and upper ash variation; unchanged six-sheet pool, atlas and fallback.",
+  "scope": "Remove legacy random skyline fire sprites and unused smoke-canvas startup work; meteor-contact skyline fires and fixed GPU pools remain.",
   "new_gameplay_features": false,
-  "release_status": "RC50 candidate: local source checks passed; exact-head Actions and physical Windows FPS pending."
+  "release_status": "RC51 candidate: static source contract passed; exact-head CI, visual motion, and Windows FPS pending."
 }

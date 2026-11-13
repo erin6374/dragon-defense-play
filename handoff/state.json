@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
-  "observed_version": "5.5.0-rc.50",
-  "observed_build_id": "5.5-smoke-soot-density-rc50",
-  "release_status": "rc50_exact_source_technical_pass_cinematic_art_fail_hardware_fps_unmeasured",
+  "observed_parent_sha": "dbbe88524bd7bf07edf8c090d2986147620137da",
+  "observed_version": "5.5.0-rc.51",
+  "observed_build_id": "5.5-meteor-causal-skyline-rc51",
+  "release_status": "rc51_meteor_causal_skyline_candidate_exact_head_qa_pending_art_fail_hardware_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -99,8 +99,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Obtain 30–60-second physical Windows Performance Lab CSV during active destruction; analyze foreground FPS and stalls before choosing one measured optimization or bounded cinematic fix. Do not claim art acceptance or measured hardware FPS.",
+  "next_task": "Verify RC51 five exact-head workflows and inspect actual reports/screenshots/600-frame MP4/Windows CRC/licensed hashes; then collect physical Windows 30–60-second Performance Lab CSV during active destruction.",
   "implemented": [
+    "RC51 candidate: remove random post-damage skyline fire/smoke sprite spawner, unused smoke-canvas initialization, stale cleanup/visibility loops; QA counts actual meteor-linked landmark fires; add skyline-ignition browser source contract; fixed GPU pools, left/right damage, gameplay and original school FBX preserved. Exact-head QA pending.",
     "RC50 exact-source five Actions SUCCESS; independently downloaded and CRC checked browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; reports clean, two CC0 hashes match, 600-frame MP4 inspected; ART FAIL and hardware FPS unresolved",
     "RC50 f1476cd browser preflight failed because obsolete RC45 smoke source-contract asserted superseded soot numeric constant; removed stale assertion, preserved RC45/RC48/RC49 and new RC50 assertions; no shader or gameplay changes",
     "RC49 a124883 exact-source five Actions SUCCESS; real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, CC0 hashes match, genuine 600-frame MP4 inspected; ART FAIL, physical Windows FPS unknown",
@@ -120,8 +121,8 @@
   ],
   "blockers": [
     "Physical Windows FPS/CPU/RAM not measured; severe slideshow complaint unresolved",
-    "Cinematic ART FAIL: gray/repetitive smoke, stylized facades and procedural house damage",
-    "RC50 full exact-head browser QA and artifacts pending after obsolete assertion fix"
+    "Cinematic ART FAIL: repetitive gray smoke, stylized facades and procedural house damage",
+    "RC51 exact-head five Actions, artifact CRC/hashes and visual motion review pending"
   ],
   "windows_preview": {
     "artifact_id": 14025816564,
@@ -139,23 +140,23 @@
     "burning_frames": 585,
     "multi_tower_frames": 380,
     "max_software_draw_calls": 381,
-    "frames_inspected": 7,
+    "frames_inspected": 12,
     "art_acceptance": "fail",
-    "artifact_id": 14019458142,
-    "source_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
+    "artifact_id": 14026115254,
+    "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
     "rc47_comparison": "all 1100 decoded video frames match RC47 across 6 clips; all five cinematic PNG files byte-identical",
     "rc48_comparison": "600/600 long decoded frames changed vs b321; subtle differences do not establish art improvement"
   },
-  "verified_baseline_sha": "a1248832db807b1b82927d07ed9b0e0e43ef275c",
-  "verified_baseline_version": "5.5.0-rc.49",
+  "verified_baseline_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+  "verified_baseline_version": "5.5.0-rc.50",
   "candidate_tests_pending": [
-    "RC50 browser exact-new-HEAD",
-    "RC50 cinematic exact-new-HEAD",
-    "RC50 focused-fire exact-new-HEAD",
-    "RC50 licensed CC0 exact-new-HEAD",
-    "RC50 genuine 600-frame motion exact-new-HEAD",
-    "RC50 Windows preview CRC/hash/source labels exact-new-HEAD",
-    "RC50 art review versus RC49"
+    "RC51 browser QA including skyline ignition source contract",
+    "RC51 cinematic screenshots",
+    "RC51 focused fire",
+    "RC51 licensed CC0",
+    "RC51 genuine 600-frame/30-second motion",
+    "RC51 Windows preview ZIP CRC/CC0 hashes/build stamp",
+    "RC51 cinematic art review"
   ],
   "verified_visual_equivalence": {
     "comparison_source_sha": "5e98dab13d62520142e0460215a292a520195c54",
@@ -178,5 +179,33 @@
     "errors": [],
     "rc49_rc50_decoded_mae": 2.1077723,
     "rc49_rc50_pct_pixels_gt10": 8.6940889
-  }
+  },
+  "observed_parent_workflows": [
+    {
+      "name": "cc0",
+      "run_id": 43409164700,
+      "conclusion": "success"
+    },
+    {
+      "name": "focused",
+      "run_id": 43409164780,
+      "conclusion": "success"
+    },
+    {
+      "name": "cinematic",
+      "run_id": 43409164925,
+      "conclusion": "success"
+    },
+    {
+      "name": "motion",
+      "run_id": 43409164831,
+      "conclusion": "success"
+    },
+    {
+      "name": "browser",
+      "run_id": 43409164915,
+      "conclusion": "cancelled_first_attempt_retry_started",
+      "note": "first-attempt browser QA and Windows packaging steps passed; artifacts independently CRC verified; do not call workflow PASS"
+    }
+  ]
 }
