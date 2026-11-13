@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "dbbe88524bd7bf07edf8c090d2986147620137da",
+  "observed_parent_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
   "observed_version": "5.5.0-rc.51",
   "observed_build_id": "5.5-meteor-causal-skyline-rc51",
-  "release_status": "rc51_meteor_causal_skyline_candidate_exact_head_qa_pending_art_fail_hardware_fps_unmeasured",
+  "release_status": "rc51_exact_source_five_workflows_success_artifacts_verified_art_fail_physical_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,52 +25,52 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43395572187,
-      "artifact_id": 14025344203,
+      "run_id": 43417536619,
+      "artifact_id": 14032502713,
       "crc_members": 78,
-      "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+      "source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43395572187"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43417536619"
     },
     {
       "name": "cinematic",
-      "run_id": 43395572190,
-      "artifact_id": 14022397288,
+      "run_id": 43417536631,
+      "artifact_id": 14031764816,
       "crc_members": 6,
-      "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+      "source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43395572190"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43417536631"
     },
     {
       "name": "focused",
-      "run_id": 43395572215,
-      "artifact_id": 14022946146,
+      "run_id": 43417536566,
+      "artifact_id": 14032237095,
       "crc_members": 7,
-      "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+      "source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43395572215"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43417536566"
     },
     {
       "name": "cc0",
-      "run_id": 43395572228,
-      "note": "validated packaged existing CC0 assets; no fresh import",
-      "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+      "run_id": 43417536545,
+      "note": "CC0 validation success; packaged converted hashes independently verified",
+      "source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43395572228"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43417536545"
     },
     {
       "name": "motion",
-      "run_id": 43395572252,
-      "artifact_id": 14026115254,
+      "run_id": 43417536459,
+      "artifact_id": 14034212528,
       "crc_members": 33,
-      "source_sha": "5005094a5c8cc3f32b55069360bf58cb1a28a198",
+      "source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43395572252"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43417536459"
     }
   ],
   "critical_user_requirements": [
@@ -99,8 +99,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC51 five exact-head workflows and inspect actual reports/screenshots/600-frame MP4/Windows CRC/licensed hashes; then collect physical Windows 30–60-second Performance Lab CSV during active destruction.",
+  "next_task": "Capture a physical Windows 30–60-second heavy-destruction Performance Lab CSV and analyze foreground FPS/stalls; then select one measured bottleneck or bounded cinematic facade/damage improvement. No art approval or hardware FPS claim.",
   "implemented": [
+    "RC51 independent artifact verification: five exact-source Actions success; actual ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, original FBX packaged, two CC0 hashes matched; ffprobe confirmed 600-frame/30-second long MP4 and six 100-frame clips; causal fire/reset checks pass. Reusable tools/verify-qa-artifacts.py QA gate added and tested with correct and wrong SHA. ART FAIL, physical Windows FPS unmeasured.",
     "RC51 candidate: remove random post-damage skyline fire/smoke sprite spawner, unused smoke-canvas initialization, stale cleanup/visibility loops; QA counts actual meteor-linked landmark fires; add skyline-ignition browser source contract; fixed GPU pools, left/right damage, gameplay and original school FBX preserved. Exact-head QA pending.",
     "RC50 exact-source five Actions SUCCESS; independently downloaded and CRC checked browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; reports clean, two CC0 hashes match, 600-frame MP4 inspected; ART FAIL and hardware FPS unresolved",
     "RC50 f1476cd browser preflight failed because obsolete RC45 smoke source-contract asserted superseded soot numeric constant; removed stale assertion, preserved RC45/RC48/RC49 and new RC50 assertions; no shader or gameplay changes",
@@ -207,5 +208,6 @@
       "conclusion": "cancelled_first_attempt_retry_started",
       "note": "first-attempt browser QA and Windows packaging steps passed; artifacts independently CRC verified; do not call workflow PASS"
     }
-  ]
+  ],
+  "last_fully_verified_source_sha": "ff4c4e67943af8c15d44a0d7d3b23f761955d223"
 }
