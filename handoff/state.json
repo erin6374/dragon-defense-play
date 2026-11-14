@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+  "observed_parent_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_exact_head_verified_one_click_windows_60s_capture_candidate_pending_ci_hardware_fps_missing_art_fail",
+  "release_status": "rc59_6181_exact_base_five_workflows_and_artifacts_verified_scoped_windows_csv_candidate_pending_ci_hardware_fps_missing_art_fail",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser QA",
-      "run_id": 43604638145,
-      "source_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+      "run_id": 43610341598,
+      "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43604638145"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43610341598"
     },
     {
       "name": "cinematic scene",
-      "run_id": 43604638139,
-      "source_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+      "run_id": 43610341569,
+      "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43604638139"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43610341569"
     },
     {
       "name": "focused fire",
-      "run_id": 43604638150,
-      "source_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+      "run_id": 43610341589,
+      "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43604638150"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43610341589"
     },
     {
       "name": "licensed CC0 importer",
-      "run_id": 43604638193,
-      "source_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+      "run_id": 43610341579,
+      "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43604638193"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43610341579"
     },
     {
       "name": "genuine motion",
-      "run_id": 43604638166,
-      "source_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+      "run_id": 43610341567,
+      "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43604638166"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43610341567"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify new exact-HEAD five workflows and packaged capture tool; then run physical Windows 60s heavy-destruction CSV/JSON capture for FPS and framebuffer recovery.",
+  "next_task": "Verify the new candidate's five exact-HEAD workflows and artifacts; then capture physical Windows 60-second heavy-destruction FPS/CPU/RAM CSV/JSON using CAPTURE-WINDOWS-PERFORMANCE.cmd and analyze framebuffer recovery.",
   "implemented": [
+    "2026-11-14: RC59 618171e1bd05359031d30b25a887b5a12febc56d five exact-base Actions SUCCESS (browser 43610341598, cinematic 43610341569, focused 43610341589, CC0 43610341579, motion 43610341567); downloaded and CRC-verified browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows preview 154/154. Browser errors/warnings empty; other reports errors empty and SHA exact. Actual 600-frame/30s plus five 100-frame/5s videos; seven decoded long frames and five cinematic views inspected; CC0 hashes and school FBX intact. New bounded candidate: server-side time-scoped CSV for one-click Windows 60s capture prevents old accumulated log exceeding 20MB; old unfiltered endpoint preserved. 4/4 local capture regression tests and Python compilation PASS. New-HEAD CI pending; physical Windows FPS unmeasured, cinematic ART FAIL.",
     "2026-11-14: RC59 2cbb63d3402986d74aaed57ef1e0e36b53e3d0d7 all five exact-source workflows success; independently CRC-checked browser 78/78, cinematic 6/6, focused 7/7, genuine motion 33/33, Windows preview 151/151. Reports clean and SHA exact; five 100-frame/5s MP4s plus one 600-frame/30s skyline MP4. RC58 ce94→RC59 all six videos changed; 9/9 sampled long-video frames changed at threshold 10, but only 0.004%-1.685% pixels above threshold, ART FAIL remains. CC0 manifest and original FBX SHA-256 intact. Physical Windows FPS still unmeasured; see qa/RC59-VERIFICATION.md.",
     "2026-11-14: RC58 150a6163082d3a740aa9aec9c4a1264df1f4b856 five exact-head Actions SUCCESS (browser 43590333884, cinematic 43590333886, focused 43590333876, CC0 43590333892, motion 43590333890); independent ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, genuine five 100-frame and one 600-frame MP4, CC0 SHA-256 and original FBX intact. New analyzer excludes stale render heartbeats and incomplete buffer telemetry from claimed framebuffer downscale; four local synthetic controls PASS. New commit workflows pending. Cinematic ART FAIL; physical Windows FPS unmeasured.",
     "2026-11-14: RC58 04699f42af42e121cdeab497d763c2a7c92538c4 five exact-source Actions SUCCESS (browser 43584822188, cinematic 43584822025, focused 43584822097, CC0 43584822026, motion 43584822048). Independently CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports; six MP4s byte-identical to RC57, 600-frame/30s long capture inspected, CC0 SHA-256 and original school FBX identical. New bounded diagnostic instrumentation exports adaptive framebuffer scale/adjustments/buffer dimensions to Windows CSV and browser-only analyzer summary; synthetic local integration passes, new-head CI pending. ART FAIL and physical Windows FPS unmeasured.",
@@ -252,5 +253,23 @@
     "licensed_cc0_hashes_match": true,
     "original_school_fbx_present": true
   },
-  "last_verified_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9"
+  "last_verified_sha": "f5bab6c101ccd63b7af2e2b3fb020343b5f842e9",
+  "artifacts_at_snapshot": {
+    "source_sha": "618171e1bd05359031d30b25a887b5a12febc56d",
+    "crc_checked": {
+      "browser": "78/78",
+      "cinematic": "6/6",
+      "focused_fire": "7/7",
+      "motion": "33/33",
+      "windows_preview": "154/154"
+    },
+    "browser_errors": 0,
+    "browser_warnings": 0,
+    "motion": "five 100-frame/5s MP4s and one 600-frame/30s MP4 at 20 FPS; seven actual long-video frames inspected",
+    "licensed_assets": "CC0-1.0 flame f0a5e760... and smoke c7880917... SHA-256 match manifest",
+    "original_fbx": "36,233,776 bytes; SHA-256 8fe8c980...",
+    "windows_capture_launcher_in_preview": true,
+    "physical_windows_fps_measured": false,
+    "cinematic_art_accepted": false
+  }
 }

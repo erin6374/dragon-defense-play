@@ -10,6 +10,7 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import io
 import json
 import math
 import os
@@ -17,7 +18,7 @@ from pathlib import Path
 import tempfile
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 ROOT = Path(__file__).resolve().parent.parent
 COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs', 'heartbeatIndex',
@@ -175,8 +176,39 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                                 'logFile': self.server.log_path.name})
             return
         if path == '/__system_csv':
-            with self.server.lock:
-                raw = self.server.log_path.read_bytes()
+            # Optional server-side time window avoids transferring hours of old
+            # telemetry into the one-click 60-second Windows capture. The
+            # unfiltered endpoint remains backward-compatible for manual export.
+            params = parse_qs(urlsplit(self.path).query)
+            if 'since' in params or 'until' in params:
+                try:
+                    if set(params) != {'since', 'until'} or any(len(params[k]) != 1 for k in params):
+                        raise ValueError('Expected one since and one until timestamp')
+                    since = datetime.fromisoformat(params['since'][0].replace('Z', '+00:00'))
+                    until = datetime.fromisoformat(params['until'][0].replace('Z', '+00:00'))
+                    if (since.tzinfo is None or until.tzinfo is None or
+                            until < since or (until - since).total_seconds() > 180):
+                        raise ValueError('CSV time window must be timezone-aware and <=180 seconds')
+                except (ValueError, KeyError, OverflowError) as exc:
+                    self.send_json({'error': str(exc)}, 400)
+                    return
+                with self.server.lock:
+                    out = io.StringIO(newline='')
+                    with self.server.log_path.open(newline='', encoding='utf-8') as source:
+                        reader = csv.DictReader(source)
+                        writer = csv.DictWriter(out, fieldnames=reader.fieldnames, lineterminator='\n')
+                        writer.writeheader()
+                        for row in reader:
+                            try:
+                                timestamp = datetime.fromisoformat(row['timestampUTC'].replace('Z', '+00:00'))
+                            except (ValueError, KeyError, AttributeError):
+                                continue
+                            if timestamp.tzinfo is not None and since <= timestamp <= until:
+                                writer.writerow(row)
+                    raw = out.getvalue().encode('utf-8')
+            else:
+                with self.server.lock:
+                    raw = self.server.log_path.read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', 'text/csv; charset=utf-8')
             self.send_header('Content-Disposition', 'attachment; filename="dragon-defense-performance.csv"')

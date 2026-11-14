@@ -15,6 +15,7 @@ import sys
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+from urllib.parse import urlencode
 from importlib.util import module_from_spec, spec_from_file_location
 
 
@@ -62,7 +63,10 @@ def capture(base, seconds, warmup, output, sleep=time.sleep, now=lambda: datetim
     print(f'Capturing {seconds} seconds of actual wall time; keep the game visible and cause heavy destruction.')
     sleep(seconds)
     end = now()
-    with urlopen(base + '/__system_csv', timeout=20) as response:
+    # Ask the preview server for only this capture's time window. A long
+    # pre-existing gameplay log must not exhaust the 20 MB download guard.
+    scoped_url = base + '/__system_csv?' + urlencode({'since': start.isoformat(), 'until': end.isoformat()})
+    with urlopen(scoped_url, timeout=20) as response:
         raw = response.read(20 * 1024 * 1024 + 1)
     if len(raw) > 20 * 1024 * 1024:
         raise ValueError('Local CSV exceeds 20 MB safety limit')
