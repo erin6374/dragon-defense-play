@@ -1,7 +1,8 @@
 {
-  "build": "5.2-school-repair-01",
-  "version": "5.2.3",
-  "gameplay_base": "5.2.2",
-  "scope": "Source school exterior repair and material-specific damage through total collapse",
-  "new_gameplay_features": false
+  "build": "5.5-licensed-smoke-sheet-roll-rc59",
+  "version": "5.5.0-rc.59",
+  "gameplay_base": "5.2.3",
+  "scope": "Bounded source-seeded +/-0.21 radian camera-space roll for existing CC0 plume smoke sheets; legacy/procedural modes, sheet/pool budgets, meteor ignition, bilateral destruction and original school FBX unchanged.",
+  "new_gameplay_features": false,
+  "release_status": "RC59 visual candidate; exact-new-HEAD workflows and visual comparison pending, physical Windows FPS unmeasured, cinematic art FAIL."
 }

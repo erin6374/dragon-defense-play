@@ -1,0 +1,58 @@
+name: Dragon Defense focused fire review
+on:
+  pull_request:
+  workflow_dispatch:
+# Motion rendering is a review artifact, not a gate that should be discarded
+# every time the active development branch receives a newer commit.
+# Keep one motion job per PR active and queue subsequent exact-head captures.
+concurrency:
+  group: dragon-fire-focus-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  motion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      QA_BROWSER_CHANNEL: chrome
+      QA_MOTION_SCENARIOS: skyline
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_HEAD_SHA }}
+      - name: Verify exact motion-test commit
+        run: |
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_HEAD_SHA"
+          echo "Recording exact commit $actual"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser driver
+        run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
+      - name: Install isolated video encoder
+        run: |
+          python3 -m venv "$RUNNER_TEMP/motion-encoder"
+          "$RUNNER_TEMP/motion-encoder/bin/pip" install imageio-ffmpeg==0.8.1
+          encoder="$("$RUNNER_TEMP/motion-encoder/bin/python" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          echo "QA_FFMPEG=$encoder" >> "$GITHUB_ENV"
+      - name: Capture one five-second skyline fire clip
+        run: |
+          "$QA_FFMPEG" -version
+          python3 -m http.server 8765 --bind 127.0.0.1 &
+          for attempt in {1..20}; do
+            if curl -fsS http://127.0.0.1:8765/build-info.json >/dev/null; then break; fi
+            sleep 1
+          done
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/dragon-qa/node_modules/playwright-core/index.mjs"
+          node qa/motion.mjs
+      - name: Retain playable recordings and frame diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragon-defense-focused-fire
+          path: qa-output/motion/
+          compression-level: 0
+          retention-days: 30

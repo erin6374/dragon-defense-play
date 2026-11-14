@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "kind": "tech-freire-dragon-defense-ai-handoff",
+  "snapshot_date": "2026-11-14",
+  "snapshot_is_live": false,
+  "resolve_current_sha_from_branch": true,
+  "repository": "erin6374/dragon-defense-play",
+  "primary_branch": "feature/north-broad-graphics",
+  "primary_pr": 2,
+  "observed_parent_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "observed_version": "5.5.0-rc.59",
+  "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
+  "release_status": "rc59_d26_exact_base_five_workflows_and_artifacts_verified_foreground_fps_freshness_candidate_pending_ci_hardware_fps_missing_art_fail",
+  "pending_acceptance": [
+    "Physical Windows FPS/CPU/RAM CSV during destruction",
+    "Cinematic art acceptance"
+  ],
+  "google": {
+    "branch": "agent/google-antigravity-fire-calibration",
+    "pr": 3,
+    "observed_sha": "7032b3da46683c5821d838ea4d39b84ff96b4702",
+    "review": "needs_visual_refinement_and_rebase",
+    "may_merge": false
+  },
+  "tests_at_snapshot": [
+    {
+      "name": "browser QA",
+      "run_id": 43615855010,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615855010"
+    },
+    {
+      "name": "cinematic scene",
+      "run_id": 43615854939,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854939"
+    },
+    {
+      "name": "focused fire",
+      "run_id": 43615854958,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854958"
+    },
+    {
+      "name": "licensed CC0 importer",
+      "run_id": 43615855042,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615855042"
+    },
+    {
+      "name": "genuine motion",
+      "run_id": 43615854932,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854932"
+    }
+  ],
+  "critical_user_requirements": [
+    "cinematic real Philadelphia architectural scene",
+    "causal meteor-only ignition",
+    "damageable left and right neighborhood",
+    "consistent destruction and rubble",
+    "dragon gameplay and controls",
+    "Windows GPU performance unresolved"
+  ],
+  "forbidden_actions": [
+    "edit main",
+    "edit production",
+    "force push",
+    "automatic merge",
+    "deploy Pages",
+    "alter Building Explorer",
+    "alter original school FBX"
+  ],
+  "required_source_files": [
+    "AI-HANDOFF.md",
+    "handoff/state.json",
+    "qa/CURRENT-STATUS.md",
+    "CONTINUE-IN-CHATGPT.md",
+    "PROJECT-HANDOFF.md",
+    "qa/CINEMATIC-REVIEW.md",
+    "qa/MOTION-VISUAL-REVIEW.md"
+  ],
+  "next_task": "Verify the new candidate's five exact-HEAD workflows and artifacts; then run CAPTURE-WINDOWS-PERFORMANCE.cmd for a physical Windows 60-second heavy-destruction capture and inspect real FPS, freezes, CPU/RAM and framebuffer recovery.",
+  "implemented": [
+    "2026-11-14: RC59 d26bad0368f3d0ff2c78490b3d226121cdb82f99 five exact-base workflows SUCCESS (browser 43615855010, cinematic 43615854939, focused 43615854958, CC0 43615855042, motion 43615854932). Downloaded and CRC-verified browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows preview 154/154; errors/warnings empty; exact SHA in reports; six genuine MP4s incl. 600-frame/30s; seven long frames/four cinematic screenshots inspected. CC0 manifest hashes and original school FBX intact. New bounded analyzer improvement: foreground FPS statistics now exclude stale/unknown/negative render-age heartbeats, with six synthetic controls and four capture HTTP regressions passing. New-HEAD CI pending, physical Windows FPS unmeasured, cinematic ART FAIL.",
+    "2026-11-14: RC59 618171e1bd05359031d30b25a887b5a12febc56d five exact-base Actions SUCCESS (browser 43610341598, cinematic 43610341569, focused 43610341589, CC0 43610341579, motion 43610341567); downloaded and CRC-verified browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows preview 154/154. Browser errors/warnings empty; other reports errors empty and SHA exact. Actual 600-frame/30s plus five 100-frame/5s videos; seven decoded long frames and five cinematic views inspected; CC0 hashes and school FBX intact. New bounded candidate: server-side time-scoped CSV for one-click Windows 60s capture prevents old accumulated log exceeding 20MB; old unfiltered endpoint preserved. 4/4 local capture regression tests and Python compilation PASS. New-HEAD CI pending; physical Windows FPS unmeasured, cinematic ART FAIL.",
+    "2026-11-14: RC59 2cbb63d3402986d74aaed57ef1e0e36b53e3d0d7 all five exact-source workflows success; independently CRC-checked browser 78/78, cinematic 6/6, focused 7/7, genuine motion 33/33, Windows preview 151/151. Reports clean and SHA exact; five 100-frame/5s MP4s plus one 600-frame/30s skyline MP4. RC58 ce94→RC59 all six videos changed; 9/9 sampled long-video frames changed at threshold 10, but only 0.004%-1.685% pixels above threshold, ART FAIL remains. CC0 manifest and original FBX SHA-256 intact. Physical Windows FPS still unmeasured; see qa/RC59-VERIFICATION.md.",
+    "2026-11-14: RC58 150a6163082d3a740aa9aec9c4a1264df1f4b856 five exact-head Actions SUCCESS (browser 43590333884, cinematic 43590333886, focused 43590333876, CC0 43590333892, motion 43590333890); independent ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, genuine five 100-frame and one 600-frame MP4, CC0 SHA-256 and original FBX intact. New analyzer excludes stale render heartbeats and incomplete buffer telemetry from claimed framebuffer downscale; four local synthetic controls PASS. New commit workflows pending. Cinematic ART FAIL; physical Windows FPS unmeasured.",
+    "2026-11-14: RC58 04699f42af42e121cdeab497d763c2a7c92538c4 five exact-source Actions SUCCESS (browser 43584822188, cinematic 43584822025, focused 43584822097, CC0 43584822026, motion 43584822048). Independently CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports; six MP4s byte-identical to RC57, 600-frame/30s long capture inspected, CC0 SHA-256 and original school FBX identical. New bounded diagnostic instrumentation exports adaptive framebuffer scale/adjustments/buffer dimensions to Windows CSV and browser-only analyzer summary; synthetic local integration passes, new-head CI pending. ART FAIL and physical Windows FPS unmeasured.",
+    "2026-11-14: RC57 9562c1201118b7cd8f724bee50a125b84a1eeeba five exact-head workflows SUCCESS; independent CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean, 5x100-frame and 600-frame MP4s, CC0 hashes and school FBX intact. CI software WebGL ~0.3fps / 3.7s rAF gaps, not physical Windows FPS. RC58 adds 3 consecutive >250ms foreground frames framebuffer downscale (0.65 floor, 5s cooldown) because prior governor ignored >250ms; synthetic controls pass. New workflows pending; art FAIL, physical FPS unmeasured.",
+    "2026-11-14: RC57 48870bce816cbed289dc49c02e67fe57f5486418 exact-head five workflows success, independent artifact CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150, reports clean, genuine 5x100-frame and 600-frame MP4s, packaged CC0 hashes and school FBX intact. Browser software WebGL live 0.3 FPS, 25 unattributed rAF gaps, not physical Windows FPS. Bounded analyzer change rejects cached FPS from fresh timer heartbeats during stale rendering >=3000ms; 3/3 local synthetic controls pass. New commit workflows pending; cinematic ART FAIL and physical FPS unresolved.",
+    "2026-11-14: Exact-head RC57 5fe1db43d543053fd0aac822cb7e771e65b0f6a3 five workflows SUCCESS (browser 43571109962, cinematic 43571109920, focused 43571109934, licensed CC0 43571109919, genuine motion 43571109923); independent artifact CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean, 5x100-frame/5s and 600-frame/30s genuine MP4s, CC0 SHA-256 matched and original FBX intact. Actual art remains FAIL. Bounded Windows analyzer fix rejects >5s interior browser heartbeat gaps that previously escaped first-to-last 75% coverage; local negative/positive synthetic controls passed. New commit QA pending. Physical Windows FPS unmeasured.",
+    "2026-11-14: RC57 source 5ea39e6e2b1432fd2ec0a9b83f9b311659744514 five Actions passed (browser 43566316946, cinematic 43566316873, focused 43566316852, CC0 43566316899, motion 43566316847); independently CRC-checked 78/78, 6/6, 7/7, 33/33, Windows 150/150; clean reports, packaged CC0 hashes and original FBX. Six RC56/RC57 MP4s byte-identical; five sampled long-video frames pixel-identical. Added strict --require-identical-videos mode to motion comparison tool, local positive/negative controls passed. This new commit exact-head QA pending; physical FPS unmeasured and ART FAIL.",
+    "2026-11-14: RC57 parent d129376b89702c4c0a41d5d6db0b2167c9ed5aec browser QA failed before startup due obsolete source assertion expecting 'float feather='; corrected test token to 'feather=' without changing shader/gameplay. Parent CC0 passed; cinematic, focused fire and motion in progress at observation. Corrected commit requires all five new-head workflows; no Windows preview for failed parent.",
+    "2026-11-14: RC56 source 77df10026e67d3bf14acdb6931b964f8cfffbec5 all five exact-head Actions SUCCESS (browser 43556252917, cinematic 43556252897, focused 43556252913, licensed CC0 43556252916, genuine motion 43556252911); independently verified ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean; five 100-frame MP4s and 600-frame 30s MP4; both CC0 hashes and original FBX verified. RC57 candidate: licensed plume conservative age/feather alpha bound early discard before two atlas reads; unchanged visible-alpha math and fixed pools, meteor-only ignition, gameplay, bilateral damage. Local deterministic 100k synthetic fragments: 7,269 safe culls; not measured GPU speed. RC57 exact-head workflows pending; cinematic ART FAIL and Windows physical FPS unresolved.",
+    "2026-11-14: All five exact-base workflows SUCCESS: [browser 43551850770](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850770), [cinematic 43551850637](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850637), [focused fire 43551850638](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850638), [licensed CC0 43551850632](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850632), [genuine motion 43551850672](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850672). Downloaded ZIP CRC browser 78/78, cinematic 6/6, focused fire 7/7, genuine motion 33/33, Windows preview 150/150. Browser report errors=[] warnings=[]; other reports errors=[] and exact source SHA. Five genuine 100-frame/5s MP4s and 600-frame/30s skyline MP4 at 20 FPS verified; seven decoded long-video frames inspected. Packaged CC0 flame/smoke SHA-256 hashes match manifest and original school FBX present. Actual smoke remains repetitive; cinematic art acceptance FAIL. Bounded RC56 candidate varies licensed smoke-sheet ascent, buoyancy and width by source seed to reduce equal-height columns. Existing single smoke-atlas fetch, fixed six-sheet GPU pools, procedural A/B, causal meteor-only ignition, bilateral severe neighborhood damage, school/dragon gameplay and original FBX preserved. Static contract checks prepared; exact-new-HEAD five workflows and visual review PENDING. Physical Windows 30–60s heavy-destruction FPS/CPU/RAM CSV absent; user's severe slideshow complaint unresolved. campaign/visual_target.png ART FAIL for smoke and stylized facades/house damage. Google PR #3 older RC30 remains isolated per review 6827300214; no merge, force push, main/production/Pages or Building Explorer change.",
+    "RC55 base 0a270133: cinematic, focused, CC0, motion Actions SUCCESS; downloaded cinematic 6/6, focused 7/7, motion 33/33, partial browser 78/78 CRC; browser job CANCELLED at configured 15-minute timeout before Windows packaging. Reports errors=[]; actual five 100-frame and 600-frame/30s videos inspected; ART FAIL. New bounded CI fix increases browser job timeout to 25 minutes; exact-new-HEAD QA pending. Physical Windows FPS unresolved.",
+    "RC55 exact base 1f61f737 five Actions success; downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, exact SHA, CC0 WEBP hashes and original school FBX, real 600-frame/30s plus five 100-frame MP4s inspected. New bounded Windows CSV heartbeat coverage guard requires 75% capture span to accept FPS, preserving host stall evidence; healthy and freeze synthetic cases PASS locally. New commit workflows pending. ART FAIL and physical Windows FPS unresolved.",
+    "RC55 diagnostic source 6a10e71a7eaa808a26af1a7dc4b1305677a41674 verified all five workflows; CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, exact build, CC0 hashes, original FBX and real 600-frame/30s + five 100-frame videos. Windows CSV capture-quality guard and four local regression cases added; new commit QA pending. ART FAIL, physical Windows FPS unresolved.",
+    "RC55 exact-source 33ec0969 five workflows SUCCESS; downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, CC0 hashes, real 600-frame/30s and five 100-frame videos verified. Bounded Performance Lab candidate extends in-game capture to 60s and preserves >15s stalls; deterministic Node regression PASS; new commit QA pending. ART FAIL and physical Windows FPS unresolved.",
+    "RC55 QA preflight fix: replace stale RC49 smoke UV literal assertion with active +lean+eddy expression; no shader/gameplay change. Parent 717c3b9 browser run 43519015569 failed before browser startup; licensed CC0 success; cinematic/focused/motion still running at snapshot. Exact-head verification pending.",
+    "RC55 candidate: source-seeded height-dependent smoke UV eddies plus two-frequency asymmetric feather drift in active licensed CC0 plume shader; legacy A/B, atlas fetch count, GPU pool budget, bilateral damage, meteor-only ignition and original FBX preserved. RC54 QA-tool HEAD f4f73c21 five workflows success; ZIP CRC browser 78, cinematic 6, focused 7, motion 33, Windows 150; CC0 hashes matched; 600-frame/30s and five 100-frame clips; ART FAIL, physical Windows FPS unmeasured. RC55 exact-head QA pending.",
+    "RC54 exact-source five Actions success, downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 149/149; clean reports, exact SHA/labels, CC0 hashes; real 600-frame/30s and five 100-frame/5s videos. New compare-motion-recordings.py tested on RC53 vs RC54: 9/9 sampled frames changed >10 RGB; identical-input negative test correctly fails. ART FAIL, Windows hardware FPS unmeasured.",
+    "RC54 candidate: licensed plume-only independent per-sheet atlas clocks and subtle asymmetric edge feather; six fixed smoke sheets, single atlas sample and gameplay preserved; exact-head shader/art QA pending.",
+    "RC53 exact HEAD 3a373980 five Actions success; downloaded latest browser retry CRC 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 149/149; clean reports, licensed hashes match, actual 600-frame/30s video inspected; art FAIL and Windows FPS unmeasured.",
+    "RC53 exact-source five Actions SUCCESS, actual CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 148/148; clean reports; two CC0 hashes; 600-frame long MP4 and five 100-frame clips; RC52/RC53 five-camera pixel changes 3430/3431/3404/4950/2252. New tools/compare-cinematic-screenshots.py verified with positive and identical-image negative test. ART FAIL, physical Windows FPS unmeasured.",
+    "RC53 candidate: active structural-city historic upper-sash keystone plus two jamb reveals, existing stone instanced facade parts on both sides; QA frontage contract tests count, bilateral full damage and restore; exact-head CI/screenshots pending. RC52 verified base ce7de10: five workflows success, CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148, long 600-frame MP4, clean reports, CC0 hashes matched; ART FAIL, Windows hardware FPS unmeasured.",
+    "RC52 independent exact-source technical QA PASS (five workflows; CRC browser 78, cinematic 6, focused 7, motion 33, Windows 148; 600-frame MP4; CC0 hashes). New qa/facade-reachability.mjs proves atlas is imported but not invoked by game; five RC51/RC52 cinematic PNGs byte-identical. ART FAIL; physical Windows FPS unmeasured.",
+    "RC52 candidate: deterministic facade atlas baked blinds/curtains, cast-stone lintels/keystone and subtle runoff; existing canvas textures only, no new geometry/draw calls/shader work or gameplay. New qa/facade-atlas-contract.mjs in browser preflight; local Node contract and syntax PASS. Exact-head CI and art review pending.",
+    "Parent 2af10f6 RC51 exact-head five Actions SUCCESS; independently downloaded ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 148/148; clean reports, 600-frame long MP4 and six 100-frame clips ffprobe, licensed CC0 hashes matched, causal fire/reset checks pass; ART FAIL, physical Windows FPS unmeasured.",
+    "RC51 independent artifact verification: five exact-source Actions success; actual ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, original FBX packaged, two CC0 hashes matched; ffprobe confirmed 600-frame/30-second long MP4 and six 100-frame clips; causal fire/reset checks pass. Reusable tools/verify-qa-artifacts.py QA gate added and tested with correct and wrong SHA. ART FAIL, physical Windows FPS unmeasured.",
+    "RC51 candidate: remove random post-damage skyline fire/smoke sprite spawner, unused smoke-canvas initialization, stale cleanup/visibility loops; QA counts actual meteor-linked landmark fires; add skyline-ignition browser source contract; fixed GPU pools, left/right damage, gameplay and original school FBX preserved. Exact-head QA pending.",
+    "RC50 exact-source five Actions SUCCESS; independently downloaded and CRC checked browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; reports clean, two CC0 hashes match, 600-frame MP4 inspected; ART FAIL and hardware FPS unresolved",
+    "RC50 f1476cd browser preflight failed because obsolete RC45 smoke source-contract asserted superseded soot numeric constant; removed stale assertion, preserved RC45/RC48/RC49 and new RC50 assertions; no shader or gameplay changes",
+    "RC49 a124883 exact-source five Actions SUCCESS; real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; clean reports, CC0 hashes match, genuine 600-frame MP4 inspected; ART FAIL, physical Windows FPS unknown",
+    "RC50 candidate: licensed smoke denser atlas-alpha soot and cooler upper ash with source variation; six-sheet pool and original school FBX unchanged; local source checks PASS, exact-head QA pending",
+    "b321 exact-source five Actions SUCCESS, real browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147 CRC; reports clean, licensed CC0 hashes matched, 600-frame/30s MP4 plus five 100-frame clips checked; ART FAIL, Windows hardware FPS unknown",
+    "RC49 candidate: source-seeded licensed smoke atlas phase and subtle height-dependent UV shear; no extra texture samples, six-sheet pool unchanged; local syntax and source/phase bounds checks pass; exact-head QA pending",
+    "Exact-base 1d6c407: five workflows SUCCESS, real ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 147/147; reports errors/warnings empty and CC0 hashes matched",
+    "Candidate: foreground-only browser FPS/frame statistics exclude hidden/unfocused/unknown visibility; preserve existing all-active metrics; eight local synthetic tests PASS",
+    "Windows CSV analyzer candidate: browser-only FPS statistics, independent host render/heartbeat stall classification, visibility exclusion, missing CPU/RAM as null; six synthetic tests and browser workflow preflight",
+    "RC48 technical QA: five exact-source Actions success; actual browser/cinematic/focused/motion/Windows ZIP CRC and reports verified; licensed WEBP hashes match",
+    "RC48 captured pixel regression: five cinematic PNGs byte-identical to RC47; decoded frames identical for genuine 600-frame skyline plus five 100-frame clips",
+    "RC48 shader change: skip redundant procedural FBM in licensed CC0 atlas paths, preserve procedural fallback and fixed pools",
+    "RC47 fully verified: five exact-head workflows, ZIP CRC, errors/warnings, 600-frame MP4, licensed CC0 hashes and five camera views; cinematic ART FAIL",
+    "RC45 candidate: source-seeded plume gust and crosswind strength, age-based soot-to-ash color and opacity within six existing CC0 smoke sheets; no geometry/textures/pool growth",
+    "RC45 smoke shader source contract added to browser preflight; exact-head visual QA pending",
+    "RC44 verified: five exact-head workflows SUCCESS, browser/cinematic/focused/motion/Windows ZIP CRC checked, 600-frame MP4 inspected, CC0 hashes matched",
+    "RC59 candidate: CC0 plume-only seeded +/-0.21rad camera-space billboard roll; no added texture reads, GPU instances, pool changes or gameplay changes; local syntax and seeded contract PASS; exact-head workflows pending.",
+    "One-click 60-second exact-window physical Windows telemetry capture launcher and Python analyzer with three synthetic tests."
+  ],
+  "blockers": [
+    "Physical Windows heavy-destruction FPS/CPU/RAM CSV and analyzer JSON not yet captured",
+    "Cinematic ART FAIL: repeated smoke and stylized facade/house damage",
+    "New analyzer candidate exact-HEAD workflows pending"
+  ],
+  "windows_preview": {
+    "artifact_id": 14122083239,
+    "crc_members": 154,
+    "crc_pass": true,
+    "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+    "version": "5.5.0-rc.59",
+    "build": "5.5-licensed-smoke-sheet-roll-rc59",
+    "licensed_cc0_sha256_match": true,
+    "original_school_fbx_present": true
+  },
+  "motion_review": {
+    "artifact_id": 14123370782,
+    "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+    "skyline_frames": 600,
+    "seconds": 30,
+    "short_clips": 5,
+    "frames_inspected": 7,
+    "art_acceptance": "fail"
+  },
+  "verified_baseline_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "verified_baseline_version": "5.5.0-rc.59",
+  "candidate_tests_pending": true,
+  "verified_visual_equivalence": {
+    "comparison_source_sha": "5e98dab13d62520142e0460215a292a520195c54",
+    "source_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
+    "cinematic_pngs_byte_identical": 5,
+    "decoded_video_frames_identical": 1100,
+    "video_clips": 6,
+    "scope": "five captured static cinematic views; inactive call chain also verified",
+    "physical_fps_proven": false,
+    "rc51_rc52_cinematic_pngs_byte_identical": 5,
+    "rc51_source_sha": "2af10f6f8f441e5427eae96d9fd5567041674558",
+    "rc52_source_sha": "d2348612b07f60d75319f5e1beca0fe9e8e606d9",
+    "facade_atlas_runtime_active": false,
+    "rc56_source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
+    "rc57_source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+    "rc56_rc57_encoded_mp4s_byte_identical": 6,
+    "rc56_rc57_sampled_long_frames_zero_changed_pixels": 5
+  },
+  "last_verified_base_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "last_verified_source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "motion_evidence": {
+    "frames": 600,
+    "fps": 20,
+    "duration_seconds": 30,
+    "short_clips": 5,
+    "burning_frames": 585,
+    "multi_tower_frames": 380,
+    "errors": [],
+    "rc49_rc50_decoded_mae": 2.1077723,
+    "rc49_rc50_pct_pixels_gt10": 8.6940889,
+    "rc56_rc57_six_encoded_mp4_sha256_identical": true
+  },
+  "observed_parent_workflows": [
+    {
+      "name": "browser QA",
+      "run_id": 43615855010,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615855010"
+    },
+    {
+      "name": "cinematic scene",
+      "run_id": 43615854939,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854939"
+    },
+    {
+      "name": "focused fire",
+      "run_id": 43615854958,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854958"
+    },
+    {
+      "name": "licensed CC0 importer",
+      "run_id": 43615855042,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615855042"
+    },
+    {
+      "name": "genuine motion",
+      "run_id": 43615854932,
+      "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43615854932"
+    }
+  ],
+  "last_fully_verified_source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "verified_artifacts": {
+    "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+    "zip_crc": {
+      "browser": "78/78",
+      "cinematic": "6/6",
+      "focused": "7/7",
+      "motion": "33/33",
+      "windows": "154/154"
+    },
+    "browser_errors": [],
+    "browser_warnings": [],
+    "licensed_cc0_hashes_match": true,
+    "original_school_fbx_present": true
+  },
+  "last_verified_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+  "artifacts_at_snapshot": {
+    "source_sha": "d26bad0368f3d0ff2c78490b3d226121cdb82f99",
+    "crc_checked": {
+      "browser": "78/78",
+      "cinematic": "6/6",
+      "focused_fire": "7/7",
+      "motion": "33/33",
+      "windows_preview": "154/154"
+    },
+    "browser_errors": 0,
+    "browser_warnings": 0,
+    "motion": "five 100-frame/5s MP4s and one 600-frame/30s MP4 at 20 FPS; seven actual long-video frames inspected",
+    "licensed_assets": "CC0-1.0 flame f0a5e760... and smoke c7880917... SHA-256 match manifest",
+    "original_fbx": "36,233,776 bytes; SHA-256 8fe8c980...",
+    "windows_capture_launcher_in_preview": true,
+    "physical_windows_fps_measured": false,
+    "cinematic_art_accepted": false
+  }
+}

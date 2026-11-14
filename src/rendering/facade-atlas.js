@@ -92,6 +92,22 @@ export function createFacadeAtlas(THREE,{seed=0,stories=3,bays=3,kind='brick',co
      fill(x+winW*.58,y+winH*.18,winW*.15,winH*.13,'rgba(212,227,244,.18)');
     }
    }
+   // Deterministic occupied-room variety: some windows have partly lowered
+   // blinds or cloth curtains. All detail is baked into this existing atlas;
+   // no extra window planes, draw calls, shader work, or animation textures.
+   const treatment=rnd();
+   if(treatment<.30){
+    const blindBottom=y+winH*(.26+rnd()*.39);
+    fill(x+7,y+5,winW-14,blindBottom-y,'rgba(203,199,185,.62)');
+    for(let slat=y+12;slat<blindBottom;slat+=12)
+     fill(x+7,slat,winW-14,2,'rgba(76,73,68,.19)');
+    fill(x+7,blindBottom-3,winW-14,3,'rgba(72,69,65,.34)');
+   }else if(treatment<.54){
+    const cloth=rnd()>.5?'rgba(206,193,168,.32)':'rgba(168,178,181,.30)';
+    fill(x+5,y+4,winW*.18,winH*.86,cloth);
+    fill(x+winW*.77,y+4,winW*.18,winH*.86,cloth);
+    fill(x+6,y+6,2,winH*.78,'rgba(248,234,208,.13)');
+   }
    // Mullions and reflections
    fill(x+winW*.495,y,Math.max(4,winW*.05),winH,'rgba(28,36,43,.96)');
    fill(x,y+winH*.54,winW,Math.max(4,winH*.045),'rgba(28,36,43,.90)');
@@ -101,6 +117,18 @@ export function createFacadeAtlas(THREE,{seed=0,stories=3,bays=3,kind='brick',co
    // sill / header
    fill(x-18,y+winH+9,winW+36,10,tint(color,1.30));
    fill(x-20,y+winH+19,winW+40,4,tint(color,.76));
+   if(!modern){
+    // Thin cast-stone lintel, weathered keystone and runoff below the sill.
+    // Keep the masonry attached to the painted facade rather than floating
+    // geometry that can detach during damage animations.
+    fill(x-19,y-23,winW+38,5,tint(color,1.12));
+    fill(center-6,y-24,12,8,tint(color,1.23));
+    const stainCount=1+Math.floor(rnd()*3);
+    for(let stain=0;stain<stainCount;stain++){
+     const sx=x+winW*(.12+rnd()*.76);
+     fill(sx,y+winH+23,2+rnd()*3,9+rnd()*28,'rgba(29,25,23,.09)');
+    }
+   }
    // occasional signs or awnings at lower level
    if(store && floor===stories-1){
     if(rnd()>.4){

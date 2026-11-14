@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dragon Defense · motion review</title>
+<style>
+:root{color-scheme:dark}body{background:#121821;color:#e8eef7;font:15px/1.5 system-ui,sans-serif;margin:0}
+header{padding:18px 24px;background:#1c2532;border-bottom:1px solid #394455}
+h1{margin:0 0 4px;font-size:23px}h2{font-size:16px;line-height:1.25;margin:0 0 10px}
+a{color:#9ad8ff}small{color:#b5c4d8}
+.controls{position:sticky;top:0;z-index:4;padding:12px 20px;background:#1d2633ed;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid #394455}
+button{background:#34445a;color:#fff;border:1px solid #697f99;border-radius:6px;padding:7px 11px;cursor:pointer}
+button:hover,button:focus-visible{background:#496481}button:focus-visible{outline:2px solid #a2dfff}
+#selected{font-size:13px;color:#c8d4e4}
+main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:16px;padding:20px}
+article{padding:13px;background:#202b3a;border:1px solid #394759;border-radius:10px}
+article.active{outline:2px solid #9bd4ff}
+video{width:100%;aspect-ratio:16/9;display:block;background:#000;cursor:pointer}
+article p{margin:8px 0 0;font-size:13px;color:#b9cbe0}
+footer{padding:18px 24px;border-top:1px solid #394759;color:#b9cbe0}
+</style></head><body>
+<header>
+<h1>Tech Freire Dragon Defense · Motion Review</h1>
+<small>Exact development commit <code>@@SHA@@</code> · five-second scripted gameplay recordings · 20 frames/second · silent MP4</small>
+</header>
+<div class="controls">
+<button data-rate="0.25">¼× slow</button><button data-rate="0.5">½×</button><button data-rate="1">1×</button>
+<button id="prev" title="One recorded frame backward">◀ frame</button>
+<button id="next" title="One recorded frame forward">frame ▶</button>
+<button id="play">Play selected</button><button id="pause">Pause all</button>
+<span id="selected" aria-live="polite">Select a video, then scrub or step through individual frames.</span>
+</div>
+<main>@@VIDEO_CARDS@@</main>
+<footer>These are production-rendered, deterministic motion captures, not hardware-speed footage. Compare animation continuity, fire/smoke anchoring, meteor trails, impact dust and dragon movement. See <a href="review-guide.md">time-coded review guide</a> and <a href="report.json">frame-by-frame scene telemetry</a>. Use the full playable Windows build to assess actual GPU FPS.</footer>
+<script>
+const clips=[...document.querySelectorAll('article')];
+let selected=clips[0]||null, rate=1;
+function choose(article){
+  selected?.classList.remove('active');
+  selected=article;
+  article?.classList.add('active');
+  document.getElementById('selected').textContent='Selected: '+(article?.querySelector('h2')?.textContent||'none');
+}
+clips.forEach(article=>{
+ const video=article.querySelector('video');
+ video.addEventListener('click',()=>choose(article));
+ video.addEventListener('play',()=>choose(article));
+});
+choose(selected);
+document.querySelectorAll('button[data-rate]').forEach(btn=>{
+ btn.addEventListener('click',()=>{rate=Number(btn.dataset.rate);for(const v of document.querySelectorAll('video'))v.playbackRate=rate;});
+});
+document.getElementById('pause').addEventListener('click',()=>document.querySelectorAll('video').forEach(v=>v.pause()));
+document.getElementById('play').addEventListener('click',()=>{const v=selected?.querySelector('video');if(v){v.playbackRate=rate;v.play();}});
+function step(direction){
+ const v=selected?.querySelector('video');if(!v)return;
+ v.pause();v.currentTime=Math.max(0,Math.min(v.duration||5,v.currentTime+direction/20));
+}
+document.getElementById('prev').addEventListener('click',()=>step(-1));
+document.getElementById('next').addEventListener('click',()=>step(1));
+document.addEventListener('keydown',event=>{
+ if(event.target?.matches('input,textarea,select'))return;
+ if(event.key==='ArrowRight'){event.preventDefault();step(1);}
+ if(event.key==='ArrowLeft'){event.preventDefault();step(-1);}
+});
+</script></body></html>

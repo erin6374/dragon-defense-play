@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paulo Dragon Lab — v5.4 Anatomy & Animation</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080d14;color:#edf1f5;font:14px system-ui,Arial}
+header{padding:14px 20px;border-bottom:1px solid #465365;background:#131c27;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header strong{font-size:19px;color:#ffcf8b}header small{color:#9aabba}
+main{display:grid;grid-template-columns:minmax(0,1fr) 300px;height:calc(100vh - 64px)}
+#viewport{position:relative;min-width:0}canvas{display:block}
+aside{padding:16px;overflow:auto;background:#111a25;border-left:1px solid #354358}
+h2{font-size:14px;color:#ffbe85;margin:16px 0 8px}p,li{line-height:1.45;color:#b9c9d8}
+button,select{background:#25374b;color:#f4f7fa;border:1px solid #59738d;border-radius:6px;padding:9px;cursor:pointer}
+button[aria-pressed=true]{background:#704132;border-color:#ffb36e}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+label{display:block;margin:11px 0 5px;color:#d9e1e9}
+select,input{width:100%}
+#info{position:absolute;left:16px;bottom:16px;max-width:470px;padding:11px;background:#0c1720d9;border-radius:7px;color:#c7d5e0}
+@media(max-width:800px){main{grid-template-columns:1fr;grid-template-rows:55vh auto;height:auto}aside{border-left:0}header{align-items:start;flex-direction:column}}
+</style>
+<script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.js"}}</script></head>
+<body><header><div><strong>PAULO / DRAGON LAB</strong> <small>v5.4 · isolated design prototype</small></div><small>Not integrated into Dragon Defense gameplay</small></header>
+<main><section id="viewport"><div id="info">Original procedural blockout · no copyrighted character mesh or animation. Three-quarter: drag to orbit. All views: scroll to zoom. Front, side, top and rear use fitted orthographic projections.</div></section>
+<aside><h2>Animation studies</h2><div class="controls" id="poses"></div>
+<label for="speed">Animation speed</label><input id="speed" type="range" min=".25" max="2" step=".05" value="1">
+<div class="controls" style="margin-top:12px"><button id="play-toggle" type="button" aria-pressed="false">Pause</button><button id="step-frame" type="button">+1 frame</button></div>
+<label for="timeline">Pose time <output id="timeline-label" for="timeline">0.00s</output></label><input id="timeline" type="range" min="0" max="8" step=".01" value="0" aria-label="Scrub animation time">
+<label for="bank-direction">Bank study direction</label><select id="bank-direction"><option value="right">Right bank</option><option value="left">Left bank</option></select>
+<label for="view">Camera view</label><select id="view"><option value="perspective">Three-quarter (perspective)</option><option value="front">Front</option><option value="side">Side</option><option value="top">Top</option><option value="rear">Rear</option></select>
+<label for="wire">Rig / joint markers</label><input id="wire" type="checkbox">
+<h2>Model specification</h2><p>Original realistic-mascot hybrid. Charcoal scale plates, crimson wing membrane, bronze horns, amber eyes. A four-legged, two-winged silhouette; head and neck counterbalance a segmented tail.</p>
+<p>Wing rig: shoulder → elbow → wrist → outer fingers. Wingbeats are asymmetric in banks, with fold and span changes for glide and takeoff. Chest, jaw, neck and tail are separately articulated.</p>
+<h2>Animation states</h2><p id="description"></p>
+<h2>Prototype limits</h2><p>This is a low-poly rig and timing test, not the final sculpt or skinned mesh. It deliberately reuses geometry and materials. Fire, wind and gas use pooled visual-effect previews attached to the animated head; they do not change gameplay, weather, collisions or fire suppression.</p>
+</aside></main><script type="module" src="./paulo-lab.js"></script></body></html>

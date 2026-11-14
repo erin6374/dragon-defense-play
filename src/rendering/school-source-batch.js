@@ -3,7 +3,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 // The exported model uses one neutral material. Color the actual named
 // components without rebuilding any opening, façade panel, or roof surface.
-const palette={glass:0x426d83,metal:0x273742,spandrel:0xb9a693,brick:0x8b5140,
+const palette={glass:0x75959b,metal:0x9da6a6,spandrel:0x87968e,brick:0x856657,
  roof:0x39434a,stone:0xc2b7a4,door:0x53636c,interior:0x8f8b84};
 function surface(mesh){
  const name=mesh.name.toLowerCase();
@@ -39,7 +39,13 @@ export function batchSchoolSource(source, prepareMaterial) {
   const usePalette=original.name==='__DEFAULT';
   const key=usePalette?role:original.id;
   if(!materials.has(key)){
-   const material=original.clone();
+   const material=usePalette?new THREE.MeshStandardMaterial({
+    color:palette[role],side:original.side,
+    roughness:role==='glass'?.24:role==='metal'?.48:.9,
+    metalness:role==='glass'?.12:role==='metal'?.45:0,
+    transparent:role==='glass',opacity:role==='glass'?.58:1,
+    depthWrite:role!=='glass'
+   }):original.clone();
    if(usePalette)material.color.setHex(palette[role]);
    material.userData.photoColor=material.color?.getHex();
    material.name='school-'+role;
