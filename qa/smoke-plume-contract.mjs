@@ -46,6 +46,27 @@ const ascents=Array.from({length:6},(_,i)=>6.25+3.1*fract((13+i*7.13)*.719));
 assert.equal(new Set(ascents.map(x=>x.toFixed(4))).size,6,'RC56 ascent rates synchronized');
 assert.ok(ascents.every(x=>x>=6.25&&x<9.35),'RC56 ascent outside bounds');
 assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC56 extra atlas fetch');
+// RC57: the conservative alpha upper bound must reject only already-invisible
+// licensed plume pixels, before either smoke-atlas texture lookup.
+const guard='if(ageFade*feather*.94<.005)discard;';
+assert.equal(bridge.split(guard).length-1,1,'RC57 alpha guard must occur once');
+assert.ok(bridge.indexOf(guard)<bridge.indexOf('vec4 frame=flipbook(smokeAtlas,uv,time);'),'RC57 guard must precede atlas reads');
+assert.ok(bridge.includes('alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*ageFade;'),'RC57 alpha expression changed');
+const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+let skipped=0;
+for(let i=0;i<=1000;i++)for(let j=0;j<=100;j++){
+ const age=i/1000,feather=j/100;
+ const fade=smooth(0,.11,age)*(1-smooth(.78,1,age));
+ if(fade*feather*.94<.005){
+  skipped++;
+  for(const sourceSeed of [0,.17,.51,.99]){
+   const maxAlpha=(.78+.16*sourceSeed)*feather*fade;
+   assert.ok(maxAlpha<.005,'RC57 guard would discard visible alpha');
+  }
+ }
+}
+assert.ok(skipped>0,'RC57 alpha-bound test did not exercise any discarded fragments');
+console.log('RC57 conservative licensed plume alpha-bound discard contract PASS');
 console.log('RC56 seeded plume ascent and width variation source contract PASS');
 console.log('RC55 turbulent plume edge and RC54 clock source contract PASS');
 console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');

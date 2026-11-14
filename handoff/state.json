@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
-  "observed_version": "5.5.0-rc.56",
-  "observed_build_id": "5.5-dispersed-smoke-columns-rc56",
-  "release_status": "rc56_seeded_smoke_column_candidate_exact_head_pending_rc55_five_workflows_pass_art_fail_windows_fps_unmeasured",
+  "observed_parent_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
+  "observed_version": "5.5.0-rc.57",
+  "observed_build_id": "5.5-licensed-smoke-alpha-cull-rc57",
+  "release_status": "rc57_conservative_smoke_alpha_cull_candidate_exact_head_pending_rc56_five_workflows_pass_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43551850770,
-      "source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+      "run_id": 43556252917,
+      "source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43551850770"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43556252917"
     },
     {
       "name": "cinematic",
-      "run_id": 43551850637,
-      "source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+      "run_id": 43556252897,
+      "source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43551850637"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43556252897"
     },
     {
       "name": "focused fire",
-      "run_id": 43551850638,
-      "source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+      "run_id": 43556252913,
+      "source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43551850638"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43556252913"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43551850632,
-      "source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+      "run_id": 43556252916,
+      "source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43551850632"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43556252916"
     },
     {
       "name": "genuine motion",
-      "run_id": 43551850672,
-      "source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+      "run_id": 43556252911,
+      "source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43551850672"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43556252911"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify RC56 exact-HEAD browser, cinematic, focused-fire, CC0 and genuine-motion workflows; inspect reports, screenshots, long MP4, Windows ZIP and license hashes, compare RC56 vs RC55 art, then obtain physical Windows performance CSV.",
+  "next_task": "Verify RC57 exact-HEAD browser, cinematic, focused fire, licensed CC0 and genuine 5+30-second motion workflows; inspect reports, screenshots, long MP4, Windows ZIP and source hashes, compare visible frames with RC56, then obtain physical Windows FPS/CPU/RAM CSV.",
   "implemented": [
+    "2026-11-14: RC56 source 77df10026e67d3bf14acdb6931b964f8cfffbec5 all five exact-head Actions SUCCESS (browser 43556252917, cinematic 43556252897, focused 43556252913, licensed CC0 43556252916, genuine motion 43556252911); independently verified ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean; five 100-frame MP4s and 600-frame 30s MP4; both CC0 hashes and original FBX verified. RC57 candidate: licensed plume conservative age/feather alpha bound early discard before two atlas reads; unchanged visible-alpha math and fixed pools, meteor-only ignition, gameplay, bilateral damage. Local deterministic 100k synthetic fragments: 7,269 safe culls; not measured GPU speed. RC57 exact-head workflows pending; cinematic ART FAIL and Windows physical FPS unresolved.",
     "2026-11-14: All five exact-base workflows SUCCESS: [browser 43551850770](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850770), [cinematic 43551850637](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850637), [focused fire 43551850638](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850638), [licensed CC0 43551850632](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850632), [genuine motion 43551850672](https://github.com/erin6374/dragon-defense-play/actions/runs/43551850672). Downloaded ZIP CRC browser 78/78, cinematic 6/6, focused fire 7/7, genuine motion 33/33, Windows preview 150/150. Browser report errors=[] warnings=[]; other reports errors=[] and exact source SHA. Five genuine 100-frame/5s MP4s and 600-frame/30s skyline MP4 at 20 FPS verified; seven decoded long-video frames inspected. Packaged CC0 flame/smoke SHA-256 hashes match manifest and original school FBX present. Actual smoke remains repetitive; cinematic art acceptance FAIL. Bounded RC56 candidate varies licensed smoke-sheet ascent, buoyancy and width by source seed to reduce equal-height columns. Existing single smoke-atlas fetch, fixed six-sheet GPU pools, procedural A/B, causal meteor-only ignition, bilateral severe neighborhood damage, school/dragon gameplay and original FBX preserved. Static contract checks prepared; exact-new-HEAD five workflows and visual review PENDING. Physical Windows 30–60s heavy-destruction FPS/CPU/RAM CSV absent; user's severe slideshow complaint unresolved. campaign/visual_target.png ART FAIL for smoke and stylized facades/house damage. Google PR #3 older RC30 remains isolated per review 6827300214; no merge, force push, main/production/Pages or Building Explorer change.",
     "RC55 base 0a270133: cinematic, focused, CC0, motion Actions SUCCESS; downloaded cinematic 6/6, focused 7/7, motion 33/33, partial browser 78/78 CRC; browser job CANCELLED at configured 15-minute timeout before Windows packaging. Reports errors=[]; actual five 100-frame and 600-frame/30s videos inspected; ART FAIL. New bounded CI fix increases browser job timeout to 25 minutes; exact-new-HEAD QA pending. Physical Windows FPS unresolved.",
     "RC55 exact base 1f61f737 five Actions success; downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, exact SHA, CC0 WEBP hashes and original school FBX, real 600-frame/30s plus five 100-frame MP4s inspected. New bounded Windows CSV heartbeat coverage guard requires 75% capture span to accept FPS, preserving host stall evidence; healthy and freeze synthetic cases PASS locally. New commit workflows pending. ART FAIL and physical Windows FPS unresolved.",
@@ -170,7 +171,7 @@
     "facade_atlas_runtime_active": false
   },
   "last_verified_base_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
-  "last_verified_source_sha": "026515e1feb197693e4d355f07371f84e1d22f6a",
+  "last_verified_source_sha": "77df10026e67d3bf14acdb6931b964f8cfffbec5",
   "motion_evidence": {
     "frames": 600,
     "fps": 20,

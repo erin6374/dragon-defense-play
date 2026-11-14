@@ -1,8 +1,8 @@
 {
-  "build": "5.5-dispersed-smoke-columns-rc56",
-  "version": "5.5.0-rc.56",
+  "build": "5.5-licensed-smoke-alpha-cull-rc57",
+  "version": "5.5.0-rc.57",
   "gameplay_base": "5.2.3",
-  "scope": "Licensed CC0 plume-only seeded ascent, buoyancy and width variance; existing atlas samples, six-sheet GPU pools, meteor-only ignition, gameplay, school FBX and bilateral damage unchanged.",
+  "scope": "Licensed CC0 plume-only conservative alpha-bound discard before atlas sampling; procedural/legacy smoke, fixed pools, meteor-only ignition, gameplay, school FBX and bilateral damage unchanged.",
   "new_gameplay_features": false,
-  "release_status": "RC56 candidate; exact-head QA pending, cinematic art FAIL and physical Windows FPS unmeasured."
+  "release_status": "RC57 performance candidate; exact-head QA pending, Windows hardware FPS unmeasured, cinematic art FAIL."
 }

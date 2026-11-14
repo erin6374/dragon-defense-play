@@ -155,18 +155,25 @@ ${anchor}`);
   float eddy=plumeMode>.5 ? .045*sin(q.y*(6.3+3.*fract(vSeed*.257))-
    clock*(.23+.07*fract(vSeed*.491))+vSeed*.67) : 0.;
   vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean+eddy,0.),.014,.986);
-  vec4 frame=flipbook(smokeAtlas,uv,time);
+  float feather=1.,ageFade=1.;
   if(plumeMode>.5){
-   // CC0 WispySmoke03 density drives dark, layered billows, not generated
-   // smoke noise. Age fade prevents hard particle loop resets.
-   // Low-amplitude seeded shear softens the repeated symmetric cone edge.
-   // Two drifting frequencies and a one-sided height bias avoid six
-   // synchronized, mirror-symmetric cone silhouettes.
+   // Calculate the already-used silhouette and age fade before sampling.
+   // A CC0 alpha texel, min(1.,vPower), and feather are all <= 1;
+   // the source-seeded gain (.78 + .16*fract(...)) is strictly < .94.
+   // If this upper bound is below the existing .005 alpha discard,
+   // two atlas reads can be skipped with no change to visible pixels.
    float edgeWarp=.11*sin(q.y*(7.1+3.4*fract(vSeed*.29))+
     clock*(.14+.09*fract(vSeed*.37))+vSeed*.73)
     +.055*sin(q.y*16.7-clock*.11+vSeed*1.19);
    float sideBias=(fract(vSeed*.611)-.5)*.20*(q.y-.2);
-   float feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));
+   feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));
+   ageFade=smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
+   if(ageFade*feather*.94<.005)discard;
+  }
+  vec4 frame=flipbook(smokeAtlas,uv,time);
+  if(plumeMode>.5){
+   // CC0 WispySmoke03 density drives dark, layered billows, not generated
+   // smoke noise. Age fade prevents hard particle loop resets.
    float ashBlend=smoothstep(.12,.88,vAge);
    // Dense CC0 alpha reads as soot; diffuse packets aloft become cooler ash.
    // Source seed changes soot loading without additional sheets or samples.
@@ -174,8 +181,7 @@ ${anchor}`);
    float densityShade=mix(1.10,.73,smoothstep(.24,.84,frame.a));
    color=mix(vec3(.033,.032,.031),vec3(.088,.099,.109),ashBlend)*
     sootVariation*densityShade*(.78+.22*frame.rgb);
-   alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*
-    smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
+   alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*ageFade;
   }else{
    // Retain RC17 licensed smoke for controlled motion A/B.
    float soot=smoothstep(.19,.88,q.y);
