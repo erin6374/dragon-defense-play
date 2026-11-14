@@ -1,3 +1,19 @@
+## November 13 — RC58 Full-breadth meteor targeting, extended dragon flight envelope, panoramic skyline mid-rises & atmospheric veil
+
+Parent verified baseline SHA: 1c6864f (RC57 5.5.0-rc.57, build 5.5-north-broad-refinement-rc57).
+
+RC58 expands flight freedom and environmental visual continuity:
+1. Full-Breadth Meteor Strike Targeting (`src/game.js`):
+   - Expanded meteor target and impact clamping from narrow $[-90, 90]$ bounds to $[-220, 220]$ and $[-240, 240]$, allowing natural direct meteor strikes on all extended 2300-2400 North Broad blocks and 2100-2000 South Broad blocks.
+2. Extended Dragon Flight Envelope (`src/game.js`):
+   - Broadened playable horizontal flight range to $[-180, 180]$ (from $[-91, 91]$), allowing the dragon to patrol one full screen in either direction over the real-world Philadelphia streetscape.
+3. Panoramic Center City Ambient Mid-Rise Geometry (`src/rendering/philadelphia-geometry-skyline.js`):
+   - Added 18 additional polygon-modeled mid-rise office buildings to \`ambientBuildings\` extending the intermediate skyline from $[-220, 218]$ to $[-380, 380]$ in local coords ($-1235$ to $+1235$ in world space), completely filling the wide panoramic skyline horizon without clipping.
+4. Widened Atmospheric Depth Veil (`src/game.js`):
+   - Extended the soft sky-colored aerial haze veil plane to $800$ units (2600 world units), smoothly integrating the skyscrapers with the distant urban terrain.
+5. Invariants Preserved:
+   - All regression contracts pass (check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract). Zero added draw batches in \`structural-city.js\`.
+
 ## November 13 — RC57 Tech Freire rooftop mechanicals, autumn canopy palette, and expanded Google Earth skyline convergence
 
 Parent verified baseline SHA: 3c01961 (RC56 5.5.0-rc.56, build 5.5-north-broad-refinement-rc56).

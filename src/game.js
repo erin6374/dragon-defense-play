@@ -701,7 +701,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
  skyline.position.x=skylineAnchor;
 const skylineAirUniforms={opacity:{value:.26},day:{value:1}};
-const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(330,140),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
+const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(800,160),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,47,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
 // Distant facade lights are integrated into building materials.
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
@@ -1791,7 +1791,7 @@ function spawnMeteor(random=Math.random,opening=null){
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
  const buildings=neighborhood.targetBuildings.filter(b=>b.z>=DEFENSE_REAR_Z&&(!(opening||fastImpact)||!b.background));
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random);
- const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-94,94);
+ const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-220,220);
  const mesh=createPlayableRock(size);
  if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
  else if(fastImpact)mesh.material=fastImpactMaterial;
@@ -1899,7 +1899,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const diffDmg=diffMode==='hard'?2.5:diffMode==='easy'?.42:1.0;
- const targetX=THREE.MathUtils.clamp(x,-90,90);
+ const targetX=THREE.MathUtils.clamp(x,-240,240);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
  const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.0&&Math.abs(b.z-z)<b.d*.5+1);
  const neighbor=!!targetBuilding;
@@ -2241,7 +2241,7 @@ elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);
  cooldown=Math.max(0,cooldown-dt);const move=dragonStun>0?0:Number(input.isDown(ACTIONS.RIGHT))-Number(input.isDown(ACTIONS.LEFT));const rise=dragonStun>0?0:Number(input.isDown(ACTIONS.UP))-Number(input.isDown(ACTIONS.DOWN));
 if(move||rise||dragonStun>0)dragonLeavingRoof=true;
 if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
-dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-91,91);
+dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-180,180);
 if(move&&move!==facing){facing=move;turnTime=.22;}turnTime=Math.max(0,turnTime-dt);
 dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));dragon.rotation.z=dragonStun>0?Math.sin(elapsed*35)*.14:turnTime>0?Math.sin((.22-turnTime)*28)*.28:Math.sin(elapsed*4)*.035;dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*16*dt,dragonStun>0?1.3:1.7,flightCeiling);dragon.children.forEach((part,i)=>{if(i<3)part.rotation.z=Math.sin(elapsed*6+i)*.04;});dragon.rotation.y=Math.sin(elapsed*2)*.09;
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);

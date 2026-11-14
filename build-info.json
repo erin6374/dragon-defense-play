@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc57",
-  "version": "5.5.0-rc.57",
+  "build": "5.5-north-broad-refinement-rc58",
+  "version": "5.5.0-rc.58",
   "gameplay_base": "5.2.3",
-  "scope": "RC57: Tech Freire authentic rooftop mechanicals (chillers, ductwork runs, penthouse & antenna), Philadelphia autumn tree canopy foliage palette, expanded background rowhouse density and depth converging to skyline, Google Earth silver-white elastomeric roofscape, Fotterall 14-story towers, SEPTA bus shelter & subway entrance.",
+  "scope": "RC58: Full-breadth meteor strike targeting (x in [-220, 220]), extended dragon flight envelope (x in [-180, 180]), panoramic Center City mid-rise ambient skyline geometry (x in [-1235, 1235]), and widened atmospheric depth veil (w = 800).",
   "new_gameplay_features": false,
-  "release_status": "RC57 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC58 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }
