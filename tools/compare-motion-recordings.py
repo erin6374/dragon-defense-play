@@ -5,6 +5,7 @@ Requires ffmpeg, ffprobe and Pillow. Visual change is not cinematic art approval
 or a physical Windows FPS measurement.
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -14,6 +15,7 @@ import zipfile
 from PIL import Image, ImageChops
 
 DEFAULT_FRAMES = (0, 20, 60, 120, 240, 360, 480, 580, 599)
+MOTION_VIDEOS = ('dragon.mp4', 'houses.mp4', 'skyfall.mp4', 'skyline.mp4', 'skyline-long.mp4', 'traffic.mp4')
 
 
 def checked_zip(path):
@@ -68,7 +70,10 @@ def main():
     p.add_argument('--candidate-sha')
     p.add_argument('--frames', default=','.join(map(str, DEFAULT_FRAMES)))
     p.add_argument('--threshold', type=int, default=10)
-    p.add_argument('--require-change', action='store_true')
+    exclusive = p.add_mutually_exclusive_group()
+    exclusive.add_argument('--require-change', action='store_true')
+    exclusive.add_argument('--require-identical-videos', action='store_true',
+                           help='require all six genuine motion MP4 files to be byte-identical')
     p.add_argument('--min-changed-frames', type=int, default=1)
     p.add_argument('--output')
     a = p.parse_args()
@@ -80,6 +85,14 @@ def main():
     with checked_zip(a.baseline_zip) as bz, checked_zip(a.candidate_zip) as cz:
         before = read_metadata(bz, a.baseline_sha)
         after = read_metadata(cz, a.candidate_sha)
+        # Exact encoded-video identity is stronger than a sparse screenshot comparison.
+        # This is a visual regression gate, never a performance measurement.
+        video_hashes = {}
+        for name in MOTION_VIDEOS:
+            video_hashes[name] = [hashlib.sha256(z.read(name)).hexdigest()
+                                  for z in (bz, cz)]
+        differing_videos = [name for name, hashes in video_hashes.items()
+                            if hashes[0] != hashes[1]]
         if max(indices) >= min(before['frames'], after['frames']):
             raise ValueError('sample frame index exceeds recording duration')
         with tempfile.TemporaryDirectory() as tmp:
@@ -120,6 +133,8 @@ def main():
         'baseline_sha': before['sha'], 'candidate_sha': after['sha'],
         'dimensions': [w,h], 'threshold': a.threshold, 'frames': results,
         'changed_sample_frames': changed, 'sampled_frames': len(results),
+        'identical_videos': not differing_videos, 'videos_checked': len(MOTION_VIDEOS),
+        'differing_videos': differing_videos,
         'visible_change_detected': changed >= a.min_changed_frames,
         'disclaimer': 'Difference is not cinematic art approval or physical Windows FPS evidence.'
     }
@@ -129,6 +144,8 @@ def main():
         Path(a.output).write_text(serialized, encoding='utf-8')
     if a.require_change and not outcome['visible_change_detected']:
         raise SystemExit('FAIL: motion recordings are unchanged at sampled frames')
+    if a.require_identical_videos and differing_videos:
+        raise SystemExit('FAIL: encoded motion videos differ: ' + ', '.join(differing_videos))
 
 
 if __name__ == '__main__':
