@@ -75,3 +75,8 @@ RC55 PERFORMANCE LAB DIAGNOSTIC UPDATE
 - In-game Performance Lab samples may run 60 seconds and retain frame gaps beyond 15 seconds.
 - Use System Monitor CSV for independent host/heartbeat samples during browser stalls.
 - Physical Windows FPS and GPU utilization remain unmeasured until captured on hardware.
+
+RC55 SYSTEM CSV CAPTURE QUALITY CHECK
+- tools/analyze-windows-performance.py identifies short/unfocused captures and missing host/browser samples.
+- A 30-60s focused Windows capture with at least 20 host samples and two browser heartbeats supports foreground FPS analysis; host-only stall evidence remains useful if the browser freezes.
+- Missing CPU/RAM counters are not treated as zero. No GPU timing or utilization is measured.

@@ -17,6 +17,9 @@ REQUIRED = {'timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs',
             'drawCalls', 'cpuPercent', 'ramPercent'}
 STALE_MS = 3000
 FRESH_HEARTBEAT_MS = 2500
+MIN_CAPTURE_SECONDS = 30
+MIN_VISIBLE_HOST_SAMPLES = 20
+MIN_FOREGROUND_BROWSER_SAMPLES = 2
 
 
 def number(value):
@@ -82,7 +85,29 @@ def summarize(path):
         except (ValueError, AttributeError):
             pass
     duration = round((max(times) - min(times)).total_seconds(), 2) if len(times) > 1 else None
+    # Independent host samples survive browser freezes. Keep their stall evidence
+    # without presenting repeated host FPS values as rendered browser frames.
+    quality_issues = []
+    if duration is None or duration < MIN_CAPTURE_SECONDS:
+        quality_issues.append('Capture shorter than 30 seconds or timestamps invalid.')
+    if len(visible_host) < MIN_VISIBLE_HOST_SAMPLES:
+        quality_issues.append('Fewer than 20 visible, focused independent host samples.')
+    if len(foreground_browser) < MIN_FOREGROUND_BROWSER_SAMPLES:
+        quality_issues.append('Fewer than two visible, focused browser heartbeats: FPS distribution insufficient.')
+    host_cpu_samples = sum(number(r.get('cpuPercent')) is not None for r in visible_host)
+    host_ram_samples = sum(number(r.get('ramPercent')) is not None for r in visible_host)
+    capture_quality = {
+        'foreground_fps_usable': not quality_issues,
+        'host_stall_evidence_available': len(visible_host) >= MIN_VISIBLE_HOST_SAMPLES,
+        'host_cpu_ram_usable': (duration is not None and duration >= MIN_CAPTURE_SECONDS
+                                and host_cpu_samples >= MIN_VISIBLE_HOST_SAMPLES
+                                and host_ram_samples >= MIN_VISIBLE_HOST_SAMPLES),
+        'visible_host_cpu_samples': host_cpu_samples,
+        'visible_host_ram_samples': host_ram_samples,
+        'issues': quality_issues,
+    }
     findings = []
+    findings.extend(quality_issues)
     if not active_browser:
         findings.append('No active browser heartbeat samples: FPS cannot be evaluated.')
     if not foreground_browser:
@@ -103,7 +128,7 @@ def summarize(path):
         findings.append('Hidden/unfocused host samples excluded from foreground stall counts.')
     findings.append('Browser-reported FPS and whole-system CPU/RAM do not establish a GPU bottleneck; GPU utilization is unmeasured.')
     return {
-        'source': str(path), 'duration_seconds': duration,
+        'source': str(path), 'duration_seconds': duration, 'capture_quality': capture_quality,
         'samples': {'total': len(rows), 'browser': len(browser), 'host': len(host),
                     'active_browser': len(active_browser), 'foreground_browser': len(foreground_browser),
                     'background_browser': len(background_browser),
@@ -145,6 +170,7 @@ def main():
     else:
         print('Dragon Defense Windows Performance Lab diagnostic (not a GPU benchmark)')
         print('Capture seconds:', report['duration_seconds'], 'samples:', report['samples'])
+        print('Capture quality:', report['capture_quality'])
         print('Foreground browser FPS median/p10:', report['browser_foreground']['median_fps'], '/', report['browser_foreground']['p10_fps'])
         print('All active browser FPS median/p10 (includes background):', report['browser_active']['median_fps'], '/', report['browser_active']['p10_fps'])
         print('Active browser frame p95 ms / median draw calls:', report['browser_active']['p95_frame_ms'], '/', report['browser_active']['median_draw_calls'])

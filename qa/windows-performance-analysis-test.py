@@ -87,5 +87,38 @@ class AnalyzerTests(unittest.TestCase):
             analyzer.summarize(self.path)
 
 
+    def test_quality_valid_40_second_capture(self):
+        rows = [self.row('host', i) for i in range(40)]
+        rows += [self.row('browser', i) for i in range(0, 40, 5)]
+        self.write(rows)
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertTrue(quality['foreground_fps_usable'])
+        self.assertTrue(quality['host_stall_evidence_available'])
+        self.assertTrue(quality['host_cpu_ram_usable'])
+        self.assertEqual(quality['issues'], [])
+
+    def test_quality_rejects_short_capture(self):
+        self.write([self.row('host', i) for i in range(12)] +
+                   [self.row('browser', i) for i in range(0, 12, 5)])
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertIn('Capture shorter than 30 seconds or timestamps invalid.', quality['issues'])
+
+    def test_quality_preserves_host_only_stall_evidence(self):
+        self.write([self.row('host', i, renderAgeMs='8000', telemetryAgeMs='8000')
+                    for i in range(40)])
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertTrue(quality['host_stall_evidence_available'])
+        self.assertTrue(quality['host_cpu_ram_usable'])
+
+    def test_quality_excludes_hidden_host_samples_and_missing_counters(self):
+        self.write([self.row('host', i, documentHidden='true',
+                             cpuPercent='', ramPercent='') for i in range(40)])
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertFalse(quality['host_stall_evidence_available'])
+        self.assertFalse(quality['host_cpu_ram_usable'])
+
 if __name__ == '__main__':
     unittest.main()
