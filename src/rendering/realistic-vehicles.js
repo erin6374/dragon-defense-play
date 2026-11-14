@@ -104,14 +104,34 @@ export function buildHelicopter(T,root,variant=0){
  const beacon=oval(root,new T.MeshBasicMaterial({color:0xff3423}),-.4,1.05,0,.10,.10,.10);
  const strobe=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-5.6,1.60,0,.11,.11,.11);
  const cockpitGlow=oval(root,new T.MeshBasicMaterial({color:0xaef0ff,transparent:true,opacity:.72,depthWrite:false}),1.05,.05,0,.65,.45,.55);
- const searchlightCone=new T.Mesh(new T.ConeGeometry(3.2,22,12,1,true),new T.MeshBasicMaterial({color:0xe8f4ff,transparent:true,opacity:.18,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
- searchlightCone.position.set(1.4,-.65,0);
- searchlightCone.rotation.z=-Math.PI*.32;
- root.add(searchlightCone);
+ const searchlightMount=new T.Group();
+ searchlightMount.position.set(1.35,-.62,0);
+ root.add(searchlightMount);
+ const gimbalBracket=part(searchlightMount,new T.CylinderGeometry(.12,.12,.14,12),metal,0,.07,0);
+ const searchlightGimbal=new T.Group();
+ searchlightMount.add(searchlightGimbal);
+ const lampHousing=part(searchlightGimbal,new T.CylinderGeometry(.18,.24,.36,14),dark,0,-.16,0);
+ const lens=new T.Mesh(new T.CircleGeometry(.20,14),new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide}));
+ lens.rotation.x=-Math.PI/2;lens.position.y=-.34;searchlightGimbal.add(lens);
+
+ const beamLength=34,beamRadius=4.2;
+ const beamGeo=new T.CylinderGeometry(.18,beamRadius,beamLength,16,1,true);
+ beamGeo.translate(0,-beamLength/2,0);
+ const searchlightCone=new T.Mesh(beamGeo,new T.MeshBasicMaterial({color:0xdcf2ff,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
+ searchlightCone.position.y=-.34;
+ searchlightGimbal.add(searchlightCone);
+
+ const innerCoreGeo=new T.CylinderGeometry(.10,beamRadius*.48,beamLength*.96,12,1,true);
+ innerCoreGeo.translate(0,-(beamLength*.96)/2,0);
+ const innerCore=new T.Mesh(innerCoreGeo,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.36,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
+ searchlightCone.add(innerCore);
+
  root.userData.strobe=strobe;
  root.userData.cockpitGlow=cockpitGlow;
  root.userData.searchlightCone=searchlightCone;
- root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,strobe,cockpitGlow,searchlightCone,firefighting:fire};
+ root.userData.searchlightGimbal=searchlightGimbal;
+ root.userData.searchlightMount=searchlightMount;
+ root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,strobe,cockpitGlow,searchlightCone,searchlightGimbal,firefighting:fire};
 }
 export function buildPerson(T,seed=0){const {mat,oval,rod}=kit(T),g=new T.Group(),cloth=mat([0x4f687c,0x865853,0x5e685c,0xada394][seed%4]),skin=mat([0xb98564,0x76503a,0xd5ac87][seed%3]),pants=mat(0x303942),shoe=mat(0x252629);
  oval(g,cloth,0,.93,0,.20,.32,.14);oval(g,skin,0,1.39,0,.125,.16,.12);oval(g,mat(0x45382c),0,1.49,-.02,.128,.09,.12);const limbs=[];

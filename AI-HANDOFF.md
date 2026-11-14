@@ -1,3 +1,41 @@
+## November 14 — RC62 Underside helicopter searchlight & ground pool, aerodynamics & building avoidance, zero-damage vehicle bump physics, spectacular helicopter crash explosion, high-altitude jet volleys, right-click gas propulsion boost, sun/moon celestial illumination & dynamic fire lighting
+
+Parent verified baseline SHA: 550af8f (RC61 5.5.0-rc.61, build 5.5-north-broad-refinement-rc61).
+
+RC62 delivers full alignment with user requirements across vehicle interaction, lighting, and aerial physics:
+1. **Underside Cockpit Helicopter Searchlight & Ground Light Pool (`src/rendering/realistic-vehicles.js`, `src/rendering/stable-light-pool.js`, `src/game.js`):**
+   - Repositioned searchlight mount to the authentic forward underside chin / belly gimbal bracket beneath the cockpit (`(1.35, -0.62, 0)`).
+   - Replaced centered cone with apex-anchored tapered volumetric beam (`CylinderGeometry(0.18, 4.2, 34)` translated so apex is at origin) with bright inner core and aperture lens.
+   - Gimbal smoothly tracks targets on the ground and dragon using `quaternion.setFromUnitVectors`, pointing downward and eliminating inverted beam artifacts.
+   - Projected dynamic illumination light pool (`searchlightPool`) shines on street pavement, road markings, and building facades directly beneath the beam apex.
+   - Hardware `SpotLight` synchronized with chin mount and aimed at target.
+2. **Helicopter Aerodynamics, Building Avoidance & Non-Clipping Collisions (`src/game.js`):**
+   - Replaced 1:1 dragon coordinate snapping with authentic helicopter aerodynamics: forward cyclic pitch tilt when advancing, banking roll into turns, subtle collective hover bobbing, and decoupled tactical standoff loitering.
+   - Added 3D building collision detection against `schoolBounds` and rowhouses: helicopters steer away from facades and never clip through structures.
+   - Grazing buildings, meteors, or other helicopters induces angular bump wobble and showers of sparks (`emitImpact`).
+3. **Vehicle-Dragon Bump Physics — Zero Lives Lost (`src/game.js`):**
+   - Collisions between the dragon and ground vehicles or helicopters **do not cost a life or damage health**.
+   - Ground vehicles react with authentic suspension rocking on springs (`bumpImpulse`, `bumpRoll`), skid deflection, mechanical impact sound, and bright spark bursts.
+   - Helicopters bumped by the dragon receive an impulse kick and bank recoil.
+4. **Spectacular Helicopter Crash Explosion & Mechanical Debris (`src/game.js`):**
+   - Crashing helicopters enter autorotation failure with death spin, trailing black smoke puffs and engine fire sparks.
+   - Ground impact triggers a massive cinematic spectacle: high-energy primary flash (`flashAt`), dual expanding fireball shockwaves (`blast`), heavy screen shake, and street impact scorch.
+   - Spawns realistic physical vehicle debris (`spawnHelicopterCrashDebris`): severed rotor blades, cylindrical tail boom chunks, and metallic fuselage panels that tumble with angular velocity and bounce on the street.
+5. **High-Altitude Deep-Background F-16 / F-22 Jet Volleys (`src/simulation/final-squadron.js`):**
+   - Jets spawn far back in the deep background ($z = -240$).
+   - Fly in a high-altitude combat air patrol pattern ($y \in [52, 72]$) well above all building rooftops.
+   - Launch staggered **volleys** of 2-3 missiles with luminous rocket booster flames and dense billowing exhaust smoke trails.
+   - Perform high-G climbing turns that circle back into the deep background ($z \to -240$) before re-engaging.
+6. **Right-Click Gas Attack Propulsion Boost (`src/game.js`):**
+   - Holding right mouse button (or F key / gas action) continuously propels the dragon forward at high speed ($+26\text{ units/s}$) in the aim direction.
+   - Emits trailing green propulsion gas puffs from behind the dragon with forward body pitch.
+7. **True Sun & Moon Illumination, Dragon Fire Light & Scaled Explosions (`src/game.js`):**
+   - Added dedicated directional cool moonlight (`moonLight = 0xa5c6f5`, intensity up to 1.55) lighting the map, roofs, and streets at night.
+   - Golden daytime directional sunlight scales with time-of-day.
+   - Celestial sun and moon discs visible in sky according to day/night phase.
+   - Dynamic point light (`dragonFireLight`) tracks dragon mouth and active fireballs, casting warm flickering illumination on nearby facades and streets.
+   - Scaled explosion flash intensity and reach in `flashAt` to brilliantly light up the entire city block.
+
 ## November 14 — RC61 Edge aim fix & 3D reticle, van crew boarding, bulldozers, fire spread & dragon firefighting, night military start, M1 Abrams MBT ballistic shells, F-16/F-22 3D formations, biker gangs, police barricades & skyline perspective occlusion
 
 Parent verified baseline SHA: 5ff7c1b8 (RC60 5.5.0-rc.60, build 5.5-north-broad-refinement-rc60).

@@ -90,37 +90,40 @@ export function createFinalSquadron(scene) {
  }
 
  function spawnFormation(side){
-  // Spawn a 2-ship tactical echelon formation
+  // Spawn a 2-ship tactical echelon formation from deep background
   const formationId=Date.now()+Math.random();
-  const leaderStartX=side*160;
-  const leaderStartZ=-120;
-  const leaderStartY=42;
+  const leaderStartX=side*190;
+  const leaderStartZ=-240;
+  const leaderStartY=62;
 
-  // Lead Jet
+  // Lead Jet (high altitude pattern, deep background origin)
   const g1=new THREE.Group();buildFighterModel(g1);
   g1.position.set(leaderStartX,leaderStartY,leaderStartZ);
   root.add(g1);
-  fighters.push({g:g1,side,formationId,isLead:true,progress:0,speed:.115,startX:leaderStartX,fire:1.8+Math.random()*1.2,life:22});
+  fighters.push({g:g1,side,formationId,isLead:true,progress:0,speed:.085,startX:leaderStartX,fire:1.8+Math.random()*1.0,volleyRemaining:0,volleyTimer:0,life:36});
 
-  // Wingman Jet (trailing echelon right/left)
+  // Wingman Jet (trailing echelon right/left in deep background)
   const g2=new THREE.Group();buildFighterModel(g2);
-  const wingOffset=new THREE.Vector3(-side*18,3.5,-16);
+  const wingOffset=new THREE.Vector3(-side*22,4.0,-26);
   g2.position.set(leaderStartX+wingOffset.x,leaderStartY+wingOffset.y,leaderStartZ+wingOffset.z);
   root.add(g2);
-  fighters.push({g:g2,side,formationId,isLead:false,wingOffset,progress:-0.05,speed:.115,startX:leaderStartX,fire:2.6+Math.random()*1.2,life:22});
+  fighters.push({g:g2,side,formationId,isLead:false,wingOffset,progress:-0.06,speed:.085,startX:leaderStartX,fire:2.6+Math.random()*1.0,volleyRemaining:0,volleyTimer:0,life:36});
  }
 
  function fireMissile(f,dragon){
   const mesh=new THREE.Group();
-  bx(mesh,missileMat,0,0,0,1.6,.22,.22);
-  const nose=new THREE.Mesh(cone,missileMat);nose.scale.set(.18,.6,.18);nose.rotation.z=-Math.PI/2;nose.position.set(.9,0,0);mesh.add(nose);
+  bx(mesh,missileMat,0,0,0,1.8,.24,.24);
+  const nose=new THREE.Mesh(cone,missileMat);nose.scale.set(.20,.7,.20);nose.rotation.z=-Math.PI/2;nose.position.set(1.0,0,0);mesh.add(nose);
   for(const ang of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
-   const fin=bx(mesh,darkMat,-.6,Math.cos(ang)*.25,Math.sin(ang)*.25,.45,.28,.04);fin.rotation.x=ang;
+   const fin=bx(mesh,darkMat,-.7,Math.cos(ang)*.28,Math.sin(ang)*.28,.52,.32,.04);fin.rotation.x=ang;
   }
-  const booster=new THREE.Mesh(cone,missileFlameMat);booster.scale.set(.16,.85,.16);booster.rotation.z=Math.PI/2;booster.position.set(-1.1,0,0);mesh.add(booster);
+  // Fiery rocket booster cone with luminous core
+  const booster=new THREE.Mesh(cone,missileFlameMat);booster.scale.set(.22,1.2,.22);booster.rotation.z=Math.PI/2;booster.position.set(-1.3,0,0);mesh.add(booster);
+  const core=new THREE.Mesh(cone,burnerCoreMat);core.scale.set(.12,.7,.12);core.rotation.z=Math.PI/2;core.position.set(-1.0,0,0);mesh.add(core);
   mesh.position.copy(f.g.position);
   root.add(mesh);
-  const vel=dragon.position.clone().sub(mesh.position).normalize().multiplyScalar(32);
+  const targetAim=dragon.position.clone().add(new THREE.Vector3((Math.random()-.5)*3,(Math.random()-.5)*2,0));
+  const vel=targetAim.sub(mesh.position).normalize().multiplyScalar(34);
   missiles.push({mesh,vel,life:6.5,age:0});
  }
 
@@ -138,20 +141,53 @@ export function createFinalSquadron(scene) {
   clock+=dt;spawn-=dt;
   if(spawn<=0&&fighters.length<4){
    spawnFormation(Math.random()<.5?-1:1);
-   spawn=6.5+Math.random()*3;
+   spawn=7.5+Math.random()*3;
   }
   for(let i=fighters.length-1;i>=0;i--){
    const f=fighters[i];
    f.life-=dt;f.fire-=dt;
    f.progress+=dt*f.speed;
-   const t=Math.min(1.2,Math.max(-0.1,f.progress));
+
+   // Volley firing logic: launches a volley of 2-3 missiles in rapid succession
+   if(f.volleyRemaining>0){
+    f.volleyTimer-=dt;
+    if(f.volleyTimer<=0){
+     fireMissile(f,dragon);
+     f.volleyRemaining--;
+     f.volleyTimer=.24;
+    }
+   } else if(f.fire<=0&&f.g.position.z>-60&&Math.abs(f.g.position.x)<105){
+    f.volleyRemaining=3;
+    f.volleyTimer=0;
+    f.fire=7.0+Math.random()*2.5;
+   }
 
    // 3D circling combat trajectory:
-   // Enters from deep background (z = -120, y = 42), banks into foreground (z = 8, y = 18), sweeps Broad St, then climbs back to z = -110
-   const sweepX=f.startX-f.side*t*280;
-   // Elliptical depth curve
-   const sweepZ=-120+Math.sin(Math.min(1,t)*Math.PI)*132;
-   const sweepY=42-Math.sin(Math.min(1,t)*Math.PI)*24+Math.sin(clock*3+i)*.7;
+   // Originates in deep background (z = -240), sweeps high above buildings (y = 52 to 72),
+   // delivers volleys of missiles, then banks in a climbing arc circling back into the deep background.
+   const cycle=f.progress;
+   let sweepX,sweepY,sweepZ;
+   if(cycle<1.0){
+    // Ingress sweep from deep background (z = -240) to foreground attack zone (z = -20)
+    const t=cycle;
+    sweepX=f.startX-f.side*t*280;
+    sweepZ=-240+Math.sin(t*Math.PI*0.5)*220;
+    // High altitude pattern well above building rooftops (y = 52 to 66)
+    sweepY=64-Math.sin(t*Math.PI*0.5)*12+Math.sin(clock*3+i)*.7;
+   }else if(cycle<2.0){
+    // Climbing break & circling turn back to deep background (z = -240)
+    const t=cycle-1.0;
+    sweepX=(f.startX-f.side*280)+f.side*Math.sin(t*Math.PI)*120;
+    sweepZ=-20-Math.sin(t*Math.PI*0.5)*220;
+    sweepY=52+Math.sin(t*Math.PI*0.5)*20; // Climbs to 72 altitude
+   }else{
+    // Circuit completed: re-loop from deep background if still active
+    f.progress=0;
+    f.side=-f.side;
+    f.startX=f.side*190;
+    f.fire=1.5+Math.random();
+    continue;
+   }
 
    const prevPos=f.g.position.clone();
    f.g.position.set(sweepX,sweepY,sweepZ);
@@ -163,21 +199,15 @@ export function createFinalSquadron(scene) {
     f.g.rotation.y=heading;
     const pitch=Math.atan2(moveDir.y,Math.sqrt(moveDir.x*moveDir.x+moveDir.z*moveDir.z));
     f.g.rotation.z=-pitch;
-    // Hard bank roll into turn
-    const bankTurn=Math.sin(t*Math.PI*2)*.65*(f.side);
+    // Hard tactical bank roll into turn
+    const bankTurn=Math.sin(cycle*Math.PI)*.72*(f.side);
     f.g.rotation.x=bankTurn;
    }
 
-   // Missile firing at apex of strafing pass
-   if(f.fire<=0&&f.g.position.z>-30&&Math.abs(f.g.position.x)<90){
-    fireMissile(f,dragon);
-    f.fire=5.0+Math.random()*2;
-   }
-
-   // Afterburner smoke trail
+   // Afterburner smoke and fire trail
    smokeTrail(f.g.position.clone().add(new THREE.Vector3(-f.side*2.5,0,-1)),dt,true);
 
-   if(f.life<=0||(t>1.05&&f.g.position.z<-95)){
+   if(f.life<=0&&f.g.position.z<-180){
     root.remove(f.g);fighters.splice(i,1);
    }
   }
@@ -190,7 +220,7 @@ export function createFinalSquadron(scene) {
    m.mesh.position.addScaledVector(m.vel,dt);
    m.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),m.vel.clone().normalize());
    if(m.mesh.position.distanceTo(dragon.position)<2.6){onHit();m.life=0;}
-   if(m.life<=0||Math.abs(m.mesh.position.x)>260||m.mesh.position.y<-2){
+   if(m.life<=0||Math.abs(m.mesh.position.x)>320||m.mesh.position.y<-2){
     root.remove(m.mesh);missiles.splice(i,1);
    }
   }

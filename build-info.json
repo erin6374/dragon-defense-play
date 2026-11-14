@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc61",
-  "version": "5.5.0-rc.61",
+  "build": "5.5-north-broad-refinement-rc62",
+  "version": "5.5.0-rc.62",
   "gameplay_base": "5.2.3",
-  "scope": "RC61: Edge-of-screen mouse targeting fix and dynamic 3D targeting reticle; worker embarkation in crew vans (zero pedestrians walking off); bulldozers clearing debris; unsuppressed fire spread and dragon firefighting bonuses; deep cinematic night start for Chapter 3 with volumetric helicopter/tank searchlights and anti-collision strobes; M1 Abrams MBT patrol with elevating cannon and ballistic parabolic shells causing collateral building collapse; F-16/F-22 attack jet tactical 3D echelon formations with smoke-trail missiles; Chapter 1 biker gang packs; progressive police intersection barricades; sharper skyline perspective plane with continuous horizon terrain occlusion; multi-plane background meteor scaling and fast-moving upper-atmosphere comets.",
+  "scope": "RC62: Realistic chin-mounted helicopter searchlight tracking and projected ground illumination pool; realistic helicopter aerodynamics (cyclic pitch, banking roll, collective hover bobbing) with building avoidance and non-clipping collision reactions; zero player life loss on vehicle and helicopter bumps with reactive suspension physics and spark deflection; spectacular helicopter crash explosion with spinning autorotation failure, high-energy dual fireball blasts, ground crater, and scattering mechanical vehicle debris chunks; high-altitude deep-background F-16/F-22 attack jet volleys circling into background; right-click gas propulsion afterburner boost; true sun and moon illumination sources with cool directional night moonlight; dynamic dragon fire illumination and scaled explosion light flashes.",
   "new_gameplay_features": false,
-  "release_status": "RC61 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC62 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

@@ -99,6 +99,8 @@ function meteorEntryHeight(z,size,minimum=105){
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
 scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
+const moonLight=new THREE.DirectionalLight(0xa5c6f5,0);moonLight.position.set(45,62,28);scene.add(moonLight);
+const dragonFireLight=new THREE.PointLight(0xff8a24,0,36,1.8);scene.add(dragonFireLight);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
 const skySteps=[0xadcde0,0xa5cce8,0x8dbde1,0xe7b29a,0xa36f84,0x253552,0x15243d,0x253957,0xb08da1,0xadcde0];
 // Low-draw-call atmospheric sky, with time-of-day gradient and wispy cloud detail.
@@ -163,14 +165,14 @@ function updateNight(dt){
  // Skyline geometry and window emissive intensity are updated by skylineBackdrop.setTime().
  // Legacy geometric clouds remain detached from drawing; do not traverse/update
  // their meshes every tick when the shader sky provides all cloud visuals.
- sunDisc.visible=false;moonDisc.visible=false;starGroup.visible=false;clouds.visible=false; // Atmospheric sky shader replaces geometric clouds.
+ sunDisc.visible=darkness<.65;moonDisc.visible=darkness>.30;starGroup.visible=darkness>.40;clouds.visible=false;
  for(const lamp of lamps)lamp.intensity=darkness*(lamp.color.getHex()===0xb4c7ff?1.35:3.0);
  for(const glow of streetGlows)glow.material.opacity=darkness*.58;
  for(const car of cars)setRoadVehicleNight(car.root,darkness,!car.burning&&!car.destroyed);
  for(const w of nightWindows){const lightAllowed=(!w.surface||w.surface.alive)&&w.enabled&&!w.broken;const opacity=lightAllowed?Math.max(0,(darkness-.3)*.62):0;w.mesh.material.opacity=opacity;w.mesh.visible=opacity>.001;}
  for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission;
 
- sun.intensity=2.05-darkness*1.50;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
+ sun.intensity=Math.max(.12,2.35-darkness*2.10);moonLight.intensity=darkness*1.55;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
  if(ambience){ambience.intensity=.86-darkness*.34;ambience.color.setHex(0xe9f2ff).lerp(nightAmbientColor,darkness)}
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
@@ -1070,6 +1072,19 @@ function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolF
      c.laneZ=passing;c.overtakeUntil=elapsed+6;c.laneChangeTime=0;
    }
   }
+// Steer around other vehicles to prevent clipping:
+   for(let j=i-1;j>=0;j--){
+    const other=cars[j];if(other.burning||other.destroyed)continue;
+    const distSq=c.root.position.distanceToSquared(other.root.position);
+    if(distSq<18&&Math.abs(c.root.position.z-other.root.position.z)<2.6){
+     if((other.root.position.x-c.root.position.x)*c.dir>0){
+      c.speed=Math.min(c.speed,other.speed*.85);
+     }
+     const latDiff=c.root.position.z-other.root.position.z;
+     const steerNudge=latDiff>=0?1.1:-1.1;
+     c.root.position.z+=steerNudge*dt*1.4;
+    }
+   }
 if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery>0?.18:1);
   if(c.root.userData.ladder)c.root.userData.ladder.rotation.z=THREE.MathUtils.lerp(c.root.userData.ladder.rotation.z,c.serviceStop?.35:0,Math.min(1,dt*.8));
   if(streetStop<=0&&obstruction&&obstruction.life>0){const laneZ=c.laneZ;c.root.position.z=THREE.MathUtils.lerp(c.root.position.z,laneZ+(c.dir>0?2:-2),Math.min(1,dt*1.2));}
@@ -1113,8 +1128,10 @@ function spawnHelicopter(forcedVariant=null){if(wave<5||helicopters.length>=3)re
  root.scale.setScalar(variant===2?1.05:.9);root.rotation.y=dir<0?Math.PI:0;
  const searchlight=helicopterLightPool.acquire();
  syncHelicopterSearchlight(root,searchlight);
+ const searchlightPool=new THREE.Mesh(new THREE.CircleGeometry(3.6,16),new THREE.MeshBasicMaterial({color:0xdcf2ff,transparent:true,opacity:.32,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+ searchlightPool.rotation.x=-Math.PI/2;searchlightPool.visible=false;scene.add(searchlightPool);
 
- helicopters.push({disorientTime:0,contactTime:0,iceCooldown:2.0,electric:null,role:wave>=6&&wave<=10&&!firefighting?'ice':firefighting?'fire':variant===1?'police':'news',loiterTime:14+Math.random()*10,variant,firefighting,waterClock:0,beacon,searchlight,root,dir,rotor,tail,speed:5+Math.random()*3,heading:dir>0?0:Math.PI,evasion:0,life:52,crashing:false,v:0,attackTimer:1.5,gasHit:false});
+ helicopters.push({disorientTime:0,contactTime:0,iceCooldown:2.0,electric:null,role:wave>=6&&wave<=10&&!firefighting?'ice':firefighting?'fire':variant===1?'police':'news',loiterTime:14+Math.random()*10,variant,firefighting,waterClock:0,beacon,searchlight,searchlightPool,root,dir,rotor,tail,speed:5+Math.random()*3,heading:dir>0?0:Math.PI,vel:new THREE.Vector3(),pitch:0,roll:0,bumpTime:0,bumpRoll:0,bumpPitch:0,dragonBumpCooldown:0,evasion:0,life:52,crashing:false,v:0,attackTimer:1.5,gasHit:false});
 }
 function crashHelicopter(h,gas=false){if(h.crashing)return;if(h.electric)h.electric.visible=false;h.contactTime=0;h.crashing=true;h.gasHit=gas;h.v=0;
  if(gas){h.gooResources=[];h.root.traverse(o=>{if(o.isMesh&&o.material?.color){o.material=o.material.clone();h.gooResources.push(o.material);o.material.color.setHex(0x69d64b);o.material.roughness=.18;}});for(let k=0;k<14;k++){const goo=new THREE.Mesh(new THREE.SphereGeometry(.18,8,6),new THREE.MeshStandardMaterial({color:0x74a92e,roughness:.16}));goo.position.set((Math.random()-.5)*3,(Math.random()-.5),Math.random()<.5?-.8:.8);goo.scale.set(1,.5+Math.random()*2,.4);h.gooResources.push(goo.geometry,goo.material);h.root.add(goo)}}
@@ -1124,7 +1141,10 @@ function crashHelicopter(h,gas=false){if(h.crashing)return;if(h.electric)h.elect
 const electricCoreGeometry=new THREE.CylinderGeometry(.085,.085,1,7),electricCoreMaterial=new THREE.MeshBasicMaterial({color:0xa8efff,transparent:true,opacity:.68,depthWrite:false});
 const electricArcMaterial=new THREE.LineBasicMaterial({color:0x55cbff,transparent:true,opacity:.95,depthWrite:false});
 const electricFrom=new THREE.Vector3(),electricTo=new THREE.Vector3(),electricMid=new THREE.Vector3();
-function disposeHelicopterElectric(h){if(!h.electric)return;scene.remove(h.electric);h.electric.children[0].geometry.dispose();h.electric=null;}
+function disposeHelicopterElectric(h){
+ if(h.searchlightPool){scene.remove(h.searchlightPool);h.searchlightPool.geometry.dispose();h.searchlightPool.material.dispose();h.searchlightPool=null;}
+ if(!h.electric)return;scene.remove(h.electric);h.electric.children[0].geometry.dispose();h.electric=null;
+}
 const iceWarning=document.createElement('div');iceWarning.id='ice-contact-warning';
 iceWarning.style.cssText='position:fixed;left:50%;top:19%;transform:translateX(-50%);z-index:30;display:none;pointer-events:none;background:#082234dd;color:#baf6ff;border:1px solid #80dcff;border-radius:7px;padding:7px 13px;text-align:center;font:800 14px system-ui;box-shadow:0 0 20px #30bbff44';
 iceWarning.innerHTML='⚡ ICE ELECTRICAL CONTACT — ESCAPE!<div style="margin-top:5px;background:#123745;height:6px;width:210px;border-radius:4px"><div id="ice-contact-fill" style="width:0;height:100%;background:#78e2ff"></div></div>';
@@ -1538,21 +1558,59 @@ function updateWorld(dt){
   h.searchlight.intensity=wave>=5?Math.min(2.2,Math.max(0,(wave-3)*.55)):0;
   if(h.root.userData.strobe)h.root.userData.strobe.visible=Math.floor(elapsed*8+h.variant)%2===0;
   if(h.root.userData.cockpitGlow)h.root.userData.cockpitGlow.visible=!h.crashing;
+  // Chin-mounted searchlight tracking & realistic ground illumination pool
   if(h.root.userData.searchlightCone){
    const showSearch=wave>=5&&!h.crashing&&(displayedDarkness>.2||h.role==='police'||h.role==='ice');
    h.root.userData.searchlightCone.visible=showSearch;
+   if(h.searchlightPool)h.searchlightPool.visible=showSearch;
    if(showSearch){
-    const targetX=(h.role==='police'||h.role==='ice')?dragon.position.x:h.root.position.x+h.dir*14;
-    const targetY=(h.role==='police'||h.role==='ice')?dragon.position.y:0;
-    const dX=targetX-h.root.position.x,dY=targetY-h.root.position.y;
-    h.root.userData.searchlightCone.rotation.z=-Math.atan2(-dY,Math.abs(dX)+.1)*h.dir;
+    const targetPos=(h.role==='police'||h.role==='ice')?dragon.position.clone():new THREE.Vector3(h.root.position.x+h.dir*14,0,20);
+    const mountPos=new THREE.Vector3(1.35,-.62,0);
+    h.root.localToWorld(mountPos);
+    const aimDir=targetPos.clone().sub(mountPos).normalize();
+    const localTarget=h.root.worldToLocal(targetPos.clone());
+    const localAim=localTarget.sub(new THREE.Vector3(1.35,-.62,0)).normalize();
+    if(h.root.userData.searchlightGimbal){
+     h.root.userData.searchlightGimbal.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),localAim);
+    }
+    if(h.searchlightPool){
+     const t=(0.06-mountPos.y)/Math.min(-0.02,aimDir.y);
+     if(t>0&&t<100){
+      h.searchlightPool.position.set(mountPos.x+aimDir.x*t,0.08,mountPos.z+aimDir.z*t);
+      h.searchlightPool.scale.setScalar(Math.min(2.4,Math.max(0.7,t*.06)));
+     }
+    }
+    syncHelicopterSearchlight(h.root,h.searchlight,targetPos);
    }
   }
-  if(h.crashing){h.v-=9.81*dt;h.root.position.y+=h.v*dt;h.root.rotation.z+=dt*(.7+Math.min(2.1,Math.abs(h.v)*.09));h.root.rotation.y+=dt*.85;
-   if(h.root.position.y<1){emitImpact(h.root.position.x,1,h.root.position.z,140,1.2);sound('impact');neighborhood.impact(h.root.position.x,5,h.root.position.z,4,p=>debrisPiece(p,'brick'));h.life=0;if(h.gasHit){for(let j=0;j<7;j++){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x6ab85b,transparent:true,opacity:.45,depthWrite:false}));m.scale.set(2.1,2.4,1);m.position.copy(h.root.position).add(new THREE.Vector3((Math.random()-.5)*3,Math.random()*2,(Math.random()-.5)*2));scene.add(m);gasClouds.push({mesh:m,life:8,v:new THREE.Vector3(0,0,0),age:0});}}}}
-  else {h.disorientTime=Math.max(0,h.disorientTime-dt);
+  if(h.crashing){
+   h.v-=11.8*dt;h.root.position.y+=h.v*dt;
+   h.root.rotation.z+=dt*(1.4+Math.min(3.8,Math.abs(h.v)*.14));
+   h.root.rotation.y+=dt*2.4;
+   if(Math.random()<dt*32)emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,8,.35);
+   if(h.root.position.y<1.1){
+    flashAt(h.root.position.x,2,h.root.position.z,4.0);
+    blast(h.root.position.x,1.4,h.root.position.z,5.4);
+    blast(h.root.position.x+2.4,1.2,h.root.position.z-1.4,3.8);
+    emitImpact(h.root.position.x,1,h.root.position.z,220,1.9);
+    shake=Math.max(shake,.95);
+    sound('crash');sound('impact');sound('car');
+    ignite(h.root.position.x,1,h.root.position.z);
+    spawnHelicopterCrashDebris(h.root.position,h.variant);
+    neighborhood.impact(h.root.position.x,5,h.root.position.z,4,p=>debrisPiece(p,'brick'));
+    h.life=0;
+    if(h.gasHit){
+     for(let j=0;j<7;j++){
+      const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x6ab85b,transparent:true,opacity:.45,depthWrite:false}));
+      m.scale.set(2.1,2.4,1);m.position.copy(h.root.position).add(new THREE.Vector3((Math.random()-.5)*3,Math.random()*2,(Math.random()-.5)*2));
+      scene.add(m);
+      gasClouds.push({mesh:m,life:8,v:new THREE.Vector3(0,0,0),age:0});
+     }
+    }
+   }
+  } else {
+   h.disorientTime=Math.max(0,h.disorientTime-dt);
    if(h.disorientTime>0){
-    // Tumble, lose altitude briefly, then increasingly regain level flight as timer expires.
     const strength=Math.min(1,h.disorientTime/1.2);
     h.root.position.x+=dt*(h.dir*h.speed*.34+Math.sin(elapsed*7+h.variant)*3.8*strength);
     h.root.position.y+=dt*(-1.0*strength+Math.sin(elapsed*11+h.variant)*2.6*strength);
@@ -1561,24 +1619,108 @@ function updateWorld(dt){
     h.root.rotation.y=h.heading;
     h.root.rotation.z=THREE.MathUtils.lerp(h.root.rotation.z,Math.sin(elapsed*13+h.variant)*.92*strength,Math.min(1,dt*6));
     h.root.rotation.x=Math.sin(elapsed*10+h.variant)*.40*strength;
-   } else {h.root.rotation.x=THREE.MathUtils.lerp(h.root.rotation.x,0,Math.min(1,dt*4));h.loiterTime-=dt;if((h.role==='police'||h.role==='ice')&&h.loiterTime>0){const targetX=dragon.position.x-h.dir*8;h.root.position.x+=THREE.MathUtils.clamp(targetX-h.root.position.x,-h.speed*(h.role==='ice'?.75:1.6)*dt,h.speed*(h.role==='ice'?.75:1.6)*dt);h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,dragon.position.y+9,Math.min(1,dt*(h.role==='ice'?.23:.5)));h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,dragon.position.z-9,Math.min(1,dt*(h.role==='ice'?.28:.6)));}
-   else if(h.role==='news'&&h.loiterTime>0&&Math.abs(h.root.position.x)<55){const event=schoolFire[0]?.root.position||new THREE.Vector3(0,8,0);h.root.position.x+=THREE.MathUtils.clamp(event.x-h.root.position.x,-h.speed*dt,h.speed*dt);h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,Math.max(22,event.y+12),dt*.3);}
-   else if(!h.firefighting||!schoolFire.length)h.root.position.x+=h.dir*h.speed*dt;h.root.position.y+=Math.sin(elapsed*2+i)*dt*.45;
-   if(h.firefighting&&schoolFire.length){const f=schoolFire.reduce((a,b)=>Math.abs(a.root.position.x-h.root.position.x)<Math.abs(b.root.position.x-h.root.position.x)?a:b);
-    h.root.position.x=THREE.MathUtils.lerp(h.root.position.x,f.root.position.x,Math.min(1,dt*.7));h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,f.root.position.z,Math.min(1,dt*.7));
-    h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,Math.max(16,f.root.position.y+10),Math.min(1,dt*.5));if(Math.abs(h.root.position.x-f.root.position.x)<5){const source=h.root.position.clone().add(new THREE.Vector3(0,-1,0));cinematicFX.water(source,f.root.position,.3);f.suppression+=dt*.48;}
+   } else {
+    // Authentic helicopter aerodynamics: smooth acceleration, cyclic pitch & banking roll
+    h.loiterTime-=dt;
+    if((h.role==='police'||h.role==='ice')&&h.loiterTime>0){
+     const patrolSide=h.dir>0?1:-1;
+     const targetX=THREE.MathUtils.clamp(dragon.position.x-patrolSide*16,-68,68);
+     const targetY=THREE.MathUtils.clamp(dragon.position.y+7.5,17,30);
+     const targetZ=THREE.MathUtils.clamp(dragon.position.z-11,-12,1);
+     const accelX=THREE.MathUtils.clamp(targetX-h.root.position.x,-h.speed*1.3,h.speed*1.3);
+     h.vel.x=THREE.MathUtils.lerp(h.vel.x,accelX,Math.min(1,dt*1.6));
+     h.root.position.x+=h.vel.x*dt;
+     h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,targetY+Math.sin(elapsed*2.5+h.variant)*.35,Math.min(1,dt*.85));
+     h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,targetZ,Math.min(1,dt*.85));
+    } else if(h.role==='news'&&h.loiterTime>0&&Math.abs(h.root.position.x)<55){
+     const event=schoolFire[0]?.root.position||new THREE.Vector3(0,8,0);
+     h.vel.x=THREE.MathUtils.lerp(h.vel.x,THREE.MathUtils.clamp(event.x-h.root.position.x,-h.speed,h.speed),Math.min(1,dt*1.8));
+     h.root.position.x+=h.vel.x*dt;
+     h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,Math.max(22,event.y+12),dt*.3);
+    } else if(!h.firefighting||!schoolFire.length){
+     h.vel.x=THREE.MathUtils.lerp(h.vel.x,h.dir*h.speed,Math.min(1,dt*2));
+     h.root.position.x+=h.vel.x*dt;
+    }
+    h.root.position.y+=Math.sin(elapsed*2.4+i)*dt*.45;
+    if(h.firefighting&&schoolFire.length){
+     const f=schoolFire.reduce((a,b)=>Math.abs(a.root.position.x-h.root.position.x)<Math.abs(b.root.position.x-h.root.position.x)?a:b);
+     h.root.position.x=THREE.MathUtils.lerp(h.root.position.x,f.root.position.x,Math.min(1,dt*.7));
+     h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,f.root.position.z,Math.min(1,dt*.7));
+     h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,Math.max(16,f.root.position.y+10),Math.min(1,dt*.5));
+     if(Math.abs(h.root.position.x-f.root.position.x)<5){
+      const source=h.root.position.clone().add(new THREE.Vector3(0,-1,0));
+      cinematicFX.water(source,f.root.position,.3);
+      f.suppression+=dt*.48;
+     }
+    }
+    // Cyclic pitch forward when accelerating, banking roll into turns, subtle collective wobble
+    const forwardPitch=-h.vel.x*0.032;
+    h.pitch=THREE.MathUtils.lerp(h.pitch||0,forwardPitch,Math.min(1,dt*3.8));
+    h.bumpTime=Math.max(0,(h.bumpTime||0)-dt);
+    const bumpRoll=Math.sin(elapsed*30)*.38*Math.min(1,h.bumpTime);
+    const bumpPitch=Math.cos(elapsed*24)*.25*Math.min(1,h.bumpTime);
+    h.root.rotation.x=h.pitch+bumpPitch;
+    h.root.rotation.z=(h.roll||0)+bumpRoll;
+    h.root.rotation.y=h.heading;
 
-   }
-   // ICE streams are persistent beams, while police use discrete projectiles.
-   if(wave>8&&h.role==='police'&&h.disorientTime<=0){h.attackTimer-=dt;if(h.attackTimer<=0&&Math.abs(h.root.position.x-dragon.position.x)<26){h.attackTimer=1.3+Math.random();const m=new THREE.Mesh(sharedShotGeometry,mats.fire);m.position.copy(h.root.position);scene.add(m);shots.push({mesh:m,vel:dragon.position.clone().sub(m.position).normalize().multiplyScalar(23),target:dragon.position.clone(),life:2.5,hostile:true});}}
+    // Building collision avoidance: helicopters do not clip through buildings
+    const bldgBounds=[schoolBounds,...neighborhood.targetBuildings.filter(b=>!b.background).map(b=>({min:new THREE.Vector3(b.x-b.w/2-1.2,0,b.z-b.d/2-1.2),max:new THREE.Vector3(b.x+b.w/2+1.2,b.h+1.5,b.front+1.8)}))];
+    for(const bb of bldgBounds){
+     if(h.root.position.x>bb.min.x&&h.root.position.x<bb.max.x&&h.root.position.z>bb.min.z&&h.root.position.z<bb.max.z&&h.root.position.y<bb.max.y){
+      h.root.position.z=bb.max.z;
+      h.bumpTime=.8;
+      emitImpact(h.root.position.x,h.root.position.y,bb.max.z,24,.38);
+      sound('impact');
+     }
+    }
+    // Inter-helicopter collision avoidance and sparks bump
+    for(let j=i-1;j>=0;j--){
+     const h2=helicopters[j];
+     if(!h2||h2.crashing)continue;
+     if(h.root.position.distanceTo(h2.root.position)<4.2){
+      const sep=h.root.position.clone().sub(h2.root.position).normalize();
+      h.root.position.addScaledVector(sep,dt*6);
+      h.bumpTime=.8;h2.bumpTime=.8;
+      emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,22,.35);
+      sound('impact');
+     }
+    }
+    if(wave>8&&h.role==='police'&&h.disorientTime<=0){
+     h.attackTimer-=dt;
+     if(h.attackTimer<=0&&Math.abs(h.root.position.x-dragon.position.x)<26){
+      h.attackTimer=1.3+Math.random();
+      const m=new THREE.Mesh(sharedShotGeometry,mats.fire);m.position.copy(h.root.position);
+      scene.add(m);
+      shots.push({mesh:m,vel:dragon.position.clone().sub(m.position).normalize().multiplyScalar(23),target:dragon.position.clone(),life:2.5,hostile:true});
+     }
+    }
    }
    updateIceStream(h,dt);
-   if(h.root.position.distanceTo(dragon.position)<2.7)hurtDragon('HELICOPTER COLLISION');
+   // Collision with dragon: does NOT cost a life! Helicopter reacts with physics bump
+   h.dragonBumpCooldown=Math.max(0,(h.dragonBumpCooldown||0)-dt);
+   if(h.root.position.distanceTo(dragon.position)<3.2&&h.dragonBumpCooldown<=0){
+    h.dragonBumpCooldown=.75;
+    const bumpDir=h.root.position.clone().sub(dragon.position).normalize();
+    h.root.position.addScaledVector(bumpDir,2.2);
+    h.vel.addScaledVector(bumpDir,15.0);
+    h.bumpTime=1.0;
+    emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,36,.55);
+    sound('impact');
+    message('HELICOPTER BUMPED BY DRAGON');
+   }
    for(const m of meteors)if(!m.grounded&&m.mesh?.position.distanceTo(h.root.position)<Math.max(2.2,(m.size||1)*.8+1.5))crashHelicopter(h);
    for(const b of blasts)if(h.root.position.distanceTo(b.mesh.position)<b.r+1.5) {crashHelicopter(h);score=Math.max(0,score-250);message('HELICOPTER HIT! -250');}
   }
   syncHelicopterSearchlight(h.root,h.searchlight);
-  if(h.life<=0||Math.abs(h.root.position.x)>90){if(!h.crashing&&h.life>0){score+=150;message('HELICOPTER ESCORT +150');sound('bonus');updateHud();}disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}helicopterLightPool.release(h.searchlight);helicopters.splice(i,1)}
+  if(h.life<=0||Math.abs(h.root.position.x)>90){
+   if(!h.crashing&&h.life>0){score+=150;message('HELICOPTER ESCORT +150');sound('bonus');updateHud();}
+   disposeHelicopterElectric(h);
+   scene.remove(h.root);
+   for(const resource of h.gooResources||[])resource.dispose();
+   if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}
+   helicopterLightPool.release(h.searchlight);
+   helicopters.splice(i,1);
+  }
  }
  if(performanceLab.isEnabled('pedestrians'))crowdTimer-=dt;if(performanceLab.isEnabled('pedestrians')&&crowdTimer<=0){spawnCrowd();crowdTimer=4.4;}
  for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>Math.abs(p.g.position.x-d.x)<d.r&&Math.abs(p.g.position.z-d.z)<d.r);
@@ -1600,7 +1742,19 @@ function updateWorld(dt){
  for(const c of cars){if(!performanceLab.isEnabled('traffic'))break;if(c.hostile&&c.police&&!c.frozen&&c.stun<=0&&Math.abs(c.root.position.x-dragon.position.x)<16&&Math.abs(c.root.position.z-dragon.position.z)<18&&Math.random()<dt*.28){
   const m=new THREE.Mesh(new THREE.SphereGeometry(.16,6,4),mats.fire);m.position.copy(c.root.position).add(new THREE.Vector3(0,1.3,0));scene.add(m);
   shots.push({mesh:m,vel:dragon.position.clone().sub(m.position).normalize().multiplyScalar(19),target:dragon.position.clone(),life:1.8,hostile:true,iceGround:c.ice});sound('warning');}
-  if(dragon.position.y<2.3&&Math.abs(c.root.position.x-dragon.position.x)<2.7&&Math.abs(c.root.position.z-dragon.position.z)<2.3)hurtDragon('TRAFFIC COLLISION');
+  c.dragonBumpCooldown=Math.max(0,(c.dragonBumpCooldown||0)-dt);
+   c.bumpImpulse=Math.max(0,(c.bumpImpulse||0)-dt*2.5);
+   c.root.rotation.z=THREE.MathUtils.lerp(c.root.rotation.z,(c.bumpRoll||0)*c.bumpImpulse,Math.min(1,dt*8));
+   // Ground vehicle collision with dragon does NOT cost a life: rocks on suspension with sparks
+   if(dragon.position.y<2.8&&Math.abs(c.root.position.x-dragon.position.x)<3.2&&Math.abs(c.root.position.z-dragon.position.z)<2.6&&c.dragonBumpCooldown<=0){
+    c.dragonBumpCooldown=.8;
+    c.bumpImpulse=1.2;
+    c.bumpRoll=(c.root.position.x>dragon.position.x?.38:-.38);
+    c.speed*=.4;
+    emitImpact(c.root.position.x,1.1,c.root.position.z,32,.45);
+    sound('impact');
+    message('VEHICLE BUMPED BY DRAGON');
+   }
  }
 }
 // Game logic
@@ -1825,9 +1979,19 @@ function syncWindMouth(){
 function gustCooldownReset(){windCooldown=4;gustId++;}
 function releaseWind(){if(!holdStart)return;const held=(performance.now()-holdStart)/1000;holdStart=0;if(held<.27){shoot();return;}if(held<.7||windCooldown>0||dragonStun>0||!active||paused){message(windCooldown>0?'WIND RECHARGING':'HOLD LONGER TO INHALE');return;}
  syncWindMouth();gustTime=.85;gustCooldownReset();gustRoadNotified=false;gustMissileNotified=false;windActive=true;sound('bonus');message('PAULO UNLEASHES A GALE!');}
+let gasHolding=false;
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;aim(e);if(e.button===2){e.preventDefault();gasAttack();return;}if(e.button!==0)return;holdStart=performance.now()});
-window.addEventListener('pointerup',()=>releaseWind());window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS)gasAttack();if(action===ACTIONS.DEBUG)profiler.toggle();});window.addEventListener('keyup',e=>{input.keyUp(e.code);if(e.code==='Space')holdStart=0;});window.addEventListener('blur',()=>input.clear());
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch')return;
+ aim(e);
+ if(e.button===2){e.preventDefault();gasHolding=true;gasAttack();return;}
+ if(e.button!==0)return;
+ holdStart=performance.now();
+});
+window.addEventListener('pointerup',e=>{if(e.button===2)gasHolding=false;releaseWind();});
+window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS){gasHolding=true;gasAttack();}if(action===ACTIONS.DEBUG)profiler.toggle();});
+window.addEventListener('keyup',e=>{const action=input.keyUp(e.code);if(action===ACTIONS.GAS)gasHolding=false;if(e.code==='Space')holdStart=0;});
+window.addEventListener('blur',()=>{gasHolding=false;input.clear();});
 // Mobile / touchscreen controls: independent pointers can move, aim and fire together.
 const mobileControls=document.getElementById('mobile-controls');
 if(mobileControls){
@@ -2057,9 +2221,9 @@ function showFinalEnding(accountability){
  document.getElementById('again').onclick=reset;
 }
 const MAX_DYNAMIC_LIGHTS=5;
-const explosionLightPool=createStableLightPool(scene,MAX_DYNAMIC_LIGHTS,()=>new THREE.PointLight(0xffa44d,0,20,2));
+const explosionLightPool=createStableLightPool(scene,MAX_DYNAMIC_LIGHTS,()=>new THREE.PointLight(0xffa855,0,36,1.8));
 function updateExplosionLights(dt){for(let i=explosionLights.length-1;i>=0;i--){const e=explosionLights[i];e.life-=dt;e.light.intensity=Math.max(0,e.light.intensity*(1-dt*4));if(e.life<=0){explosionLightPool.release(e.light);explosionLights.splice(i,1)}}}
-function flashAt(x,y,z,power=1){if(explosionLights.length>=MAX_DYNAMIC_LIGHTS)return;const light=explosionLightPool.acquire();if(!light)return;light.intensity=Math.min(30,12*power);light.distance=Math.min(38,20*power);light.position.set(x,y,z);explosionLights.push({light,life:.48});}
+function flashAt(x,y,z,power=1){if(explosionLights.length>=MAX_DYNAMIC_LIGHTS)return;const light=explosionLightPool.acquire();if(!light)return;light.intensity=Math.min(65,26*power);light.distance=Math.min(60,38*power);light.position.set(x,y,z);explosionLights.push({light,life:.48});}
 function remove(arr,i){const o=arr[i];scene.remove(o.mesh);if(o.mesh.userData.sharedRockAsset){arr.splice(i,1);return;}
  if(arr===blasts){if(blastMeshPool.length<110)blastMeshPool.push(o.mesh);else{o.mesh.material.dispose();}arr.splice(i,1);return;}if(arr===shots){for(const child of [...o.mesh.children]){o.mesh.remove(child);child.geometry?.dispose();if(child.material!==iceBoltMaterial)child.material?.dispose();}}if(arr===blasts||arr===meteors){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}else if(arr===shots){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}arr.splice(i,1)}const sharedBlastGeometry=new THREE.PlaneGeometry(1,1);
 const blastMeshPool=[];const blastStats={created:0,reused:0};
@@ -2074,6 +2238,28 @@ const settledRubble=[];const MAX_RUBBLE=125;
 const rubblePool=new InstancedParticlePool({THREE,parent:scene,geometry:cube,material:mats.stone,capacity:MAX_RUBBLE});
 function refreshRubble(){rubblePool.begin();for(const r of settledRubble)rubblePool.add(r.position,r.scale,r.rotation);rubblePool.end();}
 function debrisPiece(pos,type){if(debris.length>125)return;const mesh=new THREE.Mesh(type==='glass'?glassShardGeometry:cube,mats[type]||mats.stone);mesh.position.copy(pos);const large=Math.random()<.045;mesh.scale.setScalar(cell*(large?.52+Math.random()*.32:.07+Math.random()*.15));scene.add(mesh);debris.push({mesh,v:new THREE.Vector3((Math.random()-.5)*8,Math.random()*10,(Math.random()-.5)*7),life:1.5+Math.random()*1.2,bounces:0,rubble:!large&&Math.random()<.62,trail:false})}
+function spawnHelicopterCrashDebris(pos,variant=0){
+ const colors=[0x294f70,0xe6e5dc,0xb83525];
+ const bodyM=material(colors[variant]||0x294f70,.3,.4);
+ const metalM=material(0x656b72,.6,.4);
+ const darkM=material(0x22262a,.2,.6);
+ for(let k=0;k<3;k++){
+  const blade=new THREE.Mesh(new THREE.BoxGeometry(3.2,.06,.22),darkM);
+  blade.position.copy(pos).add(new THREE.Vector3((Math.random()-.5)*1.8,1+Math.random(),(Math.random()-.5)*1.8));
+  scene.add(blade);
+  debris.push({mesh:blade,v:new THREE.Vector3((Math.random()-.5)*22,8+Math.random()*12,(Math.random()-.5)*18),angVel:new THREE.Vector3(12+Math.random()*8,Math.random()*8,4),life:3.5+Math.random(),bounces:0,rubble:false,isVehicleDebris:true});
+ }
+ const boom=new THREE.Mesh(new THREE.CylinderGeometry(.12,.28,2.4,10),bodyM);
+ boom.position.copy(pos).add(new THREE.Vector3((Math.random()-.5)*1.2,1.2,(Math.random()-.5)*1.2));
+ scene.add(boom);
+ debris.push({mesh:boom,v:new THREE.Vector3((Math.random()-.5)*16,7+Math.random()*9,(Math.random()-.5)*14),angVel:new THREE.Vector3(3,7,2),life:3.8,bounces:0,rubble:false,isVehicleDebris:true});
+ for(let k=0;k<6;k++){
+  const panel=new THREE.Mesh(new THREE.BoxGeometry(.6+Math.random()*.4,.08,.5+Math.random()*.3),Math.random()<.5?bodyM:metalM);
+  panel.position.copy(pos).add(new THREE.Vector3((Math.random()-.5)*2,.8,(Math.random()-.5)*2));
+  scene.add(panel);
+  debris.push({mesh:panel,v:new THREE.Vector3((Math.random()-.5)*20,9+Math.random()*11,(Math.random()-.5)*20),angVel:new THREE.Vector3(Math.random()*12,Math.random()*12,Math.random()*12),life:3.2+Math.random(),bounces:0,rubble:false,isVehicleDebris:true});
+ }
+}
 function preserveRubble(d){if(settledRubble.length>=MAX_RUBBLE)settledRubble.shift();
  const scale=d.mesh.scale.x;settledRubble.push({position:new THREE.Vector3(d.mesh.position.x,Math.max(.045,scale*.5),d.mesh.position.z),scale,rotation:Math.random()*Math.PI});
  scene.remove(d.mesh);refreshRubble();}
@@ -2449,6 +2635,23 @@ if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(
 if(move||rise||dragonStun>0)dragonLeavingRoof=true;
 if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
 dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-180,180);
+if(gasHolding&&dragonStun<=0&&active&&!paused){
+ dragonLeavingRoof=true;
+ const aimDelta=pointer.clone().sub(dragon.position);
+ const boostDir=aimDelta.lengthSq()>1?aimDelta.normalize():new THREE.Vector3(facing,0,0);
+ const boostSpeed=26.0;
+ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+boostDir.x*boostSpeed*dt,-180,180);
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+boostDir.y*(boostSpeed*.75)*dt,1.7,flightCeiling);
+ gasPose=Math.max(gasPose,.45);
+ if(Math.random()<dt*32){
+  const rear=dragon.position.clone().add(new THREE.Vector3(-facing*1.3,-.35,0));
+  const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x78e058,transparent:true,opacity:.52,depthWrite:false}));
+  m.scale.setScalar(.85+Math.random()*.5);
+  m.position.copy(rear).add(new THREE.Vector3((Math.random()-.5)*.5,(Math.random()-.5)*.5,(Math.random()-.5)*.5));
+  scene.add(m);
+  gasClouds.push({mesh:m,life:1.1+Math.random()*.6,v:new THREE.Vector3(-facing*(8+Math.random()*6),-2-Math.random()*2,(Math.random()-.5)*2),age:0});
+ }
+}
 if(move&&move!==facing){facing=move;turnTime=.22;}turnTime=Math.max(0,turnTime-dt);
 dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));dragon.rotation.z=dragonStun>0?Math.sin(elapsed*35)*.14:turnTime>0?Math.sin((.22-turnTime)*28)*.28:Math.sin(elapsed*4)*.035;dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*16*dt,dragonStun>0?1.3:1.7,flightCeiling);dragon.children.forEach((part,i)=>{if(i<3)part.rotation.z=Math.sin(elapsed*6+i)*.04;});dragon.rotation.y=Math.sin(elapsed*2)*.09;
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
@@ -2479,6 +2682,17 @@ pauloPoseDriver?.update(dt,{
 // Wind samples the finished movement and head pose, not the previous frame.
 updateDragonWind(dt);
 updateExplosionLights(dt);
+const isFiring=elapsed<pauloFirePoseUntil||shots.some(s=>!s.hostile);
+if(isFiring){
+ const mouth=getBreathMouthWorld(new THREE.Vector3());
+ dragonFireLight.position.copy(mouth);
+ dragonFireLight.intensity=5.8+Math.sin(elapsed*45)*1.8;
+}else if(gustTime>0){
+ dragonFireLight.position.copy(gustOrigin);
+ dragonFireLight.intensity=3.6;
+}else{
+ dragonFireLight.intensity=Math.max(0,dragonFireLight.intensity-dt*16);
+}
 if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  if(!settling)updateWaveProgress(dt);
 const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=shotScratchClosest;
@@ -2575,7 +2789,7 @@ for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.f
  emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.round(15+centrality*38),.3);emitMeteorShrapnel(m.mesh.position,Math.min(2,m.size));
  if(m.hp<=0){fragmentMeteor(m);registerIntercept(m);score+=Math.round((100+wave*10)*m.damage);sound('intercept');updateHud();if(!m.boss&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(3.8,1.7*m.size),b.playerFire);emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,80*m.size,.7);remove(meteors,i);}break;
  }}
-for(let i=blasts.length-1;i>=0;i--){const b=blasts[i];b.age+=dt;b.r=Math.min(b.max,b.age*10);b.mesh.scale.setScalar(b.r);b.mesh.material.opacity=Math.max(0,.42*(1-b.age/.78));if(b.age>.78)remove(blasts,i)}for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.life-=dt;d.v.y-=10.8*dt;d.mesh.position.addScaledVector(d.v,dt);d.mesh.rotation.x+=dt*3;if(d.mesh.position.y<.05){d.mesh.position.y=.05;if(d.v.y<-.4&&d.bounces<3){d.v.y=-d.v.y*.33;d.v.x*=.72;d.v.z*=.72;d.bounces++;}else{d.v.y=0;d.v.x*=Math.max(0,1-dt*5);d.v.z*=Math.max(0,1-dt*5);}}if(d.life<=0){if(d.rubble&&!d.trail){preserveRubble(d);debris.splice(i,1)}else remove(debris,i)}}if(toastTimer>0&&(toastTimer-=dt)<=0)document.getElementById('toast').textContent=''}
+for(let i=blasts.length-1;i>=0;i--){const b=blasts[i];b.age+=dt;b.r=Math.min(b.max,b.age*10);b.mesh.scale.setScalar(b.r);b.mesh.material.opacity=Math.max(0,.42*(1-b.age/.78));if(b.age>.78)remove(blasts,i)}for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.life-=dt;d.v.y-=10.8*dt;d.mesh.position.addScaledVector(d.v,dt);d.mesh.rotation.x+=dt*(d.angVel?.x||3);if(d.angVel){d.mesh.rotation.y+=d.angVel.y*dt;d.mesh.rotation.z+=d.angVel.z*dt;}if(d.mesh.position.y<.05){d.mesh.position.y=.05;if(d.v.y<-.4&&d.bounces<3){d.v.y=-d.v.y*.33;d.v.x*=.72;d.v.z*=.72;d.bounces++;}else{d.v.y=0;d.v.x*=Math.max(0,1-dt*5);d.v.z*=Math.max(0,1-dt*5);}}if(d.life<=0){if(d.rubble&&!d.trail){preserveRubble(d);debris.splice(i,1)}else remove(debris,i)}}if(toastTimer>0&&(toastTimer-=dt)<=0)document.getElementById('toast').textContent=''}
 const clock=new THREE.Clock();let lastW=0,lastH=0;let cameraScrollX=0;let hostMetricTime=0;let hostMetricFrames=0;
 let maxRenderFPS=Number(new URLSearchParams(location.search).get('fps')||localStorage.getItem('ddFPSCap')||'45');let previousRenderAt=-99999;
 const detailedTimings={sim:[],render:[]};
