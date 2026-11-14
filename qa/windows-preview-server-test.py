@@ -75,7 +75,8 @@ class PreviewServerTest(unittest.TestCase):
                   'frameMs': 24.1, 'stallCount': 3, 'recording': False,
                   'heartbeatIndex': 12, 'gameFrameCount': 640,
                   'lastGameFrameUTC': 1794500000000, 'active': True,
-                  'phase': 'playing'}
+                  'phase': 'playing', 'adaptiveResolution': .76,
+                  'adaptiveAdjustments': 2, 'framebufferWidth': 972, 'framebufferHeight': 547}
         status, reply = self.post(json.dumps(sample).encode(), self.url)
         self.assertEqual((status, reply['ok']), (200, True))
         status, headers, raw = self.get('/__system_csv')
@@ -91,6 +92,10 @@ class PreviewServerTest(unittest.TestCase):
         self.assertEqual(rows[-1]['heartbeatIndex'], '12')
         self.assertEqual(rows[-1]['gameFrameCount'], '640')
         self.assertEqual(rows[-1]['phase'], 'playing')
+        self.assertEqual(rows[-1]['adaptiveResolution'], '0.76')
+        self.assertEqual(rows[-1]['adaptiveAdjustments'], '2')
+        self.assertEqual(rows[-1]['framebufferWidth'], '972')
+        self.assertEqual(rows[-1]['framebufferHeight'], '547')
         self.assertTrue(rows[-1]['timestampUTC'].endswith('+00:00'))
 
     def test_rejects_invalid_and_foreign_telemetry(self):

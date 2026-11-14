@@ -3415,6 +3415,8 @@ if(!schoolQA && (location.hostname==='127.0.0.1'||location.hostname==='localhost
   const m=window.__DD_GAME_METRICS||{};
   const body={wave,fps:m.fps??null,drawCalls:m.drawCalls??null,
    frameMs:m.frameMs??null,recording:captureLab.isRecording(),
+    adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,
+    framebufferWidth:renderer.domElement.width,framebufferHeight:renderer.domElement.height,
    stallCount:frameHealth.summary().totalLongFrames,
    phase:!active?'idle':paused?'paused':'playing',active:Boolean(active&&!paused),
    gameFrameCount:sessionStats.frames,lastGameFrameUTC:window.__DD_LAST_RENDER_UTC??null,

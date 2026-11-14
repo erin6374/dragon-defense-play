@@ -131,8 +131,28 @@ def summarize(path):
         'visible_host_ram_samples': host_ram_samples,
         'issues': quality_issues,
     }
+    # Browser-only evidence that RC58 actually changed the framebuffer on Windows.
+    # Repeated host samples must never masquerade as new rendered frames.
+    scales = [n for row in foreground_browser
+              if (n := number(row.get('adaptiveResolution'))) is not None and 0 < n <= 1]
+    adjustments = [n for row in foreground_browser
+                   if (n := number(row.get('adaptiveAdjustments'))) is not None]
+    buffer_pixels = [w * h for row in foreground_browser
+                     if (w := number(row.get('framebufferWidth'))) is not None and w > 0
+                     and (h := number(row.get('framebufferHeight'))) is not None and h > 0]
+    framebuffer_recovery = {
+        'foreground_scale_samples': len(scales),
+        'minimum_scale': min(scales) if scales else None,
+        'maximum_adjustments': int(max(adjustments)) if adjustments else None,
+        'median_buffer_pixels': round(statistics.median(buffer_pixels)) if buffer_pixels else None,
+        'downscale_observed': any(n < .999 for n in scales) if scales else None,
+    }
     findings = []
     findings.extend(quality_issues)
+    if framebuffer_recovery['downscale_observed'] is True:
+        findings.append('Adaptive framebuffer downscale observed in browser telemetry; this does not establish an FPS gain.')
+    elif framebuffer_recovery['downscale_observed'] is None:
+        findings.append('No browser framebuffer-scale telemetry: cannot determine whether adaptive downscaling occurred.')
     if not active_browser:
         findings.append('No active browser heartbeat samples: FPS cannot be evaluated.')
     if not foreground_browser:
@@ -156,6 +176,7 @@ def summarize(path):
     findings.append('Browser-reported FPS and whole-system CPU/RAM do not establish a GPU bottleneck; GPU utilization is unmeasured.')
     return {
         'source': str(path), 'duration_seconds': duration, 'capture_quality': capture_quality,
+        'framebuffer_recovery': framebuffer_recovery,
         'samples': {'total': len(rows), 'browser': len(browser), 'host': len(host),
                     'active_browser': len(active_browser), 'foreground_browser': len(foreground_browser),
                     'foreground_browser_render_stale': len(stale_foreground_browser),
@@ -199,6 +220,7 @@ def main():
         print('Dragon Defense Windows Performance Lab diagnostic (not a GPU benchmark)')
         print('Capture seconds:', report['duration_seconds'], 'samples:', report['samples'])
         print('Capture quality:', report['capture_quality'])
+        print('Framebuffer recovery:', report['framebuffer_recovery'])
         print('Foreground browser FPS median/p10:', report['browser_foreground']['median_fps'], '/', report['browser_foreground']['p10_fps'])
         print('All active browser FPS median/p10 (includes background):', report['browser_active']['median_fps'], '/', report['browser_active']['p10_fps'])
         print('Active browser frame p95 ms / median draw calls:', report['browser_active']['p95_frame_ms'], '/', report['browser_active']['median_draw_calls'])

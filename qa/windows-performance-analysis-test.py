@@ -12,7 +12,8 @@ analyzer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(analyzer)
 COLUMNS = ['timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs',
            'documentHidden', 'documentHasFocus', 'active', 'fps', 'frameMs',
-           'drawCalls', 'cpuPercent', 'ramPercent']
+           'drawCalls', 'cpuPercent', 'ramPercent', 'adaptiveResolution',
+           'adaptiveAdjustments', 'framebufferWidth', 'framebufferHeight']
 
 
 class AnalyzerTests(unittest.TestCase):
@@ -86,6 +87,20 @@ class AnalyzerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no telemetry samples'):
             analyzer.summarize(self.path)
 
+
+    def test_browser_only_framebuffer_recovery_telemetry(self):
+        rows = [self.row('host', i, adaptiveResolution='.5', adaptiveAdjustments='999')
+                for i in range(40)]
+        rows += [self.row('browser', i, adaptiveResolution='.76',
+                          adaptiveAdjustments='2', framebufferWidth='972',
+                          framebufferHeight='547') for i in range(0, 40, 5)]
+        self.write(rows)
+        recovery = analyzer.summarize(self.path)['framebuffer_recovery']
+        self.assertEqual(recovery['foreground_scale_samples'], 8)
+        self.assertEqual(recovery['minimum_scale'], .76)
+        self.assertEqual(recovery['maximum_adjustments'], 2)
+        self.assertEqual(recovery['median_buffer_pixels'], 531684)
+        self.assertTrue(recovery['downscale_observed'])
 
     def test_quality_valid_40_second_capture(self):
         rows = [self.row('host', i) for i in range(40)]

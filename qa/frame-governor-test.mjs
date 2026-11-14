@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {AdaptiveFramebuffer} from '../src/rendering/frame-governor.js';
 const game=readFileSync(new URL('../src/game.js',import.meta.url),'utf8');
 assert.ok(game.includes('active&&!paused&&!document.hidden&&document.hasFocus()'),'foreground-only render pressure gate missing');
+assert.ok(game.includes('adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments'),'Windows heartbeat must expose framebuffer recovery state');
 const g=new AdaptiveFramebuffer();
 assert.equal(g.sample(3.2,true),false,'one long frame must not change quality');
 assert.equal(g.sample(.016,true),false,'healthy frame clears isolated-stall streak');

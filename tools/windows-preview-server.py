@@ -24,6 +24,7 @@ COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs', 'hea
            'gameFrameCount', 'lastGameFrameUTC', 'phase', 'active',
            'documentHidden', 'documentHasFocus',
            'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
+            'adaptiveResolution', 'adaptiveAdjustments', 'framebufferWidth', 'framebufferHeight',
            'stallCount', 'cpuPercent', 'ramPercent', 'ramAvailableGB',
            'gpuPercent', 'browserRSSMB')
 
@@ -206,6 +207,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                 raise ValueError('Expected JSON object')
             row = {key: safe_number(incoming.get(key), 0, 1000000)
                    for key in ('wave', 'fps', 'drawCalls', 'frameMs', 'stallCount')}
+            row['adaptiveResolution'] = safe_number(incoming.get('adaptiveResolution'), 0, 1)
+            row['adaptiveAdjustments'] = safe_number(incoming.get('adaptiveAdjustments'), 0, 1000000)
+            for key in ('framebufferWidth', 'framebufferHeight'):
+                row[key] = safe_number(incoming.get(key), 0, 32768)
             row['recording'] = bool(incoming.get('recording'))
             row['active'] = bool(incoming.get('active'))
             row['documentHidden'] = (incoming.get('documentHidden')
