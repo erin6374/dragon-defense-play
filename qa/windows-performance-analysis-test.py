@@ -120,5 +120,20 @@ class AnalyzerTests(unittest.TestCase):
         self.assertFalse(quality['host_stall_evidence_available'])
         self.assertFalse(quality['host_cpu_ram_usable'])
 
+    def test_quality_rejects_early_browser_freeze_despite_two_heartbeats(self):
+        # Host samples continue after browser heartbeats stop; two early FPS
+        # samples must not certify a 40-second capture as representative.
+        rows = [self.row('host', i, renderAgeMs='8000' if i >= 3 else '100',
+                         telemetryAgeMs='8000' if i >= 3 else '0')
+                for i in range(40)]
+        rows += [self.row('browser', 0), self.row('browser', 1)]
+        self.write(rows)
+        report = analyzer.summarize(self.path)
+        quality = report['capture_quality']
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertLess(quality['foreground_browser_coverage_fraction'], .75)
+        self.assertTrue(quality['host_stall_evidence_available'])
+        self.assertGreater(report['foreground_stall_samples']['render_and_heartbeat_stale'], 0)
+
 if __name__ == '__main__':
     unittest.main()

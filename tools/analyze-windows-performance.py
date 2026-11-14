@@ -20,6 +20,7 @@ FRESH_HEARTBEAT_MS = 2500
 MIN_CAPTURE_SECONDS = 30
 MIN_VISIBLE_HOST_SAMPLES = 20
 MIN_FOREGROUND_BROWSER_SAMPLES = 2
+MIN_FOREGROUND_BROWSER_COVERAGE = 0.75
 
 
 def number(value):
@@ -78,13 +79,19 @@ def summarize(path):
     live_heartbeat_stall = [r for r in stalled_render if number(r.get('telemetryAgeMs')) is not None
                             and number(r.get('telemetryAgeMs')) < FRESH_HEARTBEAT_MS]
     stale_heartbeat_stall = [r for r in stalled_render if (number(r.get('telemetryAgeMs')) or 0) >= STALE_MS]
-    times = []
-    for row in rows:
+    def timestamp(row):
         try:
-            times.append(datetime.fromisoformat(row['timestampUTC'].replace('Z', '+00:00')))
-        except (ValueError, AttributeError):
-            pass
+            return datetime.fromisoformat(row['timestampUTC'].replace('Z', '+00:00'))
+        except (ValueError, AttributeError, TypeError):
+            return None
+
+    times = [t for row in rows if (t := timestamp(row)) is not None]
     duration = round((max(times) - min(times)).total_seconds(), 2) if len(times) > 1 else None
+    foreground_times = [t for row in foreground_browser if (t := timestamp(row)) is not None]
+    foreground_span = ((max(foreground_times) - min(foreground_times)).total_seconds()
+                       if len(foreground_times) > 1 else 0)
+    browser_coverage = (round(foreground_span / duration, 3)
+                        if duration is not None and duration > 0 else None)
     # Independent host samples survive browser freezes. Keep their stall evidence
     # without presenting repeated host FPS values as rendered browser frames.
     quality_issues = []
@@ -94,10 +101,13 @@ def summarize(path):
         quality_issues.append('Fewer than 20 visible, focused independent host samples.')
     if len(foreground_browser) < MIN_FOREGROUND_BROWSER_SAMPLES:
         quality_issues.append('Fewer than two visible, focused browser heartbeats: FPS distribution insufficient.')
+    elif browser_coverage is None or browser_coverage < MIN_FOREGROUND_BROWSER_COVERAGE:
+        quality_issues.append('Visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
     host_cpu_samples = sum(number(r.get('cpuPercent')) is not None for r in visible_host)
     host_ram_samples = sum(number(r.get('ramPercent')) is not None for r in visible_host)
     capture_quality = {
         'foreground_fps_usable': not quality_issues,
+        'foreground_browser_coverage_fraction': browser_coverage,
         'host_stall_evidence_available': len(visible_host) >= MIN_VISIBLE_HOST_SAMPLES,
         'host_cpu_ram_usable': (duration is not None and duration >= MIN_CAPTURE_SECONDS
                                 and host_cpu_samples >= MIN_VISIBLE_HOST_SAMPLES

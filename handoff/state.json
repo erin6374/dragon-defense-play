@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
+  "observed_parent_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
   "observed_version": "5.5.0-rc.55",
   "observed_build_id": "5.5-turbulent-plume-edge-rc55",
-  "release_status": "rc55_60s_diagnostic_verified_five_workflows_capture_quality_guard_new_head_pending_art_fail_physical_windows_fps_unmeasured",
+  "release_status": "rc55_exact_base_all_five_verified_early_browser_freeze_coverage_guard_new_head_pending_art_fail_physical_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43534315855,
-      "source_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
+      "run_id": 43540212489,
+      "source_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43534315855"
-    },
-    {
-      "name": "licensed CC0",
-      "run_id": 43534315830,
-      "source_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
-      "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43534315830"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43540212489"
     },
     {
       "name": "cinematic",
-      "run_id": 43534315897,
-      "source_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
+      "run_id": 43540212431,
+      "source_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43534315897"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43540212431"
     },
     {
       "name": "focused fire",
-      "run_id": 43534315915,
-      "source_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
+      "run_id": 43540212423,
+      "source_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43534315915"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43540212423"
+    },
+    {
+      "name": "licensed CC0",
+      "run_id": 43540212509,
+      "source_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43540212509"
     },
     {
       "name": "genuine motion",
-      "run_id": 43534316047,
-      "source_sha": "6a10e71a7eaa808a26af1a7dc4b1305677a41674",
+      "run_id": 43540212450,
+      "source_sha": "1f61f737c337fd104be3a155a1706597f88aaf9d",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43534316047"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43540212450"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five workflows at new capture-quality guard commit HEAD and inspect artifacts; obtain physical 30-60s Windows System Monitor CSV under heavy destruction, then diagnose measured bottleneck.",
+  "next_task": "Verify new browser-coverage guard commit's five exact-head workflows and artifacts; obtain 30-60s physical Windows Performance Lab CSV under heavy destruction before optimizing.",
   "implemented": [
+    "RC55 exact base 1f61f737 five Actions success; downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, exact SHA, CC0 WEBP hashes and original school FBX, real 600-frame/30s plus five 100-frame MP4s inspected. New bounded Windows CSV heartbeat coverage guard requires 75% capture span to accept FPS, preserving host stall evidence; healthy and freeze synthetic cases PASS locally. New commit workflows pending. ART FAIL and physical Windows FPS unresolved.",
     "RC55 diagnostic source 6a10e71a7eaa808a26af1a7dc4b1305677a41674 verified all five workflows; CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, exact build, CC0 hashes, original FBX and real 600-frame/30s + five 100-frame videos. Windows CSV capture-quality guard and four local regression cases added; new commit QA pending. ART FAIL, physical Windows FPS unresolved.",
     "RC55 exact-source 33ec0969 five workflows SUCCESS; downloaded CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, CC0 hashes, real 600-frame/30s and five 100-frame videos verified. Bounded Performance Lab candidate extends in-game capture to 60s and preserves >15s stalls; deterministic Node regression PASS; new commit QA pending. ART FAIL and physical Windows FPS unresolved.",
     "RC55 QA preflight fix: replace stale RC49 smoke UV literal assertion with active +lean+eddy expression; no shader/gameplay change. Parent 717c3b9 browser run 43519015569 failed before browser startup; licensed CC0 success; cinematic/focused/motion still running at snapshot. Exact-head verification pending.",
