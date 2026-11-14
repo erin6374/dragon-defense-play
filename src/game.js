@@ -165,7 +165,7 @@ function updateNight(dt){
  // Skyline geometry and window emissive intensity are updated by skylineBackdrop.setTime().
  // Legacy geometric clouds remain detached from drawing; do not traverse/update
  // their meshes every tick when the shader sky provides all cloud visuals.
- sunDisc.visible=darkness<.65;moonDisc.visible=darkness>.30;starGroup.visible=darkness>.40;clouds.visible=false;
+ sunDisc.visible=false;moonDisc.visible=false;starGroup.visible=false;clouds.visible=false; // Atmospheric sky shader renders textured moon and sun disc.
  for(const lamp of lamps)lamp.intensity=darkness*(lamp.color.getHex()===0xb4c7ff?1.35:3.0);
  for(const glow of streetGlows)glow.material.opacity=darkness*.58;
  for(const car of cars)setRoadVehicleNight(car.root,darkness,!car.burning&&!car.destroyed);
