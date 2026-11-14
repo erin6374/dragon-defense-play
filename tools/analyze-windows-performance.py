@@ -73,6 +73,13 @@ def summarize(path):
     # Cached FPS during stale rendering is not a new rendered-frame measurement.
     stale_foreground_browser = [r for r in foreground_browser
                                 if (age := number(r.get('renderAgeMs'))) is not None and age >= STALE_MS]
+    # A heartbeat without a valid render age cannot prove that the reported
+    # FPS describes new frames. Keep it for diagnostics, not FPS statistics.
+    unknown_render_age_browser = [r for r in foreground_browser
+                                  if (age := number(r.get('renderAgeMs'))) is None or age < 0]
+    fresh_foreground_browser = [r for r in foreground_browser
+                                if (age := number(r.get('renderAgeMs'))) is not None
+                                and 0 <= age < STALE_MS]
     background_browser = [r for r in active_browser if truth(r.get('documentHidden')) is True
                           or truth(r.get('documentHasFocus')) is False]
     unknown_browser_visibility = len(active_browser) - len(foreground_browser) - len(background_browser)
@@ -116,6 +123,8 @@ def summarize(path):
         quality_issues.append('Visible browser heartbeat gap exceeds 5 seconds: foreground FPS may omit a mid-capture freeze.')
     if stale_foreground_browser:
         quality_issues.append('Visible browser heartbeats report stale rendering: foreground FPS may repeat frozen frames.')
+    if unknown_render_age_browser:
+        quality_issues.append('Visible browser heartbeats lack valid render age: foreground FPS cannot be authenticated.')
     host_cpu_samples = sum(number(r.get('cpuPercent')) is not None for r in visible_host)
     host_ram_samples = sum(number(r.get('ramPercent')) is not None for r in visible_host)
     capture_quality = {
@@ -123,6 +132,8 @@ def summarize(path):
         'foreground_browser_coverage_fraction': browser_coverage,
         'max_foreground_browser_gap_seconds': max_foreground_gap,
         'foreground_browser_stale_render_samples': len(stale_foreground_browser),
+        'foreground_browser_unknown_render_age_samples': len(unknown_render_age_browser),
+        'foreground_browser_fresh_render_samples': len(fresh_foreground_browser),
         'host_stall_evidence_available': len(visible_host) >= MIN_VISIBLE_HOST_SAMPLES,
         'host_cpu_ram_usable': (duration is not None and duration >= MIN_CAPTURE_SECONDS
                                 and host_cpu_samples >= MIN_VISIBLE_HOST_SAMPLES
@@ -135,9 +146,7 @@ def summarize(path):
     # Require fresh rendering plus the actual WebGL buffer dimensions and a
     # positive governor adjustment before calling recovery observed. Host rows
     # and old CSVs with missing telemetry cannot establish a downscale.
-    fresh_render_browser = [r for r in foreground_browser
-                            if (age := number(r.get('renderAgeMs'))) is not None
-                            and 0 <= age < STALE_MS]
+    fresh_render_browser = fresh_foreground_browser
     recovery_rows = []
     for row in fresh_render_browser:
         scale = number(row.get('adaptiveResolution'))
@@ -177,6 +186,8 @@ def summarize(path):
         findings.append('Hidden/unfocused browser samples excluded from foreground FPS statistics.')
     if stale_foreground_browser:
         findings.append('Browser heartbeat kept reporting during a render freeze; cached FPS is not a new rendered frame.')
+    if unknown_render_age_browser:
+        findings.append('Browser heartbeat has unknown/invalid render age; cached FPS excluded from foreground statistics.')
     if unknown_browser_visibility:
         findings.append('Browser samples with unknown tab visibility/focus excluded from foreground FPS statistics.')
     if not active_host:
@@ -196,6 +207,7 @@ def summarize(path):
         'samples': {'total': len(rows), 'browser': len(browser), 'host': len(host),
                     'active_browser': len(active_browser), 'foreground_browser': len(foreground_browser),
                     'foreground_browser_render_stale': len(stale_foreground_browser),
+                    'foreground_browser_render_age_unknown': len(unknown_render_age_browser),
                     'background_browser': len(background_browser),
                     'unknown_browser_visibility': unknown_browser_visibility,
                     'active_host': len(active_host),
@@ -204,10 +216,10 @@ def summarize(path):
                            'p10_fps': percentile(active_browser, 'fps', .10),
                            'p95_frame_ms': percentile(active_browser, 'frameMs', .95),
                            'median_draw_calls': median(active_browser, 'drawCalls')},
-        'browser_foreground': {'median_fps': median(foreground_browser, 'fps'),
-                               'p10_fps': percentile(foreground_browser, 'fps', .10),
-                               'p95_frame_ms': percentile(foreground_browser, 'frameMs', .95),
-                               'median_draw_calls': median(foreground_browser, 'drawCalls')},
+        'browser_foreground': {'median_fps': median(fresh_foreground_browser, 'fps'),
+                               'p10_fps': percentile(fresh_foreground_browser, 'fps', .10),
+                               'p95_frame_ms': percentile(fresh_foreground_browser, 'frameMs', .95),
+                               'median_draw_calls': median(fresh_foreground_browser, 'drawCalls')},
         'host_active': {'median_system_cpu_percent': median(active_host, 'cpuPercent'),
                         'median_system_ram_percent': median(active_host, 'ramPercent'),
                         'max_render_age_ms': max((number(r.get('renderAgeMs')) for r in active_host

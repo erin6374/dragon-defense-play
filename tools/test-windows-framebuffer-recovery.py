@@ -42,16 +42,26 @@ def main():
     assert stale['framebuffer_recovery']['downscale_observed'] is None
     assert stale['framebuffer_recovery']['stale_or_unknown_render_samples_excluded'] == 40
     assert not stale['capture_quality']['foreground_fps_usable']
+    assert stale['browser_foreground']['median_fps'] is None
     fresh = capture(.65, 100, 3, 640, 360)
     assert fresh['framebuffer_recovery']['downscale_observed'] is True
     assert fresh['framebuffer_recovery']['median_buffer_pixels'] == 230400
     assert fresh['capture_quality']['foreground_fps_usable']
+    assert fresh['browser_foreground']['median_fps'] == 24
     normal = capture(1, 100, 0, 1280, 720)
     assert normal['framebuffer_recovery']['downscale_observed'] is False
     missing = capture(.65, 100, '', '', '')
     assert missing['framebuffer_recovery']['downscale_observed'] is None
     assert missing['framebuffer_recovery']['complete_recovery_samples'] == 0
-    print('PASS: stale, fresh, normal and incomplete Windows framebuffer telemetry')
+    unknown = capture(.65, '', 3, 640, 360)
+    assert unknown['browser_foreground']['median_fps'] is None
+    assert not unknown['capture_quality']['foreground_fps_usable']
+    assert unknown['capture_quality']['foreground_browser_unknown_render_age_samples'] == 40
+    assert unknown['framebuffer_recovery']['downscale_observed'] is None
+    negative = capture(.65, -100, 3, 640, 360)
+    assert negative['browser_foreground']['median_fps'] is None
+    assert not negative['capture_quality']['foreground_fps_usable']
+    print('PASS: stale, fresh, normal, incomplete, unknown and negative render age')
 
 
 if __name__ == '__main__':
