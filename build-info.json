@@ -1,8 +1,8 @@
 {
-  "build": "5.5-turbulent-plume-edge-rc55",
-  "version": "5.5.0-rc.55",
+  "build": "5.5-dispersed-smoke-columns-rc56",
+  "version": "5.5.0-rc.56",
   "gameplay_base": "5.2.3",
-  "scope": "Licensed CC0 plume-only seeded height eddies and dual-frequency asymmetric edge drift; existing smoke atlas samples, six-sheet GPU pools, meteor-only ignition, gameplay, school FBX and bilateral damage unchanged.",
+  "scope": "Licensed CC0 plume-only seeded ascent, buoyancy and width variance; existing atlas samples, six-sheet GPU pools, meteor-only ignition, gameplay, school FBX and bilateral damage unchanged.",
   "new_gameplay_features": false,
-  "release_status": "RC55 candidate; exact-head browser, cinematic, focused-fire, licensed CC0 and genuine motion QA pending; art acceptance and physical Windows FPS unmeasured."
+  "release_status": "RC56 candidate; exact-head QA pending, cinematic art FAIL and physical Windows FPS unmeasured."
 }

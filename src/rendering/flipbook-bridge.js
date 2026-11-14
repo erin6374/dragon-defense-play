@@ -84,8 +84,11 @@ export function prepareFlipbookMaterial(material,kind){
      float gust=.90+.18*sin(clock*.31+layer*.55+vSeed*.41);
      float crosswind=-gust*(.76+.40*fract(vSeed*.193))*pow(vAge,1.42)*3.8;
      float dispersion=lane*pow(vAge,1.16)*1.25;
+     // Independent ascent and buoyancy break up same-height smoke columns.
+     float ascent=6.25+3.1*fract(vSeed*.719);
+     float buoyancy=.24*sin(clock*(.17+.09*fract(vSeed*.413))+vSeed*.83)*pow(vAge,1.25);
      center+=vec3((sway+crosswind+dispersion)*w,
-       h*(.20+vAge*7.8),w*(.32+.16*layer));
+       h*(.20+vAge*ascent+buoyancy),w*(.32+.16*layer));
     }else{
      float drift=lane*pow(vAge,1.35)*(2.0+.8*fract(vSeed*.91));
      center+=vec3((sway+drift)*w,
@@ -93,7 +96,7 @@ export function prepareFlipbookMaterial(material,kind){
     }
    }else{center+=vec3((sway+layer*.10)*w,h*(.90+.12*layer),w*(.22+.11*layer));}`],
   ['float scale=w*(1.02+.16*layer);',
-   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(plumeMode>.5?(.82+3.9*vAge):(.82+2.95*vAge)):1.);'],
+   'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(plumeMode>.5?((.82+3.9*vAge)*(.76+.5*fract(vSeed*.367))):(.82+2.95*vAge)):1.);'],
   ['float stretch=2.65+.42*layer;',
    'float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;']
  ];
