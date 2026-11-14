@@ -98,7 +98,18 @@ export function prepareFlipbookMaterial(material,kind){
   ['float scale=w*(1.02+.16*layer);',
    'float scale=w*(1.02+.16*layer)*(useFlipbook>.5?(plumeMode>.5?((.82+3.9*vAge)*(.76+.5*fract(vSeed*.367))):(.82+2.95*vAge)):1.);'],
   ['float stretch=2.65+.42*layer;',
-   'float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;']
+   'float stretch=useFlipbook>.5?(plumeMode>.5?1.60:1.35):2.65+.42*layer;'],
+  ['eye.xy+=vec2(p.x+p.y*.12*sin(clock*.27+vSeed),p.y*stretch)*scale*length(modelMatrix[0].xyz);',
+   `vec2 sheet=vec2(p.x+p.y*.12*sin(clock*.27+vSeed),p.y*stretch);
+   if(useFlipbook>.5&&plumeMode>.5){
+    // Each CC0 smoke sheet gently rolls independently. Break up parallel
+    // vertical card edges without touching the legacy/procedural A/B modes.
+    float roll=(fract(vSeed*.377)-.5)*.28+
+     .07*sin(clock*(.14+.06*fract(vSeed*.257))+vSeed);
+    float cs=cos(roll),sn=sin(roll);
+    sheet=mat2(cs,sn,-sn,cs)*sheet;
+   }
+   eye.xy+=sheet*scale*length(modelMatrix[0].xyz);`]
  ];
  let revised=oldVertex.replace('uniform float clock;','uniform float clock;\nuniform float useFlipbook;'+(kind===1?'\nuniform float plumeMode;':''));
  for(const [before,after] of vertexChanges){

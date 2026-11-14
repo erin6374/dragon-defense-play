@@ -70,3 +70,19 @@ console.log('RC57 conservative licensed plume alpha-bound discard contract PASS'
 console.log('RC56 seeded plume ascent and width variation source contract PASS');
 console.log('RC55 turbulent plume edge and RC54 clock source contract PASS');
 console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader gate / RC45 smoke variance / six-sheet GPU budget source contract PASS');
+
+ // RC59: six licensed plume billboards get small independent camera-space
+ // rolls, with the procedural and legacy smoke A/B modes untouched.
+ const sheetAnchor='eye.xy+=vec2(p.x+p.y*.12*sin(clock*.27+vSeed),p.y*stretch)*scale*length(modelMatrix[0].xyz);';
+ assert.equal(bridge.split(sheetAnchor).length-1,1,'RC59 base billboard patch anchor missing');
+ assert.ok(bridge.includes('if(useFlipbook>.5&&plumeMode>.5){'),'RC59 roll must be licensed plume only');
+ assert.ok(bridge.includes('sheet=mat2(cs,sn,-sn,cs)*sheet;'),'RC59 bounded billboard rotation missing');
+ const rolls=Array.from({length:6},(_,i)=>{
+  const seed=13+i*7.13,t=8;
+  return (fract(seed*.377)-.5)*.28+
+   .07*Math.sin(t*(.14+.06*fract(seed*.257))+seed);
+ });
+ assert.ok(rolls.every(x=>Math.abs(x)<=.21000001),'RC59 roll exceeds conservative bound');
+ assert.equal(new Set(rolls.map(x=>x.toFixed(4))).size,6,'RC59 plume sheets rotate in lockstep');
+ assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC59 added atlas reads');
+ console.log('RC59 bounded licensed plume billboard-roll source contract PASS');
