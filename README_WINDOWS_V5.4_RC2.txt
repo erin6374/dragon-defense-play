@@ -1,4 +1,4 @@
-TECH FREIRE DRAGON DEFENSE — v5.5.0 RC39 DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.5.0 RC55 DEVELOPMENT PREVIEW
 ================================================================
 Video-driven graphics candidate. Paulo now has unsynchronized shoulder/elbow/
 wrist motion, folding inner wing on banks, deeper scalloped leathery membranes
@@ -59,7 +59,7 @@ SOURCE / QA
 https://github.com/erin6374/dragon-defense-play/pull/2
 See RELEASE-PLAN-v5.4.md and CHANGELOG.md for the release gates and detailed changes.
 
-RC39 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
+RC55 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
 - Extract the new exact-commit Windows preview ZIP and double-click PLAY-PREVIEW.cmd.
 - The launcher now uses tools/windows-preview-server.py, not plain http.server.
 - Open Settings > Performance Lab > System Monitor while playing at normal resolution.
@@ -70,3 +70,8 @@ RC39 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
   stdlib server; do not interpret missing GPU counters as zero GPU load.
 - The CSV is written to the OS temporary folder and served only on 127.0.0.1:8769.
 - This instrumentation does not fix low FPS; it makes the reported slideshow measurable.
+
+RC55 PERFORMANCE LAB DIAGNOSTIC UPDATE
+- In-game Performance Lab samples may run 60 seconds and retain frame gaps beyond 15 seconds.
+- Use System Monitor CSV for independent host/heartbeat samples during browser stalls.
+- Physical Windows FPS and GPU utilization remain unmeasured until captured on hardware.
