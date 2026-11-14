@@ -155,6 +155,58 @@ export function createChapterStaging(scene){
   return mover;
  }
 
+ function bulldozer(x,z,facing=1){
+  const g=new THREE.Group();g.position.set(x,0,z);group.add(g);
+  box(g,0,1.1,0,5.2,1.3,2.6,yellow); // heavy engine housing
+  box(g,-facing*1.2,1.2,0,1.4,1.4,2.5,dark); // counterweight
+  box(g,facing*.2,2.3,0,1.8,1.2,2.0,dark); // ROPS cab
+  box(g,facing*.2,2.95,0,2.1,.15,2.2,yellow); // cab roof
+  const beacon=box(g,facing*.2,3.15,0,.5,.2,.5,amber);
+  // Continuous steel tracks
+  for(const zTrack of [-1.45,1.45]){
+   box(g,0,.5,zTrack,5.4,.8,.45,dark);
+   for(const xx of [-2.0,-1.0,0,1.0,2.0]){
+    const roller=new THREE.Mesh(sphere,dark);
+    roller.position.set(xx,.45,zTrack);roller.scale.set(.45,.45,.2);g.add(roller);
+   }
+  }
+  // Front dozer push blade on hydraulic arms
+  const bladePivot=new THREE.Group();bladePivot.position.set(facing*2.2,.65,0);g.add(bladePivot);
+  box(bladePivot,facing*1.0,.1,-1.25,2.0,.25,.25,yellow);
+  box(bladePivot,facing*1.0,.1,1.25,2.0,.25,.25,yellow);
+  const blade=box(bladePivot,facing*2.0,.35,0,.35,1.3,3.6,yellow);
+  box(bladePivot,facing*2.0,-.25,0,.45,.20,3.6,dark); // cutting edge
+  const mover={g,kind:'bulldozer',beacon,bladePivot,blade,facing,targetX:x,targetZ:z,working:false,workPhase:0};
+  movers.push(mover);
+  return mover;
+ }
+
+ function crewVan(x,z,facing=1,crewCount=3){
+  const g=new THREE.Group();g.position.set(x,0,z);group.add(g);
+  box(g,0,1.2,0,6.0,1.6,2.5,white);
+  box(g,facing*2.2,1.3,0,1.4,1.4,2.45,yellow);
+  box(g,facing*2.9,.9,0,.2,.6,2.2,chrome);
+  box(g,facing*2.2,1.55,0,1.1,.8,2.48,glass);
+  const beacon=box(g,facing*1.2,2.15,0,.5,.2,.5,amber);
+  wheels(g,[[-1.9,-1.3],[-1.9,1.3],[1.9,-1.3],[1.9,1.3]],.72);
+  // Stowed roof ladder
+  box(g,-.5,2.15,-.6,4.0,.08,.08,chrome);
+  box(g,-.5,2.15,.6,4.0,.08,.08,chrome);
+  for(let r=-1.8;r<=1.8;r+=.6)box(g,r,2.15,0,.06,.08,1.2,chrome);
+  // Sliding side crew door
+  const sideDoor=box(g,-facing*.2,1.1,facing>0?1.26:-1.26,1.6,1.4,.10,yellow);
+  // Workers enter in van and exit to work
+  const crew=[];
+  for(let i=0;i<crewCount;i++){
+   const worker=person(x,z,false,i===0,true);
+   worker.visible=false; // initially inside van
+   crew.push({g:worker,vanX:x,vanZ:z,destX:x+facing*(3.5+i*4),destZ:12.5+(i%2)*1.2,inside:true,workPhase:0});
+  }
+  const mover={g,kind:'crewVan',beacon,sideDoor,crew,facing,targetX:x,targetZ:z,working:false,disembarked:false};
+  movers.push(mover);
+  return mover;
+ }
+
  function barrier(x,z){box(group,x,.65,z,2.4,.2,.28,safety); box(group,x,.35,z,2.6,.15,.3,black);}
  function coneProp(x,z){const c=new THREE.Group();c.position.set(x,0,z);group.add(c); box(c,0,.25,0,.3,.5,.3,cone); box(c,0,.05,0,.55,.08,.55,white);}
  function buildChapterLayout(next){clear(); chapter=next; mode='chapter';
@@ -168,37 +220,41 @@ export function createChapterStaging(scene){
  function setChapter(next){settlementChapter=0; leaveTarget=0; leaveTimer=0; buildChapterLayout(next);} 
  function setSettlement(fromChapter){clear(); mode='settlement'; settlementChapter=fromChapter; leaveTarget=0; leaveTimer=0;
   // Diverse Construction Fleet positioned along damaged facades:
-  // 1. Tech Freire School center-front (x = -3, z = 13.5): Telescopic crane truck repairing high masonry & cornice
+  // 1. Tech Freire School center-front: Telescopic crane truck repairing high masonry & cornice
   const truckSchool=constructionCraneTruck(-3,13.5,1,'tech-freire-school');
 
-  // 2. Grands As Parents / Maximus Cares North frontage:
-  //    - Debris clearing crane / excavator at x = -26, z = 13.5
-  //    - Heavy dump truck receiving sidewalk debris at x = -17, z = 14.5
-  const truckDump=dumpTruck(-17,14.5,1);
-  const excavator=debrisClearingCrane(-26,13.5,1,truckDump);
+  // 2. Heavy Bulldozer clearing street & sidewalk rubble piles
+  const dozer=bulldozer(-10,14.5,1);
 
-  // 3. Extension ladders brought by crews for facade repairs:
-  //    - Leaned against Tech Freire main entrance (x = 6.5, z = 11.2, wallY = 8.8)
+  // 3. Grands As Parents / Maximus Cares frontage:
+  //    - Debris clearing crane / excavator at x = -27, z = 13.5
+  //    - Heavy dump truck receiving sidewalk debris at x = -18, z = 14.5
+  const truckDump=dumpTruck(-18,14.5,1);
+  const excavator=debrisClearingCrane(-27,13.5,1,truckDump);
+
+  // 4. Construction Crew Vans transporting repair workers
+  const vanEast=crewVan(16,14.5,-1,3);
+  const vanWest=crewVan(-38,14.5,1,3);
+
+  // 5. Extension ladders brought by crews for facade repairs:
   extensionLadder(6.5,11.2,8.8,0.20);
-  //    - Leaned against Brownstone facade (x = 22, z = 11.2, wallY = 9.5)
   extensionLadder(22,11.2,9.5,0.20);
 
-  // 4. Traffic safety perimeter along Broad Street curb
+  // 6. Traffic safety perimeter along Broad Street curb
   for(const x of [-48,-36,-24,-12,0,12,24,36,48]) barrier(x,16.5), coneProp(x-1.5,16.2), coneProp(x+1.5,16.2);
-  // 5. Construction personnel in safety gear
-  for(let i=0;i<12;i++)person(-38+i*7,12.5+(i%2)*1.2,false,i%3===0,true);
-  // 6. Rubble cleanup piles on sidewalk
+
+  // 7. Rubble cleanup piles on sidewalk
   for(let i=0;i<5;i++){const pile=box(group,-26+i*13,.55,8.8,2.4,.75,2.4,black);cleanupPiles.push(pile);}
 
   // Set arrival targets and initial offscreen road positions (normal driving pace ~13-15 units/s)
   let convoyIndex=0;
   for(const item of movers){
-   if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'){
+   if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'||item.kind==='bulldozer'||item.kind==='crewVan'){
     item.targetX=item.g.position.x;
     item.targetZ=item.g.position.z;
-    item.arrivalDelay=convoyIndex*1.4;
+    item.arrivalDelay=convoyIndex*1.3;
     // Drive in along the road lane (z = 20.5) from off-screen
-    item.g.position.x+=item.facing*(44+convoyIndex*16);
+    item.g.position.x+=item.facing*(46+convoyIndex*15);
     item.g.position.z=20.5;
     convoyIndex++;
    }
@@ -240,7 +296,7 @@ export function createChapterStaging(scene){
    // Vehicles drive in at normal city pace (~13.5 units/s), pull up to curb, and actively work
    for(const item of movers){
     if(item.beacon)item.beacon.material.color.setHex((Math.sin(elapsed*13)>0)?0xffaa00:0x553300);
-    if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'){
+    if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'||item.kind==='bulldozer'||item.kind==='crewVan'){
      if(settlementClock>=(item.arrivalDelay||0)){
       const dx=item.targetX-item.g.position.x;
       const dist=Math.abs(dx);
@@ -320,6 +376,25 @@ export function createChapterStaging(scene){
         // Keep bed stable and update rubble height
         item.bedPivot.rotation.z=THREE.MathUtils.damp(item.bedPivot.rotation.z,0,1.5,dt);
         item.rubbleMesh.scale.y=THREE.MathUtils.damp(item.rubbleMesh.scale.y,item.load,1.2,dt);
+       }else if(item.kind==='bulldozer'){
+        const cycle=(item.workPhase*.42)%1.0;
+        item.bladePivot.rotation.z=cycle<.75?-0.18:0.25;
+        item.g.position.x=item.targetX+item.facing*(Math.sin(cycle*Math.PI*2)*1.8);
+       }else if(item.kind==='crewVan'){
+        if(item.sideDoor)item.sideDoor.position.x=THREE.MathUtils.damp(item.sideDoor.position.x,-item.facing*.85,2.0,dt);
+        if(item.crew){
+         for(const worker of item.crew){
+          worker.inside=false;worker.g.visible=true;
+          const wdx=worker.destX-worker.g.position.x;
+          if(Math.abs(wdx)>0.12){
+           worker.g.position.x+=Math.sign(wdx)*Math.min(Math.abs(wdx),dt*3.8);
+           worker.g.position.z=THREE.MathUtils.damp(worker.g.position.z,worker.destZ,1.8,dt);
+          }else{
+           worker.workPhase+=dt;
+           if(worker.g.children[0])worker.g.children[0].rotation.z=Math.sin(elapsed*4.5+worker.destX)*.18;
+          }
+         }
+        }
        }
       }
      }
@@ -351,7 +426,7 @@ export function createChapterStaging(scene){
    const driving=leaveTimer<=5.2;
    for(const item of movers){
     if(!item.g.parent)continue;
-    if(item.kind==='constructionCrane'||item.kind==='debrisCrane'||item.kind==='dumpTruck'){
+    if(item.kind==='constructionCrane'||item.kind==='debrisCrane'||item.kind==='dumpTruck'||item.kind==='bulldozer'||item.kind==='crewVan'){
      if(activeRepair){
       // Continue work
       if(item.sparkGlint)item.sparkGlint.material.opacity=(Math.sin(elapsed*28)>.3)?.9:0;
@@ -361,10 +436,28 @@ export function createChapterStaging(scene){
       if(item.boomPivot)item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,0,3.0,dt);
       if(item.stickPivot)item.stickPivot.rotation.z=THREE.MathUtils.damp(item.stickPivot.rotation.z,0,3.0,dt);
       if(item.turret)item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,0,3.0,dt);
+      if(item.bladePivot)item.bladePivot.rotation.z=THREE.MathUtils.damp(item.bladePivot.rotation.z,.35,3.0,dt);
       if(item.outriggers){
        for(const out of item.outriggers){
         out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,out.baseY,3.0,dt);
         out.leg.scale.y=THREE.MathUtils.damp(out.leg.scale.y,1.0,3.0,dt);
+       }
+      }
+      if(item.kind==='crewVan'&&item.crew){
+       for(const worker of item.crew){
+        if(!worker.inside){
+         const wdx=item.g.position.x-worker.g.position.x;
+         if(Math.abs(wdx)>.75){
+          worker.g.position.x+=Math.sign(wdx)*dt*4.8;
+          worker.g.position.z=THREE.MathUtils.damp(worker.g.position.z,item.g.position.z,2.2,dt);
+         }else{
+          worker.inside=true;
+          worker.g.visible=false; // Board the van!
+         }
+        }
+       }
+       if(item.crew.every(w=>w.inside)&&item.sideDoor){
+        item.sideDoor.position.x=THREE.MathUtils.damp(item.sideDoor.position.x,0,3.8,dt); // sliding door closes!
        }
       }
      }else if(driving){
@@ -379,12 +472,10 @@ export function createChapterStaging(scene){
       // Lower climber and fold ladder flat to pack away
       item.climber.position.y=THREE.MathUtils.damp(item.climber.position.y,.5,2.0,dt);
       if(packing)item.ladderGroup.rotation.x=THREE.MathUtils.damp(item.ladderGroup.rotation.x,-Math.PI*.45,2.0,dt);
-      if(driving)item.g.position.x+=dt*5.0;
+      if(driving)item.g.visible=false;
      }
     }else if(item.kind==='vehicle'){
      if(driving)item.g.position.x+=dt*14.0;
-    }else if(item.kind==='person'){
-     if(driving)item.g.position.x+=dt*4.5;
     }
     if(Math.abs(item.g.position.x)<260)anyOnScreen=true;
    }

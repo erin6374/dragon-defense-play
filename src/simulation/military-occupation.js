@@ -37,22 +37,38 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  function box(root,mat,x,y,z,w,h,d){const mesh=new THREE.Mesh(cube,mat);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);root.add(mesh);return mesh;}
  function deploy(x,advanced=false){
   const root=new THREE.Group();root.position.set(x,-.36,24);
-  const hull=box(root,hullMat,0,1.1,0,advanced?6:5.4,1.5,2.7);
-  box(root,steel,0,2.1,0,3.1,.8,2.2);
-  for(const xx of [-1.75,1.75])for(const zz of [-1,1]){
-   const wheel=new THREE.Mesh(ball,steel);wheel.position.set(xx,.65,zz);wheel.scale.set(.72,.72,.28);root.add(wheel);
+  // Realistic M1 Abrams Main Battle Tank chassis
+  const hull=box(root,hullMat,0,1.0,0,advanced?7.2:6.4,1.15,3.2);
+  box(root,hullMat,2.8,.85,0,1.4,.75,3.0); // sloped glacis
+  box(root,steel,-2.4,1.15,0,1.8,.65,2.8); // rear engine deck
+  for(const z of [-1.55,1.55]){
+   box(root,hullMat,0,.85,z,6.2,.85,.22); // side skirt
+   box(root,steel,0,.45,z*.92,6.4,.65,.45); // rubber/steel tread belt
+   for(const xx of [-2.4,-1.4,-.4,.6,1.6,2.4]){
+    const wheel=new THREE.Mesh(ball,steel);
+    wheel.position.set(xx,.45,z*.92);wheel.scale.set(.45,.45,.22);root.add(wheel);
+   }
   }
-  const launcher=new THREE.Group();launcher.position.set(0,2.8,0);root.add(launcher);
-  box(launcher,steel,0,0,0,advanced?2.7:1.9,.65,1.35);
-  for(const z of [-.48,.48])box(launcher,rocketMat,0,.15,z,advanced?2.4:1.7,.23,.25);
-  const beacon=new THREE.Mesh(ball,warning);beacon.scale.set(.25,.25,.25);beacon.position.set(0,3.1,0);root.add(beacon);
+  const turret=new THREE.Group();turret.position.set(0,1.65,0);root.add(turret);
+  box(turret,hullMat,-.3,.55,0,advanced?3.4:2.9,.95,2.4);
+  box(turret,hullMat,-1.8,.55,0,1.2,.85,2.1);
+  box(turret,steel,-.4,1.15,.55,.65,.32,.65); // cupola
+  const cannonGroup=new THREE.Group();cannonGroup.position.set(.9,.55,0);turret.add(cannonGroup);
+  box(cannonGroup,steel,.5,0,0,1.0,.72,.75); // mantlet
+  const barrel=new THREE.Mesh(cube,steel);barrel.position.set(3.2,0,0);barrel.scale.set(4.6,.26,.26);cannonGroup.add(barrel);
+  const evac=new THREE.Mesh(ball,steel);evac.position.set(2.8,0,0);evac.scale.set(.65,.38,.38);cannonGroup.add(evac);
+  const muzzle=new THREE.Mesh(cube,steel);muzzle.position.set(5.5,0,0);muzzle.scale.set(.45,.36,.36);cannonGroup.add(muzzle);
+
+  const beacon=new THREE.Mesh(ball,warning);beacon.scale.set(.25,.25,.25);beacon.position.set(-.4,1.45,-.55);turret.add(beacon);
   const searchlight=new THREE.Mesh(searchlightGeo,searchlightMat);
-  searchlight.name='military-searchlight-beam';searchlight.position.set(0,3.52,0);
+  searchlight.name='military-searchlight-beam';searchlight.position.set(.5,1.15,-.65);
   searchlight.frustumCulled=false;searchlight.renderOrder=2;
-  searchlight.scale.set(1,12,1);root.add(searchlight);
+  searchlight.scale.set(1,12,1);turret.add(searchlight);
   const searchLens=new THREE.Mesh(ball,searchlightLensMat);
-  searchLens.scale.setScalar(.18);searchLens.position.set(0,3.52,0);root.add(searchLens);
-  scene.add(root);vehicles.push({root,hull,launcher,beacon,advanced,hp:advanced?6:4,cooldown:advanced?3.2:2.3,flash:0,
+  searchLens.scale.setScalar(.20);searchLens.position.set(.5,1.15,-.65);turret.add(searchLens);
+  scene.add(root);
+  vehicles.push({root,hull,turret,cannonGroup,launcher:turret,beacon,advanced,hp:advanced?7:5,cooldown:advanced?2.8:2.1,flash:0,
+   patrolDir:Math.random()<.5?1:-1,speed:4.2+Math.random()*2.8,
    gasTime:0,searchlight,searchDir:new THREE.Vector3(0,1,0),searchTarget:new THREE.Vector3(0,1,0),searchClock:0});
   return root;
  }
@@ -82,27 +98,35 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   }
   return {affected,homingDisrupted};
  }
- function fire(v){const origin=v.root.position.clone().add(new THREE.Vector3(0,3.1,0));
+ function fire(v){const origin=v.root.position.clone().add(new THREE.Vector3(0,2.6,0));
   const aim=dragon.position.clone().sub(origin).normalize();
   const mesh=new THREE.Mesh(cone,rocketMat);mesh.scale.set(.35,1.4,.35);mesh.position.copy(origin);scene.add(mesh);
-  missiles.push({mesh,vel:aim.multiplyScalar(v.advanced?18:24),homing:v.advanced,life:7,age:0,smoke:0,disruptTime:0});
+  missiles.push({mesh,vel:aim.multiplyScalar(v.advanced?26:32),homing:v.advanced,life:7,age:0,smoke:0,disruptTime:0,ballistic:true});
   v.flash=.28;
  }
  function destroy(v){onBlast(v.root.position.x,2.2,v.root.position.z,4);scene.remove(v.root);vehicles.splice(vehicles.indexOf(v),1);spawnClock=Math.min(spawnClock,5);}
  function update(dt,meteors,playerShots){const wave=getWave();collateralNotice=Math.max(0,collateralNotice-dt);
   if(wave<11||wave>14){if(enabled)reset();return;}
-  if(!enabled){enabled=true;deploy(-25);deploy(25);onMessage('MILITARY OCCUPATION — MISSILE BATTERIES DEPLOYED');}
-  if(wave>=13&&!vehicles.some(v=>v.advanced)){if(!vehicles.some(v=>v.root.position.x===0)) {deploy(0,true);onMessage('WARNING: HOMING MISSILE BATTERY DEPLOYED');}}
+  if(!enabled){enabled=true;deploy(-25);deploy(25);onMessage('MILITARY OCCUPATION — MAIN BATTLE TANKS DEPLOYED');}
+  if(wave>=13&&!vehicles.some(v=>v.advanced)){if(!vehicles.some(v=>v.root.position.x===0)) {deploy(0,true);onMessage('WARNING: ADVANCED RADAR TANK DEPLOYED');}}
   spawnClock-=dt;
   if(spawnClock<=0){for(const x of [-25,25])if(!vehicles.some(v=>Math.abs(v.root.position.x-x)<1))deploy(x);spawnClock=9;}
   for(let i=vehicles.length-1;i>=0;i--){const v=vehicles[i];v.cooldown-=dt;v.flash=Math.max(0,v.flash-dt);v.beacon.visible=v.flash>0;
-   const dx=dragon.position.x-v.root.position.x,dy=dragon.position.y-3;
+   // Tanks actively roll up and down Broad Street
+   if(v.gasTime<=0){
+    v.root.position.x+=v.patrolDir*v.speed*dt;
+    if(v.root.position.x>65){v.root.position.x=65;v.patrolDir=-1;}
+    else if(v.root.position.x<-65){v.root.position.x=-65;v.patrolDir=1;}
+   }
+   const dx=dragon.position.x-v.root.position.x,dz=dragon.position.z-v.root.position.z,dy=dragon.position.y-2.2;
+   if(v.turret)v.turret.rotation.y=Math.atan2(-dz,dx);
+   if(v.cannonGroup)v.cannonGroup.rotation.z=Math.atan2(dy,Math.sqrt(dx*dx+dz*dz));
    v.launcher.rotation.z=Math.atan2(dy,dx)*.45;
    v.gasTime=Math.max(0,v.gasTime-dt);
    v.hull.material=v.gasTime>0?gasHullMat:hullMat;
    v.searchlight.visible=v.gasTime<=0;
    if(v.gasTime<=0)updateSearchlight(v,dt);
-   if(v.gasTime<=0&&v.cooldown<=0){fire(v);v.cooldown=(v.advanced?3.7:5.3)*(0.85+Math.random()*.4);}
+   if(v.gasTime<=0&&v.cooldown<=0){fire(v);v.cooldown=(v.advanced?3.2:4.6)*(0.85+Math.random()*.4);}
    for(const meteor of meteors){if(meteor.mesh.position.distanceTo(v.root.position)<meteor.size+2.5){meteor.hp=0;onMeteorHit(meteor);destroy(v);break;}}
    if(!vehicles.includes(v))continue;
    for(const shot of playerShots){if(shot.hostile||shot.fireTarget||shot.life<=0)continue;if(shot.mesh.position.distanceTo(v.root.position)<3.3){shot.life=0;v.hp--;if(v.hp<=0){destroy(v);break;}}}
@@ -110,6 +134,7 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
   updateExhaust(dt);for(let i=missiles.length-1;i>=0;i--){const m=missiles[i];m.life-=dt;m.age=(m.age||0)+dt;smokeTrail(m.mesh.position,dt);
    if(m.disruptTime>0)m.disruptTime=Math.max(0,m.disruptTime-dt);
    else if(m.homing){const wanted=dragon.position.clone().sub(m.mesh.position).normalize().multiplyScalar(21);m.vel.lerp(wanted,Math.min(1,dt*.9));}
+   if(m.ballistic){m.vel.y-=14.0*dt;} // realistic ballistic gravity drop
    const previousPosition=m.mesh.position.clone();
    m.mesh.position.addScaledVector(m.vel,dt);m.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),m.vel.clone().normalize());
    let hit=false;

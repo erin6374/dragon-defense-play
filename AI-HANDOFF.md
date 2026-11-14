@@ -1,3 +1,38 @@
+## November 14 — RC61 Edge aim fix & 3D reticle, van crew boarding, bulldozers, fire spread & dragon firefighting, night military start, M1 Abrams MBT ballistic shells, F-16/F-22 3D formations, biker gangs, police barricades & skyline perspective occlusion
+
+Parent verified baseline SHA: 5ff7c1b8 (RC60 5.5.0-rc.60, build 5.5-north-broad-refinement-rc60).
+
+RC61 delivers a comprehensive suite of user-requested tactical, atmospheric, cinematic, and gameplay realism features:
+1. Full-Frustum Mouse Aim Fix & Dynamic 3D Targeting Reticle (`src/game.js`):
+   - Fixed edge-of-screen mouse aim clamp bug: expanded horizontal targeting boundary dynamically from legacy `[-94, 94]` to `[-280 - |cameraScrollX|, 280 + |cameraScrollX|]` and vertical boundary to `[-6, flightCeiling + 25]`, allowing seamless tracking and firing across the entire ultra-wide frustum.
+   - Added dynamic 3D targeting reticle tracking cursor world coordinates with rotating outer cyan ring, crosshair indices, and pulsing core dot.
+2. Construction Fleet Van Boarding & Bulldozer Rubble Clearing (`src/simulation/chapter-staging.js`):
+   - Workers arrive on scene inside crew vans, disembark to repair facades, and at the end of cutscenes walk back to the van, enter (`inside = true, visible = false`), sliding crew doors close, and vans drive off down the street. **Zero workers walking off on foot.**
+   - Added heavy bulldozer (`bulldozer`) on continuous crawler tracks with ROPS cab, amber beacon, and hydraulic blade actively pushing rubble debris off the roadway.
+3. Fire Spread Mechanics & Dragon Fire Suppression Bonus (`src/game.js`):
+   - Fires left unsuppressed spread to adjacent rowhouses after 5.5s, inflicting continuous structural damage over time.
+   - Fire trucks and response helicopters swarm active blazes with focused water cannons.
+   - Paulo's wind gust or low swoop applies high-efficiency fire suppression; extinguishing a fire awards `+250` bonus score with custom chime and HUD notification banner (`FIRE EXTINGUISHED! +250`).
+4. Chapter 3 Cinematic Night Start & Dramatic Searchlights (`src/game.js`, `src/rendering/realistic-vehicles.js`):
+   - Chapter 3 (waves 11-15) starts at deep cinematic night (`dayDarkness = 0.88, dayPhase = 0.55`).
+   - Helicopters feature volumetric chin searchlights tracking targets on the ground, illuminated cockpit interior glow, and high-frequency anti-collision strobe lights.
+5. M1 Abrams Main Battle Tanks with Ballistic Parabolic Shells (`src/simulation/military-occupation.js`):
+   - Realistic M1 Abrams MBT chassis rolling on continuous tread bands with 6 road wheels per side, sloped glacis, rotating turret, and elevating 120mm smoothbore cannon tracking Paulo.
+   - Cannon fires ballistic shells with true parabolic gravity drop ($\vec{v}_y -= 14.0 \cdot dt$). Missed shells arc downward and slam into rowhouse facades, schools, or pavement, creating collateral destruction and craters.
+6. F-16 / F-22 Attack Jets in 3D Tactical Formations (`src/simulation/final-squadron.js`):
+   - Modeled stealth delta-wing fighter jets with bubble canopies, twin canted vertical stabilizers, wingtip missiles, and glowing afterburner exhaust cones.
+   - Fly in 2-ship tactical echelon formations performing 3D strafing runs from background ($z = -120$) into foreground ($z = 12$) with high-velocity smoke-trailing missiles.
+7. Chapter 1 Biker Gangs & Progressive Police Intersections Blockade (`src/game.js`):
+   - In Chapter 1 (waves 1-5), motorcycle spawns feature 3-bike biker packs cruising in staggered echelon formations.
+   - As chapters advance and damage rises (waves 6-15 or HP < 75%), police cruisers park at Dauphin St ($x = -53$) and Susquehanna Ave ($x = 53$) with flashing red/blue lightbars and sawhorse barricades, diverting civilian traffic.
+8. Sharper Skyline Perspective Plane with Horizon Terrain Occlusion (`src/rendering/philadelphia-geometry-skyline.js`, `src/game.js`):
+   - Refined Center City skyline to sit on an authentic perspective depth plane: landmark towers arranged with realistic Z-depth, ambient buildings tapering in height from 42 down to 14 away from the downtown core.
+   - Added continuous horizon terrain apron (`skyline-horizon-ridge`) seated at $y = 8.2, z = 6$ in the skyline group, cleanly occluding skyscraper bases and preventing any visual intersection with background houses.
+9. Multi-Plane Background Meteor Storm & Fast-Moving Comets (`src/game.js`):
+   - Background meteors fall across all depth planes ($z \in [-35, -750]$), scaling aggressively as the neighborhood gauge shrinks to inflict corresponding damage and fires.
+   - Interceptable meteors feature an intense glowing threat corona aura, making them instantly distinguishable from non-interceptable background streaks.
+   - Added fast-moving upper-atmosphere comets ($v = 48-76$) blazing across the sky with luminous ion tails.
+
 ## November 13 — RC60 Diverse construction fleet, ladder repairs, non-intersecting skyline plane & sharper perspective plane
 
 Parent verified baseline SHA: 4a8fae3 (RC59 5.5.0-rc.59, build 5.5-north-broad-refinement-rc59).

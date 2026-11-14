@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc60",
-  "version": "5.5.0-rc.60",
+  "build": "5.5-north-broad-refinement-rc61",
+  "version": "5.5.0-rc.61",
   "gameplay_base": "5.2.3",
-  "scope": "RC60: Diverse construction fleet (dump truck with rubble bed, debris-clearing excavator crane with articulated bucket claw, extension ladders with facade repair workers & OSHA spotters), cutscene-only arrival/departure timing at normal city speed, non-intersecting skyline plane (moved behind all rowhouses at z=-1020), and sharper Google Earth oblique perspective plane with terracing elevation gradient.",
+  "scope": "RC61: Edge-of-screen mouse targeting fix and dynamic 3D targeting reticle; worker embarkation in crew vans (zero pedestrians walking off); bulldozers clearing debris; unsuppressed fire spread and dragon firefighting bonuses; deep cinematic night start for Chapter 3 with volumetric helicopter/tank searchlights and anti-collision strobes; M1 Abrams MBT patrol with elevating cannon and ballistic parabolic shells causing collateral building collapse; F-16/F-22 attack jet tactical 3D echelon formations with smoke-trail missiles; Chapter 1 biker gang packs; progressive police intersection barricades; sharper skyline perspective plane with continuous horizon terrain occlusion; multi-plane background meteor scaling and fast-moving upper-atmosphere comets.",
   "new_gameplay_features": false,
-  "release_status": "RC60 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC61 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

@@ -99,9 +99,19 @@ export function buildHelicopter(T,root,variant=0){
  const rotor=new T.Group();rotor.position.y=1.5;root.add(rotor);for(let i=0;i<(heavy?5:4);i++){const blade=block(rotor,dark,2.1,.01,0,4.2,.035,.23);blade.rotation.y=i*Math.PI*2/(heavy?5:4);blade.position.set(Math.cos(blade.rotation.y)*2.1,0,-Math.sin(blade.rotation.y)*2.1)}
  const tail=new T.Group();tail.position.set(-5.62,.85,.18);root.add(tail);for(let i=0;i<4;i++){const a=i*Math.PI/2;const blade=block(tail,dark,Math.cos(a)*.43,Math.sin(a)*.43,0,.85,.07,.035);blade.rotation.z=a}
  if(fire){oval(root,white,-.35,-.72,0,1.25,.35,.64);rod(root,metal,[.2,-.85,0],[.5,-1.45,0],.14)}
+ // Authentic aviation lighting: red/green navigation, glowing cockpit, flashing anti-collision strobes, and sweeping searchlight
  for(const [z,c] of [[-.94,0xff2424],[.94,0x35ff8a]]){const nav=new T.MeshBasicMaterial({color:c});oval(root,nav,-1,.1,z,.07,.07,.07)}
  const beacon=oval(root,new T.MeshBasicMaterial({color:0xff3423}),-.4,1.05,0,.10,.10,.10);
- root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,firefighting:fire};
+ const strobe=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-5.6,1.60,0,.11,.11,.11);
+ const cockpitGlow=oval(root,new T.MeshBasicMaterial({color:0xaef0ff,transparent:true,opacity:.72,depthWrite:false}),1.05,.05,0,.65,.45,.55);
+ const searchlightCone=new T.Mesh(new T.ConeGeometry(3.2,22,12,1,true),new T.MeshBasicMaterial({color:0xe8f4ff,transparent:true,opacity:.18,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
+ searchlightCone.position.set(1.4,-.65,0);
+ searchlightCone.rotation.z=-Math.PI*.32;
+ root.add(searchlightCone);
+ root.userData.strobe=strobe;
+ root.userData.cockpitGlow=cockpitGlow;
+ root.userData.searchlightCone=searchlightCone;
+ root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,strobe,cockpitGlow,searchlightCone,firefighting:fire};
 }
 export function buildPerson(T,seed=0){const {mat,oval,rod}=kit(T),g=new T.Group(),cloth=mat([0x4f687c,0x865853,0x5e685c,0xada394][seed%4]),skin=mat([0xb98564,0x76503a,0xd5ac87][seed%3]),pants=mat(0x303942),shoe=mat(0x252629);
  oval(g,cloth,0,.93,0,.20,.32,.14);oval(g,skin,0,1.39,0,.125,.16,.12);oval(g,mat(0x45382c),0,1.49,-.02,.128,.09,.12);const limbs=[];

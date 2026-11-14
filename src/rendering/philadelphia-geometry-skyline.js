@@ -134,19 +134,25 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
  const ambientBuildings=[
-  [-380,24,10],[-362,28,11],[-345,26,10],[-328,30,12],[-310,27,11],[-292,32,12],[-274,29,10],[-256,33,11],[-238,28,10],
-  [-220,26,11],[-202,32,12],[-185,28,10],[-168,36,13],[-150,30,11],[-134,35,12],[-118,31,10],
+  // Center City core frame ($x \in [-90, 110]$) with authentic Philadelphia urban profile
   [-99,28,10],[-90,39,7],[-78,33,12],[-65,43,10],[-51,31,11],[-37,36,8],[-21,34,10],
   [-3,40,12],[17,33,9],[33,36,12],[53,29,9],[68,40,11],[83,31,13],[97,34,9],
-  [112,36,11],[128,32,10],[145,37,13],[162,29,11],[180,34,12],[198,28,10],[218,33,12],
-  [236,29,10],[254,34,11],[272,30,12],[290,28,10],[308,32,11],[326,27,10],[344,31,12],[362,29,11],[380,26,10]
+  // Intermediate flanks tapering gracefully into mid-rise commercial and historic masonry
+  [-168,24,12],[-150,22,11],[-134,25,12],[-118,23,10],
+  [112,25,11],[128,23,10],[145,26,13],[162,21,11],
+  // Distant horizon mid-rises with receding perspective depth to prevent flat billboard intersections
+  [-380,14,12],[-345,15,11],[-310,16,12],[-274,17,11],[-238,18,12],[-202,20,12],
+  [180,20,12],[218,18,12],[254,17,11],[290,16,12],[326,15,11],[362,14,12]
  ];
  // Distant intermediate city is part of the geometry, not a photo pasted behind a cutout.
  const farTex=makeFacade(9291,'office');
  const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,side:THREE.DoubleSide});
  const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,side:THREE.DoubleSide});
  for(let i=0;i<ambientBuildings.length;i++){
-  const [x,h,w]=ambientBuildings[i];const g=new THREE.Group();g.position.set(x,0,-9-i%3*2);group.add(g);
+  const [x,h,w]=ambientBuildings[i];
+  // Sharper perspective plane: outer buildings recede in depth rather than forming a flat wall
+  const zDepth=-9-Math.max(0,Math.abs(x-15)-60)*.08-(i%3)*2.4;
+  const g=new THREE.Group();g.position.set(x,0,zDepth);group.add(g);
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
   g.add(poly.front,poly.sides);
  }
@@ -197,7 +203,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const crownMat=new THREE.MeshBasicMaterial({map:lanternMap,color:0x9eb5c2,transparent:true,opacity:.22,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
-  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
+  const g=new THREE.Group();g.name='landmark-'+d.id;
+  const depthBias=d.id==='city-hall'?-14:d.id==='comcast-technology'?-6:d.id==='comcast-center'?-10:d.id==='one-liberty-place'?-8:d.id==='two-liberty-place'?-12:d.id==='bny-mellon'?-15:-12-(i%3)*2.5;
+  g.position.set(d.x,0,depthBias);group.add(g);
   const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
   const facadeDamage=attachFacadeFireDamage(facade,SECONDARY_BURN_SITES_PER_TOWER);
   const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});

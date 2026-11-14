@@ -107,8 +107,15 @@ const cinematicLighting=createCinematicLighting(renderer,scene);
 const cinematicFX=createCinematicEffects(THREE,scene,camera,visualBank);
 const finalSquadron=createFinalSquadron(scene);
 const DAY_PHASE_WAVES=10;
-function dayPhase(w){return (((w-1)%DAY_PHASE_WAVES)+DAY_PHASE_WAVES)%DAY_PHASE_WAVES/DAY_PHASE_WAVES;}
-function dayDarkness(w){const p=dayPhase(w);return Math.max(0,Math.min(1,(p-.28)/.32,(.94-p)/.24));}
+function dayPhase(w){
+ if(w>=11&&w<=15)return 0.55; // Chapter 3 starts at dramatic night
+ return (((w-1)%DAY_PHASE_WAVES)+DAY_PHASE_WAVES)%DAY_PHASE_WAVES/DAY_PHASE_WAVES;
+}
+function dayDarkness(w){
+ if(w>=11&&w<=15)return 0.88; // Full night darkness for Chapter 3 military occupation
+ const p=dayPhase(w);
+ return Math.max(0,Math.min(1,(p-.28)/.32,(.94-p)/.24));
+}
 const ambience=scene.children.find(o=>o.isHemisphereLight);
 const skyTarget=new THREE.Color(skySteps[0]);
 // Reuse immutable palette colors in the per-frame lighting update; creating
@@ -242,12 +249,61 @@ const flameMats=[0xffffff,0xfff6e8,0xffe2be].map(color=>new THREE.SpriteMaterial
 const smokeSpriteMat=new THREE.SpriteMaterial({map:smokeSpriteTexture,color:0x626369,transparent:true,opacity:.33,depthWrite:false});
 function ignite(x,y,z){
  if(schoolFire.length>=42)return;
- // Avoid stacking five overlapping sprites at the same impact point.
  for(const f of schoolFire){if(f.root.position.distanceToSquared(new THREE.Vector3(x,y,z))<2.25)return;}
  const root=new THREE.Group();root.position.set(x,y,z);fireGroup.add(root);
- schoolFire.push({root,tongues:[],age:0,suppression:0,size:1.3+Math.random()*.7});
+ const initialSize=.8+Math.random()*.4;
+ schoolFire.push({root,tongues:[],age:0,suppression:0,initialSize,size:initialSize,spreadTimer:0,burnTimer:0});
 }
-function updateFires(dt){for(let i=schoolFire.length-1;i>=0;i--){const f=schoolFire[i];f.age+=dt;f.anchorClock=(f.anchorClock||0)-dt;if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));if(f.suppression>=1){fireGroup.remove(f.root);schoolFire.splice(i,1);continue}cinematicFX.fire(f.root.position,f.age,f.size,f.suppression);}}
+function updateFires(dt){
+ for(let i=schoolFire.length-1;i>=0;i--){
+  const f=schoolFire[i];f.age+=dt;
+  f.size=Math.min(2.4,f.initialSize+f.age*.06);
+  f.anchorClock=(f.anchorClock||0)-dt;
+  if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
+  f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
+
+  // Fire spreads to adjacent buildings if left unsuppressed
+  f.spreadTimer=(f.spreadTimer||0)+dt;
+  if(f.spreadTimer>5.5&&schoolFire.length<36&&f.suppression<.3){
+   f.spreadTimer=0;
+   const nearB=neighborhood.targetBuildings.find(b=>b.damage<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+   if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
+  }
+
+  // Fires cause continuous damage over time if not put out
+  f.burnTimer=(f.burnTimer||0)+dt;
+  if(f.burnTimer>=1.2){
+   f.burnTimer=0;
+   const bldg=neighborhood.targetBuildings.find(b=>Math.abs(b.x-f.root.position.x)<b.w*.5+1.2&&Math.abs(b.z-f.root.position.z)<b.d*.5+1.2);
+   if(bldg){bldg.damage=Math.min(1.0,(bldg.damage||0)+.012);}
+   else if(Math.abs(f.root.position.x)<15&&f.root.position.z<8){
+    schoolDamage=Math.min(1.0,schoolDamage+.006);hp=Math.min(hp,Math.round((1-schoolDamage)*100));
+    syncStructuralDamage();updateHud();
+   }
+  }
+
+  // Dragon firefighting: wind gust or close swoop puts out fires for bonus points!
+  if(windActive){
+   const rx=f.root.position.x-gustOrigin.x,ry=f.root.position.y-gustOrigin.y,rz=f.root.position.z-gustOrigin.z;
+   const along=rx*gustDirection.x+ry*gustDirection.y+rz*gustDirection.z;
+   const across=Math.sqrt(Math.max(0,rx*rx+ry*ry+rz*rz-along*along));
+   if(along>0&&along<52&&across<10+along*.38){
+    f.suppression+=dt*1.9;
+    f.dragonExtinguished=true;
+   }
+  }
+  if(dragon.position.distanceTo(f.root.position)<10.5){
+   f.suppression+=dt*1.1;
+   f.dragonExtinguished=true;
+  }
+
+  if(f.suppression>=1){
+   if(f.dragonExtinguished){score+=250;sound('bonus');message('FIRE EXTINGUISHED! +250');}
+   fireGroup.remove(f.root);schoolFire.splice(i,1);continue;
+  }
+  cinematicFX.fire(f.root.position,f.age,f.size,f.suppression);
+ }
+}
 function clearFires(){for(const f of schoolFire)fireGroup.remove(f.root);schoolFire=[]}
 // Five-story school collapse: staged per-floor masonry and slab rubble using one GPU batch.
 const schoolFragments=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshStandardMaterial({color:0x8c7770,roughness:1,flatShading:true}),240);
@@ -703,6 +759,13 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
 const skylineAirUniforms={opacity:{value:.26},day:{value:1}};
 const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
+// Continuous horizon terrain ridge occluding skyscraper bases from intersecting house roofs
+const horizonRidgeGeo=new THREE.PlaneGeometry(1200,28,32,1);
+const horizonRidgeMat=new THREE.MeshLambertMaterial({color:0x8e9ea9,roughness:0.96,depthWrite:false});
+const horizonRidge=new THREE.Mesh(horizonRidgeGeo,horizonRidgeMat);
+horizonRidge.position.set(0,8.2,6);
+horizonRidge.name='skyline-horizon-ridge';
+skyline.add(horizonRidge);
 // Distant facade lights are integrated into building materials.
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
 // The entire game now shares a time-animated, turbulence-driven flame field.
@@ -754,14 +817,61 @@ for(const x of [-60.1,-45.9,45.9,60.1])for(const z of [12.5,35.7]){
  red.position.set(x,6.55,z+.42);green.position.set(x,5.95,z+.42);scene.add(red,green);trafficSignals.push({red,green});
 }
 function updateSignals(){trafficLightRed=(elapsed%18)>11;for(const s of trafficSignals){s.red.material=trafficLightRed?trafficRed:trafficOff;s.green.material=trafficLightRed?trafficOff:trafficGreen;}}
+const policeBlockadeGroup=new THREE.Group();policeBlockadeGroup.name='police-intersections-blockade';scene.add(policeBlockadeGroup);
+const policeBlockades=[];
+for(const crossX of [-53, 53]){
+ for(const z of [11.5, 36.5]){
+  const cruiser=new THREE.Group();cruiser.position.set(crossX+(crossX>0?3.2:-3.2),-.36,z);
+  cruiser.rotation.y=(crossX>0?-1:1)*0.55;
+  buildRoadVehicle(THREE,cruiser,{length:4.2,bodyHex:0xf1f1e8,police:true,emergency:true});
+  batchVehicleVisuals(THREE,cruiser);
+  policeBlockadeGroup.add(cruiser);
+  const barrier=new THREE.Group();barrier.position.set(crossX,0,z+(z>20?3.2:-3.2));
+  box(barrier,material(0xe85d22),0,.65,0,3.2,.2,.25);
+  box(barrier,material(0xffffff),0,.65,0,.6,.21,.26);
+  box(barrier,material(0x282c30),-1.2,.32,0,.15,.65,.8);
+  box(barrier,material(0x282c30),1.2,.32,0,.15,.65,.8);
+  const amberBeacon=new THREE.Mesh(new THREE.SphereGeometry(.22,6,4),new THREE.MeshBasicMaterial({color:0xffaa22}));
+  amberBeacon.position.set(0,.85,0);barrier.add(amberBeacon);
+  policeBlockadeGroup.add(barrier);
+  policeBlockades.push({cruiser,beacon:cruiser.userData.vehicleBeacon,amberBeacon});
+ }
+}
+function updatePoliceBlockades(dt){
+ const activeBlockade=(wave>=6||hp<75);
+ policeBlockadeGroup.visible=activeBlockade;
+ if(!activeBlockade)return;
+ for(const b of policeBlockades){
+  if(b.beacon)b.beacon.material=(Math.floor(elapsed*8)%2)?redLamp:blueLamp;
+  if(b.amberBeacon)b.amberBeacon.visible=(Math.floor(elapsed*4)%2)===0;
+ }
+}
+function spawnBikerCompanion(leadX,leadZ,dir,offsetX,offsetZ,speed){
+ const root=new THREE.Group();scene.add(root);
+ root.position.set(leadX+dir*offsetX,-.36,leadZ+offsetZ);
+ root.rotation.set(0,dir<0?Math.PI:0,0);
+ const jacketHex=[0x22262a,0x354d68,0x7d2822][Math.floor(Math.random()*3)];
+ buildRoadVehicle(THREE,root,{length:2.55,bodyHex:jacketHex,bike:true});
+ batchVehicleVisuals(THREE,root);
+ cars.push({crossStreet:false,crossDir:0,rearStreet:false,turnAt:null,turning:false,turnPath:null,
+  laneChangeAt:null,laneChanged:false,originalLane:leadZ+offsetZ,root,poolKey:'bike-companion',
+  ice:false,dir,ambulance:false,length:2.55,bodyStyle:'sedan',ladder:false,
+  desiredSpeed:speed,driverPhase:Math.random()*6,bus:false,truck:false,van:false,
+  fireTruck:false,garbage:false,bike:true,scooter:false,speed,
+  emergency:false,police:false,beacon:null,hostile:false,laneZ:leadZ+offsetZ,
+  stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,
+  serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
+}
 const vehiclePool=new Map();
 const vehiclePoolStats={created:0,reused:0,recycled:0,explodedRemoved:0,originalMeshes:0,bakedBatches:0,drawCallsSaved:0,bakeFailures:0};
 const vehicleMaterials=new Map();
 function vehicleMaterial(hex){if(!vehicleMaterials.has(hex))vehicleMaterials.set(hex,material(hex));return vehicleMaterials.get(hex);}
-function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck)?15:12))return;
+function spawnCar(){
+ const carCap=wave<=5?24:(schoolFire.length&&!cars.some(c=>c.fireTruck)?18:14);
+ if(cars.length>=carCap)return;
  const severeDamage=hp<55||schoolFire.length>=3||neighborhood.targetBuildings.filter(b=>b.damage>.35).length>=5;
  const fireUrgency=schoolFire.length>0&&!cars.some(c=>c.fireTruck)&&Math.random()<.72;
- const emergency=fireUrgency||Math.random()<(severeDamage?.83:(wave>=5?Math.min(.74,.19+(wave-4)*.065):.055)),ambulance=!fireUrgency&&emergency&&(crowd.some(p=>p.down>0)||severeDamage)&&Math.random()<(severeDamage?.40:.30),police=!fireUrgency&&emergency&&!ambulance&&(wave>=6&&wave<=10?Math.random()<.85:Math.random()<.47),bike=!emergency&&Math.random()<.15,scooter=bike&&Math.random()<.55,bus=!emergency&&!bike&&Math.random()<.12,truck=!emergency&&!bus&&!bike&&Math.random()<.23,garbage=truck&&Math.random()<.31,van=!emergency&&!bus&&!truck&&!bike&&Math.random()<.24,taxi=!emergency&&!bike&&!bus&&!truck&&!van&&Math.random()<.17,dir=Math.random()<.5?1:-1;
+ const emergency=fireUrgency||Math.random()<(severeDamage?.83:(wave>=5?Math.min(.74,.19+(wave-4)*.065):.055)),ambulance=!fireUrgency&&emergency&&(crowd.some(p=>p.down>0)||severeDamage)&&Math.random()<(severeDamage?.40:.30),police=!fireUrgency&&emergency&&!ambulance&&(wave>=6&&wave<=10?Math.random()<.85:Math.random()<.47),bike=!emergency&&Math.random()<.18,scooter=bike&&Math.random()<.55,bus=!emergency&&!bike&&Math.random()<.12,truck=!emergency&&!bus&&!bike&&Math.random()<.23,garbage=truck&&Math.random()<.31,van=!emergency&&!bus&&!truck&&!bike&&Math.random()<.24,taxi=!emergency&&!bike&&!bus&&!truck&&!van&&Math.random()<.17,dir=Math.random()<.5?1:-1;
  const bodyHex=emergency?(ambulance?0xf7f5ed:police?0xf1f1e8:0xc52c2b):(garbage?0x447b58:taxi?0xf4c747:CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)]);
  const fireTruck=emergency&&!police&&!ambulance,ladder=fireTruck&&Math.random()<.5;
  const bodyStyle=['sedan','wagon','crossover'][Math.floor(Math.random()*3)];
@@ -770,13 +880,23 @@ function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck
  const reused=available?.pop();
  const root=reused?.root||new THREE.Group();scene.add(root);if(root.userData.fireCrew)root.userData.fireCrew.visible=false;
  if(reused)vehiclePoolStats.reused++;else vehiclePoolStats.created++;
- // Fixed, alternating lane assignments: two separate lanes in each direction.
+ // Alternating lane assignments and cross-street movement
  const laneKey=dir>0?'east':'west';
  const laneIndex=(nextLaneByDirection[laneKey]++)%2;
  const rearStreet=!emergency&&Math.random()<.16;
- const laneZ=rearStreet?-37:dir>0?[17,20][laneIndex]:[27,30][laneIndex];
+ const crossStreet=!emergency&&!rearStreet&&Math.random()<.18;
+ const crossDir=dir>0?-1:1;
+ const laneZ=crossStreet?(crossDir<0?46:8):rearStreet?-37:dir>0?[17,20][laneIndex]:[27,30][laneIndex];
  const spawnDist=260+Math.random()*40;
- root.position.set(dir>0?-spawnDist:spawnDist,-.36,laneZ);root.rotation.set(0,dir<0?Math.PI:0,0);root.scale.setScalar(rearStreet?.84:1);
+ if(crossStreet){
+  const crossX=Math.random()<.5?-53:53;
+  root.position.set(crossX,-.36,laneZ);
+  root.rotation.set(0,crossDir<0?-Math.PI/2:Math.PI/2,0);
+ }else{
+  root.position.set(dir>0?-spawnDist:spawnDist,-.36,laneZ);
+  root.rotation.set(0,dir<0?Math.PI:0,0);
+ }
+ root.scale.setScalar(rearStreet?.84:1);
  if(ambulance){const injured=crowd.find(p=>p.down>0);if(injured)root.position.x=THREE.MathUtils.clamp(injured.g.position.x-dir*11,-75,75);}
  const body=vehicleMaterial(bodyHex);
  const length=bike?2.55:ladder?8.8:bus?8:emergency&&!police?7.2:garbage?7.6:truck?6.5:van?4.9:3.7;
@@ -793,9 +913,15 @@ function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck
   root.userData.vehicleBeacon=beacon;
  }
  beacon=root.userData.vehicleBeacon||null;
- const turnAt=!emergency&&!rearStreet&&Math.random()<.23?(dir>0?[-53,53][Math.floor(Math.random()*2)]:[53,-53][Math.floor(Math.random()*2)]):null;
- const laneChangeAt=!emergency&&!rearStreet&&Math.random()<.27?(-37+Math.random()*74):null;
- cars.push({rearStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
+ const turnAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.23?(dir>0?[-53,53][Math.floor(Math.random()*2)]:[53,-53][Math.floor(Math.random()*2)]):null;
+ const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
+ cars.push({crossStreet,crossDir,rearStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
+ if(bike&&!scooter&&wave<=5&&cars.length<carCap-2&&Math.random()<.45){
+  const posX=dir>0?-spawnDist:spawnDist;
+  const companionSpeed=10+Math.random()*3;
+  spawnBikerCompanion(posX,laneZ,dir,-4.2,1.15,companionSpeed);
+  spawnBikerCompanion(posX,laneZ,dir,-8.4,-1.15,companionSpeed);
+ }
 }
 function recycleCar(car){if(!car||car.recycled)return;car.recycled=true;scene.remove(car.root);if(car.frozen)return;
  let list=vehiclePool.get(car.poolKey);if(!list){list=[];vehiclePool.set(car.poolKey,list);}if(list.length>=4)return;
@@ -836,8 +962,16 @@ function curvedIntersectionPath(car){
  return Array.from({length:20},(_,i)=>curve.getPoint((i+1)/20));
 }
 function updateVehicleRoute(car,dt){if(car.burning)return true;
+ if(car.crossStreet){
+  car.root.position.z+=car.crossDir*dt*car.speed;
+  if(car.crossDir<0?car.root.position.z<6:car.root.position.z>48){recycleCar(car);car.life=0;}
+  return true;
+ }
  if(car.turnPath?.length){const target=car.turnPath[0],delta=target.clone().sub(car.root.position);const distance=delta.length();if(distance<.75){car.turnPath.shift();if(!car.turnPath.length){car.life=Math.min(car.life,5);return true;}}else{vehicleYawTowards(car,Math.atan2(-delta.z,delta.x),dt);car.root.position.addScaledVector(delta,Math.min(distance,dt*car.speed)/distance);}return true;}
- if(car.turnAt!==null&&!car.turning&&(car.turnAt-car.root.position.x)*car.dir<1.6&&(car.turnAt-car.root.position.x)*car.dir> -2){car.turning=true;car.turnPath=curvedIntersectionPath(car);return true;}
+ if(car.turnAt!==null&&!car.turning&&(car.turnAt-car.root.position.x)*car.dir<1.6&&(car.turnAt-car.root.position.x)*car.dir> -2){
+  if((wave>=6||hp<75)&&!car.emergency&&!car.police){car.turnAt=null;return false;}
+  car.turning=true;car.turnPath=curvedIntersectionPath(car);return true;
+ }
  if(car.laneChangeAt!==null&&!car.laneChanged&&(car.laneChangeAt-car.root.position.x)*car.dir<1){car.laneChanged=true;const safe=choosePassingLane(car,cars,craters,{allowWithoutLeader:true});if(safe!==null)car.laneZ=safe;}
  return false;
 }
@@ -921,7 +1055,7 @@ function fireTruckService(c,dt){
   c.serviceTarget=null;c.serviceProgress=0;c.serviceDeparture=2.1;
  }
 }
-function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolFire.length&&!cars.some(c=>c.fireTruck)?1.2:(wave>=5?.8:1.5)+Math.random()*(wave>=5?1.1:2.6);if(hp<55||schoolFire.length>3)carTimer*=.65;}
+function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolFire.length&&!cars.some(c=>c.fireTruck)?1.2:(wave<=5?.45+Math.random()*.55:(wave>=5?.8:1.5)+Math.random()*(wave>=5?1.1:2.6));if(hp<55||schoolFire.length>3)carTimer*=.65;}
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
@@ -1152,31 +1286,31 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  const blockDamage=1-health/100;
  backgroundDamageTimer-=dt;
  if(backgroundDamageTimer>0)return;
- // Only escalate background damage when neighborhood health is under distress (<= 75) or in QA force mode.
- // Paced naturally so background rowhouses take gradual, cohesive damage rather than sporadic scripted collapses.
- // Background neighborhood houses take progressive meteor strikes and smoke throughout the attack
- backgroundDamageTimer=THREE.MathUtils.lerp(5.2,2.4,Math.max(frontDamage*.72,blockDamage));
- backgroundDamageTimer=THREE.MathUtils.lerp(5.8,2.8,Math.max(frontDamage*.72,blockDamage));
+ // Background meteor strikes scale across ALL planes as the neighborhood gauge shrinks
+ backgroundDamageTimer=THREE.MathUtils.lerp(3.8,0.95,Math.max(frontDamage*.75,blockDamage));
  const district=neighborhood.longRange;
  const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.z<DEFENSE_REAR_Z&&b.damage<1);
- const count=blockDamage>=.92?2:1;
- for(let i=0;i<count&&distantStreaks.length<58;i++){
-  const near=backs.length&&i===0&&random()<.45?backs[Math.floor(random()*backs.length)]:null;
-  const visible=i<1;
+ const count=blockDamage>=.85?4:blockDamage>=.55?3:blockDamage>=.25?2:1;
+ for(let i=0;i<count&&distantStreaks.length<65;i++){
+  const near=backs.length&&i===0&&random()<.48?backs[Math.floor(random()*backs.length)]:null;
+  const visible=i<2;
+  // Multi-plane sampling across near, intermediate, deep, and horizon blocks
+  const sampleZ=visible?(-35-random()*140):(-100-random()*720);
   const far=near?null:district.targetAt(
-   visible?cameraScrollX+(random()-.5)*90:(random()-.5)*440,
-   visible?-95-random()*90:-95-random()*470);
+   visible?cameraScrollX+(random()-.5)*120:(random()-.5)*520,
+   sampleZ);
   if(!near&&!far)continue;
   const point=near?new THREE.Vector3(near.x,near.h*.65,near.front-.2):
    district.root.localToWorld(new THREE.Vector3(far.x,far.y,far.z));
   const sprite=new THREE.Sprite(distantVisual.material);
-  sprite.position.copy(point).add(new THREE.Vector3(-20,70,0));
-  sprite.scale.set(2.2,8,1);
+  sprite.position.copy(point).add(new THREE.Vector3(-25,95,0));
+  sprite.scale.set(2.4,10,1);
   scene.add(sprite);
-  distantStreaks.push({sprite,life:1.8,landing:{point,near,far,strength:.28+blockDamage*.48}});
+  distantStreaks.push({sprite,life:1.6,landing:{point,near,far,strength:.35+blockDamage*.55}});
  }
 }
 
+let cometTimer=1.2;
 function updateDistantMeteors(dt){
  const chapter=currentChapter();
  const chapterIndex=CAMPAIGN_CHAPTERS.indexOf(chapter);
@@ -1212,7 +1346,31 @@ function updateDistantMeteors(dt){
   const to=target?skyline.worldToLocal(target.clone()):new THREE.Vector3(x+20,-10,15);
   distantStreaks.push({sprite,life:travel,travel,from,to,targetX:x,v:(16+Math.random()*14+waveProgress*5)*(flaming?skylineCrisis===2?2.6:1.9:1),impact:flaming||Math.random()<(.58+waveProgress*.25),flaming,waveProgress});
  }
+ // Fast-moving streaking comets cutting across the expanded upper sky
+ cometTimer-=dt;
+ if(cometTimer<=0&&distantStreaks.length<streakCap){
+  cometTimer=1.6+Math.random()*2.4;
+  const cometSprite=new THREE.Sprite(flamingDistantMeteorMaterial);
+  const startX=cameraScrollX+(Math.random()<.5?-240:240);
+  const startY=105+Math.random()*45;
+  const endX=startX+(startX>cameraScrollX?-1:1)*(200+Math.random()*140);
+  const endY=startY-50-Math.random()*35;
+  const cometZ=-120-Math.random()*280;
+  cometSprite.position.set(startX,startY,cometZ);
+  cometSprite.scale.set(3.8,18,1);
+  scene.add(cometSprite);
+  const cometSpeed=48+Math.random()*28;
+  const travel=Math.max(.8,(startY-endY)/cometSpeed);
+  distantStreaks.push({sprite:cometSprite,life:travel,travel,from:new THREE.Vector3(startX,startY,cometZ),to:new THREE.Vector3(endX,endY,cometZ),isComet:true,impact:false});
+ }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
+  if(s.isComet){
+   const progress=1-Math.max(0,s.life)/s.travel;
+   s.sprite.position.lerpVectors(s.from,s.to,progress);
+   s.sprite.material.opacity=Math.sin(progress*Math.PI)*.85;
+   if(s.life<=0){s.sprite.removeFromParent();distantStreaks.splice(i,1);}
+   continue;
+  }
   if(s.landing){
    const {point,near,far,strength}=s.landing;
    const remaining=Math.max(0,s.life)/1.8;
@@ -1354,7 +1512,7 @@ function addCrater(x,z,radius=3){
 function updateCraters(dt){streetStop=Math.max(0,streetStop-dt);for(let i=craters.length-1;i>=0;i--){const c=craters[i];c.life-=dt;if(c.ember)c.ember.material.opacity=Math.max(0,(c.life/120))*(.55+.25*Math.sin(elapsed*4.5));if(c.life<=0){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();craters.splice(i,1)}}}
 function updateWorld(dt){
  if(chapterSettlement.active)militaryOccupation.suppress(1);
- militaryOccupation.update(dt,meteors,shots);updateCraters(dt);if(performanceLab.isEnabled('backgroundMeteors'))updateSkyBursts(dt);updateSignals();updateSkylineDamage(dt);
+ militaryOccupation.update(dt,meteors,shots);updateCraters(dt);if(performanceLab.isEnabled('backgroundMeteors'))updateSkyBursts(dt);updateSignals();updatePoliceBlockades(dt);updateSkylineDamage(dt);
  if(performanceLab.isEnabled('backgroundMeteors')){updateDistantMeteors(dt);escalateBackgroundNeighborhood(dt);}
  for(let i=dangerZones.length-1;i>=0;i--)if((dangerZones[i].ttl-=dt)<=0)dangerZones.splice(i,1);
  const previousStun=dragonStun;invulnerable=Math.max(0,invulnerable-dt);dragonStun=Math.max(0,dragonStun-dt);if(previousStun>0&&dragonStun===0){recoveryLift=2.5;dragonGroundImpact=false;message('PAULO GETS UP, FLAPS HIS WINGS AND TAKES FLIGHT');}blockShield=Math.max(0,blockShield-dt);blockScene=Math.max(0,blockScene-dt);if(dragonStun>0){
@@ -1378,6 +1536,18 @@ function updateWorld(dt){
   }
   h.beacon.visible=Math.sin(elapsed*9+h.root.position.x)>.15;
   h.searchlight.intensity=wave>=5?Math.min(2.2,Math.max(0,(wave-3)*.55)):0;
+  if(h.root.userData.strobe)h.root.userData.strobe.visible=Math.floor(elapsed*8+h.variant)%2===0;
+  if(h.root.userData.cockpitGlow)h.root.userData.cockpitGlow.visible=!h.crashing;
+  if(h.root.userData.searchlightCone){
+   const showSearch=wave>=5&&!h.crashing&&(displayedDarkness>.2||h.role==='police'||h.role==='ice');
+   h.root.userData.searchlightCone.visible=showSearch;
+   if(showSearch){
+    const targetX=(h.role==='police'||h.role==='ice')?dragon.position.x:h.root.position.x+h.dir*14;
+    const targetY=(h.role==='police'||h.role==='ice')?dragon.position.y:0;
+    const dX=targetX-h.root.position.x,dY=targetY-h.root.position.y;
+    h.root.userData.searchlightCone.rotation.z=-Math.atan2(-dY,Math.abs(dX)+.1)*h.dir;
+   }
+  }
   if(h.crashing){h.v-=9.81*dt;h.root.position.y+=h.v*dt;h.root.rotation.z+=dt*(.7+Math.min(2.1,Math.abs(h.v)*.09));h.root.rotation.y+=dt*.85;
    if(h.root.position.y<1){emitImpact(h.root.position.x,1,h.root.position.z,140,1.2);sound('impact');neighborhood.impact(h.root.position.x,5,h.root.position.z,4,p=>debrisPiece(p,'brick'));h.life=0;if(h.gasHit){for(let j=0;j<7;j++){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x6ab85b,transparent:true,opacity:.45,depthWrite:false}));m.scale.set(2.1,2.4,1);m.position.copy(h.root.position).add(new THREE.Vector3((Math.random()-.5)*3,Math.random()*2,(Math.random()-.5)*2));scene.add(m);gasClouds.push({mesh:m,life:8,v:new THREE.Vector3(0,0,0),age:0});}}}}
   else {h.disorientTime=Math.max(0,h.disorientTime-dt);
@@ -1579,7 +1749,32 @@ const easyMode=()=>document.getElementById('difficulty')?.value==='easy';
 let facing=1,turnTime=0;const explosionLights=[];let pointer=new THREE.Vector3(0,17,0);const ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,0,1),0);
 // Pointer events can arrive many times per frame. Reuse raycast scratch values.
 const aimNdc=new THREE.Vector2(),aimIntersection=new THREE.Vector3();
-function aim(e){const r=renderer.domElement.getBoundingClientRect();aimNdc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));ray.setFromCamera(aimNdc,camera);if(ray.ray.intersectPlane(plane,aimIntersection))pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-94,94),THREE.MathUtils.clamp(aimIntersection.y,2,64+skyScreenHeight),0)}
+// Dynamic visible 3D targeting reticle tracking cursor across full screen
+const targetingReticle=new THREE.Group();
+const reticleRing=new THREE.Mesh(new THREE.RingGeometry(1.2,1.4,24),new THREE.MeshBasicMaterial({color:0x3be5ff,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide}));
+targetingReticle.add(reticleRing);
+const reticleCenter=new THREE.Mesh(new THREE.CircleGeometry(.22,12),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95,depthWrite:false}));
+targetingReticle.add(reticleCenter);
+for(let i=0;i<4;i++){
+ const tick=new THREE.Mesh(new THREE.PlaneGeometry(.14,.65),new THREE.MeshBasicMaterial({color:0x78eeff,transparent:true,opacity:.85,depthWrite:false}));
+ tick.position.set(Math.cos(i*Math.PI/2)*1.65,Math.sin(i*Math.PI/2)*1.65,0);
+ tick.rotation.z=i*Math.PI/2;
+ targetingReticle.add(tick);
+}
+targetingReticle.position.set(0,17,1.5);
+scene.add(targetingReticle);
+
+function aim(e){
+ const r=renderer.domElement.getBoundingClientRect();
+ aimNdc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));
+ ray.setFromCamera(aimNdc,camera);
+ if(ray.ray.intersectPlane(plane,aimIntersection)){
+  const maxAimX=280+Math.abs(cameraScrollX);
+  pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-maxAimX,maxAimX),THREE.MathUtils.clamp(aimIntersection.y,-6,flightCeiling+25),0);
+  targetingReticle.position.set(pointer.x,pointer.y,1.5);
+  targetingReticle.visible=active&&!paused;
+ }
+}
 // Pointermove already includes touch drags; a second touch-specific handler
 // previously performed the same raycast twice for each touch move.
 renderer.domElement.addEventListener('pointermove',aim);
@@ -1778,6 +1973,7 @@ fastImpactMaterial.emissive.setHex(0xff621c);
 fastImpactMaterial.emissiveIntensity=2.8;
 moltenMaterial.onBeforeCompile=shader=>{shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*3.5+sin(rockPoint.y*4.)*.8)*sin(rockPoint.z*4.5+rockPoint.y*2.7));float lava=1.-smoothstep(.035,.13,veins);totalEmissiveRadiance*=lava;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.22,.035,.006),lava*.6);`)};
+const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6b18,transparent:true,opacity:.72,depthWrite:false,blending:THREE.AdditiveBlending});
 function createPlayableRock(size=1,variant=-1){
  const gi=Math.floor(Math.random()*rockGeometryVariants.length);
  const mi=variant<0?Math.floor(Math.random()*5):Math.max(0,Math.min(5,variant));
@@ -1785,6 +1981,11 @@ function createPlayableRock(size=1,variant=-1){
  mesh.userData.sharedRockAsset=true;rockStats.meshCreations++;
  mesh.scale.set(size*(.87+Math.random()*.25),size*(.88+Math.random()*.24),size*(.87+Math.random()*.28));
  mesh.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+ // Luminous threat corona: visually distinguishes interceptable threats on Paulo's combat plane from background streaks
+ const corona=new THREE.Sprite(threatCoronaMat);
+ corona.scale.setScalar(size*2.6);
+ corona.name='threat-corona';
+ mesh.add(corona);
  return mesh;
 }
 function spawnMeteor(random=Math.random,opening=null){
@@ -2232,12 +2433,14 @@ const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3(),def
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
 function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
  if(!active&&impactMarker)impactMarker.visible=false;
+ if(targetingReticle)targetingReticle.visible=false;
  if(!paused&&neighborhoodHealth()===0&&performanceLab.isEnabled('backgroundMeteors')){
   updateSkyBursts(dt);updateDistantMeteors(dt);escalateBackgroundNeighborhood(dt);
  }
  return;
 }
 elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;if(!settling&&schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
+if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(elapsed*7)*.08;targetingReticle.scale.set(pulse,pulse,pulse);targetingReticle.position.set(pointer.x,pointer.y,1.5);targetingReticle.visible=active&&!paused;}
  if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
