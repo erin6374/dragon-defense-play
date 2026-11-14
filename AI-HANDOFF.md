@@ -1,3 +1,27 @@
+## November 13 — RC60 Diverse construction fleet, ladder repairs, non-intersecting skyline plane & sharper perspective plane
+
+Parent verified baseline SHA: 4a8fae3 (RC59 5.5.0-rc.59, build 5.5-north-broad-refinement-rc59).
+
+RC60 delivers critical visual realism refinements, perspective geometry alignment, and an upgraded construction repair system:
+1. Diverse Construction Fleet & Facade Repair Operations (`src/simulation/chapter-staging.js`):
+   - **Dump Truck (`dumpTruck`)**: Heavy industrial truck with cab, radiator grille, tinted glass, dual rear axles, and hydraulic tilting dump bed loaded with rubble and gravel debris.
+   - **Debris-Clearing Excavator Crane (`debrisClearingCrane`)**: Articulated excavator with 360-degree rotating slewing turret, hydraulic boom, stick dipper, and clamshell claw bucket. Slews between sidewalk rubble piles and the dump truck bed, scooping and depositing debris.
+   - **Extension Ladders (`extensionLadder`)**: Leaned against damaged building facades (Tech Freire entrance and South Brownstone) with aluminum rails and rungs, climbing workers with trowels and pointing tools actively patching masonry, and OSHA ground spotters stabilizing ladder bases.
+   - **Cutscene-Only Timing**: Construction crews deploy exclusively during chapter transitions (`setSettlement`) and remain actively working throughout the cutscene. Ordinary wave transitions no longer deploy cleanup crews.
+   - **Realistic Vehicle Pace**: All cleanup and construction vehicles arrive and depart at normal city driving speeds (~13.5-14.5 units/s) along Broad Street lanes ($z = 20.5$), eliminating sudden speeding or blinking out of existence.
+2. Non-Intersecting Center City Skyline Plane (`src/game.js`):
+   - Resolved visual clipping where background rowhouses (which extend to $z = -930$) were intersecting the skyscraper backdrop plane (previously at $z = -740$).
+   - Moved skyline plane back to $z = -1020$, comfortably behind the entire neighborhood grid.
+   - Rescaled skyline group to $(4.35, 2.80, 1.15)$ and expanded `skylineAir` atmospheric veil to $(960, 200)$, preserving the skyline's angular scale and horizon presence while ensuring zero physical intersection with residential rows.
+   - Expanded camera far clipping plane from $1250$ to $1600$ to prevent horizon culling.
+3. Sharper Google Earth Oblique Perspective Plane (`src/game.js`, `src/rendering/distant-neighborhood.js`):
+   - Steepened camera pitch angle to $\approx 4.7^\circ$ (`streetView = {x: 19, y: 34, z: 114, targetY: 24, targetZ: -8, fov: 52}`), revealing receding cross streets and rowhouse blocks cascading toward Center City.
+   - Added gentle terracing elevation gradient (`Math.max(0, -z - 100) * 0.0028`) to background terrain, elevating successive rowhouse blocks slightly as they recede, closely mirroring the Google Earth 3D oblique perspective.
+   - Extended ground walk plane depth to 1220 units ($z = -1175$), seamlessly grounding all structures.
+4. Invariants Preserved:
+   - All regression contracts pass (`check-build-info`, `frontage-contract`, `smoke-plume-contract`, `street-surface-contract`).
+   - Zero added draw batches in `structural-city.js`.
+
 ## November 13 — RC59 Google Earth surrounding landmarks, round cleanup crane deployment, zero-blink road exits & hard-mode storm balance
 
 Parent verified baseline SHA: a7a86c8 (RC58 5.5.0-rc.58, build 5.5-north-broad-refinement-rc58).

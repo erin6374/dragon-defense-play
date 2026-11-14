@@ -80,7 +80,7 @@ for(const id of ['game-build','hud-version','start-build']){
 const visualBank=createVisualMaterials(THREE);
 const scene=new THREE.Scene();
 const chapterStaging=createChapterStaging(scene);scene.background=new THREE.Color(0xa9c8e0);scene.fog=new THREE.FogExp2(0xacc9dc,.00175);
-const streetView={x:19,y:31,z:114,targetY:26,targetZ:-6,fov:52};
+const streetView={x:19,y:34,z:114,targetY:24,targetZ:-8,fov:52};
 const skyScreenHeight=2*streetView.z*Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5));
 const flightCeiling=44+skyScreenHeight;
 function skyCameraLift(altitude){
@@ -96,7 +96,7 @@ function meteorEntryHeight(z,size,minimum=105){
  const skyTop=streetView.y+skyCameraLift(dragon.position.y)+depth*Math.tan(halfFov-pitch);
  return Math.max(minimum,skyTop+size*1.6+8);
 }
-const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1250),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
+const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
 scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
@@ -693,7 +693,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  // Keep the distant towers behind the neighborhood and let perspective set their apparent scale.
  // Deliberately fictionalized landmark alignment: keep the skyline visible,
  // but entirely behind the expanded North Philadelphia rowhouse horizon.
- skyline.position.set(0,-15,-740);skyline.scale.set(3.25,2.10,1.15);
+ skyline.position.set(0,-18,-1020);skyline.scale.set(4.35,2.80,1.15);
  const skylineFires=[];let skylineDamage=0;
  const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke});
  const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
@@ -701,8 +701,8 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
  skyline.position.x=skylineAnchor;
 const skylineAirUniforms={opacity:{value:.26},day:{value:1}};
-const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(800,160),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
-skylineAir.position.set(0,47,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
+const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
+skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
 // Distant facade lights are integrated into building materials.
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
 // The entire game now shares a time-animated, turbulence-driven flame field.
@@ -2137,16 +2137,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   if(between>2.6)beginChapterSettlement();
   return;
  }
- if(previous===0&&!chapterEnd){
-  const damagedFront=neighborhood.targetBuildings.filter(b=>!b.background&&b.damage>.04).sort((a,b)=>b.damage-a.damage)[0];
-  const targetX=(damagedFront?damagedFront.x:(neighborhood.school.damage>.04?-3:0));
-  const targetName=damagedFront?damagedFront.name:'tech-freire-school';
-  chapterStaging.deployRoundCleanup(targetX,targetName);
- }
  const recovery=wave===15?4.5:rally&&!rallyRecoveryChoice?4:7;
- if(between>recovery-1.8&&chapterStaging.mode==='roundCleanup'){
-  chapterStaging.beginNextRound(wave<=5?1:wave<=10?2:wave<=14?3:4);
- }
  if(between>recovery){
   if(wave===15){winGame();return;}
   wave++;between=0;updateHud();newWave();
@@ -2160,7 +2151,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   message('WAVE CLEAR — NEXT WAVE IN '+Math.max(1,Math.ceil(recovery-between))+'s');
  }
 }
-function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'){}else if(chapterStaging.mode==='roundCleanup')chapterStaging.beginNextRound(chapterIndex);else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
+function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'||chapterStaging.mode==='settlement'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
  if(impactMarker)impactMarker.visible=false;
  // Ordinary waves preserve Paulo's free-flight position. Chapter transitions
  // and a fresh game explicitly manage the roof perch separately.
@@ -2498,7 +2489,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
  // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
  // camera, coordinates and renderer remain unchanged after the next RAF.
- const qaSkylineCamera=new THREE.OrthographicCamera(-145,145,81.5625,-81.5625,.1,650);
+ const qaSkylineCamera=new THREE.OrthographicCamera(-190,190,106.875,-106.875,.1,650);
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);

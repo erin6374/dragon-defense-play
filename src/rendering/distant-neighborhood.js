@@ -48,15 +48,15 @@ export function createDistantNeighborhood({root,flameTexture}){
   canopy:new THREE.MeshLambertMaterial({color:0x647c5e}),
   trunk:new THREE.MeshLambertMaterial({color:0x685746}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,1100),materials.walk);
- base.position.set(0,-.63,-510);root.add(base);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,1220),materials.walk);
+ base.position.set(0,-.63,-565);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[],canopy:[],trunk:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
- function registerBuilding(tier,x,z,w,h,d){
-  const home={id:buildingDefs.length,tier,x,z,w,h,d,parts:[],damage:0,fall:0};
+ function registerBuilding(tier,x,z,w,h,d,y=0){
+  const home={id:buildingDefs.length,tier,x,y,z,w,h,d,parts:[],damage:0,fall:0};
   buildingDefs.push(home);
   return home;
  }
@@ -66,7 +66,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   add(home.tier,type,x,y,z,w,h,d,color);
  }
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
- function street(x,z,w,d,tier){add(tier,'road',x,-.44,z,w,.12,d);}
+ function street(x,z,w,d,tier,y0=0){add(tier,'road',x,y0-.44,z,w,.12,d);}
  // Residential grid has open lots, rear yards, crossing streets and the railway/civic gap.
  const cross=CROSS_STREETS.map(s=>s.x);
  for(let k=0;k<STREET_AXIS.length;k++){
@@ -87,24 +87,27 @@ export function createDistantNeighborhood({root,flameTexture}){
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
  const nearParapetHeights=[];
   const nearParapetBandsByRow=new Map();
- const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565,-602,-638,-674,-705,-735,-765,-795,-825,-855,-885,-915,-945];
+ const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565,-602,-638,-674,-705,-735,-765,-795,-825,-855,-885,-915,-930];
  for(const z of [-328,-362,-397,-435,-472,-510,-546,-582,-620,-656,-692,-720,-750,-780,-810,-840,-870,-900,-930]){
-  street(0,z,2600,8.5,slot(z));
+  const streetElev=Math.max(0,-z-100)*0.0028;
+  street(0,z,2600,8.5,slot(z),streetElev);
  }
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
   const horizon=tier===tiers.length-1;
+  const rowElev=Math.max(0,-z-100)*0.0028;
   // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
   const lots=horizon?340:tier>=3?300:260;
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate
    const vacant=(ix+row*7)%11===0 || (row===5&&ix>15&&ix<19);
+   const y0=rowElev;
    if(railGap||vacant){
     if((ix+row)%3===0){
-     add(tier,'green',x,-.42,z,7.1,.05,11.5);
-     add(tier,'trunk',x,2.1,z,.54,4.2,.54);
-     add(tier,'canopy',x,5.1,z,5.9,4.5,5.4,0x6c805c);
+     add(tier,'green',x,y0-.42,z,7.1,.05,11.5);
+     add(tier,'trunk',x,y0+2.1,z,.54,4.2,.54);
+     add(tier,'canopy',x,y0+5.1,z,5.9,4.5,5.4,0x6c805c);
     }
     continue;
    }
@@ -117,35 +120,35 @@ export function createDistantNeighborhood({root,flameTexture}){
    const d=civic?21:commercial?16:9+((ix*2+row)%5)*1.24;
    if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
    const color=facades[(ix*3+row*5)%facades.length];
-   const home=registerBuilding(tier,x,z,w,h,d);
-   addPart(home,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
+   const home=registerBuilding(tier,x,z,w,h,d,y0);
+   addPart(home,'main',x,y0+h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
    const roofColor=((ix+row*3)%7===0)?0x524e4b:atmosphericFacade([0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3,0xafb5b9][(ix+row*5)%5],tier,row,ix);
-   addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18,roofColor);
+   addPart(home,'roof',x,y0+h+.12,z,w+.18,.24,d+.18,roofColor);
    // Google Earth reference: dense street-wall roofs punctuated by mature
    // rear-yard trees. Deterministic instancing adds depth, not per-tree meshes.
    if((ix+row*3)%3===0){
     const treeX=x+w*(ix%2?-.40:.43),treeZ=z-d*.68;
     const treeHeight=4.2+((ix*7+row)%6)*.52;
     const leafColor=[0x5a734a,0xc68234,0x788a4e,0xa95232,0x687c55,0xc2983c][(ix+row*5)%6];
-    add(tier,'trunk',treeX,treeHeight*.48,treeZ,.52,treeHeight*.96,.52);
-    add(tier,'canopy',treeX,treeHeight+1.3,treeZ,5.0+treeHeight*.22,4.3+treeHeight*.35,5.2+treeHeight*.28,leafColor);
+    add(tier,'trunk',treeX,y0+treeHeight*.48,treeZ,.52,treeHeight*.96,.52);
+    add(tier,'canopy',treeX,y0+treeHeight+1.3,treeZ,5.0+treeHeight*.22,4.3+treeHeight*.35,5.2+treeHeight*.28,leafColor);
    }
    if(horizon){
     // At this distance, a parapet or stepped roof reads more clearly than windows.
-    if(civic||modern)addPart(home,'rooftop',x,h+.9,z-d*.15,w*.78,1.55,d*.62);
-    else addPart(home,'cornice',x,h+.27,z+d*.48,w+.12,.35,.33);
+    if(civic||modern)addPart(home,'rooftop',x,y0+h+.9,z-d*.15,w*.78,1.55,d*.62);
+    else addPart(home,'cornice',x,y0+h+.27,z+d*.48,w+.12,.35,.33);
     continue;
    }
-   if(civic||commercial)addPart(home,'rooftop',x,h+.89,z-d*.16,w*.82,1.48,d*.68);
+   if(civic||commercial)addPart(home,'rooftop',x,y0+h+.89,z-d*.16,w*.82,1.48,d*.68);
    // Small rooftop HVAC boxes and access housings give the distant rows a
    // varied architectural silhouette; all equipment shares one batch per tier.
    // Place equipment toward the rear, away from the front cornice.
    if((ix+row*3)%5===0){
     const unitW=modern?1.4:1.1;
-    addPart(home,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
+    addPart(home,'rooftop',x-w*.21,y0+h+.54,z-d*.23,unitW,.72,1.2);
    }
    if((ix*7+row)%23===0){
-    addPart(home,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
+    addPart(home,'rooftop',x+w*.19,y0+h+1.02,z-d*.17,1.65,1.65,1.85);
    }
    if(!modern){
     if(tier<=2){
@@ -156,19 +159,19 @@ export function createDistantNeighborhood({root,flameTexture}){
      nearParapetHeights.push(parapetHeight);
      if(!nearParapetBandsByRow.has(row))nearParapetBandsByRow.set(row,new Set());
      nearParapetBandsByRow.get(row).add(parapetBand);
-     addPart(home,'cornice',x,h+.12+parapetHeight*.5,z+d/2+.02,w+.23,parapetHeight,.3);
-    }else addPart(home,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
+     addPart(home,'cornice',x,y0+h+.12+parapetHeight*.5,z+d/2+.02,w+.23,parapetHeight,.3);
+    }else addPart(home,'cornice',x,y0+h+.36,z+d/2+.02,w+.23,.20,.3);
    }
-   else addPart(home,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
+   else addPart(home,'cornice',x,y0+h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
     for(const bay of [-1,1]){
      const yy=(floor+.55)*h/stories;const wx=x+bay*w*.24;
-     addPart(home,'window',wx,yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
+     addPart(home,'window',wx,y0+yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
     }
    }
    // Door and occasional stoop, no separate draw call per home.
-   if((ix+row)%3===0)addPart(home,'cornice',x-w*.24,.18,z+d/2+.62,w*.35,.24,1.12);
-   if(commercial)addPart(home,'window',x,1.4,z+d/2+.10,w*.78,2.15,.07);
+   if((ix+row)%3===0)addPart(home,'cornice',x-w*.24,y0+.18,z+d/2+.62,w*.35,.24,1.12);
+   if(commercial)addPart(home,'window',x,y0+1.4,z+d/2+.10,w*.78,2.15,.07);
   }
  }
  // The east-side blocks beyond the playable frontage are visible at the pan limits.
@@ -614,7 +617,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    windows.find(p=>p.y<primary.y-p.h*.8)||windows.find(p=>p!==primary));
   home.fireOpenings=[primary,secondary].map(p=>p?
    {x:p.x,y:p.y-p.h*.46,z:p.z-p.d*.15,w:p.w,h:p.h}:null);
-  home.fireOpenings[2]={x:home.x,y:home.h+.10,z:home.z+home.d*.12,w:home.w*.14,h:.52};
+  home.fireOpenings[2]={x:home.x,y:(home.y||0)+home.h+.10,z:home.z+home.d*.12,w:home.w*.14,h:.52};
  }
  function positionImpactEffects(home){
   const entry=impactSmoke.get(home);if(!entry)return;

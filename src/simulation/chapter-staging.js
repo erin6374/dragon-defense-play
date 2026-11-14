@@ -65,6 +65,96 @@ export function createChapterStaging(scene){
   return mover;
  }
 
+ function dumpTruck(x,z,facing=1){
+  const g=new THREE.Group();g.position.set(x,0,z);group.add(g);
+  box(g,0,.95,0,7.4,1.3,2.8,orange); // Heavy chassis
+  box(g,facing*2.5,1.9,0,2.2,1.6,2.7,yellow); // Cab
+  box(g,facing*3.65,1.4,0,.2,.8,2.3,chrome); // Grille
+  box(g,facing*2.6,2.1,0,1.5,.9,2.75,glass); // Windshield
+  const beacon=box(g,facing*2.5,2.8,0,.6,.25,.6,amber); // Roof beacon
+  wheels(g,[[-2.5,-1.42],[-2.5,1.42],[-1.0,-1.42],[-1.0,1.42],[2.2,-1.42],[2.2,1.42]],.76);
+  // Steel dump bed with tailgate
+  const bedPivot=new THREE.Group();bedPivot.position.set(-facing*1.6,1.6,0);g.add(bedPivot);
+  const bedBody=new THREE.Group();bedBody.position.set(facing*1.6,0,0);bedPivot.add(bedBody);
+  box(bedBody,0,.1,0,4.4,.2,2.6,dark); // Bed floor
+  box(bedBody,0,.9,-1.25,4.4,1.4,.15,yellow); // Left wall
+  box(bedBody,0,.9,1.25,4.4,1.4,.15,yellow); // Right wall
+  box(bedBody,facing*2.15,.9,0,.15,1.4,2.6,yellow); // Bulkhead
+  box(bedBody,-facing*2.15,.9,0,.15,1.4,2.6,dark); // Tailgate
+  const rubbleMesh=box(bedBody,0,.55,0,3.8,.5,2.2,black); // Rubble load inside bed
+  rubbleMesh.scale.set(1,.25,1);
+  const mover={g,kind:'dumpTruck',beacon,bedPivot,bedBody,rubbleMesh,facing,targetX:x,targetZ:z,working:false,load:.25};
+  movers.push(mover);
+  return mover;
+ }
+
+ function debrisClearingCrane(x,z,facing=1,dumpTruck=null){
+  const g=new THREE.Group();g.position.set(x,0,z);group.add(g);
+  box(g,0,.95,0,6.8,1.2,2.8,orange); // Carrier chassis
+  box(g,facing*2.4,1.7,0,1.8,1.3,2.6,dark); // Engine deck
+  wheels(g,[[-2.2,-1.42],[-2.2,1.42],[0,-1.42],[0,1.42],[2.2,-1.42],[2.2,1.42]],.74);
+  const outriggers=[];
+  for(const [ox,oz] of [[-2.0,-1.5],[-2.0,1.5],[1.6,-1.5],[1.6,1.5]]){
+   const leg=box(g,ox,.45,oz,.28,.8,.28,chrome);
+   const pad=box(g,ox,.06,oz,.65,.1,.65,dark);
+   outriggers.push({leg,pad,baseY:pad.position.y});
+  }
+  // Slewing Turret & Articulated Boom
+  const turret=new THREE.Group();turret.position.set(-facing*.7,1.55,0);g.add(turret);
+  cylinder(turret,0,.3,0,.85,.6,dark); // Slewing ring
+  box(turret,0,.95,0,1.8,1.1,1.6,yellow); // Machinery house
+  box(turret,-1.0,1.0,0,.9,1.2,1.5,dark); // Counterweight
+  box(turret,.6,1.25,.55,.9,.95,.7,glass); // Operator cab
+  const beacon=box(turret,0,1.65,0,.5,.2,.5,amber);
+  // Boom Assembly
+  const boomPivot=new THREE.Group();boomPivot.position.set(.8,1.0,0);turret.add(boomPivot);
+  box(boomPivot,2.2,.2,0,4.4,.55,.6,orange); // Main boom
+  const stickPivot=new THREE.Group();stickPivot.position.set(4.3,.2,0);boomPivot.add(stickPivot);
+  box(stickPivot,1.7,-.2,0,3.4,.42,.45,yellow); // Stick / dipper arm
+  const clawPivot=new THREE.Group();clawPivot.position.set(3.4,-.3,0);stickPivot.add(clawPivot);
+  const clawA=box(clawPivot,.4,-.3,-.25,.7,.65,.35,dark);
+  const clawB=box(clawPivot,.4,-.3,.25,.7,.65,.35,dark);
+  const clawRubble=box(clawPivot,.4,-.3,0,.5,.5,.4,black);
+  clawRubble.visible=false;
+  const mover={g,kind:'debrisCrane',beacon,turret,boomPivot,stickPivot,clawPivot,clawA,clawB,clawRubble,outriggers,facing,dumpTruck,targetX:x,targetZ:z,working:false,workPhase:0};
+  movers.push(mover);
+  return mover;
+ }
+
+ function extensionLadder(x,z,wallY=9.2,leanAngle=0.20){
+  const g=new THREE.Group();g.position.set(x,0,z);group.add(g);
+  const ladderGroup=new THREE.Group();g.add(ladderGroup);
+  ladderGroup.rotation.x=-leanAngle; // Lean against building facade
+  // Aluminum rails
+  box(ladderGroup,-.42,wallY*.55,0,.08,wallY*1.1,.08,chrome);
+  box(ladderGroup,.42,wallY*.55,0,.08,wallY*1.1,.08,chrome);
+  // Rungs
+  for(let r=1;r<=10;r++) box(ladderGroup,0,r*(wallY*.095),0,.84,.05,.05,chrome);
+  // Climber worker on ladder
+  const climber=new THREE.Group();climber.position.set(0,wallY*.68,.15);ladderGroup.add(climber);
+  box(climber,0,.8,0,.5,.9,.3,safety);
+  box(climber,0,1.45,0,.3,.32,.28,skin);
+  box(climber,0,1.62,0,.38,.18,.36,yellow);
+  box(climber,-.15,.2,0,.18,.55,.18,dark);
+  box(climber,.15,.2,0,.18,.55,.18,dark);
+  const trowelArm=box(climber,.35,.9,-.25,.15,.15,.6,dark);
+  box(climber,.35,.9,-.55,.22,.18,.05,chrome);
+  // Ground safety spotter
+  const spotter=new THREE.Group();spotter.position.set(0,0,.55);g.add(spotter);
+  box(spotter,0,1.1,0,.55,1.1,.34,yellow);
+  box(spotter,0,1.85,0,.3,.32,.28,skin);
+  box(spotter,0,2.05,0,.38,.18,.36,white);
+  box(spotter,-.16,.32,0,.2,.66,.2,dark);
+  box(spotter,.16,.32,0,.2,.66,.2,dark);
+  box(spotter,-.32,1.25,-.35,.14,.14,.6,skin);
+  box(spotter,.32,1.25,-.35,.14,.14,.6,skin);
+  // Protective cones at base
+  coneProp(x-.9,z+.8);coneProp(x+.9,z+.8);
+  const mover={g,kind:'ladder',ladderGroup,climber,trowelArm,spotter,wallY,working:true};
+  movers.push(mover);
+  return mover;
+ }
+
  function barrier(x,z){box(group,x,.65,z,2.4,.2,.28,safety); box(group,x,.35,z,2.6,.15,.3,black);}
  function coneProp(x,z){const c=new THREE.Group();c.position.set(x,0,z);group.add(c); box(c,0,.25,0,.3,.5,.3,cone); box(c,0,.05,0,.55,.08,.55,white);}
  function buildChapterLayout(next){clear(); chapter=next; mode='chapter';
@@ -77,28 +167,38 @@ export function createChapterStaging(scene){
  }
  function setChapter(next){settlementChapter=0; leaveTarget=0; leaveTimer=0; buildChapterLayout(next);} 
  function setSettlement(fromChapter){clear(); mode='settlement'; settlementChapter=fromChapter; leaveTarget=0; leaveTimer=0;
-  // Position realistic construction crane vehicles right at the front street curb of damaged buildings
-  // 1. Tech Freire School center-front (x = -3, z = 13.5, working on main school facade)
+  // Diverse Construction Fleet positioned along damaged facades:
+  // 1. Tech Freire School center-front (x = -3, z = 13.5): Telescopic crane truck repairing high masonry & cornice
   const truckSchool=constructionCraneTruck(-3,13.5,1,'tech-freire-school');
-  // 2. Grands As Parents / Maximus Cares North frontage (x = -22, z = 13.5)
-  const truckNorth=constructionCraneTruck(-22,13.5,1,'grandsAsParents');
-  // 3. Brownstone / 2210 South frontage (x = 21, z = 13.5)
-  const truckSouth=constructionCraneTruck(21,13.5,-1,'brownstone');
 
-  // Traffic safety perimeter along Broad Street curb
+  // 2. Grands As Parents / Maximus Cares North frontage:
+  //    - Debris clearing crane / excavator at x = -26, z = 13.5
+  //    - Heavy dump truck receiving sidewalk debris at x = -17, z = 14.5
+  const truckDump=dumpTruck(-17,14.5,1);
+  const excavator=debrisClearingCrane(-26,13.5,1,truckDump);
+
+  // 3. Extension ladders brought by crews for facade repairs:
+  //    - Leaned against Tech Freire main entrance (x = 6.5, z = 11.2, wallY = 8.8)
+  extensionLadder(6.5,11.2,8.8,0.20);
+  //    - Leaned against Brownstone facade (x = 22, z = 11.2, wallY = 9.5)
+  extensionLadder(22,11.2,9.5,0.20);
+
+  // 4. Traffic safety perimeter along Broad Street curb
   for(const x of [-48,-36,-24,-12,0,12,24,36,48]) barrier(x,16.5), coneProp(x-1.5,16.2), coneProp(x+1.5,16.2);
-  // Construction personnel in safety gear
-  for(let i=0;i<14;i++)person(-38+i*6,12.5+(i%2)*1.2,false,i%3===0,true);
-  // Rubble cleanup piles on sidewalk
+  // 5. Construction personnel in safety gear
+  for(let i=0;i<12;i++)person(-38+i*7,12.5+(i%2)*1.2,false,i%3===0,true);
+  // 6. Rubble cleanup piles on sidewalk
   for(let i=0;i<5;i++){const pile=box(group,-26+i*13,.55,8.8,2.4,.75,2.4,black);cleanupPiles.push(pile);}
+
+  // Set arrival targets and initial offscreen road positions (normal driving pace ~13-15 units/s)
   let convoyIndex=0;
   for(const item of movers){
-   if(item.kind==='constructionCrane'){
+   if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'){
     item.targetX=item.g.position.x;
     item.targetZ=item.g.position.z;
-    item.arrivalDelay=convoyIndex*1.5;
-    // Drive in along the road lane (z = 21) from off-screen
-    item.g.position.x+=item.facing*(38+convoyIndex*14);
+    item.arrivalDelay=convoyIndex*1.4;
+    // Drive in along the road lane (z = 20.5) from off-screen
+    item.g.position.x+=item.facing*(44+convoyIndex*16);
     item.g.position.z=20.5;
     convoyIndex++;
    }
@@ -131,46 +231,101 @@ export function createChapterStaging(scene){
   }else buildChapterLayout(next);
  }
  function beginNextChapter(next){
-  if(mode==='settlement'&&group.children.length){ leaveTarget=next; leaveTimer=5.8; mode='leaving'; }
+  if(mode==='settlement'&&group.children.length){ leaveTarget=next; leaveTimer=9.5; mode='leaving'; }
   else buildChapterLayout(next);
  }
  function update(dt,elapsed){
   if(mode==='settlement'||mode==='roundCleanup'){
    settlementClock+=dt;
-   // Work trucks drive in along road lanes, pull up to curb, deploy outriggers, raise cranes, and actively work
+   // Vehicles drive in at normal city pace (~13.5 units/s), pull up to curb, and actively work
    for(const item of movers){
-    if(item.kind==='constructionCrane'){
-     // Beacon rotation/flashing
-     if(item.beacon)item.beacon.material.color.setHex((Math.sin(elapsed*14)>0)?0xffaa00:0x553300);
+    if(item.beacon)item.beacon.material.color.setHex((Math.sin(elapsed*13)>0)?0xffaa00:0x553300);
+    if(item.kind==='constructionCrane'||item.kind==='dumpTruck'||item.kind==='debrisCrane'){
      if(settlementClock>=(item.arrivalDelay||0)){
-      // Smoothly steer to curb spot
-      item.g.position.x=THREE.MathUtils.damp(item.g.position.x,item.targetX,.85,dt);
-      item.g.position.z=THREE.MathUtils.damp(item.g.position.z,item.targetZ,.75,dt);
-      const arrived=Math.abs(item.g.position.x-item.targetX)<.8&&Math.abs(item.g.position.z-item.targetZ)<.5;
+      const dx=item.targetX-item.g.position.x;
+      const dist=Math.abs(dx);
+      if(dist>0.05){
+       const speed=Math.min(13.5,Math.max(2.5,dist*2.0));
+       item.g.position.x+=Math.sign(dx)*Math.min(speed*dt,dist);
+      }
+      item.g.position.z=THREE.MathUtils.damp(item.g.position.z,item.targetZ,1.4,dt);
+      const arrived=dist<.7&&Math.abs(item.g.position.z-item.targetZ)<.5;
       if(arrived){
        item.working=true;
        item.workPhase+=dt;
-       // Deploy outrigger pads
-       for(const out of item.outriggers){
-        out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,0,1.8,dt);
-        out.leg.scale.y=THREE.MathUtils.damp(out.leg.scale.y,1.2,1.8,dt);
+       if(item.outriggers){
+        for(const out of item.outriggers){
+         out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,0,1.8,dt);
+         out.leg.scale.y=THREE.MathUtils.damp(out.leg.scale.y,1.2,1.8,dt);
+        }
        }
-       // Rotate turret toward building facade (z < 0)
-       const targetTurretAngle=item.facing>0?Math.PI*.62:-Math.PI*.62;
-       item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,targetTurretAngle,1.2,dt);
-       // Elevate boom arm up to upper facade level
-       const targetPitch=0.75+Math.sin(elapsed*.8)*.15;
-       item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,targetPitch,1.4,dt);
-       // Telescoping extension arm movement
-       item.extPivot.position.x=THREE.MathUtils.damp(item.extPivot.position.x,4.2+Math.sin(elapsed*1.2)*.6,1.2,dt);
-       // Welding repair spark flash
-       const sparking=Math.sin(elapsed*28+item.targetX)>.25;
-       if(item.sparkGlint){
-        item.sparkGlint.material.opacity=sparking?.95:0;
-        item.sparkGlint.scale.setScalar(sparking?.3+Math.random()*.25:.01);
+       if(item.kind==='constructionCrane'){
+        const targetTurretAngle=item.facing>0?Math.PI*.62:-Math.PI*.62;
+        item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,targetTurretAngle,1.2,dt);
+        const targetPitch=0.75+Math.sin(elapsed*.8)*.15;
+        item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,targetPitch,1.4,dt);
+        item.extPivot.position.x=THREE.MathUtils.damp(item.extPivot.position.x,4.2+Math.sin(elapsed*1.2)*.6,1.2,dt);
+        const sparking=Math.sin(elapsed*28+item.targetX)>.25;
+        if(item.sparkGlint){
+         item.sparkGlint.material.opacity=sparking?.95:0;
+         item.sparkGlint.scale.setScalar(sparking?.3+Math.random()*.25:.01);
+        }
+       }else if(item.kind==='debrisCrane'){
+        // Articulated excavator animation: slews to sidewalk rubble, scoops, slews to dump truck, deposits debris
+        const cycle=(item.workPhase*.35)%1.0;
+        let slewAngle,pitchBoom,pitchStick,clawOpen,holdingRubble;
+        if(cycle<.30){
+         // Slew to sidewalk rubble pile
+         slewAngle=item.facing>0?Math.PI*.55:-Math.PI*.55;
+         pitchBoom=0.45+Math.sin(cycle*Math.PI/.30)*.25;
+         pitchStick=-0.75-Math.sin(cycle*Math.PI/.30)*.20;
+         clawOpen=cycle<.18;
+         holdingRubble=cycle>=.18;
+        }else if(cycle<.70){
+         // Slew over to dump truck bed
+         const t=(cycle-.30)/.40;
+         const truckAngle=item.facing>0?-Math.PI*.42:Math.PI*.42;
+         slewAngle=THREE.MathUtils.lerp(item.facing>0?Math.PI*.55:-Math.PI*.55,truckAngle,t);
+         pitchBoom=0.82;
+         pitchStick=-0.45;
+         clawOpen=false;
+         holdingRubble=true;
+        }else if(cycle<.85){
+         // Dump into truck bed
+         slewAngle=item.facing>0?-Math.PI*.42:Math.PI*.42;
+         pitchBoom=0.75;
+         pitchStick=-0.35;
+         clawOpen=true;
+         holdingRubble=false;
+         if(item.dumpTruck){
+          item.dumpTruck.load=Math.min(1.0,item.dumpTruck.load+dt*.18);
+          item.dumpTruck.rubbleMesh.scale.y=item.dumpTruck.load;
+         }
+        }else{
+         // Return to rubble pile
+         const t=(cycle-.85)/.15;
+         slewAngle=THREE.MathUtils.lerp(item.facing>0?-Math.PI*.42:Math.PI*.42,item.facing>0?Math.PI*.55:-Math.PI*.55,t);
+         pitchBoom=0.55;
+         pitchStick=-0.60;
+         clawOpen=true;
+         holdingRubble=false;
+        }
+        item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,slewAngle,2.4,dt);
+        item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,pitchBoom,2.0,dt);
+        item.stickPivot.rotation.z=THREE.MathUtils.damp(item.stickPivot.rotation.z,pitchStick,2.0,dt);
+        item.clawA.rotation.z=clawOpen?.35:-.15;
+        item.clawB.rotation.z=clawOpen?-.35:.15;
+        item.clawRubble.visible=holdingRubble;
+       }else if(item.kind==='dumpTruck'){
+        // Keep bed stable and update rubble height
+        item.bedPivot.rotation.z=THREE.MathUtils.damp(item.bedPivot.rotation.z,0,1.5,dt);
+        item.rubbleMesh.scale.y=THREE.MathUtils.damp(item.rubbleMesh.scale.y,item.load,1.2,dt);
        }
       }
      }
+    }else if(item.kind==='ladder'){
+     // Worker active troweling motion on ladder
+     if(item.trowelArm)item.trowelArm.rotation.x=Math.sin(elapsed*5.2)*.22;
     }
    }
    const cleared=THREE.MathUtils.smoothstep(settlementClock,3.8,11.5);
@@ -190,21 +345,46 @@ export function createChapterStaging(scene){
   if(mode==='leaving'){
    leaveTimer-=dt;
    let anyOnScreen=false;
+   // Crews continue active repairs for first 2.8s after cutscene closes, then pack up and leave
+   const activeRepair=leaveTimer>6.7;
+   const packing=leaveTimer<=6.7&&leaveTimer>5.2;
+   const driving=leaveTimer<=5.2;
    for(const item of movers){
     if(!item.g.parent)continue;
-    if(item.kind==='constructionCrane'){
-     // Retract crane boom and outriggers before driving off
-     item.sparkGlint.material.opacity=0;
-     item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,0,3.5,dt);
-     item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,0,3.5,dt);
-     for(const out of item.outriggers)out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,out.baseY,3.5,dt);
-     // Drive off along the road
-     item.g.position.x+=item.facing*dt*28.0;
-     item.g.position.z=THREE.MathUtils.damp(item.g.position.z,21.0,2.0,dt);
+    if(item.kind==='constructionCrane'||item.kind==='debrisCrane'||item.kind==='dumpTruck'){
+     if(activeRepair){
+      // Continue work
+      if(item.sparkGlint)item.sparkGlint.material.opacity=(Math.sin(elapsed*28)>.3)?.9:0;
+     }else if(packing){
+      // Retract booms, outriggers, and stow equipment
+      if(item.sparkGlint)item.sparkGlint.material.opacity=0;
+      if(item.boomPivot)item.boomPivot.rotation.z=THREE.MathUtils.damp(item.boomPivot.rotation.z,0,3.0,dt);
+      if(item.stickPivot)item.stickPivot.rotation.z=THREE.MathUtils.damp(item.stickPivot.rotation.z,0,3.0,dt);
+      if(item.turret)item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,0,3.0,dt);
+      if(item.outriggers){
+       for(const out of item.outriggers){
+        out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,out.baseY,3.0,dt);
+        out.leg.scale.y=THREE.MathUtils.damp(out.leg.scale.y,1.0,3.0,dt);
+       }
+      }
+     }else if(driving){
+      // Drive off at normal city speed (~14.0 units/s) along road lane
+      item.g.position.x+=item.facing*dt*14.0;
+      item.g.position.z=THREE.MathUtils.damp(item.g.position.z,20.5,1.8,dt);
+     }
+    }else if(item.kind==='ladder'){
+     if(activeRepair){
+      if(item.trowelArm)item.trowelArm.rotation.x=Math.sin(elapsed*5.2)*.22;
+     }else{
+      // Lower climber and fold ladder flat to pack away
+      item.climber.position.y=THREE.MathUtils.damp(item.climber.position.y,.5,2.0,dt);
+      if(packing)item.ladderGroup.rotation.x=THREE.MathUtils.damp(item.ladderGroup.rotation.x,-Math.PI*.45,2.0,dt);
+      if(driving)item.g.position.x+=dt*5.0;
+     }
     }else if(item.kind==='vehicle'){
-     item.g.position.x+=dt*24.0;
+     if(driving)item.g.position.x+=dt*14.0;
     }else if(item.kind==='person'){
-     item.g.position.x+=dt*7.5;
+     if(driving)item.g.position.x+=dt*4.5;
     }
     if(Math.abs(item.g.position.x)<260)anyOnScreen=true;
    }
