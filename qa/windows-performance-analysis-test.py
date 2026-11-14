@@ -135,5 +135,26 @@ class AnalyzerTests(unittest.TestCase):
         self.assertTrue(quality['host_stall_evidence_available'])
         self.assertGreater(report['foreground_stall_samples']['render_and_heartbeat_stale'], 0)
 
+
+    def test_quality_rejects_mid_capture_browser_freeze(self):
+        # First and last heartbeats span the full 40s; a 30s interior freeze
+        # must not be misreported as a representative foreground FPS sample.
+        rows = [self.row('host', i) for i in range(40)]
+        rows += [self.row('browser', i) for i in [0, 1, 2, 3, 4, 5, 35, 36, 37, 38, 39]]
+        self.write(rows)
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertGreater(quality['foreground_browser_coverage_fraction'], .75)
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertEqual(quality['max_foreground_browser_gap_seconds'], 30)
+        self.assertTrue(any('mid-capture freeze' in issue for issue in quality['issues']))
+
+    def test_quality_accepts_regular_five_second_heartbeat_spacing(self):
+        rows = [self.row('host', i) for i in range(40)]
+        rows += [self.row('browser', i) for i in range(0, 40, 5)]
+        self.write(rows)
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertTrue(quality['foreground_fps_usable'])
+        self.assertEqual(quality['max_foreground_browser_gap_seconds'], 5)
+
 if __name__ == '__main__':
     unittest.main()

@@ -21,6 +21,7 @@ MIN_CAPTURE_SECONDS = 30
 MIN_VISIBLE_HOST_SAMPLES = 20
 MIN_FOREGROUND_BROWSER_SAMPLES = 2
 MIN_FOREGROUND_BROWSER_COVERAGE = 0.75
+MAX_FOREGROUND_BROWSER_GAP_SECONDS = 5.0
 
 
 def number(value):
@@ -87,7 +88,11 @@ def summarize(path):
 
     times = [t for row in rows if (t := timestamp(row)) is not None]
     duration = round((max(times) - min(times)).total_seconds(), 2) if len(times) > 1 else None
-    foreground_times = [t for row in foreground_browser if (t := timestamp(row)) is not None]
+    foreground_times = sorted(t for row in foreground_browser if (t := timestamp(row)) is not None)
+    # A freeze in the middle can leave the first and last browser heartbeat
+    # far apart, falsely passing a span-only 75% coverage test.
+    foreground_gaps = [(b - a).total_seconds() for a, b in zip(foreground_times, foreground_times[1:])]
+    max_foreground_gap = round(max(foreground_gaps), 2) if foreground_gaps else None
     foreground_span = ((max(foreground_times) - min(foreground_times)).total_seconds()
                        if len(foreground_times) > 1 else 0)
     browser_coverage = (round(foreground_span / duration, 3)
@@ -103,11 +108,14 @@ def summarize(path):
         quality_issues.append('Fewer than two visible, focused browser heartbeats: FPS distribution insufficient.')
     elif browser_coverage is None or browser_coverage < MIN_FOREGROUND_BROWSER_COVERAGE:
         quality_issues.append('Visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
+    if max_foreground_gap is not None and max_foreground_gap > MAX_FOREGROUND_BROWSER_GAP_SECONDS:
+        quality_issues.append('Visible browser heartbeat gap exceeds 5 seconds: foreground FPS may omit a mid-capture freeze.')
     host_cpu_samples = sum(number(r.get('cpuPercent')) is not None for r in visible_host)
     host_ram_samples = sum(number(r.get('ramPercent')) is not None for r in visible_host)
     capture_quality = {
         'foreground_fps_usable': not quality_issues,
         'foreground_browser_coverage_fraction': browser_coverage,
+        'max_foreground_browser_gap_seconds': max_foreground_gap,
         'host_stall_evidence_available': len(visible_host) >= MIN_VISIBLE_HOST_SAMPLES,
         'host_cpu_ram_usable': (duration is not None and duration >= MIN_CAPTURE_SECONDS
                                 and host_cpu_samples >= MIN_VISIBLE_HOST_SAMPLES

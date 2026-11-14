@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+  "observed_parent_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
   "observed_version": "5.5.0-rc.57",
   "observed_build_id": "5.5-licensed-smoke-alpha-cull-rc57",
-  "release_status": "rc57_fully_verified_six_motion_mp4_byte_identical_to_rc56_new_qa_gate_pending_art_fail_physical_windows_fps_unmeasured",
+  "release_status": "rc57_exact_head_verified_new_windows_analyzer_mid_capture_freeze_gate_pending_art_fail_physical_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43566316946,
-      "source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+      "run_id": 43571109962,
+      "source_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43566316946"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43571109962"
     },
     {
       "name": "cinematic",
-      "run_id": 43566316873,
-      "source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+      "run_id": 43571109920,
+      "source_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43566316873"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43571109920"
     },
     {
       "name": "focused fire",
-      "run_id": 43566316852,
-      "source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+      "run_id": 43571109934,
+      "source_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43566316852"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43571109934"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43566316899,
-      "source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+      "run_id": 43571109919,
+      "source_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43566316899"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43571109919"
     },
     {
       "name": "genuine motion",
-      "run_id": 43566316847,
-      "source_sha": "5ea39e6e2b1432fd2ec0a9b83f9b311659744514",
+      "run_id": 43571109923,
+      "source_sha": "5fe1db43d543053fd0aac822cb7e771e65b0f6a3",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43566316847"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43571109923"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five exact-new-HEAD workflows and artifacts for the six-MP4 visual-equivalence QA utility; then obtain physical Windows 30–60s heavy-destruction FPS/CPU/RAM capture before performance claims.",
+  "next_task": "Verify all five exact-new-HEAD workflows and artifacts after Windows analyzer mid-capture freeze fix, then obtain physical Windows 30–60s heavy-destruction FPS/CPU/RAM capture.",
   "implemented": [
+    "2026-11-14: Exact-head RC57 5fe1db43d543053fd0aac822cb7e771e65b0f6a3 five workflows SUCCESS (browser 43571109962, cinematic 43571109920, focused 43571109934, licensed CC0 43571109919, genuine motion 43571109923); independent artifact CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean, 5x100-frame/5s and 600-frame/30s genuine MP4s, CC0 SHA-256 matched and original FBX intact. Actual art remains FAIL. Bounded Windows analyzer fix rejects >5s interior browser heartbeat gaps that previously escaped first-to-last 75% coverage; local negative/positive synthetic controls passed. New commit QA pending. Physical Windows FPS unmeasured.",
     "2026-11-14: RC57 source 5ea39e6e2b1432fd2ec0a9b83f9b311659744514 five Actions passed (browser 43566316946, cinematic 43566316873, focused 43566316852, CC0 43566316899, motion 43566316847); independently CRC-checked 78/78, 6/6, 7/7, 33/33, Windows 150/150; clean reports, packaged CC0 hashes and original FBX. Six RC56/RC57 MP4s byte-identical; five sampled long-video frames pixel-identical. Added strict --require-identical-videos mode to motion comparison tool, local positive/negative controls passed. This new commit exact-head QA pending; physical FPS unmeasured and ART FAIL.",
     "2026-11-14: RC57 parent d129376b89702c4c0a41d5d6db0b2167c9ed5aec browser QA failed before startup due obsolete source assertion expecting 'float feather='; corrected test token to 'feather=' without changing shader/gameplay. Parent CC0 passed; cinematic, focused fire and motion in progress at observation. Corrected commit requires all five new-head workflows; no Windows preview for failed parent.",
     "2026-11-14: RC56 source 77df10026e67d3bf14acdb6931b964f8cfffbec5 all five exact-head Actions SUCCESS (browser 43556252917, cinematic 43556252897, focused 43556252913, licensed CC0 43556252916, genuine motion 43556252911); independently verified ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean; five 100-frame MP4s and 600-frame 30s MP4; both CC0 hashes and original FBX verified. RC57 candidate: licensed plume conservative age/feather alpha bound early discard before two atlas reads; unchanged visible-alpha math and fixed pools, meteor-only ignition, gameplay, bilateral damage. Local deterministic 100k synthetic fragments: 7,269 safe culls; not measured GPU speed. RC57 exact-head workflows pending; cinematic ART FAIL and Windows physical FPS unresolved.",
