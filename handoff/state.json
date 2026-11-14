@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+  "observed_parent_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
   "observed_version": "5.5.0-rc.58",
   "observed_build_id": "5.5-sustained-slideshow-framebuffer-recovery-rc58",
-  "release_status": "rc58_04699_five_workflows_artifacts_verified_new_windows_framebuffer_telemetry_commit_pending_art_fail_physical_windows_fps_unmeasured",
+  "release_status": "rc58_150a_five_workflows_artifacts_verified_new_stale_framebuffer_recovery_guard_pending_art_fail_physical_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 43584822188,
-      "source_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+      "run_id": 43590333884,
+      "source_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43584822188"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43590333884"
     },
     {
       "name": "cinematic",
-      "run_id": 43584822025,
-      "source_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+      "run_id": 43590333886,
+      "source_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43584822025"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43590333886"
     },
     {
       "name": "focused fire",
-      "run_id": 43584822097,
-      "source_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+      "run_id": 43590333876,
+      "source_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43584822097"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43590333876"
     },
     {
       "name": "licensed CC0",
-      "run_id": 43584822026,
-      "source_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+      "run_id": 43590333892,
+      "source_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43584822026"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43590333892"
     },
     {
       "name": "genuine motion",
-      "run_id": 43584822048,
-      "source_sha": "04699f42af42e121cdeab497d763c2a7c92538c4",
+      "run_id": 43590333890,
+      "source_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43584822048"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/43590333890"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify this new telemetry commit's five exact-HEAD workflows and Windows package, then capture 30–60s physical Windows heavy-destruction CSV to measure actual framebuffer downscale and FPS/CPU/RAM.",
+  "next_task": "Verify new analyzer guard commit's five exact-HEAD workflows and Windows artifact; then obtain physical Windows 30–60s heavy-destruction Performance Lab CSV to measure actual FPS and framebuffer recovery.",
   "implemented": [
+    "2026-11-14: RC58 150a6163082d3a740aa9aec9c4a1264df1f4b856 five exact-head Actions SUCCESS (browser 43590333884, cinematic 43590333886, focused 43590333876, CC0 43590333892, motion 43590333890); independent ZIP CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports, genuine five 100-frame and one 600-frame MP4, CC0 SHA-256 and original FBX intact. New analyzer excludes stale render heartbeats and incomplete buffer telemetry from claimed framebuffer downscale; four local synthetic controls PASS. New commit workflows pending. Cinematic ART FAIL; physical Windows FPS unmeasured.",
     "2026-11-14: RC58 04699f42af42e121cdeab497d763c2a7c92538c4 five exact-source Actions SUCCESS (browser 43584822188, cinematic 43584822025, focused 43584822097, CC0 43584822026, motion 43584822048). Independently CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; clean reports; six MP4s byte-identical to RC57, 600-frame/30s long capture inspected, CC0 SHA-256 and original school FBX identical. New bounded diagnostic instrumentation exports adaptive framebuffer scale/adjustments/buffer dimensions to Windows CSV and browser-only analyzer summary; synthetic local integration passes, new-head CI pending. ART FAIL and physical Windows FPS unmeasured.",
     "2026-11-14: RC57 9562c1201118b7cd8f724bee50a125b84a1eeeba five exact-head workflows SUCCESS; independent CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150; reports clean, 5x100-frame and 600-frame MP4s, CC0 hashes and school FBX intact. CI software WebGL ~0.3fps / 3.7s rAF gaps, not physical Windows FPS. RC58 adds 3 consecutive >250ms foreground frames framebuffer downscale (0.65 floor, 5s cooldown) because prior governor ignored >250ms; synthetic controls pass. New workflows pending; art FAIL, physical FPS unmeasured.",
     "2026-11-14: RC57 48870bce816cbed289dc49c02e67fe57f5486418 exact-head five workflows success, independent artifact CRC browser 78/78, cinematic 6/6, focused 7/7, motion 33/33, Windows 150/150, reports clean, genuine 5x100-frame and 600-frame MP4s, packaged CC0 hashes and school FBX intact. Browser software WebGL live 0.3 FPS, 25 unattributed rAF gaps, not physical Windows FPS. Bounded analyzer change rejects cached FPS from fresh timer heartbeats during stale rendering >=3000ms; 3/3 local synthetic controls pass. New commit workflows pending; cinematic ART FAIL and physical FPS unresolved.",
@@ -250,5 +251,6 @@
     "browser_warnings": [],
     "licensed_cc0_hashes_match": true,
     "original_school_fbx_present": true
-  }
+  },
+  "last_verified_sha": "150a6163082d3a740aa9aec9c4a1264df1f4b856"
 }

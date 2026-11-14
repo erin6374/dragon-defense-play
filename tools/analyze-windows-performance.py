@@ -131,28 +131,44 @@ def summarize(path):
         'visible_host_ram_samples': host_ram_samples,
         'issues': quality_issues,
     }
-    # Browser-only evidence that RC58 actually changed the framebuffer on Windows.
-    # Repeated host samples must never masquerade as new rendered frames.
-    scales = [n for row in foreground_browser
-              if (n := number(row.get('adaptiveResolution'))) is not None and 0 < n <= 1]
-    adjustments = [n for row in foreground_browser
-                   if (n := number(row.get('adaptiveAdjustments'))) is not None]
-    buffer_pixels = [w * h for row in foreground_browser
-                     if (w := number(row.get('framebufferWidth'))) is not None and w > 0
-                     and (h := number(row.get('framebufferHeight'))) is not None and h > 0]
+    # A heartbeat can continue reporting a cached downscale while rAF is frozen.
+    # Require fresh rendering plus the actual WebGL buffer dimensions and a
+    # positive governor adjustment before calling recovery observed. Host rows
+    # and old CSVs with missing telemetry cannot establish a downscale.
+    fresh_render_browser = [r for r in foreground_browser
+                            if (age := number(r.get('renderAgeMs'))) is not None
+                            and 0 <= age < STALE_MS]
+    recovery_rows = []
+    for row in fresh_render_browser:
+        scale = number(row.get('adaptiveResolution'))
+        adjustment = number(row.get('adaptiveAdjustments'))
+        width = number(row.get('framebufferWidth'))
+        height = number(row.get('framebufferHeight'))
+        if (scale is not None and 0 < scale <= 1 and
+                adjustment is not None and adjustment >= 0 and
+                width is not None and width > 0 and
+                height is not None and height > 0):
+            recovery_rows.append((scale, adjustment, width * height))
+    scales = [scale for scale, _, _ in recovery_rows]
+    adjustments = [adjustment for _, adjustment, _ in recovery_rows]
+    buffer_pixels = [pixels for _, _, pixels in recovery_rows]
     framebuffer_recovery = {
+        'fresh_render_browser_samples': len(fresh_render_browser),
+        'stale_or_unknown_render_samples_excluded': len(foreground_browser) - len(fresh_render_browser),
+        'complete_recovery_samples': len(recovery_rows),
         'foreground_scale_samples': len(scales),
         'minimum_scale': min(scales) if scales else None,
         'maximum_adjustments': int(max(adjustments)) if adjustments else None,
         'median_buffer_pixels': round(statistics.median(buffer_pixels)) if buffer_pixels else None,
-        'downscale_observed': any(n < .999 for n in scales) if scales else None,
+        'downscale_observed': any(scale < .999 and adjustment >= 1
+                                  for scale, adjustment, _ in recovery_rows) if recovery_rows else None,
     }
     findings = []
     findings.extend(quality_issues)
     if framebuffer_recovery['downscale_observed'] is True:
-        findings.append('Adaptive framebuffer downscale observed in browser telemetry; this does not establish an FPS gain.')
+        findings.append('Adaptive framebuffer downscale observed with fresh render telemetry and actual buffer dimensions; this does not establish an FPS gain.')
     elif framebuffer_recovery['downscale_observed'] is None:
-        findings.append('No browser framebuffer-scale telemetry: cannot determine whether adaptive downscaling occurred.')
+        findings.append('No complete fresh-render framebuffer telemetry: cannot determine whether adaptive downscaling occurred.')
     if not active_browser:
         findings.append('No active browser heartbeat samples: FPS cannot be evaluated.')
     if not foreground_browser:
