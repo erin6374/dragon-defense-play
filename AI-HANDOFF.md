@@ -1,3 +1,19 @@
+## November 13 — RC57 Tech Freire rooftop mechanicals, autumn canopy palette, and expanded Google Earth skyline convergence
+
+Parent verified baseline SHA: 3c01961 (RC56 5.5.0-rc.56, build 5.5-north-broad-refinement-rc56).
+
+RC57 delivers authentic architectural and environmental upgrades requested from real-world Google Earth imagery (Images 1-10):
+1. Tech Freire Rooftop Mechanicals & Penthouse (`src/rendering/broad-street-reference.js`):
+   - Added rooftop elevator penthouse, access door, communications mast, main HVAC chillers with fan cowlings, industrial galvanized air ductwork runs, exhaust flues, and perimeter safety roof railings matching real-world 2221 N Broad Street.
+2. Authentic Philadelphia Autumn Canopy Palette (`src/rendering/distant-neighborhood.js`):
+   - Expanded foliage coloration from muted monochrome greens to rich October/November North Philadelphia autumn tones (`0x5a734a`, `0xc68234`, `0x788a4e`, `0xa95232`, `0x687c55`, `0xc2983c`), giving vibrant golden, amber, and russet tree crowns across residential blocks.
+3. Complete Field of View Continuity & Distant Horizon Convergence (`src/rendering/distant-neighborhood.js`, `src/neighborhood.js`, `src/simulation/city-layout.js`):
+   - Extended residential rowhouse depth to $z = -945$ seamlessly converging into the Center City skyscraper skyline with zero voids or cliffs.
+   - Broad Street pavement, sidewalks, and double yellow center striping extended to $x \in [-1200, +1200]$.
+   - Near-neighborhood collision-enabled residential fabric expanded to $x \in [-380, +407]$ across all 4 depth rows.
+4. Contract & Performance Invariants:
+   - Check-build-info, frontage-contract, smoke-plume-contract, street-surface-contract, and windows-preview-server-test all pass. Zero added draw batches in `structural-city.js`. Building Explorer and original school FBX preserved untouched.
+
 ## November 13 — RC56 Google Earth roof realism, Fotterall residential towers, SEPTA bus shelter & Broad/Dauphin subway entrance
 
 Parent verified baseline SHA: e652714 (RC55 5.5.0-rc.55, build 5.5-north-broad-refinement-rc55).

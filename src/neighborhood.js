@@ -9,16 +9,16 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  g.add(nearStatic);
  // The whole site is on the EAST side of Broad. Do not populate the west side.
  // Continuous Broad Street ground and pavement spanning full widescreen camera frustum
- b(nearStatic,0,-.65,-18,1600,.32,160,walk); // extended ground including several rear blocks
- b(nearStatic,0,-.45,24,1600,.13,24,asphalt); // Broad Street frontage
- b(nearStatic,0,-.45,40,1600,.13,8,asphalt); // near curb lane, z=36..44
+ b(nearStatic,0,-.65,-18,2400,.32,160,walk); // extended ground including several rear blocks
+ b(nearStatic,0,-.45,24,2400,.13,24,asphalt); // Broad Street frontage
+ b(nearStatic,0,-.45,40,2400,.13,8,asphalt); // near curb lane, z=36..44
  const westSidewalk=mat(0x555b60),westCurb=mat(0x898d8c),westJoint=mat(0x41474c);
  for(const surface of [westSidewalk,westCurb,westJoint])surface.fog=false;
- b(nearStatic,0,-.43,108,1600,.12,128,westSidewalk); // west side, z=44..172
- b(nearStatic,0,-.30,44.2,1600,.17,.38,westCurb); // street-facing curb
- for(let z=52;z<=132;z+=12)b(nearStatic,0,-.359,z,1600,.012,.11,westJoint);
- b(nearStatic,0,-.43,-88,1600,.13,8.5,asphalt); // rear street beyond the last playable row
- b(nearStatic,0,-.35,11.8,1600,.16,4,walk);
+ b(nearStatic,0,-.43,108,2400,.12,128,westSidewalk); // west side, z=44..172
+ b(nearStatic,0,-.30,44.2,2400,.17,.38,westCurb); // street-facing curb
+ for(let z=52;z<=132;z+=12)b(nearStatic,0,-.359,z,2400,.012,.11,westJoint);
+ b(nearStatic,0,-.43,-88,2400,.13,8.5,asphalt); // rear street beyond the last playable row
+ b(nearStatic,0,-.35,11.8,2400,.16,4,walk);
  // Cross streets at Dauphin and Susquehanna
  for(const x of [-53,53]){
   b(nearStatic,x,-.43,-22.5,12,.16,133,asphalt);
@@ -29,10 +29,10 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  // Broad Street's double yellow center markings and white lane dividers.
  const yellow=mat(0xb88d41);
  const crossings=[-53,53];
- for(const [left,right] of [[-750,-59],[-47,47],[59,750]]){
+ for(const [left,right] of [[-1150,-59],[-47,47],[59,1150]]){
   for(const z of [23.7,24.3])b(nearStatic,(left+right)/2,-.352,z,right-left,.015,.13,yellow);
  }
- for(let x=-750;x<=750;x+=8){
+ for(let x=-1150;x<=1150;x+=8){
   if(crossings.some(cross=>Math.abs(x-cross)<8))continue;
   for(const z of [18,31,38])b(nearStatic,x,-.352,z,3,.015,.14,white);
  }

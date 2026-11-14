@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc56",
-  "version": "5.5.0-rc.56",
+  "build": "5.5-north-broad-refinement-rc57",
+  "version": "5.5.0-rc.57",
   "gameplay_base": "5.2.3",
-  "scope": "RC56: Google Earth photographic roof realism with authentic silver-white elastomeric coatings; two Fotterall Square 14-story residential apartment towers; SEPTA transit bus shelter at Tech Freire with curved glass canopy and route sign; Broad & Dauphin SEPTA subway entrance headhouse; and West-side commercial parking apron striping.",
+  "scope": "RC57: Tech Freire authentic rooftop mechanicals (chillers, ductwork runs, penthouse & antenna), Philadelphia autumn tree canopy foliage palette, expanded background rowhouse density and depth converging to skyline, Google Earth silver-white elastomeric roofscape, Fotterall 14-story towers, SEPTA bus shelter & subway entrance.",
   "new_gameplay_features": false,
-  "release_status": "RC56 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC57 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

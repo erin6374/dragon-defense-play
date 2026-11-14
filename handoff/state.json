@@ -8,9 +8,9 @@
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
   "observed_parent_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
-  "observed_version": "5.5.0-rc.56",
-  "observed_build_id": "5.5-north-broad-refinement-rc56",
-  "release_status": "rc56_candidate_pending_exact_head_qa_not_cinematic_approved",
+  "observed_version": "5.5.0-rc.57",
+  "observed_build_id": "5.5-north-broad-refinement-rc57",
+  "release_status": "rc57_candidate_pending_exact_head_qa_not_cinematic_approved",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"

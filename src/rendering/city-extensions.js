@@ -20,10 +20,10 @@ export function createCityExtensions({THREE,root,block,material}){
  const add=(x,y,z,w,h,d,mat)=>block(host,x,y,z,w,h,d,mat);
  // Back street immediately behind the school and its neighbors: rowhouses were
  // deliberately moved back to leave this roadway visible (see neighborhood.js).
- add(0,-.38,-40,200,.16,9,asphalt);
- add(0,-.23,-33.8,200,.20,2.8,creamStone);
- add(0,-.23,-46.2,200,.20,2.8,creamStone);
- for(let x=-90;x<=90;x+=9){add(x,-.285,-40,3.2,.015,.10,paint);}
+ add(0,-.38,-40,1200,.16,9,asphalt);
+ add(0,-.23,-33.8,1200,.20,2.8,creamStone);
+ add(0,-.23,-46.2,1200,.20,2.8,creamStone);
+ for(let x=-550;x<=550;x+=9){add(x,-.285,-40,3.2,.015,.10,paint);}
  // Side-street access curb cut at each intersection with Broad.
  for(const x of [-53,53])for(const z of [-28,-19])add(x,-.33,z,7.4,.05,1.8,asphalt);
  // Previous speculative service-station placeholder removed because it overlapped

@@ -77,6 +77,17 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2836','#fff5d0',3.85,.98,.76);
    sign.position.set(b.x,3.85,b.front+2.02);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
+   // Tech Freire Charter School authentic rooftop mechanicals & penthouse (Google Earth Images 5 & 10)
+   bx(group,b.x+3.5,b.h+1.8,b.front-5.5,5.8,3.6,6.2,brickTrim);
+   bx(group,b.x+3.5,b.h+1.2,b.front-2.3,1.2,2.2,.08,dark);
+   bx(group,b.x+3.5,b.h+4.8,b.front-5.5,.14,2.8,.14,alum); // communications mast
+   bx(group,b.x-4.5,b.h+1.1,b.front-6.0,5.2,2.1,4.4,alum); // main HVAC chiller
+   for(const fx of [-5.5,-3.5])bx(group,b.x+fx,b.h+2.2,b.front-6.0,1.4,.25,1.4,dark); // chiller fan cowls
+   bx(group,b.x-1.2,b.h+.65,b.front-7.2,2.4,1.1,5.8,alum); // galvanized ductwork
+   bx(group,b.x+1.5,b.h+2.2,b.front-8.5,.42,2.4,.42,alum); // exhaust flue
+   // Roof safety parapet railing
+   for(const side of [-1,1])bx(group,b.x+side*(b.w*.48),b.h+.45,b.front-8.0,.08,.85,16.0,dark);
+   bx(group,b.x,b.h+.45,b.front-.2,b.w*.96,.85,.08,dark);
    // SEPTA Transit Bus Shelter directly in front of Tech Freire (Google Earth Images 5 & 10)
    const shelterX=b.x-7.5,shelterZ=b.front+1.85;
    for(const sx of [-1.8,1.8])for(const sz of [-.75,.75])bx(group,shelterX+sx,1.4,shelterZ+sz,.10,2.6,.10,alum);
