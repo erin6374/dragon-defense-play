@@ -1,8 +1,8 @@
 {
-  "build": "5.5-licensed-smoke-alpha-cull-rc57",
-  "version": "5.5.0-rc.57",
+  "build": "5.5-sustained-slideshow-framebuffer-recovery-rc58",
+  "version": "5.5.0-rc.58",
   "gameplay_base": "5.2.3",
-  "scope": "Licensed CC0 plume-only conservative alpha-bound discard before atlas sampling; procedural/legacy smoke, fixed pools, meteor-only ignition, gameplay, school FBX and bilateral damage unchanged.",
+  "scope": "Sustained >250ms foreground frame intervals now trigger bounded framebuffer downscale after three consecutive slow frames, while hidden/unfocused or isolated stalls cannot trigger it. No gameplay, GPU pool, meteor ignition, school FBX, texture or destruction logic change.",
   "new_gameplay_features": false,
-  "release_status": "RC57 performance candidate; exact-head QA pending, Windows hardware FPS unmeasured, cinematic art FAIL."
+  "release_status": "RC58 bounded adaptive framebuffer recovery candidate; new exact-head QA pending, Windows hardware FPS unmeasured, cinematic art FAIL."
 }

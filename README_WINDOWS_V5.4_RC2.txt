@@ -80,3 +80,13 @@ RC55 SYSTEM CSV CAPTURE QUALITY CHECK
 - tools/analyze-windows-performance.py identifies short/unfocused captures and missing host/browser samples.
 - A 30-60s focused Windows capture with at least 20 host samples and two browser heartbeats supports foreground FPS analysis; host-only stall evidence remains useful if the browser freezes.
 - Missing CPU/RAM counters are not treated as zero. No GPU timing or utilization is measured.
+
+RC58 SUSTAINED-SLIDESHOW FRAMEBUFFER RECOVERY (CANDIDATE; NOT FPS VERIFIED)
+- When active, visible and focused, three consecutive >250ms frames now lower
+  the framebuffer pixel scale in bounded steps (minimum 0.65), no more often
+  than every five seconds. Isolated stalls and suspended tabs do not trigger it.
+- This may reduce pixel workload during a slideshow but does not prove faster
+  Windows FPS. Use the same 30-60s heavy-destruction Performance Lab/System
+  Monitor CSV capture to measure before/after on the physical Windows machine.
+- Gameplay, meteor ignition, neighborhood destruction, school FBX and dragon
+  controls remain unchanged.

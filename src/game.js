@@ -2312,7 +2312,7 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  previousRenderAt=present;const dt=motionQA?3/60:clock.getDelta();
  if(!motionQA){
   if(dt>.25&&active&&!paused)quality.sample(Math.min(dt,.2));
-  quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
+  quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused&&!document.hidden&&document.hasFocus());
  }
  hostMetricTime+=dt;hostMetricFrames++;
  sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const step=fixedStep.advance(dt,update);const simMs=performance.now()-simStart;
