@@ -827,10 +827,10 @@ for(const crossX of [-53, 53]){
   batchVehicleVisuals(THREE,cruiser);
   policeBlockadeGroup.add(cruiser);
   const barrier=new THREE.Group();barrier.position.set(crossX,0,z+(z>20?3.2:-3.2));
-  box(barrier,material(0xe85d22),0,.65,0,3.2,.2,.25);
-  box(barrier,material(0xffffff),0,.65,0,.6,.21,.26);
-  box(barrier,material(0x282c30),-1.2,.32,0,.15,.65,.8);
-  box(barrier,material(0x282c30),1.2,.32,0,.15,.65,.8);
+  block(barrier,0,.65,0,3.2,.2,.25,material(0xe85d22));
+  block(barrier,0,.65,0,.6,.21,.26,material(0xffffff));
+  block(barrier,-1.2,.32,0,.15,.65,.8,material(0x282c30));
+  block(barrier,1.2,.32,0,.15,.65,.8,material(0x282c30));
   const amberBeacon=new THREE.Mesh(new THREE.SphereGeometry(.22,6,4),new THREE.MeshBasicMaterial({color:0xffaa22}));
   amberBeacon.position.set(0,.85,0);barrier.add(amberBeacon);
   policeBlockadeGroup.add(barrier);
