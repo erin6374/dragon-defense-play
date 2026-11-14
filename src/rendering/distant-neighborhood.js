@@ -48,7 +48,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   canopy:new THREE.MeshLambertMaterial({color:0x647c5e}),
   trunk:new THREE.MeshLambertMaterial({color:0x685746}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(2600,.2,1100),materials.walk);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,1100),materials.walk);
  base.position.set(0,-.63,-510);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
@@ -71,8 +71,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  const cross=CROSS_STREETS.map(s=>s.x);
  for(let k=0;k<STREET_AXIS.length;k++){
   const s=STREET_AXIS[k],tier=Math.max(0,slot(s.z));
-  if(k>0)street(0,s.z,2400,8.5,tier);
-  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,2400,.15,1.45);
+  if(k>0)street(0,s.z,2600,8.5,tier);
+  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,2600,.15,1.45);
   // Intersections and crossings are an inexpensive white instanced pattern.
   for(const xx of cross)for(let q=0;q<4;q++)add(tier,'walk',xx+(q-1.5)*1.35,-.25,s.z,0.52,.02,6.4);
  }
@@ -89,13 +89,13 @@ export function createDistantNeighborhood({root,flameTexture}){
   const nearParapetBandsByRow=new Map();
  const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565,-602,-638,-674,-705,-735,-765,-795,-825,-855,-885,-915,-945];
  for(const z of [-328,-362,-397,-435,-472,-510,-546,-582,-620,-656,-692,-720,-750,-780,-810,-840,-870,-900,-930]){
-  street(0,z,2400,8.5,slot(z));
+  street(0,z,2600,8.5,slot(z));
  }
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
   const horizon=tier===tiers.length-1;
   // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
-  const lots=horizon?320:tier>=3?280:240;
+  const lots=horizon?340:tier>=3?300:260;
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate
@@ -234,7 +234,46 @@ export function createDistantNeighborhood({root,flameTexture}){
     }
    }
   }
-  // 5. West Side Broad Street commercial apron & parking stalls (facing Tech Freire)
+  // 5. Philadelphia Military Academy / Makkah Mosque (13th & Dauphin, east behind Tech Freire)
+  // Monumental gothic dark stone/brick masonry with arched window bays and central entrance portal
+  const pma=registerBuilding(1,14,-108,28,18,24);
+  addPart(pma,'main',14,9,-108,28,18,24,0x685e58);
+  addPart(pma,'roof',14,18.15,-108,28.4,.3,24.4,0x524c48);
+  addPart(pma,'cornice',14,18.6,-95.9,28.6,.9,.4,0x7e7670);
+  addPart(pma,'rooftop',14,21.5,-98,9,6.0,7,0x5a524c);
+  for(let fl=1;fl<=3;fl++){
+   for(let bx=-10;bx<=10;bx+=5){
+    addPart(pma,'window',14+bx,fl*4.8,-95.88,2.2,3.2,.12);
+   }
+  }
+  add(1,'walk',14,-.25,-95,32,.15,3.5);
+  // 6. William McKinley School / The U School Complex (12th & Diamond / Susquehanna corridor)
+  // Sprawling multi-story public school complex with horizontal ribbon window bands and limestone trim
+  const mckinley=registerBuilding(4,-18,-295,48,14,22);
+  addPart(mckinley,'main',-18,7,-295,48,14,22,0x8a786a);
+  addPart(mckinley,'roof',-18,14.15,-295,48.4,.3,22.4,0xc8ced2);
+  addPart(mckinley,'rooftop',-26,15.6,-295,9,2.8,12,0x656c70);
+  addPart(mckinley,'rooftop',-6,15.2,-297,12,2.0,8,0x656c70);
+  for(let fl=1;fl<=3;fl++){
+   for(let bx=-20;bx<=20;bx+=8){
+    addPart(mckinley,'window',-18+bx,fl*3.8,-283.88,5.8,2.1,.1);
+   }
+  }
+  add(4,'road',-18,-.42,-280,52,.12,14);
+  // 7. Tyler School of Art & Architecture (Temple University Campus at 12th & Norris)
+  // Contemporary folded-plate angular glass and slate institutional building
+  const tyler=registerBuilding(3,175,-210,54,20,32);
+  addPart(tyler,'main',175,10,-210,54,20,32,0x465a6c);
+  addPart(tyler,'roof',175,20.15,-210,54.4,.3,32.4,0xaeb7be);
+  addPart(tyler,'rooftop',165,22.4,-210,24,4.5,18,0x5a768a);
+  for(let fl=1;fl<=4;fl++){
+   for(let bx=-22;bx<=22;bx+=9){
+    addPart(tyler,'window',175+bx,fl*4.4,-193.88,7.2,3.2,.12);
+   }
+  }
+  add(3,'green',175,-.42,-190,58,.08,18);
+  add(3,'walk',175,-.35,-190,4,.12,22);
+  // 8. West Side Broad Street commercial apron & parking stalls (facing Tech Freire)
   add(0,'road',0,-.44,22,120,.12,18);
   for(let s=-45;s<=45;s+=3.6){
    add(0,'walk',s,-.37,22,.12,.04,6.2);

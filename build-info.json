@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc58",
-  "version": "5.5.0-rc.58",
+  "build": "5.5-north-broad-refinement-rc59",
+  "version": "5.5.0-rc.59",
   "gameplay_base": "5.2.3",
-  "scope": "RC58: Full-breadth meteor strike targeting (x in [-220, 220]), extended dragon flight envelope (x in [-180, 180]), panoramic Center City mid-rise ambient skyline geometry (x in [-1235, 1235]), and widened atmospheric depth veil (w = 800).",
+  "scope": "RC59: Google Earth surrounding landmarks (Makkah Mosque / Philadelphia Military Academy, William McKinley / U School, Tyler School of Art & Architecture), realistic between-round construction crane deployment, zero-blink road vehicle exits, and hard-mode meteor storm calibration (complete school & neighborhood destruction if undefended).",
   "new_gameplay_features": false,
-  "release_status": "RC58 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC59 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
 }

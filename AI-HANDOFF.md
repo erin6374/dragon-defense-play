@@ -1,3 +1,28 @@
+## November 13 — RC59 Google Earth surrounding landmarks, round cleanup crane deployment, zero-blink road exits & hard-mode storm balance
+
+Parent verified baseline SHA: a7a86c8 (RC58 5.5.0-rc.58, build 5.5-north-broad-refinement-rc58).
+
+RC59 delivers key Google Earth landmark architectural models, realistic between-round construction cleanup, zero-blink road vehicle departures, and hard-mode meteor storm calibration:
+1. Google Earth Surrounding Neighborhood Landmarks (`src/rendering/distant-neighborhood.js`):
+   - **Philadelphia Military Academy / Makkah Mosque (13th & Dauphin, $x = 14, z = -108$)**: Modeled monumental gothic dark masonry architecture ($w=28, h=18, d=24$) with stone crenellations, arched classroom window arrays, central entrance portal, and Dauphin Street pedestrian sidewalk approach.
+   - **William McKinley School / The U School Complex (12th & Diamond / Susquehanna corridor, $x = -18, z = -295$)**: Modeled sprawling multi-story public school complex ($w=48, h=14, d=22$) with limestone horizontal banding, ribbon classroom window arrays, rooftop mechanical penthouses, and paved schoolyard.
+   - **Tyler School of Art & Architecture (Temple University campus, $x = 175, z = -210$)**: Modeled contemporary folded-plate angular glass and slate institutional building ($w=54, h=20, d=32$) with clerestory glazing and Temple University campus green plaza.
+   - Zero additional draw batches: all landmarks leverage existing instanced geometries with full meteor damage and collapse particle support.
+2. Between-Round Construction Cleanup Crane Deployment (`src/simulation/chapter-staging.js`, `src/game.js`):
+   - Deployed active rapid-response cleanup crane utility truck during inter-wave recovery breaks (`between > 0`).
+   - The truck steers to the front curb of the damaged building ($z = 13.5$), deploys outrigger stabilizer pads, rotates its turret toward the facade, elevates its articulated telescoping boom arm, and activates amber flashing beacons and dynamic welding sparks while repair personnel patch the curb.
+   - Before the next wave begins, it smoothly stows its boom and outriggers, pulls into the traffic lane ($z = 20.5$), and drives off down Broad Street.
+3. Zero-Blink Road Vehicle Exits (`src/game.js`, `src/simulation/chapter-staging.js`):
+   - Vehicles spawning now emerge outside the camera view ($|x| \ge 260$) rather than popping in mid-screen.
+   - Fixed sudden car disappearance: `resetChapterTrafficAndCrowd(immediate=false)` flags exiting vehicles (`c.exiting=true; c.speed=22`), allowing all civilian traffic and cleanup trucks to smoothly drive completely off the screen along the road ($|x| > 280$) before being recycled.
+4. Hard-Mode Meteor Storm Destruction Calibration (`src/core/balance.js`, `src/simulation/meteor-target.js`, `src/game.js`):
+   - Hard difficulty now spawns 35 meteors on Wave 1 with rapid spawn cadence (`spawnBase = 0.24s`).
+   - Target selection balances 30% direct strikes against the school and 70% distributed across the standing neighborhood fabric.
+   - Amplified structural impact and aftershock shockwave radii on hard mode (`2.2x` impact radius, `2.5x` aftershock shock radius, `diffDmg = 3.2`), ensuring that if none of the meteors are intercepted, BOTH the school building and the entire neighborhood drop completely to zero HP.
+5. Invariants Preserved:
+   - All regression contracts pass (`check-build-info`, `frontage-contract`, `smoke-plume-contract`, `street-surface-contract`).
+   - Zero added draw batches in `structural-city.js`.
+
 ## November 13 — RC58 Full-breadth meteor targeting, extended dragon flight envelope, panoramic skyline mid-rises & atmospheric veil
 
 Parent verified baseline SHA: 1c6864f (RC57 5.5.0-rc.57, build 5.5-north-broad-refinement-rc57).

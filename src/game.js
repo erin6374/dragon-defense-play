@@ -775,7 +775,8 @@ function spawnCar(){if(cars.length>(schoolFire.length&&!cars.some(c=>c.fireTruck
  const laneIndex=(nextLaneByDirection[laneKey]++)%2;
  const rearStreet=!emergency&&Math.random()<.16;
  const laneZ=rearStreet?-37:dir>0?[17,20][laneIndex]:[27,30][laneIndex];
- root.position.set(dir>0?-88:88,-.36,laneZ);root.rotation.set(0,dir<0?Math.PI:0,0);root.scale.setScalar(rearStreet?.84:1);
+ const spawnDist=260+Math.random()*40;
+ root.position.set(dir>0?-spawnDist:spawnDist,-.36,laneZ);root.rotation.set(0,dir<0?Math.PI:0,0);root.scale.setScalar(rearStreet?.84:1);
  if(ambulance){const injured=crowd.find(p=>p.down>0);if(injured)root.position.x=THREE.MathUtils.clamp(injured.g.position.x-dir*11,-75,75);}
  const body=vehicleMaterial(bodyHex);
  const length=bike?2.55:ladder?8.8:bus?8:emergency&&!police?7.2:garbage?7.6:truck?6.5:van?4.9:3.7;
@@ -921,7 +922,9 @@ function fireTruckService(c,dt){
  }
 }
 function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolFire.length&&!cars.some(c=>c.fireTruck)?1.2:(wave>=5?.8:1.5)+Math.random()*(wave>=5?1.1:2.6);if(hp<55||schoolFire.length>3)carTimer*=.65;}
- for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing){
+ for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
+  if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
+  if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>Math.abs(q.x-c.root.position.x)<q.radius+5&&Math.abs(q.z-c.root.position.z)<5);
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed,streetStop>0,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
@@ -959,7 +962,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    if(Math.abs(c.root.position.x-53)<22)c.turnAt=53;
    else if(Math.abs(c.root.position.x-(-53))<22)c.turnAt=-53;
   }
-  if(!c.frozen&&(Math.abs(c.root.position.x)>450||(c.life<=0&&Math.abs(c.root.position.x)>350)||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
+  if(!c.frozen&&(Math.abs(c.root.position.x)>280||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
  }
 }
 // Dynamic arcade city activity. Stylized, not real-world simulation.
@@ -1790,7 +1793,8 @@ function spawnMeteor(random=Math.random,opening=null){
  const size=opening?.size??(wave===1?.62:(random()<.19?2.0+random()*.8:random()<.43?1.2+random()*.4:.52+random()*.45));
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
  const buildings=neighborhood.targetBuildings.filter(b=>b.z>=DEFENSE_REAR_Z&&(!(opening||fastImpact)||!b.background));
- const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random);
+ const diffMode=document.getElementById('difficulty')?.value||'normal';
+ const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random,diffMode);
  const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-220,220);
  const mesh=createPlayableRock(size);
  if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
@@ -1898,7 +1902,7 @@ function traceOpeningMeteorImpact(m,start){
 function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
- const diffDmg=diffMode==='hard'?2.5:diffMode==='easy'?.42:1.0;
+ const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
  const targetX=THREE.MathUtils.clamp(x,-240,240);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
  const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.0&&Math.abs(b.z-z)<b.d*.5+1);
@@ -1913,7 +1917,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
  let lost=0;
  if(neighbor){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
-  lost=neighborhood.impact(targetX,targetY,hitZ,profile.radius*(diffMode==='hard'?1.35:1),p=>debrisPiece(p,'brick'),profile.strength*diffDmg);if(targetBuilding&&!targetBuilding.roofBreached)neighborhood.roofBreach(targetX,targetY,z,profile.radius*.65);neighborhood.aftershock(targetX,targetY,hitZ,profile.shockRadius*(diffMode==='hard'?1.3:1),p=>debrisPiece(p,'brick'));if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,2.0);
+  lost=neighborhood.impact(targetX,targetY,hitZ,profile.radius*(diffMode==='hard'?2.2:1),p=>debrisPiece(p,'brick'),profile.strength*diffDmg);if(targetBuilding&&!targetBuilding.roofBreached)neighborhood.roofBreach(targetX,targetY,z,profile.radius*(diffMode==='hard'?1.5:.65));neighborhood.aftershock(targetX,targetY,hitZ,profile.shockRadius*(diffMode==='hard'?2.5:1),p=>debrisPiece(p,'brick'),(diffMode==='hard'?2.0:1));if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,2.0);
   emitImpact(targetX,targetY,hitZ,155,1.32);
   if(lost>0&&Math.random()<profile.fire*(diffMode==='hard'?1.5:1)){ignite(targetX,targetY,hitZ);if(Math.random()<.75)ignite(targetX+(Math.random()-.5)*3,Math.max(1,targetY-1.2),hitZ-.20);
    if(Math.random()<.45)ignite(targetX+(Math.random()-.5)*4,Math.min(14,targetY+1.8),hitZ-.35);
@@ -1930,7 +1934,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
   // Damage accumulates against the actual school. When the gauge reaches 0%,
   // the architectural building is fully removed, not just cosmetically scarred.
   const previousDamage=schoolDamage;
-  schoolDamage=Math.min(1,schoolDamage+.055*profile.strength*diffDmg);
+  schoolDamage=Math.min(1,schoolDamage+(diffMode==='hard'?.14:diffMode==='easy'?.035:.065)*profile.strength*diffDmg);
   // Small masonry chips and glass descend from the exact impact point, rather
   // than unrelated random locations around the roof. Reuse instanced VFX pools.
   if(performanceLab.isEnabled('particles')){
@@ -2033,7 +2037,7 @@ document.getElementById('cinematic-skip')?.addEventListener('click',closeChapter
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='dragon-cinematic-complete'&&cinematicActive)closeChapterTransition();});
 document.addEventListener('keydown',e=>{if(cinematicActive&&e.key==='Escape'){e.preventDefault();closeChapterTransition();}});
 document.getElementById('campaign-continue')?.addEventListener('click',closeChapterTransition);
-function resetChapterTrafficAndCrowd(){for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);}helicopters.length=0;helicopterLightPool.reset();for(const c of cars)recycleCar(c);cars.length=0;for(const p of crowd)scene.remove(p.g);crowd.length=0;carTimer=.2;crowdTimer=1.5;helicopterTimer=7;}
+function resetChapterTrafficAndCrowd(immediate=false){for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);}helicopters.length=0;helicopterLightPool.reset();if(immediate){for(const c of cars)recycleCar(c);cars.length=0;}else{for(const c of cars){c.exiting=true;c.speed=Math.max(c.speed,22);}}for(const p of crowd)scene.remove(p.g);crowd.length=0;carTimer=.2;crowdTimer=1.5;helicopterTimer=7;}
 function applyResidualChapterDamage(){
  // Rebuild the block only AFTER the cinematic. Leave a few visibly damaged facades.
  clearFires(); neighborhood.restore();
@@ -2133,7 +2137,16 @@ function updateWaveProgress(dt,rally=rallyLoop){
   if(between>2.6)beginChapterSettlement();
   return;
  }
+ if(previous===0&&!chapterEnd){
+  const damagedFront=neighborhood.targetBuildings.filter(b=>!b.background&&b.damage>.04).sort((a,b)=>b.damage-a.damage)[0];
+  const targetX=(damagedFront?damagedFront.x:(neighborhood.school.damage>.04?-3:0));
+  const targetName=damagedFront?damagedFront.name:'tech-freire-school';
+  chapterStaging.deployRoundCleanup(targetX,targetName);
+ }
  const recovery=wave===15?4.5:rally&&!rallyRecoveryChoice?4:7;
+ if(between>recovery-1.8&&chapterStaging.mode==='roundCleanup'){
+  chapterStaging.beginNextRound(wave<=5?1:wave<=10?2:wave<=14?3:4);
+ }
  if(between>recovery){
   if(wave===15){winGame();return;}
   wave++;between=0;updateHud();newWave();
@@ -2147,7 +2160,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   message('WAVE CLEAR — NEXT WAVE IN '+Math.max(1,Math.ceil(recovery-between))+'s');
  }
 }
-function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
+function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'){}else if(chapterStaging.mode==='roundCleanup')chapterStaging.beginNextRound(chapterIndex);else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
  if(impactMarker)impactMarker.visible=false;
  // Ordinary waves preserve Paulo's free-flight position. Chapter transitions
  // and a fresh game explicitly manage the roof perch separately.

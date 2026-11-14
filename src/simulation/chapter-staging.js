@@ -104,12 +104,38 @@ export function createChapterStaging(scene){
    }
   }
  }
+ function deployRoundCleanup(targetBuildingX=0,targetBuilding='tech-freire-school'){
+  clear();
+  mode='roundCleanup';
+  settlementClock=0;
+  leaveTarget=0;
+  leaveTimer=0;
+  const facing=targetBuildingX>=0?1:-1;
+  const truck=constructionCraneTruck(targetBuildingX,13.5,facing,targetBuilding);
+  truck.targetX=targetBuildingX;
+  truck.targetZ=13.5;
+  truck.arrivalDelay=0;
+  truck.g.position.x=targetBuildingX+facing*48;
+  truck.g.position.z=20.5;
+  coneProp(targetBuildingX-4.5,16.2);
+  coneProp(targetBuildingX+4.5,16.2);
+  barrier(targetBuildingX,16.5);
+  person(targetBuildingX-2.5,12.2,false,false,true);
+  person(targetBuildingX+2.5,12.2,false,true,true);
+ }
+ function beginNextRound(next){
+  if((mode==='roundCleanup'||mode==='settlement')&&group.children.length){
+   leaveTarget=next;
+   leaveTimer=4.5;
+   mode='leaving';
+  }else buildChapterLayout(next);
+ }
  function beginNextChapter(next){
   if(mode==='settlement'&&group.children.length){ leaveTarget=next; leaveTimer=5.8; mode='leaving'; }
   else buildChapterLayout(next);
  }
  function update(dt,elapsed){
-  if(mode==='settlement'){
+  if(mode==='settlement'||mode==='roundCleanup'){
    settlementClock+=dt;
    // Work trucks drive in along road lanes, pull up to curb, deploy outriggers, raise cranes, and actively work
    for(const item of movers){
@@ -154,7 +180,7 @@ export function createChapterStaging(scene){
    if(item.kind==='person'){
     g.rotation.y=Math.sin(elapsed*.9+g.position.x*.08)*.025;
     g.position.y=Math.sin(elapsed*2+g.position.x*.13)*.03;
-    if(mode==='settlement'){
+    if(mode==='settlement'||mode==='roundCleanup'){
      const workFactor=THREE.MathUtils.smoothstep(settlementClock,.8,10.5);
      g.position.x+=Math.sin(elapsed*1.7+g.position.z)*dt*.15*workFactor;
      if(g.children[0])g.children[0].rotation.z=Math.sin(elapsed*4+g.position.x)*.1*workFactor;
@@ -163,6 +189,7 @@ export function createChapterStaging(scene){
   }
   if(mode==='leaving'){
    leaveTimer-=dt;
+   let anyOnScreen=false;
    for(const item of movers){
     if(!item.g.parent)continue;
     if(item.kind==='constructionCrane'){
@@ -172,16 +199,20 @@ export function createChapterStaging(scene){
      item.turret.rotation.y=THREE.MathUtils.damp(item.turret.rotation.y,0,3.5,dt);
      for(const out of item.outriggers)out.pad.position.y=THREE.MathUtils.damp(out.pad.position.y,out.baseY,3.5,dt);
      // Drive off along the road
-     item.g.position.x+=item.facing*dt*14.5;
+     item.g.position.x+=item.facing*dt*28.0;
      item.g.position.z=THREE.MathUtils.damp(item.g.position.z,21.0,2.0,dt);
     }else if(item.kind==='vehicle'){
-     item.g.position.x+=dt*12.0;
+     item.g.position.x+=dt*24.0;
     }else if(item.kind==='person'){
-     item.g.position.x+=dt*5.5;
+     item.g.position.x+=dt*7.5;
     }
+    if(Math.abs(item.g.position.x)<260)anyOnScreen=true;
    }
-   if(leaveTimer<=0){buildChapterLayout(leaveTarget||chapter||1);} 
+   if(!anyOnScreen||leaveTimer<=-10){
+    clear();
+    buildChapterLayout(leaveTarget||chapter||1);
+   }
   }
  }
- return {setChapter,setSettlement,beginNextChapter,update,group,get mode(){return mode;}};
+ return {setChapter,setSettlement,deployRoundCleanup,beginNextRound,beginNextChapter,update,group,get mode(){return mode;}};
 }
