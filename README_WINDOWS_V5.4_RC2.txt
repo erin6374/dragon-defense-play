@@ -90,3 +90,10 @@ RC58 SUSTAINED-SLIDESHOW FRAMEBUFFER RECOVERY (CANDIDATE; NOT FPS VERIFIED)
   Monitor CSV capture to measure before/after on the physical Windows machine.
 - Gameplay, meteor ignition, neighborhood destruction, school FBX and dragon
   controls remain unchanged.
+
+RC59 ONE-CLICK PHYSICAL WINDOWS 60-SECOND CAPTURE (CANDIDATE; HARDWARE NOT YET TESTED)
+- Start PLAY-PREVIEW.cmd, begin active gameplay and heavy destruction.
+- Double-click CAPTURE-WINDOWS-PERFORMANCE.cmd, press a key, and return to the game within the 10-second countdown.
+- After 60 seconds, find timestamped .csv and .json files under performance-captures; upload both for review.
+- This captures ONLY the requested 60-second window, not prior sessions. Host sampling continues during browser freezes.
+- The script verifies the local preview server belongs to this extracted folder. GPU timing/utilization remains unsupported.

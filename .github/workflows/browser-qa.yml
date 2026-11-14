@@ -41,6 +41,7 @@ jobs:
           node qa/skyline-ignition-contract.mjs
           python3 qa/windows-preview-server-test.py
           python3 qa/windows-performance-analysis-test.py
+          python3 tools/test-capture-windows-performance.py
       - run: npm install --prefix "$RUNNER_TEMP/dragon-qa" --no-save playwright-core@1.56.1
       - run: google-chrome --version
       - name: Run browser QA
