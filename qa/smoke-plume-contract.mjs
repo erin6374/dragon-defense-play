@@ -34,7 +34,7 @@ for(const token of [
  'float eddy=plumeMode>.5 ? .045*sin(',
  'float edgeWarp=.11*sin(q.y*(7.1+3.4*fract(vSeed*.29))+',
  'float sideBias=(fract(vSeed*.611)-.5)*.20*(q.y-.2);',
- 'float feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));'
+ 'feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));'
 ])assert.ok(bridge.includes(token),'RC54 licensed plume missing: '+token);
 const fract=x=>x-Math.floor(x);
 const rates=Array.from({length:6},(_,i)=>5.8+2.4*fract((13+i*7.13)*.229));
