@@ -156,5 +156,19 @@ class AnalyzerTests(unittest.TestCase):
         self.assertTrue(quality['foreground_fps_usable'])
         self.assertEqual(quality['max_foreground_browser_gap_seconds'], 5)
 
+    def test_quality_rejects_stale_render_with_fresh_browser_heartbeats(self):
+        # Timer heartbeats can continue every 5s during an rAF freeze.
+        rows = [self.row('host', i) for i in range(40)]
+        rows += [self.row('browser', i, renderAgeMs='10000' if i in (10, 15, 20) else '100')
+                 for i in range(0, 40, 5)]
+        self.write(rows)
+        quality = analyzer.summarize(self.path)['capture_quality']
+        self.assertGreater(quality['foreground_browser_coverage_fraction'], .75)
+        self.assertEqual(quality['max_foreground_browser_gap_seconds'], 5)
+        self.assertEqual(quality['foreground_browser_stale_render_samples'], 3)
+        self.assertFalse(quality['foreground_fps_usable'])
+        self.assertTrue(quality['host_stall_evidence_available'])
+        self.assertTrue(any('stale rendering' in issue for issue in quality['issues']))
+
 if __name__ == '__main__':
     unittest.main()

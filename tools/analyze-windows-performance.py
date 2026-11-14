@@ -69,6 +69,10 @@ def summarize(path):
     active_host = [r for r in host if truth(r.get('active')) is True]
     foreground_browser = [r for r in active_browser if truth(r.get('documentHidden')) is False
                           and truth(r.get('documentHasFocus')) is True]
+    # Timer heartbeats can continue when requestAnimationFrame has frozen.
+    # Cached FPS during stale rendering is not a new rendered-frame measurement.
+    stale_foreground_browser = [r for r in foreground_browser
+                                if (age := number(r.get('renderAgeMs'))) is not None and age >= STALE_MS]
     background_browser = [r for r in active_browser if truth(r.get('documentHidden')) is True
                           or truth(r.get('documentHasFocus')) is False]
     unknown_browser_visibility = len(active_browser) - len(foreground_browser) - len(background_browser)
@@ -110,12 +114,15 @@ def summarize(path):
         quality_issues.append('Visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
     if max_foreground_gap is not None and max_foreground_gap > MAX_FOREGROUND_BROWSER_GAP_SECONDS:
         quality_issues.append('Visible browser heartbeat gap exceeds 5 seconds: foreground FPS may omit a mid-capture freeze.')
+    if stale_foreground_browser:
+        quality_issues.append('Visible browser heartbeats report stale rendering: foreground FPS may repeat frozen frames.')
     host_cpu_samples = sum(number(r.get('cpuPercent')) is not None for r in visible_host)
     host_ram_samples = sum(number(r.get('ramPercent')) is not None for r in visible_host)
     capture_quality = {
         'foreground_fps_usable': not quality_issues,
         'foreground_browser_coverage_fraction': browser_coverage,
         'max_foreground_browser_gap_seconds': max_foreground_gap,
+        'foreground_browser_stale_render_samples': len(stale_foreground_browser),
         'host_stall_evidence_available': len(visible_host) >= MIN_VISIBLE_HOST_SAMPLES,
         'host_cpu_ram_usable': (duration is not None and duration >= MIN_CAPTURE_SECONDS
                                 and host_cpu_samples >= MIN_VISIBLE_HOST_SAMPLES
@@ -132,6 +139,8 @@ def summarize(path):
         findings.append('No visible, focused browser heartbeat samples: foreground FPS unavailable.')
     if background_browser:
         findings.append('Hidden/unfocused browser samples excluded from foreground FPS statistics.')
+    if stale_foreground_browser:
+        findings.append('Browser heartbeat kept reporting during a render freeze; cached FPS is not a new rendered frame.')
     if unknown_browser_visibility:
         findings.append('Browser samples with unknown tab visibility/focus excluded from foreground FPS statistics.')
     if not active_host:
@@ -149,6 +158,7 @@ def summarize(path):
         'source': str(path), 'duration_seconds': duration, 'capture_quality': capture_quality,
         'samples': {'total': len(rows), 'browser': len(browser), 'host': len(host),
                     'active_browser': len(active_browser), 'foreground_browser': len(foreground_browser),
+                    'foreground_browser_render_stale': len(stale_foreground_browser),
                     'background_browser': len(background_browser),
                     'unknown_browser_visibility': unknown_browser_visibility,
                     'active_host': len(active_host),
