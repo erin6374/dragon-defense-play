@@ -2402,7 +2402,7 @@ function traceOpeningMeteorImpact(m,start){
   if(x>=minX&&x<=maxX&&z>=minZ&&z<=maxZ)earliest=t;
  }
  check(.7,-Infinity,Infinity,-Infinity,Infinity);
- if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,-17.6,schoolBounds.max.z);
+ if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,schoolBounds.min.z,schoolBounds.max.z);
  for(const b of neighborhood.targetBuildings){
   if(b.damage<.98)check(b.h,b.x-b.w/2,b.x+b.w/2,b.z-b.d/2,b.z+b.d/2);
  }
