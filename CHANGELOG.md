@@ -35,6 +35,14 @@ RC62 addresses all user feedback on vehicle interaction realism, lighting, and a
    - Celestial sun and moon discs visible in sky according to day/night phase.
    - Dynamic point light (`dragonFireLight`) tracks dragon mouth and active fireballs, casting warm flickering illumination on nearby facades and streets.
    - Scaled explosion flash intensity and reach in `flashAt` to brilliantly light up the entire city block.
+8. **Continuous Full-Window Reticle Edge Tracking (`src/game.js`):**
+   - Attached mouse listeners to `window` and re-evaluate camera raycasts every frame in `update(dt)`, ensuring the targeting reticle never lags behind camera panning and tracks smoothly all the way to the screen perimeter even when hovering over HUD buttons or canvas borders.
+9. **Fire Scaling, Spread & Aerial Firefighting Dispatch (`src/game.js`):**
+   - Ignited building fires start small (`size = 0.35`) and billow outward to 2.8 units if left unsuppressed, spreading to adjacent rowhouse facades and dealing compounding damage.
+   - Firefighting helicopters and fire engines swarm active blazes, while Paulo's wings and low swoops extinguish fires for +250 bonus points.
+10. **Fast Atmospheric Comets & Sky Shader Celestial Clean-Up (`src/game.js`):**
+    - Increased fast-moving streaking comet frequency and speed ($65\text{ u/s}$) through the extended upper atmosphere.
+    - Preserved unobstructed atmospheric sky shader with high-fidelity cratered moon and sun, avoiding duplicate mesh artifacts while maintaining directional moonlight illumination.
 
 ## November 14 — RC61 Edge aim fix & 3D reticle, van crew boarding, bulldozers, fire spread & dragon firefighting, night military start, M1 Abrams MBT ballistic shells, F-16/F-22 3D formations, biker gangs, police barricades & skyline perspective occlusion
 
