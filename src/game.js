@@ -2222,8 +2222,8 @@ function removeMilitaryInterceptedMeteor(m){
 }
 function registerIntercept(m,rally=rallyLoop){
  sessionStats.intercepts++;
- if(wave<15&&!m.grounded){
-  const boost=rally?(m.fragment?2:6):(m.fragment?1.0:2.5);
+ if(wave<15&&!m.fragment&&!m.grounded){
+  const boost=rally?6:2.5;
   blockCharge=Math.min(100,blockCharge+boost);
   updateBlockButton();
  }
