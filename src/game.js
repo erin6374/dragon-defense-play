@@ -253,13 +253,13 @@ function ignite(x,y,z){
  if(schoolFire.length>=42)return;
  for(const f of schoolFire){if(f.root.position.distanceToSquared(new THREE.Vector3(x,y,z))<2.25)return;}
  const root=new THREE.Group();root.position.set(x,y,z);fireGroup.add(root);
- const initialSize=.8+Math.random()*.4;
+ const initialSize=.35+Math.random()*.25;
  schoolFire.push({root,tongues:[],age:0,suppression:0,initialSize,size:initialSize,spreadTimer:0,burnTimer:0});
 }
 function updateFires(dt){
  for(let i=schoolFire.length-1;i>=0;i--){
   const f=schoolFire[i];f.age+=dt;
-  f.size=Math.min(2.4,f.initialSize+f.age*.06);
+  f.size=Math.min(2.8,f.initialSize+f.age*.08);
   f.anchorClock=(f.anchorClock||0)-dt;
   if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
@@ -1122,7 +1122,7 @@ const helicopterModels=new Map();
 function spawnHelicopter(forcedVariant=null){if(wave<5||helicopters.length>=3)return;
  // Only one ICE pursuer can deploy an electrical stream at a time.
  if(wave>=6&&wave<=10&&helicopters.some(h=>h.role==='ice'&&!h.crashing))return;
- const variant=forcedVariant??(wave>=6&&wave<=10?1:schoolFire.length&&!helicopters.some(h=>h.firefighting)&&Math.random()<.18?2:Math.floor(Math.random()*2));
+ const variant=forcedVariant??(wave>=6&&wave<=10?(schoolFire.length&&Math.random()<.45?2:1):schoolFire.length&&!helicopters.some(h=>h.firefighting)?2:Math.floor(Math.random()*2));
  const cached=helicopterModels.get(variant)?.pop(),root=cached?.root||new THREE.Group();scene.add(root);root.rotation.set(0,0,0);root.visible=true;const dir=Math.random()<.5?1:-1;root.position.set(dir>0?-83:83,17+Math.random()*10,7-Math.random()*13);
  const {rotor,tail,beacon,firefighting}=cached||buildHelicopter(THREE,root,variant);
  root.scale.setScalar(variant===2?1.05:.9);root.rotation.y=dir<0?Math.PI:0;
@@ -1369,18 +1369,18 @@ function updateDistantMeteors(dt){
  // Fast-moving streaking comets cutting across the expanded upper sky
  cometTimer-=dt;
  if(cometTimer<=0&&distantStreaks.length<streakCap){
-  cometTimer=1.6+Math.random()*2.4;
+  cometTimer=0.8+Math.random()*1.5;
   const cometSprite=new THREE.Sprite(flamingDistantMeteorMaterial);
   const startX=cameraScrollX+(Math.random()<.5?-240:240);
   const startY=105+Math.random()*45;
-  const endX=startX+(startX>cameraScrollX?-1:1)*(200+Math.random()*140);
-  const endY=startY-50-Math.random()*35;
+  const endX=startX+(startX>cameraScrollX?-1:1)*(220+Math.random()*160);
+  const endY=startY-55-Math.random()*40;
   const cometZ=-120-Math.random()*280;
   cometSprite.position.set(startX,startY,cometZ);
-  cometSprite.scale.set(3.8,18,1);
+  cometSprite.scale.set(4.2,24,1);
   scene.add(cometSprite);
-  const cometSpeed=48+Math.random()*28;
-  const travel=Math.max(.8,(startY-endY)/cometSpeed);
+  const cometSpeed=65+Math.random()*35;
+  const travel=Math.max(.6,(startY-endY)/cometSpeed);
   distantStreaks.push({sprite:cometSprite,life:travel,travel,from:new THREE.Vector3(startX,startY,cometZ),to:new THREE.Vector3(endX,endY,cometZ),isComet:true,impact:false});
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
@@ -1920,20 +1920,22 @@ scene.add(targetingReticle);
 
 function aim(e){
  const r=renderer.domElement.getBoundingClientRect();
- aimNdc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));
+ const nx=THREE.MathUtils.clamp((e.clientX-r.left)/r.width*2-1,-1,1);
+ const ny=THREE.MathUtils.clamp(-((e.clientY-r.top)/r.height*2-1),-1,1);
+ aimNdc.set(nx,ny);
  ray.setFromCamera(aimNdc,camera);
  if(ray.ray.intersectPlane(plane,aimIntersection)){
-  const maxAimX=280+Math.abs(cameraScrollX);
-  pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-maxAimX,maxAimX),THREE.MathUtils.clamp(aimIntersection.y,-6,flightCeiling+25),0);
+  const maxAimX=340+Math.abs(cameraScrollX);
+  pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-maxAimX,maxAimX),THREE.MathUtils.clamp(aimIntersection.y,-12,flightCeiling+35),0);
   targetingReticle.position.set(pointer.x,pointer.y,1.5);
   targetingReticle.visible=active&&!paused;
  }
 }
-// Pointermove already includes touch drags; a second touch-specific handler
-// previously performed the same raycast twice for each touch move.
+// Full-screen edge tracking: keep reticle synchronized even at the extreme edges of the browser and over HUD buttons
 renderer.domElement.addEventListener('pointermove',aim);
-// Mobile aiming is independent of the movement and action controls.
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){aim(e);e.preventDefault();}}, {passive:false});
+window.addEventListener('pointermove',aim,{passive:true});
+renderer.domElement.addEventListener('pointerdown',aim);
+window.addEventListener('pointerdown',aim,{passive:true});
 let fireHealthAccumulator=0;let holdStart=0;let windActive=false;let windCharge=1;let windCooldown=0;let gustTime=0;let gustId=0;let gustRoadNotified=false;let gustMissileNotified=false;let gustOrigin=new THREE.Vector3(),gustDirection=new THREE.Vector3(1,0,0);
 // Stylized animated wind particles: translucent layered eddies, not solid tubes.
 const windVisual=new THREE.Group();scene.add(windVisual);
@@ -2626,6 +2628,13 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  return;
 }
 elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;if(!settling&&schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
+if(active&&!paused){
+ ray.setFromCamera(aimNdc,camera);
+ if(ray.ray.intersectPlane(plane,aimIntersection)){
+  const maxAimX=340+Math.abs(cameraScrollX);
+  pointer.set(THREE.MathUtils.clamp(aimIntersection.x,-maxAimX,maxAimX),THREE.MathUtils.clamp(aimIntersection.y,-12,flightCeiling+35),0);
+ }
+}
 if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(elapsed*7)*.08;targetingReticle.scale.set(pulse,pulse,pulse);targetingReticle.position.set(pointer.x,pointer.y,1.5);targetingReticle.visible=active&&!paused;}
  if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
