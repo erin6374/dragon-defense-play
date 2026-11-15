@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc68",
-  "version": "5.5.0-rc.68",
+  "build": "5.5-north-broad-refinement-rc69",
+  "version": "5.5.0-rc.69",
   "gameplay_base": "5.2.3",
-  "scope": "RC68: School health fire damage isolation fix preventing distant city fires from reducing school HP, gas propulsion speed boost direction alignment along flight heading with rear exhaust plume, Community Spirit block charge progression (+2.5% intact, +1.0% fragment) in standard play loop, and calibrated midground meteor targeting distribution.",
+  "scope": "RC69: Chapter 4 climactic finale overhaul with multi-stage Colossus Boss battle (HP 120, crust and core fracture phases), extended Wave 15 meteor storm budget (26 threats), dual elevated fire truck water monitor deluge during finale and rally, GPU shader pipeline pre-warming to prevent spawn hitches, and cinematic narrative victory screens.",
   "new_gameplay_features": false,
-  "release_status": "RC68 candidate: Isolated school fire health accumulation, forward gas boost propulsion fix, community block charge intercept rewards, midground meteor targeting, local contracts passing."
+  "release_status": "RC69 candidate: Chapter 4 finale overhaul, multi-phase Colossus boss, Wave 15 meteor storm, dual fire truck water monitors, WebGL shader pre-warming, narrative ending UI polish."
 }

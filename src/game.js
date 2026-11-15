@@ -1028,6 +1028,11 @@ function fireTruckService(c,dt){
   c.serviceProgress=0;
  }
  if(!c.serviceTarget){
+  if((wave===15||blockShield>0)&&Math.abs(c.root.position.x)<70&&c.root.position.z>-25){
+   const monitorSource=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
+   const monitorTarget=new THREE.Vector3(c.root.position.x+c.dir*16,6+Math.sin(elapsed*2)*2,-4);
+   cinematicFX.water(monitorSource,monitorTarget,c.ladder?.16:.12);
+  }
   const home=c.originalLane||c.laneZ;
   if(Math.abs(c.root.position.z-home)>.3){
    if(!c.returning){const turn=c.root.position.x>0?53:-53;c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
@@ -2336,8 +2341,8 @@ function fragmentMeteor(m){
   spawnFragmentMeteor(m.mesh.position.x-3.8,m.mesh.position.y,m.mesh.position.z,2.6,-2.0,-2.4,0,m);
   spawnFragmentMeteor(m.mesh.position.x+3.8,m.mesh.position.y,m.mesh.position.z,2.6,2.0,-2.4,0,m);
   blockCharge=100;
-  schoolShieldUntil=Math.max(schoolShieldUntil,elapsed+16);
-  rapidFireUntil=Math.max(rapidFireUntil,elapsed+14);
+  schoolShieldUntil=Math.max(schoolShieldUntil,elapsed+22);
+  rapidFireUntil=Math.max(rapidFireUntil,elapsed+20);
   updateBlockButton();
   updatePowerHud();
   sound('bonus');
@@ -2358,16 +2363,16 @@ function emitMeteorShrapnel(pos,size){
  }
 }
 function spawnFinalBoss(){if(bossSpawned)return;bossSpawned=true;finalSquadron.start();
- const mesh=createPlayableRock(8.5,5);mesh.position.set(0,meteorEntryHeight(0,8.5,82),0);
+ const mesh=createPlayableRock(9.2,5);mesh.position.set(0,meteorEntryHeight(0,9.2,82),0);
  mesh.material=moltenMaterial;scene.add(mesh);
- meteors.push({mesh,target:new THREE.Vector3(0,1,0),vel:new THREE.Vector3(0,-2.4,0),trail:0,hp:95,maxHp:95,size:8.5,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0});
+ meteors.push({mesh,target:new THREE.Vector3(0,1,0),vel:new THREE.Vector3(0,-1.85,0),trail:0,hp:120,maxHp:120,size:9.2,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0});
  message('CHAPTER 4: THE LAST METEOR — DEFEND PHILADELPHIA!');
 }
-function winGame(){active=false;finalSquadron.clear();if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>🏆 PHILADELPHIA SAVED!</h1><p>Paulo has defeated the final meteor. Score: ${score.toLocaleString()}</p><p>The president denies responsibility. The block is calling for justice.</p><button id="ending-block">📣 CALL THE BLOCK — ACCOUNTABILITY</button><button id="ending-wait">DO NOT CALL — ESCAPE ENDING</button>`;document.getElementById('ending-block').onclick=()=>showFinalEnding(true);document.getElementById('ending-wait').onclick=()=>showFinalEnding(false);}
+function winGame(){active=false;finalSquadron.clear();if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();sound('bonus');const panel=document.getElementById('panel');document.getElementById('overlay').style.display='grid';const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&!b.background).length;panel.innerHTML=`<h1>🏆 PHILADELPHIA SAVED!</h1><p style="font-size:16px;line-height:1.6;margin:12px 0">Paulo and the North Broad community have destroyed the Colossus Meteor!<br>Final Score: <strong style="color:#ffd358">${score.toLocaleString()}</strong> · School Health: <strong style="color:#6be285">${hp}%</strong> · Buildings Saved: <strong style="color:#80dcff">${saved}</strong></p><p style="color:#d2e5f5;margin:10px 0">The administration denies culpability for the disaster. The block demands justice.</p><div style="display:flex;gap:12px;justify-content:center;margin-top:14px"><button id="ending-block" style="background:#228844;color:#fff;font-weight:bold;padding:10px 18px;border-radius:6px;cursor:pointer">📣 CALL THE BLOCK — ACCOUNTABILITY</button><button id="ending-wait" style="background:#445566;color:#ddd;padding:10px 18px;border-radius:6px;cursor:pointer">DO NOT CALL — ESCAPE ENDING</button></div>`;document.getElementById('ending-block').onclick=()=>showFinalEnding(true);document.getElementById('ending-wait').onclick=()=>showFinalEnding(false);}
 function showFinalEnding(accountability){
- const panel=document.getElementById('panel');
- panel.innerHTML=accountability?`<h1>📣 THE BLOCK ANSWERS!</h1><p>Neighbors and police arrive at the White House. The president is arrested and brought before a court, where he is convicted. Paulo flies toward a golden Philadelphia sunset.</p><h2>THE END — ACCOUNTABILITY</h2><button id="again">PLAY AGAIN</button>`:`<h1>THE ESCAPE</h1><p>Supporters spirit the president away. He retires overseas in luxury, while Paulo returns to protect Philadelphia.</p><h2>THE END — ESCAPE</h2><button id="again">PLAY AGAIN</button>`;
- const link=document.createElement('a');link.href='./campaign/chapters3-4.html';link.target='_blank';link.rel='noopener';link.textContent='▶ VIEW ANIMATED FINALE';link.style.cssText='display:inline-block;padding:12px;color:#ffce75';panel.appendChild(link);
+ const panel=document.getElementById('panel');sound(accountability?'bonus':'impact');
+ panel.innerHTML=accountability?`<h1>📣 THE BLOCK ANSWERS!</h1><p style="font-size:15px;line-height:1.6;margin:12px 0">Neighbors, students, and first responders march together to the White House. The administration is held fully accountable before a jury of citizens. Paulo circles high above North Broad into a golden Philadelphia sunset.</p><h2 style="color:#78f090;margin:10px 0">THE END — ACCOUNTABILITY VICTORY</h2><button id="again" style="padding:10px 24px;font-weight:bold;cursor:pointer">PLAY AGAIN</button>`:`<h1>THE ESCAPE</h1><p style="font-size:15px;line-height:1.6;margin:12px 0">Supporters spirit the president away under cover of darkness into exile. Paulo and the students remain on North Broad to rebuild the city.</p><h2 style="color:#e0b060;margin:10px 0">THE END — ESCAPE ENDING</h2><button id="again" style="padding:10px 24px;font-weight:bold;cursor:pointer">PLAY AGAIN</button>`;
+ const link=document.createElement('a');link.href='./campaign/chapters3-4.html';link.target='_blank';link.rel='noopener';link.textContent='▶ VIEW ANIMATED FINALE';link.style.cssText='display:inline-block;margin-top:10px;padding:10px;color:#ffce75;font-weight:bold';panel.appendChild(link);
  document.getElementById('again').onclick=reset;
 }
 const MAX_DYNAMIC_LIGHTS=5;
@@ -2709,7 +2714,7 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
  waveStats.push(entry);
  if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
- stormTimer=0;remaining=wave>=15?(wave===15?12:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?1.05:.7);if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
+ stormTimer=0;remaining=wave>=15?(wave===15?26:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?0.95:.7);if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
 function reset(){rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
@@ -2902,22 +2907,23 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,30,.4);
    emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));
    if(m.boss){
-    if(m.hp<=65&&m.fracturePhase===0){
+    if(m.hp<=80&&m.fracturePhase===0){
      m.fracturePhase=1;
      flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,2.2);
-     cinematicFX.shock(m.mesh.position,5);
+     cinematicFX.shock(m.mesh.position,5.5);
      sound('impact');
      message('COLOSSUS CRUST FRACTURING — INTERCEPT MAGMA SHARDS!');
      spawnFragmentMeteor(m.mesh.position.x-3.2,m.mesh.position.y-1,m.mesh.position.z,2.2,-2.4,-3.2,0,m);
      spawnFragmentMeteor(m.mesh.position.x+3.2,m.mesh.position.y-1,m.mesh.position.z,2.2,2.4,-3.2,0,m);
-    }else if(m.hp<=30&&m.fracturePhase===1){
+    }else if(m.hp<=40&&m.fracturePhase===1){
      m.fracturePhase=2;
      flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,2.8);
-     cinematicFX.shock(m.mesh.position,6);
+     cinematicFX.shock(m.mesh.position,6.8);
      sound('crash');
-     message('CORE INSTABILITY DETECTED — SUSTAIN FIRE!');
+     message('CORE INSTABILITY DETECTED — SUSTAIN RAPID FIRE!');
      spawnFragmentMeteor(m.mesh.position.x-2.5,m.mesh.position.y-1,m.mesh.position.z,2.0,-1.8,-3.8,0,m);
      spawnFragmentMeteor(m.mesh.position.x+2.5,m.mesh.position.y-1,m.mesh.position.z,2.0,1.8,-3.8,0,m);
+     spawnFragmentMeteor(m.mesh.position.x,m.mesh.position.y-1,m.mesh.position.z+2.5,2.0,0,-3.8,0,m);
     }
    }
    if(m.hp<=0){
@@ -3070,7 +3076,27 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  if(active&&sessionStats.frames%4===0){playtestFrameMs.push(Math.min(250,dt*1000));if(playtestFrameMs.length>1500)playtestFrameMs.shift();peakDrawCalls=Math.max(peakDrawCalls,renderer.info.render.calls);}
  profiler.record({dt,simMs,renderMs,stepCount:step.steps,droppedSteps:step.dropped});
  if(window.__DD_BENCHMARK)window.__DD_BENCHMARK.frame(dt,simMs,renderMs,renderer.info.render.calls,renderer.info.render.triangles,renderStartUTC,renderEndUTC);
-}animate();
+}
+function warmupShaderPipelines(){
+ try{
+  const dummyGroup=new THREE.Group();
+  dummyGroup.position.set(0,-800,0);
+  scene.add(dummyGroup);
+  for(let v=0;v<3;v++){
+   const h=new THREE.Group();
+   buildHelicopter(THREE,h,v);
+   dummyGroup.add(h);
+  }
+  const testRock=createPlayableRock(5,3);
+  testRock.material=moltenMaterial;
+  dummyGroup.add(testRock);
+  renderer.compile(scene,camera);
+  scene.remove(dummyGroup);
+  dummyGroup.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m?.dispose());else o.material?.dispose();}});
+ }catch(e){console.warn('Shader warmup skipped:',e);}
+}
+warmupShaderPipelines();
+animate();
 
 // Fullscreen is a user-gesture operation; the browser must grant it.
 document.getElementById('fullscreen-btn').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){message('FULLSCREEN UNAVAILABLE');}});
