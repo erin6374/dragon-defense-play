@@ -125,7 +125,7 @@ export function createVisualMaterials(THREE){
   asphalt:pbr('asphalt',[9,3]),asphaltCross:pbr('asphalt',[3,3]),
   meteor:pbr('meteor',[1.5,1.5]),
   sidewalk:pbr('limestone',[10,3],{tint:0xd4d1ca}),
-  window:new THREE.MeshPhysicalMaterial({color:0x66899a,roughness:.10,metalness:.12,transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide}),
+  window:new THREE.MeshPhysicalMaterial({color:0x5e8294,roughness:.07,metalness:.22,transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide}),
   blackMetal:new THREE.MeshStandardMaterial({color:0x29323b,roughness:.4,metalness:.70}),
   copper:new THREE.MeshStandardMaterial({color:0x88725b,roughness:.41,metalness:.57}),
   luminous:new THREE.MeshBasicMaterial({color:0xf0deb1}),

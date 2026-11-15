@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc70",
-  "version": "5.5.0-rc.70",
+  "build": "5.5-north-broad-refinement-rc71",
+  "version": "5.5.0-rc.71",
   "gameplay_base": "5.2.3",
-  "scope": "RC70: Visual Fidelity & Atmosphere Overhaul — wet asphalt specular sheen & pavement reflectivity, twilight sunset sky gradient (warm peach horizon fading into dusky rose & deep indigo zenith), ambient reflection probe sunset calibration, lush foreground foliage framing along the lower camera frustum, and Tech Freire illuminated entrance marquee & warm interior classroom lighting.",
+  "scope": "RC71: Opposite-street window reflections, dragon perched resting pose facing camera, elevation climb/dive pitch pointing, turning rear-up kinematics, soaring flight glides, right mouse button stuck release fix, expanded map bounds to x=230, and meteor impact illumination.",
   "new_gameplay_features": false,
-  "release_status": "RC70 candidate: Visual fidelity & atmosphere overhaul aligning with reference mockup: rain-slicked wet asphalt specular response, sunset twilight sky & ambient reflection probe, dense foreground foliage camera framing, Tech Freire illuminated marquee canopy & warm classroom interior depth."
+  "release_status": "RC71 candidate: Synthesized opposite-street rowhouse, storefront, sash window & streetlamp reflections on school glazing; dragon perched upright on hind legs on Tech Freire roof facing camera; elevation climb/dive pointing and turning rear-up aerodynamics; majestic soaring flight wingbeat cadence; robust RMB long-press release fix; expanded dragon map bounds across North Broad corridor; enhanced meteor strike flash illumination and dynamic lights."
 }

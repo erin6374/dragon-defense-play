@@ -13,7 +13,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  const materials=[
   new THREE.MeshStandardMaterial({color:0x8f4b3d,roughness:.94}), // brick
   new THREE.MeshStandardMaterial({color:0xb2afa5,roughness:.88}), // concrete
-  new THREE.MeshStandardMaterial({color:0x4a6572,roughness:.18,metalness:.15,transparent:true,opacity:.68,depthWrite:false}), // glass
+  new THREE.MeshStandardMaterial({color:0x3e5b68,roughness:.08,metalness:.22,transparent:true,opacity:.68,depthWrite:false}), // glass
   new THREE.MeshStandardMaterial({color:0x353a3b,roughness:.53,metalness:.38}), // steel
   new THREE.MeshStandardMaterial({color:0xebd5a8,roughness:.62,emissive:0xd4a055,emissiveIntensity:.65}), // interior
   new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95}), // masonry backer
