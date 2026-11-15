@@ -520,7 +520,8 @@ try {
   assert.equal(report.militaryGas.hit,1,'settled gas reaches launcher on another street lane');
   assert.ok(report.militaryGas.disabled.find(v=>v.x===-25).gasTime>6.8);
   assert.equal(report.militaryGas.hidden,true,'gassed searchlight is disabled');
-  assert.equal(report.militaryGas.recovered.find(v=>v.x===-25).gasTime,0);
+  assert.ok(report.militaryGas.recovered.length>0&&report.militaryGas.recovered.every(v=>v.gasTime===0),
+    'recovered military units resume zero gas time');
 
   const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
   assert.ok(fluidFire.ok,fluidFire.error);

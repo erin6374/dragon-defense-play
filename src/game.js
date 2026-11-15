@@ -1124,6 +1124,7 @@ const helicopters=[],crowd=[],gasClouds=[];let ambulanceTimer=10;let helicopterT
 const heliBody=material(0xe3c23d),heliGlass=material(0x32485c),rotorMat=material(0x252b33),greenGas=new THREE.MeshBasicMaterial({color:0x6cdb4b,transparent:true,opacity:.4,depthWrite:false});
 const helicopterLightPool=createStableLightPool(scene,3,()=>new THREE.SpotLight(0xe8f4ff,0,30,Math.PI/6,.6,1.5));
 const helicopterModels=new Map();
+const heliTargetScratch=new THREE.Vector3(),heliMountScratch=new THREE.Vector3(),heliAimScratch=new THREE.Vector3(),heliLocalTargetScratch=new THREE.Vector3(),heliLocalAimScratch=new THREE.Vector3(),heliMountOffset=new THREE.Vector3(1.35,-.62,0),heliUpVector=new THREE.Vector3(0,-1,0),heliForwardScratch=new THREE.Vector3();
 function spawnHelicopter(forcedVariant=null){if(wave<5||helicopters.length>=3)return;
  // Only one ICE pursuer can deploy an electrical stream at a time.
  if(wave>=6&&wave<=10&&helicopters.some(h=>h.role==='ice'&&!h.crashing))return;
@@ -1601,9 +1602,9 @@ function updateWorld(dt){
  if(!dragonGroundImpact&&dragon.position.y<1.65){dragonGroundImpact=true;shake=Math.max(shake,.35);emitImpact(dragon.position.x,.7,dragon.position.z,20,.3);sound('impact');}
 }else dragon.rotation.z=THREE.MathUtils.lerp(dragon.rotation.z,0,Math.min(1,dt*5));waterDisable=Math.max(0,waterDisable-dt);gasCooldown=Math.max(0,gasCooldown-dt);dragon.visible=dragonStun>0||invulnerable<=0||Math.floor(elapsed*11)%2===0;
  updateBurningVehicles(dt);if(performanceLab.isEnabled('helicopters'))helicopterTimer-=dt;if(performanceLab.isEnabled('helicopters')&&wave>=5&&helicopterTimer<=0){spawnHelicopter();helicopterTimer=6+Math.random()*7;}
- for(let i=helicopters.length-1;performanceLab.isEnabled('helicopters')&&i>=0;i--){const h=helicopters[i];h.life-=dt;h.rotor.rotation.y+=dt*28;h.tail.rotation.z+=dt*22;if(!h.crashing){
+ for(let i=helicopters.length-1;performanceLab.isEnabled('helicopters')&&i>=0;i--){const h=helicopters[i];h.life-=dt;h.rotor.rotation.y+=dt*28;h.tail.rotation.z+=dt*22;let searchlightSynced=false;if(!h.crashing){
    // Cockpit forward visibility is deliberately limited: ~64-degree field of view.
-   const forward=new THREE.Vector3(Math.cos(h.heading),0,-Math.sin(h.heading));let nearest=null,nearestT=Infinity;
+   const forward=heliForwardScratch.set(Math.cos(h.heading),0,-Math.sin(h.heading));let nearest=null,nearestT=Infinity;
    for(const meteor of meteors){if(meteor.grounded||!meteor.mesh)continue;const delta=meteor.mesh.position.clone().sub(h.root.position);const dist=delta.length();if(dist>24||dist<.001||forward.dot(delta.clone().normalize())<.85)continue;
     const velocity=meteor.vel||new THREE.Vector3(0,-4,0),relative=velocity.clone().addScaledVector(forward,-h.speed);const closing=-delta.dot(relative)/Math.max(.01,relative.lengthSq());
     if(closing>=0&&closing<3.5&&delta.clone().addScaledVector(relative,closing).length()<5&&closing<nearestT){nearest=meteor;nearestT=closing;}}
@@ -1627,32 +1628,37 @@ function updateWorld(dt){
     const darknessRatio=Math.min(1,Math.max(0,(displayedDarkness-.18)/.42));
     h.root.userData.searchlightCone.material.opacity=0.08*darknessRatio;
     if(h.root.userData.innerCore)h.root.userData.innerCore.material.opacity=0.14*darknessRatio;
-    const targetPos=(h.role==='police'||h.role==='ice')?dragon.position.clone():new THREE.Vector3(h.root.position.x+h.dir*14,0,20);
-    const mountPos=new THREE.Vector3(1.35,-.62,0);
-    h.root.localToWorld(mountPos);
-    const aimDir=targetPos.clone().sub(mountPos).normalize();
-    const localTarget=h.root.worldToLocal(targetPos.clone());
-    const localAim=localTarget.sub(new THREE.Vector3(1.35,-.62,0)).normalize();
-    if(h.root.userData.searchlightGimbal&&localAim.lengthSq()>.001){
-     const up=new THREE.Vector3(0,-1,0);
-     const dot=up.dot(localAim);
+    if(h.role==='police'||h.role==='ice'){
+     heliTargetScratch.copy(dragon.position);
+    }else{
+     heliTargetScratch.set(h.root.position.x+h.dir*14,0,20);
+    }
+    heliMountScratch.copy(heliMountOffset);
+    h.root.localToWorld(heliMountScratch);
+    heliAimScratch.copy(heliTargetScratch).sub(heliMountScratch).normalize();
+    heliLocalTargetScratch.copy(heliTargetScratch);
+    h.root.worldToLocal(heliLocalTargetScratch);
+    heliLocalAimScratch.copy(heliLocalTargetScratch).sub(heliMountOffset).normalize();
+    if(h.root.userData.searchlightGimbal&&heliLocalAimScratch.lengthSq()>.001){
+     const dot=heliUpVector.dot(heliLocalAimScratch);
      if(dot>.9999){
       h.root.userData.searchlightGimbal.quaternion.identity();
      }else if(dot<-.9999){
       h.root.userData.searchlightGimbal.quaternion.set(1,0,0,0);
      }else{
-      h.root.userData.searchlightGimbal.quaternion.setFromUnitVectors(up,localAim);
+      h.root.userData.searchlightGimbal.quaternion.setFromUnitVectors(heliUpVector,heliLocalAimScratch);
      }
     }
     if(h.searchlightPool){
-     const t=(0.06-mountPos.y)/Math.min(-0.02,aimDir.y);
+     const t=(0.06-heliMountScratch.y)/Math.min(-0.02,heliAimScratch.y);
      if(t>0&&t<100){
-      h.searchlightPool.position.set(mountPos.x+aimDir.x*t,0.08,mountPos.z+aimDir.z*t);
+      h.searchlightPool.position.set(heliMountScratch.x+heliAimScratch.x*t,0.08,heliMountScratch.z+heliAimScratch.z*t);
       h.searchlightPool.scale.setScalar(Math.min(2.4,Math.max(0.7,t*.06)));
       h.searchlightPool.material.opacity=0.45*darknessRatio;
      }
     }
-    syncHelicopterSearchlight(h.root,h.searchlight,targetPos);
+    syncHelicopterSearchlight(h.root,h.searchlight,heliTargetScratch);
+    searchlightSynced=true;
    }
   }
   if(h.crashing){
@@ -1796,7 +1802,7 @@ function updateWorld(dt){
    for(const m of meteors)if(!m.grounded&&m.mesh?.position.distanceTo(h.root.position)<Math.max(2.2,(m.size||1)*.8+1.5))crashHelicopter(h);
    for(const b of blasts)if(h.root.position.distanceTo(b.mesh.position)<b.r+1.5) {crashHelicopter(h);score=Math.max(0,score-250);message('HELICOPTER HIT! -250');}
   }
-  syncHelicopterSearchlight(h.root,h.searchlight);
+  if(!searchlightSynced)syncHelicopterSearchlight(h.root,h.searchlight);
   if(h.life<=0||Math.abs(h.root.position.x)>90){
    if(!h.crashing&&h.life>0){score+=150;message('HELICOPTER ESCORT +150');sound('bonus');updateHud();}
    disposeHelicopterElectric(h);
