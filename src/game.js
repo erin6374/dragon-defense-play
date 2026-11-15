@@ -276,9 +276,9 @@ function updateFires(dt){
   f.burnTimer=(f.burnTimer||0)+dt;
   if(f.burnTimer>=1.2){
    f.burnTimer=0;
-   const bldg=neighborhood.targetBuildings.find(b=>Math.abs(b.x-f.root.position.x)<b.w*.5+1.2&&Math.abs(b.z-f.root.position.z)<b.d*.5+1.2);
+   const bldg=neighborhood.targetBuildings.find(b=>Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
    if(bldg){bldg.damage=Math.min(1.0,(bldg.damage||0)+.012);}
-   else if(Math.abs(f.root.position.x)<15&&f.root.position.z<8){
+   else if(Math.abs(f.root.position.x)<=14.0&&f.root.position.z>=-18.0&&f.root.position.z<=1.0&&f.root.position.y>=1.0){
     schoolDamage=Math.min(1.0,schoolDamage+.006);hp=Math.min(hp,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
@@ -1370,7 +1370,7 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  // Background meteor strikes scale across ALL planes as the neighborhood gauge shrinks
  backgroundDamageTimer=THREE.MathUtils.lerp(3.8,0.95,Math.max(frontDamage*.75,blockDamage));
  const district=neighborhood.longRange;
- const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.z<DEFENSE_REAR_Z&&b.damage<1);
+ const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.damage<1);
  const count=blockDamage>=.85?4:blockDamage>=.55?3:blockDamage>=.25?2:1;
  for(let i=0;i<count&&distantStreaks.length<65;i++){
   const near=backs.length&&i===0&&random()<.48?backs[Math.floor(random()*backs.length)]:null;
@@ -2264,7 +2264,8 @@ function spawnMeteor(random=Math.random,opening=null){
  const roll=random(),kind=opening?.kind??(roll<.12?'iron':roll<.31?'molten':roll<.60?'flaming':'stone');
  const size=opening?.size??(wave===1?.62:(random()<.19?2.0+random()*.8:random()<.43?1.2+random()*.4:.52+random()*.45));
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
- const buildings=neighborhood.targetBuildings.filter(b=>b.z>=DEFENSE_REAR_Z&&(!(opening||fastImpact)||!b.background));
+ const midgroundZ=-52;
+ const buildings=neighborhood.targetBuildings.filter(b=>b.z>=midgroundZ&&(!opening||!b.background));
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random,diffMode);
  const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-220,220);
@@ -2385,7 +2386,7 @@ function traceOpeningMeteorImpact(m,start){
   if(x>=minX&&x<=maxX&&z>=minZ&&z<=maxZ)earliest=t;
  }
  check(.7,-Infinity,Infinity,-Infinity,Infinity);
- if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,schoolBounds.min.z,schoolBounds.max.z);
+ if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,-17.6,schoolBounds.max.z);
  for(const b of neighborhood.targetBuildings){
   if(b.damage<.98)check(b.h,b.x-b.w/2,b.x+b.w/2,b.z-b.d/2,b.z+b.d/2);
  }
@@ -2399,7 +2400,7 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
  const targetX=THREE.MathUtils.clamp(x,-240,240);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
- const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.0&&Math.abs(b.z-z)<b.d*.5+1);
+ const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.8&&z>=b.z-b.d/2-1.8&&z<=b.front+1.8);
  const neighbor=!!targetBuilding;
  const roadStrike=z>13&&z<36&&y<3;
  if(roadStrike){strikeParkedCars(targetX,z,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,z,Math.round(30+profile.strength*35),profile.strength);blast(targetX,1,z,profile.shockRadius);flashAt(targetX,2,z,2);if(Math.random()<profile.fire*(diffMode==='hard'?1.5:1))ignite(targetX,1,z);
@@ -2407,7 +2408,15 @@ function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfil
   sound('impact');return;
  }
  const hitZ=z;
- if(!neighbor&&architecturalReady&&(Math.abs(targetX)>neighborhood.school.w/2+1||Math.abs(z-neighborhood.school.z)>neighborhood.school.d/2+1)){emitImpact(targetX,targetY,z,35,profile.strength);return;}
+ const schoolHalfW=neighborhood.school.w*0.5+0.6;
+ const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-0.6;
+ const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+0.6;
+ const schoolMaxY=neighborhood.school.h+1.2;
+ const isSchoolHit=!neighbor&&architecturalReady&&
+  Math.abs(targetX)<=schoolHalfW&&
+  hitZ>=schoolMinZ&&hitZ<=schoolMaxZ&&
+  targetY>=1.0&&targetY<=schoolMaxY;
+ if(!neighbor&&!isSchoolHit){emitImpact(targetX,targetY,hitZ,50,profile.strength);sound('impact');return;}
  let lost=0;
  if(neighbor){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;

@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc63",
-  "version": "5.5.0-rc.63",
+  "build": "5.5-north-broad-refinement-rc64",
+  "version": "5.5.0-rc.64",
   "gameplay_base": "5.2.3",
-  "scope": "RC63: Resolve helicopter building collision infinite oscillation loop & audio stutter stall; fix Dauphin/Susquehanna intersection police blockade vehicle batch exclusions and initial visibility; fix dragon gas propulsion thrust decoupling from aim cursor to guarantee forward boost in movement heading across all screen coordinates; soften volumetric helicopter searchlight cone opacity and daytime suppression; clean helicopter recycling and scene reset.",
+  "scope": "RC64: Strictly bound Tech Freire school damage and fire footprint to architectural building volume to eliminate phantom health decay from street/alley/midground strikes; expand meteor targeting and trajectory clearance to midground residential rows (z down to -52); enable midground roof and facade impacts with structural masonry debris, breach, and localized fire.",
   "new_gameplay_features": false,
-  "release_status": "RC63 candidate: building collision avoidance loop resolved, gas propulsion boost decoupled from aim, searchlight visuals softened, local contracts passing."
+  "release_status": "RC64 candidate: school damage area strictly bounded, phantom health decay resolved, midground house meteor impacts enabled, local contracts passing."
 }

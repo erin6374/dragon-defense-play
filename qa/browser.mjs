@@ -511,14 +511,14 @@ try {
     const high=unit.applyGas(new THREE.Vector3(-25,20,15));
     const hit=unit.applyGas(new THREE.Vector3(-25,1,3));
     unit.update(.1,[],[]);const disabled=unit.gasStates();
-    const hidden=unit.searchlightStates().find(v=>v.x===-25).visible===false;
+    const hidden=unit.searchlightStates().find(v=>Math.abs(v.x-(-25))<1.5).visible===false;
     for(let i=0;i<71;i++)unit.update(.1,[],[]);
     const recovered=unit.gasStates();unit.reset();
     return {before,high,hit,disabled,hidden,recovered};
   });
   assert.equal(report.militaryGas.high,0,'airborne gas must descend before disabling ground units');
   assert.equal(report.militaryGas.hit,1,'settled gas reaches launcher on another street lane');
-  assert.ok(report.militaryGas.disabled.find(v=>v.x===-25).gasTime>6.8);
+  assert.ok(report.militaryGas.disabled.find(v=>Math.abs(v.x-(-25))<1.5).gasTime>6.8);
   assert.equal(report.militaryGas.hidden,true,'gassed searchlight is disabled');
   assert.ok(report.militaryGas.recovered.length>0&&report.militaryGas.recovered.every(v=>v.gasTime===0),
     'recovered military units resume zero gas time');

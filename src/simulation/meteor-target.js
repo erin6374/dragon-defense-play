@@ -11,6 +11,6 @@ export function chooseMeteorTarget(buildings,schoolFront,random=Math.random,diff
  // Once a facade is open, falling rocks reach exposed surviving roof/floor bays.
  const exposed=b.structuralParts?.filter(p=>p.state==='attached'&&['roof','slab','column'].includes(p.type));
  if(b.damage>.15&&exposed?.length&&random()<.7){const p=exposed[Math.floor(random()*exposed.length)];return {x:p.position.x,y:p.position.y,z:p.position.z};}
- const roofHit=!b.background&&random()<.22;
- return roofHit?{x:b.x+(random()-.5)*b.w*.48,y:b.h+.13,z:b.z+(random()-.5)*b.d*.45}:{x:b.x+(random()-.5)*b.w*.75,y:1+random()*Math.min(13,b.h-1),z:b.front};
+ const roofHit=random()<.40;
+ return roofHit?{x:b.x+(random()-.5)*b.w*.48,y:b.h+.13,z:b.z+(random()-.5)*b.d*.45}:{x:b.x+(random()-.5)*b.w*.75,y:Math.max(1.8,b.h*.72+(random()-.5)*b.h*.35),z:b.front};
 }
