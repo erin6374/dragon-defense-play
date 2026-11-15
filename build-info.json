@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc69",
-  "version": "5.5.0-rc.69",
+  "build": "5.5-north-broad-refinement-rc70",
+  "version": "5.5.0-rc.70",
   "gameplay_base": "5.2.3",
-  "scope": "RC69: Chapter 4 climactic finale overhaul with multi-stage Colossus Boss battle (HP 120, crust and core fracture phases), extended Wave 15 meteor storm budget (26 threats), dual elevated fire truck water monitor deluge during finale and rally, GPU shader pipeline pre-warming to prevent spawn hitches, and cinematic narrative victory screens.",
+  "scope": "RC70: Visual Fidelity & Atmosphere Overhaul — wet asphalt specular sheen & pavement reflectivity, twilight sunset sky gradient (warm peach horizon fading into dusky rose & deep indigo zenith), ambient reflection probe sunset calibration, lush foreground foliage framing along the lower camera frustum, and Tech Freire illuminated entrance marquee & warm interior classroom lighting.",
   "new_gameplay_features": false,
-  "release_status": "RC69 candidate: Chapter 4 finale overhaul, multi-phase Colossus boss, Wave 15 meteor storm, dual fire truck water monitors, WebGL shader pre-warming, narrative ending UI polish."
+  "release_status": "RC70 candidate: Visual fidelity & atmosphere overhaul aligning with reference mockup: rain-slicked wet asphalt specular response, sunset twilight sky & ambient reflection probe, dense foreground foliage camera framing, Tech Freire illuminated marquee canopy & warm classroom interior depth."
 }

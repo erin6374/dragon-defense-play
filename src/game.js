@@ -102,7 +102,7 @@ scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE
 const moonLight=new THREE.DirectionalLight(0xa5c6f5,0);moonLight.position.set(45,62,28);scene.add(moonLight);
 const dragonFireLight=new THREE.PointLight(0xff8a24,0,36,1.8);scene.add(dragonFireLight);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
-const skySteps=[0xadcde0,0xa5cce8,0x8dbde1,0xe7b29a,0xa36f84,0x253552,0x15243d,0x253957,0xb08da1,0xadcde0];
+const skySteps=[0xadcde0,0xa5cce8,0x8dbde1,0xf2a278,0x985878,0x242244,0x14182e,0x222845,0xa86e88,0xadcde0];
 // Low-draw-call atmospheric sky, with time-of-day gradient and wispy cloud detail.
 const cinematicSky=createCinematicSky(THREE,scene);
 const cinematicLighting=createCinematicLighting(renderer,scene);
@@ -760,7 +760,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
  skyline.position.x=skylineAnchor;
 const skylineAirUniforms={opacity:{value:.26},day:{value:1}};
-const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 daylight=vec3(.66,.78,.88),night=vec3(.13,.20,.30);vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
+const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 midday=vec3(.66,.78,.88),sunset=vec3(.94,.68,.52),night=vec3(.13,.20,.30);vec3 daylight=mix(midday,sunset,clamp((1.-abs(day-.45)*3.2),0.,1.));vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
 // Continuous horizon terrain ridge occluding skyscraper bases from intersecting house roofs
 const horizonRidgeGeo=new THREE.PlaneGeometry(1200,28,32,1);

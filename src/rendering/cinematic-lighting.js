@@ -5,7 +5,7 @@ import * as THREE from 'three';
 // no screen-space reflection pass or additional per-frame scene rendering.
 export function reflectionProbePixels(){
  const width=256,height=128,data=new Uint8Array(width*height*4);
- const sky=new THREE.Color(),top=new THREE.Color(0x698cae),horizon=new THREE.Color(0xd5c5af),ground=new THREE.Color(0x242b32);
+ const sky=new THREE.Color(),top=new THREE.Color(0x384a6b),horizon=new THREE.Color(0xec9a6c),ground=new THREE.Color(0x1a2026);
  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
   const elevation=-Math.cos(y/(height-1)*Math.PI);
   if(elevation>=0)sky.copy(horizon).lerp(top,Math.pow(elevation,.65));

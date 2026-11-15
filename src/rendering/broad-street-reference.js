@@ -74,8 +74,11 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    bx(group,b.x-b.w*.16,1.72,b.front+1.90,.20,3.25,.20,alum);
    bx(group,b.x+b.w*.16,1.72,b.front+1.90,.20,3.25,.20,alum);
    bx(group,b.x,1.60,z+.18,b.w*.26,3.0,.08,glass);
-   const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2836','#fff5d0',3.85,.98,.76);
-   sign.position.set(b.x,3.85,b.front+2.02);
+   // Illuminated entrance canopy soffit and marquee halo matching reference mockup
+   bx(group,b.x,3.34,b.front+1.05,b.w*.34,.04,1.6,new THREE.MeshBasicMaterial({color:0xffecb8}));
+   bx(group,b.x,3.85,b.front+2.00,b.w*.42+.12,.86,.04,new THREE.MeshBasicMaterial({color:0xecd6ac}));
+   const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2838','#fff8d6',3.85,.98,.76);
+   sign.position.set(b.x,3.85,b.front+2.03);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
    // Tech Freire Charter School authentic rooftop mechanicals & penthouse (Google Earth Images 5 & 10)
    bx(group,b.x+3.5,b.h+1.8,b.front-5.5,5.8,3.6,6.2,brickTrim);

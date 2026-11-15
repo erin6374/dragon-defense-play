@@ -16,14 +16,14 @@ export function createCinematicSky(THREE,scene){
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
  void main(){float night=darkness;float dusk=exp(-pow((phase-.34)*12.,2.))+exp(-pow((phase-.84)*12.,2.));
  vec3 horizon=mix(vec3(.81,.86,.90),vec3(.14,.17,.26),night),zenith=mix(vec3(.33,.49,.67),vec3(.012,.022,.065),night);
- horizon=mix(horizon,vec3(.95,.48,.26),dusk*.78);zenith=mix(zenith,vec3(.22,.17,.33),dusk*.64);
+ horizon=mix(horizon,vec3(.98,.62,.42),dusk*.88);zenith=mix(zenith,vec3(.18,.12,.28),dusk*.75);
  vec3 col=mix(horizon,zenith,pow(vUv.y,.72));
  vec3 stratosphere=mix(vec3(.08,.15,.28),vec3(.003,.005,.018),night);
- stratosphere=mix(stratosphere,vec3(.06,.03,.13),dusk*.82);
+ stratosphere=mix(stratosphere,vec3(.08,.04,.16),dusk*.90);
  float upperAtmo=smoothstep(.52,1.0,vUv.y);
  col=mix(col,stratosphere,upperAtmo*.74);
  float airglow=smoothstep(.78,1.0,vUv.y);
- col+=mix(vec3(.025,.055,.095),vec3(.035,.015,.065),dusk)*airglow*(1.-night*.55);
+ col+=mix(vec3(.025,.055,.095),vec3(.045,.018,.075),dusk)*airglow*(1.-night*.55);
  vec2 uv=vUv*vec2(aspect,1.);
  vec2 cloudUV=uv*vec2(2.6,8.5)+vec2(time*.0015,0.);
  float cloud=0.,weight=.5;
@@ -31,7 +31,7 @@ export function createCinematicSky(THREE,scene){
  float sheet=smoothstep(.43,.71,cloud)*smoothstep(.12,.52,vUv.y);
  float rim=smoothstep(.48,.58,cloud)*(1.-smoothstep(.58,.72,cloud));
  vec3 cloudColor=mix(vec3(.82,.85,.88),vec3(.09,.12,.19),night);
- cloudColor=mix(cloudColor,vec3(.98,.65,.43),dusk*rim*.64);
+ cloudColor=mix(cloudColor,vec3(1.0,.62,.48),dusk*rim*.75);
  col=mix(col,cloudColor,sheet*(.38+.25*dusk));
  vec2 moonUV=(vUv-vec2(.82,.86))*vec2(aspect,1.);float md=length(moonUV);float disc=1.-smoothstep(.025,.026,md);
  float craters=noise(moonUV*580.)*.14+noise(moonUV*230.)*.12;
@@ -42,7 +42,7 @@ export function createCinematicSky(THREE,scene){
  col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
  float highStar=(1.-smoothstep(.025,.18,length(st)))*step(.994,chance);
  col+=vec3(.85,.9,.98)*highStar*smoothstep(.70,1.,vUv.y)*(1.-sheet)*(.15+.85*night);
- float sun=exp(-length((vUv-vec2(.25,.66))*vec2(aspect,1.))*32.);col+=vec3(.9,.55,.22)*sun*(1.-night)*(.3+dusk);
+ float sun=exp(-length((vUv-vec2(.22,.52))*vec2(aspect,1.))*30.);col+=vec3(1.0,.68,.34)*sun*(1.-night)*(.35+dusk*1.2);
  // Distant skyline impact glows extend above the roofline instead of
  // disappearing behind the foreground. Restrained radiance, no extra draw calls.
  float impactWest=exp(-pow((vUv.x-.31)*9.5,2.)-pow((vUv.y-.49)*7.8,2.));
@@ -57,7 +57,7 @@ export function createCinematicSky(THREE,scene){
 }
 
 function pavementMaterial(THREE,color,kind){
- const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='road'?.54:.86,metalness:kind==='road'?.08:0});
+ const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='road'?.38:.84,metalness:kind==='road'?.18:0});
  mat.onBeforeCompile=(shader)=>{
   shader.vertexShader='varying vec3 vRoadPos;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>

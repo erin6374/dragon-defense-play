@@ -108,20 +108,22 @@ export function addStreetSetDressing(THREE,root){
 export function addForegroundPlanting(THREE,root){
  const geometry=new THREE.IcosahedronGeometry(1,1);
  const material=new THREE.MeshLambertMaterial({color:0xffffff});
- const bed=new THREE.InstancedMesh(geometry,material,108);
+ const count=216;
+ const bed=new THREE.InstancedMesh(geometry,material,count);
  bed.name='West sidewalk foreground planting';
  const leaf=new THREE.Object3D();
- const colors=[0x333b28,0x414b2a,0x56613b,0x4a552f];
+ const colors=[0x24331b,0x2e3f22,0x3d522c,0x4a6336,0x354727,0x56723e];
  for(let i=0;i<bed.count;i++){
-  const x=-122+i*2.3;
+  const x=-130+i*1.22;
   // Keep both crosswalk approaches open.
-  if(Math.abs(Math.abs(x)-53)<9){
+  if(Math.abs(Math.abs(x)-53)<5.5){
    leaf.scale.setScalar(0);
   }else{
-   const spread=(i*7%11)/11;
-   leaf.position.set(x,.25+spread*.38,47.7+(i*17%9)*.22);
-   leaf.scale.set(1.8+spread,.67+spread*.72,.93+spread);
-   leaf.rotation.set(spread,i*1.22,spread*.31);
+   const spread=(i*7%13)/13;
+   const row=i%3;
+   leaf.position.set(x,.38+spread*.52+row*.12,45.8+row*1.1+(i*17%7)*.14);
+   leaf.scale.set(1.5+spread*.7,.82+spread*.72+row*.15,1.3+spread*.6);
+   leaf.rotation.set(spread*.4,i*1.18+row*.5,spread*.25);
   }
   leaf.updateMatrix();
   bed.setMatrixAt(i,leaf.matrix);
