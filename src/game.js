@@ -3076,27 +3076,7 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  if(active&&sessionStats.frames%4===0){playtestFrameMs.push(Math.min(250,dt*1000));if(playtestFrameMs.length>1500)playtestFrameMs.shift();peakDrawCalls=Math.max(peakDrawCalls,renderer.info.render.calls);}
  profiler.record({dt,simMs,renderMs,stepCount:step.steps,droppedSteps:step.dropped});
  if(window.__DD_BENCHMARK)window.__DD_BENCHMARK.frame(dt,simMs,renderMs,renderer.info.render.calls,renderer.info.render.triangles,renderStartUTC,renderEndUTC);
-}
-function warmupShaderPipelines(){
- try{
-  const dummyGroup=new THREE.Group();
-  dummyGroup.position.set(0,-800,0);
-  scene.add(dummyGroup);
-  for(let v=0;v<3;v++){
-   const h=new THREE.Group();
-   buildHelicopter(THREE,h,v);
-   dummyGroup.add(h);
-  }
-  const testRock=createPlayableRock(5,3);
-  testRock.material=moltenMaterial;
-  dummyGroup.add(testRock);
-  renderer.compile(scene,camera);
-  scene.remove(dummyGroup);
-  dummyGroup.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m?.dispose());else o.material?.dispose();}});
- }catch(e){console.warn('Shader warmup skipped:',e);}
-}
-warmupShaderPipelines();
-animate();
+}animate();
 
 // Fullscreen is a user-gesture operation; the browser must grant it.
 document.getElementById('fullscreen-btn').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){message('FULLSCREEN UNAVAILABLE');}});
