@@ -100,14 +100,14 @@ export function createFinalSquadron(scene) {
   const g1=new THREE.Group();buildFighterModel(g1);
   g1.position.set(leaderStartX,leaderStartY,leaderStartZ);
   root.add(g1);
-  fighters.push({g:g1,side,formationId,isLead:true,progress:0,speed:.085,startX:leaderStartX,fire:1.8+Math.random()*1.0,volleyRemaining:0,volleyTimer:0,life:36});
+  fighters.push({g:g1,side,formationId,isLead:true,progress:0,speed:.14,startX:leaderStartX,fire:1.2+Math.random()*0.8,volleyRemaining:0,volleyTimer:0,life:38});
 
   // Wingman Jet (trailing echelon right/left in deep background)
   const g2=new THREE.Group();buildFighterModel(g2);
   const wingOffset=new THREE.Vector3(-side*22,4.0,-26);
   g2.position.set(leaderStartX+wingOffset.x,leaderStartY+wingOffset.y,leaderStartZ+wingOffset.z);
   root.add(g2);
-  fighters.push({g:g2,side,formationId,isLead:false,wingOffset,progress:-0.06,speed:.085,startX:leaderStartX,fire:2.6+Math.random()*1.0,volleyRemaining:0,volleyTimer:0,life:36});
+  fighters.push({g:g2,side,formationId,isLead:false,wingOffset,progress:-0.05,speed:.14,startX:leaderStartX,fire:2.0+Math.random()*0.8,volleyRemaining:0,volleyTimer:0,life:38});
  }
 
  function fireMissile(f,dragon){
@@ -141,7 +141,7 @@ export function createFinalSquadron(scene) {
   clock+=dt;spawn-=dt;
   if(spawn<=0&&fighters.length<4){
    spawnFormation(Math.random()<.5?-1:1);
-   spawn=7.5+Math.random()*3;
+   spawn=5.0+Math.random()*2.5;
   }
   for(let i=fighters.length-1;i>=0;i--){
    const f=fighters[i];
@@ -241,5 +241,35 @@ export function createFinalSquadron(scene) {
   return count;
  }
 
- return {start,clear,update,intercept,stats:()=>({fighters:fighters.length,missiles:missiles.length,active:enabled})};
+ function deflectMissiles(origin,direction,range=18,power=1){
+  let count=0;
+  for(const m of missiles){
+   const toM=m.mesh.position.clone().sub(origin);
+   const dist=toM.length();
+   if(dist<range&&toM.dot(direction)>0){
+    m.vel.addScaledVector(direction,power*24);
+    m.life=Math.min(m.life,1.5);
+    count++;
+   }
+  }
+  return count;
+ }
+
+ function applyGas(gasPos,radius=5.5){
+  let count=0;
+  for(let i=missiles.length-1;i>=0;i--){
+   if(missiles[i].mesh.position.distanceTo(gasPos)<radius){
+    root.remove(missiles[i].mesh);missiles.splice(i,1);count++;
+   }
+  }
+  for(let i=fighters.length-1;i>=0;i--){
+   if(fighters[i].g.position.distanceTo(gasPos)<radius+2){
+    fighters[i].speed*=.6;fighters[i].life=Math.min(fighters[i].life,2.5);
+    fighters[i].fire=99;count++;
+   }
+  }
+  return count;
+ }
+
+ return {start,clear,update,intercept,deflectMissiles,applyGas,stats:()=>({fighters:fighters.length,missiles:missiles.length,active:enabled})};
 }

@@ -215,6 +215,25 @@ export function createChapterStaging(scene){
    for(let i=0;i<22;i++){const x=-58+i*5.5;person(x,-17+(i%2)*2,i%4===0,i%3===0,false);} for(let i=0;i<12;i++)person(-35+i*3.2,-34,true,false,false);
   }else if(chapter===3){
    for(const x of [-72,-38,15,72]){vehicle(x,-29,true,false);vehicle(x,-23,true,false);} for(let i=0;i<28;i++)person(-80+i*6,-18+(i%3)*2,true,false,false); for(const x of [-70,70])box(group,x,1,-26,.5,1.8,14,armor);
+  }else if(chapter===4){
+   // Chapter 4: Climactic neighborhood defense & community solidarity against the final orbital colossus!
+   // 1. Defiant perimeter barriers along Broad Street curb
+   for(const x of [-72,-48,-24,0,24,48,72]){barrier(x,16.5);coneProp(x-1.5,16.2);coneProp(x+1.5,16.2);}
+   for(const x of [-70,70]){box(group,x,1,-26,.5,1.8,14,gold);box(group,x,1,16.5,.5,1.8,12,gold);}
+   // 2. City & emergency vehicles stationed on defensive perimeter
+   vehicle(-68,20.5,false,false);vehicle(68,20.5,false,false);
+   vehicle(-42,-26,true,false);vehicle(42,-26,true,false);
+   // 3. Tech Freire community & North Broad residents gathered with rally signs
+   for(let i=0;i<32;i++){
+    const x=-75+i*4.8;
+    const hasSign=i%2===0;
+    const p=person(x,12.2+(i%3)*1.2,false,hasSign,i%4===0);
+    if(hasSign&&p.children[3]){
+     p.children[3].material=i%4===0?safety:(i%4===2?gold:red);
+    }
+   }
+   // Rooftop and balcony observers
+   for(let i=0;i<14;i++)person(-45+i*6.8,-18+(i%2)*1.5,false,i%3===0,false);
   }
  }
  function setChapter(next){settlementChapter=0; leaveTarget=0; leaveTimer=0; buildChapterLayout(next);} 
@@ -410,7 +429,11 @@ export function createChapterStaging(scene){
    if(item.kind==='person'){
     g.rotation.y=Math.sin(elapsed*.9+g.position.x*.08)*.025;
     g.position.y=Math.sin(elapsed*2+g.position.x*.13)*.03;
-    if(mode==='settlement'||mode==='roundCleanup'){
+    if(chapter===4&&mode==='chapter'){
+     // Enthusiastic community rallying motion
+     g.position.y+=Math.abs(Math.sin(elapsed*5.2+g.position.x*.35))*.10;
+     if(g.children[0])g.children[0].rotation.z=Math.sin(elapsed*6+g.position.x)*.14;
+    }else if(mode==='settlement'||mode==='roundCleanup'){
      const workFactor=THREE.MathUtils.smoothstep(settlementClock,.8,10.5);
      g.position.x+=Math.sin(elapsed*1.7+g.position.z)*dt*.15*workFactor;
      if(g.children[0])g.children[0].rotation.z=Math.sin(elapsed*4+g.position.x)*.1*workFactor;

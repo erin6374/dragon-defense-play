@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc64",
-  "version": "5.5.0-rc.64",
+  "build": "5.5-north-broad-refinement-rc65",
+  "version": "5.5.0-rc.65",
   "gameplay_base": "5.2.3",
-  "scope": "RC64: Strictly bound Tech Freire school damage and fire footprint to architectural building volume to eliminate phantom health decay from street/alley/midground strikes; expand meteor targeting and trajectory clearance to midground residential rows (z down to -52); enable midground roof and facade impacts with structural masonry debris, breach, and localized fire.",
+  "scope": "RC65: Climactic Chapter 4 overhaul & gameplay loop balance: multi-phase finale with escort comet barrage, orbital colossus descent with dynamic magma fracturing, community solidarity barricades & rally staging, tactical F-16/F-22 dogfight with wind deflection & gas seeker blinding, catastrophic core airburst, and automatic 'Call the Block' emergency community shield & rapid-fire finale.",
   "new_gameplay_features": false,
-  "release_status": "RC64 candidate: school damage area strictly bounded, phantom health decay resolved, midground house meteor impacts enabled, local contracts passing."
+  "release_status": "RC65 candidate: Chapter 4 climactic finale overhaul, multi-phase boss encounter, community solidarity staging, dogfight wind/gas mechanics, local contracts passing."
 }
