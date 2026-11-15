@@ -83,10 +83,10 @@ const scene=new THREE.Scene();
 const chapterStaging=createChapterStaging(scene);scene.background=new THREE.Color(0xa9c8e0);scene.fog=new THREE.FogExp2(0xacc9dc,.00175);
 const streetView={x:19,y:34,z:114,targetY:24,targetZ:-8,fov:52};
 const skyScreenHeight=2*streetView.z*Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5));
-const flightCeiling=44+skyScreenHeight*1.85;
+const flightCeiling=44+skyScreenHeight;
 function skyCameraLift(altitude){
  const original=Math.max(0,Math.min(44,altitude)-25)*.62;
- return original+Math.max(0,altitude-44)*0.85;
+ return original+Math.max(0,altitude-44);
 }
 function meteorEntryHeight(z,size,minimum=148){
  // The top frustum plane is independent of aspect ratio. Allow for the
