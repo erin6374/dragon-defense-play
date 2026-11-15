@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc62",
-  "version": "5.5.0-rc.62",
+  "build": "5.5-north-broad-refinement-rc63",
+  "version": "5.5.0-rc.63",
   "gameplay_base": "5.2.3",
-  "scope": "RC62: Realistic chin-mounted helicopter searchlight tracking and projected ground illumination pool; realistic helicopter aerodynamics (cyclic pitch, banking roll, collective hover bobbing) with building avoidance and non-clipping collision reactions; zero player life loss on vehicle and helicopter bumps with reactive suspension physics and spark deflection; spectacular helicopter crash explosion with spinning autorotation failure, high-energy dual fireball blasts, ground crater, and scattering mechanical vehicle debris chunks; high-altitude deep-background F-16/F-22 attack jet volleys circling into background; right-click gas propulsion afterburner boost; true sun and moon illumination sources with cool directional night moonlight; dynamic dragon fire illumination and scaled explosion light flashes.",
+  "scope": "RC63: Resolve helicopter building collision infinite oscillation loop & audio stutter stall; fix Dauphin/Susquehanna intersection police blockade vehicle batch exclusions and initial visibility; fix dragon gas propulsion thrust decoupling from aim cursor to guarantee forward boost in movement heading across all screen coordinates; soften volumetric helicopter searchlight cone opacity and daytime suppression; clean helicopter recycling and scene reset.",
   "new_gameplay_features": false,
-  "release_status": "RC62 candidate: syntax/metadata/local regressions pass; exact-head CI pending. Hardware FPS optimization active."
+  "release_status": "RC63 candidate: building collision avoidance loop resolved, gas propulsion boost decoupled from aim, searchlight visuals softened, local contracts passing."
 }

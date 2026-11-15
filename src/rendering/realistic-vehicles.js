@@ -117,18 +117,19 @@ export function buildHelicopter(T,root,variant=0){
  const beamLength=34,beamRadius=4.2;
  const beamGeo=new T.CylinderGeometry(.18,beamRadius,beamLength,16,1,true);
  beamGeo.translate(0,-beamLength/2,0);
- const searchlightCone=new T.Mesh(beamGeo,new T.MeshBasicMaterial({color:0xdcf2ff,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
+ const searchlightCone=new T.Mesh(beamGeo,new T.MeshBasicMaterial({color:0xdcf2ff,transparent:true,opacity:.08,depthWrite:false,side:T.FrontSide,blending:T.AdditiveBlending}));
  searchlightCone.position.y=-.34;
  searchlightGimbal.add(searchlightCone);
 
  const innerCoreGeo=new T.CylinderGeometry(.10,beamRadius*.48,beamLength*.96,12,1,true);
  innerCoreGeo.translate(0,-(beamLength*.96)/2,0);
- const innerCore=new T.Mesh(innerCoreGeo,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.36,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));
+ const innerCore=new T.Mesh(innerCoreGeo,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.14,depthWrite:false,side:T.FrontSide,blending:T.AdditiveBlending}));
  searchlightCone.add(innerCore);
 
  root.userData.strobe=strobe;
  root.userData.cockpitGlow=cockpitGlow;
  root.userData.searchlightCone=searchlightCone;
+ root.userData.innerCore=innerCore;
  root.userData.searchlightGimbal=searchlightGimbal;
  root.userData.searchlightMount=searchlightMount;
  root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,strobe,cockpitGlow,searchlightCone,searchlightGimbal,firefighting:fire};
@@ -136,4 +137,19 @@ export function buildHelicopter(T,root,variant=0){
 export function buildPerson(T,seed=0){const {mat,oval,rod}=kit(T),g=new T.Group(),cloth=mat([0x4f687c,0x865853,0x5e685c,0xada394][seed%4]),skin=mat([0xb98564,0x76503a,0xd5ac87][seed%3]),pants=mat(0x303942),shoe=mat(0x252629);
  oval(g,cloth,0,.93,0,.20,.32,.14);oval(g,skin,0,1.39,0,.125,.16,.12);oval(g,mat(0x45382c),0,1.49,-.02,.128,.09,.12);const limbs=[];
  for(const side of [-1,1]){const leg=new T.Group();leg.position.set(side*.105,.71,0);g.add(leg);rod(leg,pants,[0,0,0],[0,-.58,0],.073);oval(leg,shoe,0,-.6,.055,.09,.06,.16);limbs.push(leg);const arm=new T.Group();arm.position.set(side*.22,1.12,0);g.add(arm);rod(arm,cloth,[0,0,0],[side*.04,-.35,0],.055);oval(arm,skin,side*.04,-.39,0,.055,.07,.05);limbs.push(arm)}g.userData.limbs=limbs;return g}
-export function animatePerson(g,t,moving=true){g.userData.limbs?.forEach((limb,i)=>limb.rotation.x=moving?Math.sin(t)*.32*(i===0||i===3?1:-1):0)}
+export function animatePerson(g,t,moving=true,panicked=false){
+ if(!g.userData.limbs)return;
+ g.userData.limbs.forEach((limb,i)=>{
+  if(i<2){
+   limb.rotation.x=moving?Math.sin(t)*(panicked?.65:.32)*(i===0?1:-1):0;
+  }else{
+   if(panicked){
+    limb.rotation.x=Math.sin(t*1.4+(i===2?0:Math.PI))*.85-.45;
+    limb.rotation.z=(i===2?-.32:.32);
+   }else{
+    limb.rotation.x=moving?Math.sin(t)*.32*(i===3?1:-1):0;
+    limb.rotation.z=0;
+   }
+  }
+ });
+}
