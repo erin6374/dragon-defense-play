@@ -143,6 +143,13 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(args[2].root), **kwargs)
 
+    def send_head(self):
+        if 'If-Modified-Since' in self.headers:
+            del self.headers['If-Modified-Since']
+        if 'If-None-Match' in self.headers:
+            del self.headers['If-None-Match']
+        return super().send_head()
+
     def end_headers(self):
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         self.send_header('Pragma', 'no-cache')

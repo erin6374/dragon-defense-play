@@ -16,7 +16,7 @@ import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
-import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js';
+import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc63.3';
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
 import {hitVehicleWithWind,advanceVehicleWind,hitPedestrianWithWind,advancePedestrianWind} from './simulation/ground-wind.js';
