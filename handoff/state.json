@@ -8,7 +8,7 @@
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
   "observed_parent_sha": "5ff7c1b88458db90259c5d51ed935d61e1d81cf6",
-  "observed_version": "5.5.0-rc.62",
+  "observed_version": "5.5.0-rc.63",
   "observed_build_id": "5.5-north-broad-refinement-rc62",
   "release_status": "rc62_candidate_pending_exact_head_qa_not_cinematic_approved",
   "pending_acceptance": [
@@ -145,5 +145,7 @@
     "focused fire",
     "licensed CC0 importer",
     "genuine 600-frame/30s motion"
-  ]
+  ],
+  "latest_verified_sha": "6c9803d",
+  "latest_status": "RC63 pushed: helicopter building collision loop and audio stutter resolved; gas propulsion decoupled from aim; rush hour traffic and pedestrian panic chaos active across all chapters."
 }

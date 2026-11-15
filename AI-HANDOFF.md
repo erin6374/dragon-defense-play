@@ -1,3 +1,39 @@
+## November 14 — RC63 Helicopter building loop & audio stutter fix, gas propulsion decoupling, police blockade batch fix, rush-hour traffic & pedestrian panic chaos
+
+Parent verified baseline SHA: 73c0b09 (RC62 5.5.0-rc.62, build 5.5-north-broad-refinement-rc62).
+
+RC63 addresses all latest user feedback and visual artifacts reported in media attachments:
+1. **Helicopter Building Stutter Loop & Web Audio Thrashing Resolution (src/game.js):**
+   - Eliminated the 60 Hz building collision snapping loop that trapped helicopters against rowhouse corners and flooded Web Audio buffers and particle pools.
+   - Shifted autonomous helicopter patrol loiter $ forward into the open airspace over Broad Street ( \in [12, 22]$) instead of deep within building interiors.
+   - Added ldgBumpCooldown (0.85s) to rate-limit impact audio and particle bursts.
+   - Implemented smooth rooftop climb avoidance (h.root.position.y = bb.max.y + 0.4, h.vel.y = 5.0) allowing helicopters to fly smoothly over building roofs rather than getting jammed.
+2. **Intersection Police Blockade Batching & Geometry Fix (src/game.js):**
+   - Corrected geometry exclusions in atchVehicleVisuals for static police cruisers at W Dauphin St and W Susquehanna Ave ([beacon, cruiser.userData.headlightBeam, ...(brakes || [])]), resolving distorted plane projections.
+   - Set policeBlockadeGroup.visible = false initially and reset visibility cleanly in 
+eset().
+3. **Dragon Gas Propulsion Boost Decoupled from Aim (src/game.js):**
+   - Fixed the drag issue where holding right-click slowed down or reversed the dragon when on the right side of the screen.
+   - Propulsion thrust now directly follows player input keys (move, 
+ise) or dragon heading (acing), guaranteeing forward boost across all screen positions regardless of reticle aim.
+4. **Soft Atmospheric Searchlight Aesthetics (src/rendering/realistic-vehicles.js, src/game.js):**
+   - Reduced volumetric searchlight cone opacity from 0.22 to 0.08 and inner core from 0.36 to 0.14, using single-sided rendering (T.FrontSide) to eliminate harsh double-face intersections.
+   - Scaled searchlight beam opacity dynamically with time-of-day darkness; searchlight is suppressed during bright daylight.
+   - Added collinear singularity guards to quaternion.setFromUnitVectors for gimbal orientation.
+5. **Rush-Hour Traffic & Dense Pedestrian Crowds in Chapter 1 (src/game.js):**
+   - Pre-populates 24 vehicles across all 4 travel lanes, rear street ( = -37$), and cross streets ( = \pm 53$) upon game start and reset.
+   - Pre-populates 38 pedestrians across east and west sidewalks, crosswalks, and rear residential alleys.
+   - Raised Chapter 1 car capacity to 28 and crowd capacity to 64 with accelerated rush-hour spawn rates (0.35s).
+6. **Blocked Traffic Jams & Emergency Saturation in Chapter 2 (src/game.js):**
+   - Active police blockades at  = -53$ and  = 53$ cause civilian vehicles to brake and line up with glowing tail lights, forming authentic gridlock queues.
+   - Emergency police cruisers, ICE pursuit vehicles, and ambulances bypass stopped traffic with sirens and lightbars.
+7. **Military Convoys & Camo Vehicles in Chapter 3 (src/game.js):**
+   - Road traffic in Chapter 3 features military supply trucks, tactical troop transports, and armored vehicles in olive-drab camouflage rolling in convoys.
+   - Rear streets and intersections feature military logistics activity alongside deployed Main Battle Tanks.
+8. **Chaotic Crowd Panic System on Building Destruction (src/game.js, src/rendering/realistic-vehicles.js):**
+   - Implemented panicCrowdAt(x, z, radius): whenever a meteor strikes a building, explosion occurs, or helicopter crashes, all pedestrians within 35 units enter frantic panic.
+   - Panicked civilians sprint away from danger at high speed (.5 - 9.5	ext{ u/s}$) with frantic arm-waving animations, ducking, and scrambling to their feet after nearby shockwaves.
+
 ## November 14 — RC62 Underside helicopter searchlight & ground pool, aerodynamics & building avoidance, zero-damage vehicle bump physics, spectacular helicopter crash explosion, high-altitude jet volleys, right-click gas propulsion boost, sun/moon celestial illumination & dynamic fire lighting
 
 Parent verified baseline SHA: 550af8f (RC61 5.5.0-rc.61, build 5.5-north-broad-refinement-rc61).
