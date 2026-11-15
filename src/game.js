@@ -2222,8 +2222,9 @@ function removeMilitaryInterceptedMeteor(m){
 }
 function registerIntercept(m,rally=rallyLoop){
  sessionStats.intercepts++;
- if(rally&&wave<15&&!m.fragment&&!m.grounded){
-  blockCharge=Math.min(100,blockCharge+6);
+ if(wave<15&&!m.grounded){
+  const boost=rally?(m.fragment?2:6):(m.fragment?1.0:2.5);
+  blockCharge=Math.min(100,blockCharge+boost);
   updateBlockButton();
  }
  interceptionStreak++;
@@ -2783,7 +2784,7 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  }
  return;
 }
-elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;if(!settling&&schoolFire.length){const severity=Math.min(1,schoolFire.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
+elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;const actualSchoolFires=schoolFire.filter(f=>Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=2.0);if(!settling&&actualSchoolFires.length){const severity=Math.min(1,actualSchoolFires.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
 if(active&&!paused){
  ray.setFromCamera(aimNdc,camera);
  if(ray.ray.intersectPlane(plane,aimIntersection)){
@@ -2803,21 +2804,19 @@ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-180,180);
 if(gasHolding&&dragonStun<=0&&active&&!paused){
  dragonLeavingRoof=true;
  const boostSpeed=34.0;
- const aimDirX=pointer.x>dragon.position.x+1.2?1:(pointer.x<dragon.position.x-1.2?-1:facing);
- const dirX=move!==0?move:aimDirX;
- const aimDirY=pointer.y>dragon.position.y+1.2?1:(pointer.y<dragon.position.y-1.2?-1:0);
- const dirY=rise!==0?rise:aimDirY;
- if(move===0&&dirX!==facing){facing=dirX;turnTime=.22;}
- dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dirX*boostSpeed*dt,-180,180);
- dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dirY*(boostSpeed*.75)*dt,1.7,flightCeiling);
+ const boostDirX=move!==0?move:facing;
+ const boostDirY=rise!==0?rise:0;
+ if(move!==0&&move!==facing){facing=move;turnTime=.22;}
+ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+boostDirX*boostSpeed*dt,-180,180);
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+boostDirY*(boostSpeed*.75)*dt,1.7,flightCeiling);
  gasPose=Math.max(gasPose,.45);
  if(Math.random()<dt*32){
-  const rear=dragon.position.clone().add(new THREE.Vector3(-dirX*1.3,-.35,0));
+  const rear=dragon.position.clone().add(new THREE.Vector3(-boostDirX*1.3,-.35,0));
   const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x78e058,transparent:true,opacity:.52,depthWrite:false}));
   m.scale.setScalar(.85+Math.random()*.5);
   m.position.copy(rear).add(new THREE.Vector3((Math.random()-.5)*.5,(Math.random()-.5)*.5,(Math.random()-.5)*.5));
   scene.add(m);
-  gasClouds.push({mesh:m,life:1.1+Math.random()*.6,v:new THREE.Vector3(-dirX*(8+Math.random()*6),-2-Math.random()*2,(Math.random()-.5)*2),age:0});
+  gasClouds.push({mesh:m,life:1.1+Math.random()*.6,v:new THREE.Vector3(-boostDirX*(8+Math.random()*6),-2-Math.random()*2,(Math.random()-.5)*2),age:0});
  }
 }
 if(move&&move!==facing){facing=move;turnTime=.22;}turnTime=Math.max(0,turnTime-dt);

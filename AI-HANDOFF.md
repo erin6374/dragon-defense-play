@@ -1,3 +1,24 @@
+## November 15 — RC68 School Fire Damage Isolation, Gas Propulsion Heading Alignment, Community Block Charge Intercept Rewards, and Midground Meteor Target Calibration
+
+Parent verified baseline SHA: d1f6b44 (RC67 5.5.0-rc.67, build 5.5-north-broad-refinement-rc67).
+
+RC68 addresses player feedback and telemetry analysis from session `5.5.0-rc.66` (Wave 8, 228s duration, 121 intercepts):
+1. **School Fire Damage Isolation Fix (src/game.js:2786):**
+   - Fixed the critical bug where `schoolFire` held all citywide combustion events (distant rowhouses, exploded vehicles on Broad St, helicopter crash fires) and summed `(1 - f.suppression)` into `fireHealthAccumulator` to continuously deplete school HP until game over.
+   - Filtered `fireHealthAccumulator` to only accumulate damage from fires physically located on the school structure (`|x| <= 13.5, z in [-58.4, 0.4], y >= 2.0`), resolving the "school health seems to randomly decrease" bug.
+2. **Gas Propulsion Boost Direction Alignment (src/game.js:2804-2820):**
+   - Replaced crosshair reticle attraction in gas propulsion with flight heading alignment (`boostDirX = move !== 0 ? move : facing; boostDirY = rise !== 0 ? rise : 0;`).
+   - Fixed the issue where Paulo reversed or decelerated when on the right side of the screen due to aiming at incoming meteors towards center sky.
+   - Gas propulsion now powerfully accelerates Paulo in his active flight heading and emits green exhaust plume trails backward behind the dragon.
+3. **Community Spirit Progression Rewards in Standard Play (src/game.js:2223-2228):**
+   - Granted `+2.5%` block charge per intercepted meteor (`!m.fragment && !m.grounded`) and `+1.0%` per fragment during standard campaign play (previously only awarded during rally loop).
+   - Enables engaged players to mobilize North Broad community rallies ("CALL THE BLOCK") 1-2 times per chapter through active defensive play.
+4. **Calibrated Midground Meteor Target Distribution (src/simulation/meteor-target.js:1-16):**
+   - Weighted meteor target selection so 28-35% of airborne meteors target midground rowhouses ($z \in [-52, -20]$).
+   - Produces continuous midground structural breach and rubble spectacle across the neighborhood depth.
+5. **Regression & Contracts:**
+   - All 5 local regression contracts pass: `check-build-info`, `frontage-contract`, `street-surface-contract`, `smoke-plume-contract`, and `windows-preview-server-test` (8/8).
+
 ## November 14 — RC63 Helicopter building loop & audio stutter fix, gas propulsion decoupling, police blockade batch fix, rush-hour traffic & pedestrian panic chaos
 
 Parent verified baseline SHA: 73c0b09 (RC62 5.5.0-rc.62, build 5.5-north-broad-refinement-rc62).

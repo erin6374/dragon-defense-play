@@ -4,9 +4,11 @@ export function chooseMeteorTarget(buildings,schoolFront,random=Math.random,diff
  const schoolChance=hard?.30:easy?.10:.18;
  if(r>.97)return {x:(random()-.5)*70,y:.6,z:17+Math.floor(random()*4)*4};
  if(r<schoolChance||!targets.length)return {x:(random()-.5)*19,y:3+random()*15,z:schoolFront-.5};
- // The storm spreads across standing structures, instead of wasting repeated hits on rubble.
+ // The storm spreads across standing structures, with realistic midground and foreground hits.
  const front=targets.filter(b=>!b.background),back=targets.filter(b=>b.background);
- const candidates=(r<(hard?.50:.65)&&front.length?front:back.length?back:front);
+ const midground=back.filter(b=>b.z>=-52);
+ const midChance=hard?.35:.28;
+ const candidates=(r<(schoolChance+midChance)&&midground.length?midground:(r<(hard?.55:.70)&&front.length?front:back.length?back:front));
  const b=candidates[Math.floor(random()*candidates.length)];
  // Once a facade is open, falling rocks reach exposed surviving roof/floor bays.
  const exposed=b.structuralParts?.filter(p=>p.state==='attached'&&['roof','slab','column'].includes(p.type));

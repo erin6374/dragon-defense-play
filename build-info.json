@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc67",
-  "version": "5.5.0-rc.67",
+  "build": "5.5-north-broad-refinement-rc68",
+  "version": "5.5.0-rc.68",
   "gameplay_base": "5.2.3",
-  "scope": "RC67: Military battery centerline bounds calibration, ground vehicle traffic collision avoidance and lane boundary enforcement, realistic helicopter flight aerodynamics with tactical surveillance orbit, cyclic pitch and banking roll, horizontal building rebound with sparks, boosted searchlight range and building illumination, and precise school fire damage area isolation.",
+  "scope": "RC68: School health fire damage isolation fix preventing distant city fires from reducing school HP, gas propulsion speed boost direction alignment along flight heading with rear exhaust plume, Community Spirit block charge progression (+2.5% intact, +1.0% fragment) in standard play loop, and calibrated midground meteor targeting distribution.",
   "new_gameplay_features": false,
-  "release_status": "RC67 candidate: Military battery hull clearance, traffic avoidance & anti-clipping, authentic helicopter flight dynamics & searchlight beam range, school fire bounds isolation, local contracts passing."
+  "release_status": "RC68 candidate: Isolated school fire health accumulation, forward gas boost propulsion fix, community block charge intercept rewards, midground meteor targeting, local contracts passing."
 }
