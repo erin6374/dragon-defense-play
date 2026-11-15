@@ -1387,7 +1387,7 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
   sprite.position.copy(point).add(new THREE.Vector3(-25,95,0));
   sprite.scale.set(2.4,10,1);
   scene.add(sprite);
-  distantStreaks.push({sprite,life:1.6,landing:{point,near,far,strength:.35+blockDamage*.55}});
+  distantStreaks.push({sprite,life:1.6,landing:{point,near,far,strength:.35+blockDamage*.65}});
  }
 }
 
