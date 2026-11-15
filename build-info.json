@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc71",
-  "version": "5.5.0-rc.71",
+  "build": "5.5-north-broad-refinement-rc72",
+  "version": "5.5.0-rc.72",
   "gameplay_base": "5.2.3",
-  "scope": "RC71: Opposite-street window reflections, dragon perched resting pose facing camera, elevation climb/dive pitch pointing, turning rear-up kinematics, soaring flight glides, right mouse button stuck release fix, expanded map bounds to x=230, and meteor impact illumination.",
-  "new_gameplay_features": false,
-  "release_status": "RC71 candidate: Synthesized opposite-street rowhouse, storefront, sash window & streetlamp reflections on school glazing; dragon perched upright on hind legs on Tech Freire roof facing camera; elevation climb/dive pointing and turning rear-up aerodynamics; majestic soaring flight wingbeat cadence; robust RMB long-press release fix; expanded dragon map bounds across North Broad corridor; enhanced meteor strike flash illumination and dynamic lights."
+  "scope": "RC72: 80% biggest meteor spawns, extended stratosphere viewport with re-entry atmospheric burning, blue plasma fireball & green tempest gale powerups with space ejection, utility power grid with catenary cables and brownout surges, and multi-colossus final wave armada breakup.",
+  "new_gameplay_features": true,
+  "release_status": "RC72 candidate: 80% meteors spawn as massive boulders; extended stratosphere camera and sky dome transition into deep space with glowing atmospheric limb; meteors descending through stratosphere show blazing incandescent atmospheric friction shock envelopes; rare blue plasma meteors award supercharged 3x damage blue fireballs; green tempest meteors grant 3x gale force breath capable of ejecting meteors back into space; authentic North Broad utility poles with catenary power lines, transformer electrical sparks, and neighborhood brownouts; Wave 15 Colossus armada of 5 colossal meteors with cascade fracture breakup."
 }
