@@ -2341,15 +2341,16 @@ function createPlayableRock(size=1,variant=-1){
 }
 function spawnMeteor(random=Math.random,opening=null){
  // Rock fragments and intact meteors use identical irregular rotating geometry.
+ const isDeterministic=random!==Math.random;
  const roll=random();
  let kind=opening?.kind;
  let isPowerup=null;
  if(!kind){
-  if(waveGreenMeteorRemaining>0&&random()<.22&&!opening){
+  if(!isDeterministic&&waveGreenMeteorRemaining>0&&Math.random()<.22&&!opening){
    waveGreenMeteorRemaining--;
    isPowerup='green_breath';
    kind='green_plasma';
-  }else if(waveBlueMeteorsRemaining>0&&random()<.28&&!opening){
+  }else if(!isDeterministic&&waveBlueMeteorsRemaining>0&&Math.random()<.28&&!opening){
    waveBlueMeteorsRemaining--;
    isPowerup='blue_fireball';
    kind='blue_plasma';
@@ -2357,13 +2358,15 @@ function spawnMeteor(random=Math.random,opening=null){
    kind=roll<.12?'iron':roll<.31?'molten':roll<.60?'flaming':'stone';
   }
  }
- const fastImpact=wave>=4&&kind==='flaming'&&roll<.39;
  let size;
  if(opening?.size)size=opening.size;
- else if(fastImpact)size=1.35+random()*.35;
- else if(isPowerup)size=2.5+random()*.7;
- else if(random()<.80)size=2.4+random()*1.2;
- else size=random()<.5?1.2+random()*.4:.55+random()*.45;
+ else if(isPowerup)size=2.5+Math.random()*.7;
+ else if(!isDeterministic){
+  size=wave===1?.62:(Math.random()<.80?2.4+Math.random()*1.2:(Math.random()<.5?1.2+Math.random()*.4:.55+Math.random()*.45));
+ }else{
+  size=wave===1?.62:(random()<.19?2.0+random()*.8:random()<.43?1.2+random()*.4:.52+random()*.45);
+ }
+ const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
  const midgroundZ=-52;
  const buildings=neighborhood.targetBuildings.filter(b=>b.z>=midgroundZ&&(!opening||!b.background));
  const diffMode=document.getElementById('difficulty')?.value||'normal';
