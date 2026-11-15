@@ -38,15 +38,15 @@ export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMet
  function deploy(x,advanced=false){
   const root=new THREE.Group();root.position.set(x,-.36,24);
   // Realistic M1 Abrams Main Battle Tank chassis
-  const hull=box(root,hullMat,0,1.0,0,advanced?7.2:6.4,1.15,3.2);
-  box(root,hullMat,2.8,.85,0,1.4,.75,3.0); // sloped glacis
-  box(root,steel,-2.4,1.15,0,1.8,.65,2.8); // rear engine deck
-  for(const z of [-1.55,1.55]){
-   box(root,hullMat,0,.85,z,6.2,.85,.22); // side skirt
-   box(root,steel,0,.45,z*.92,6.4,.65,.45); // rubber/steel tread belt
+  const hull=box(root,hullMat,0,1.0,0,advanced?7.2:6.4,1.15,2.8);
+  box(root,hullMat,2.8,.85,0,1.4,.75,2.6); // sloped glacis
+  box(root,steel,-2.4,1.15,0,1.8,.65,2.5); // rear engine deck
+  for(const z of [-1.35,1.35]){
+   box(root,hullMat,0,.85,z,6.2,.85,.2); // side skirt
+   box(root,steel,0,.45,z*.92,6.4,.65,.38); // rubber/steel tread belt
    for(const xx of [-2.4,-1.4,-.4,.6,1.6,2.4]){
     const wheel=new THREE.Mesh(ball,steel);
-    wheel.position.set(xx,.45,z*.92);wheel.scale.set(.45,.45,.22);root.add(wheel);
+    wheel.position.set(xx,.45,z*.92);wheel.scale.set(.45,.45,.2);root.add(wheel);
    }
   }
   const turret=new THREE.Group();turret.position.set(0,1.65,0);root.add(turret);

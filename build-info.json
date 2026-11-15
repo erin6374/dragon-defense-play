@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc66",
-  "version": "5.5.0-rc.66",
+  "build": "5.5-north-broad-refinement-rc67",
+  "version": "5.5.0-rc.67",
   "gameplay_base": "5.2.3",
-  "scope": "RC66: Dynamic projectile illumination & celestial radiance, responsive mouse-aim gas boost propulsion, tank shell midground collateral ballistics, expanded biker gang traffic formations, and zero-block background meteor cadence contract alignment.",
+  "scope": "RC67: Military battery centerline bounds calibration, ground vehicle traffic collision avoidance and lane boundary enforcement, realistic helicopter flight aerodynamics with tactical surveillance orbit, cyclic pitch and banking roll, horizontal building rebound with sparks, boosted searchlight range and building illumination, and precise school fire damage area isolation.",
   "new_gameplay_features": false,
-  "release_status": "RC66 candidate: Dynamic projectile light tracking, responsive gas propulsion, tank shell midground ballistics, Chapter 1-2 biker gang packs, local contracts passing."
+  "release_status": "RC67 candidate: Military battery hull clearance, traffic avoidance & anti-clipping, authentic helicopter flight dynamics & searchlight beam range, school fire bounds isolation, local contracts passing."
 }

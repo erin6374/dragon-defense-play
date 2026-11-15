@@ -355,7 +355,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  // batches, per-building textures, meshes or impact-time allocations.
  const nearFacadeMasonryMaterial=materials.main.clone();
  nearFacadeMasonryMaterial.map=masonryTexture;
- nearFacadeMasonryMaterial.roughness=.94;
+ if(nearFacadeMasonryMaterial.isMeshStandardMaterial)nearFacadeMasonryMaterial.roughness=.94;
  nearFacadeMasonryMaterial.onBeforeCompile=shader=>{
   const anchor='#include <uv_vertex>';
   if(!shader.vertexShader.includes(anchor))throw Error('Masonry UV shader changed');

@@ -277,8 +277,9 @@ function updateFires(dt){
   if(f.burnTimer>=1.2){
    f.burnTimer=0;
    const bldg=neighborhood.targetBuildings.find(b=>Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
+   const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=2.0;
    if(bldg){bldg.damage=Math.min(1.0,(bldg.damage||0)+.012);}
-   else if(Math.abs(f.root.position.x)<=14.0&&f.root.position.z>=-18.0&&f.root.position.z<=1.0&&f.root.position.y>=1.0){
+   else if(onSchoolStructure){
     schoolDamage=Math.min(1.0,schoolDamage+.006);hp=Math.min(hp,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
@@ -763,7 +764,7 @@ const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.Shade
 skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
 // Continuous horizon terrain ridge occluding skyscraper bases from intersecting house roofs
 const horizonRidgeGeo=new THREE.PlaneGeometry(1200,28,32,1);
-const horizonRidgeMat=new THREE.MeshLambertMaterial({color:0x8e9ea9,roughness:0.96,depthWrite:false});
+const horizonRidgeMat=new THREE.MeshStandardMaterial({color:0x8e9ea9,roughness:0.96,depthWrite:false});
 const horizonRidge=new THREE.Mesh(horizonRidgeGeo,horizonRidgeMat);
 horizonRidge.position.set(0,8.2,6);
 horizonRidge.name='skyline-horizon-ridge';
@@ -1078,18 +1079,32 @@ function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolF
    }
   }
 // Steer around other vehicles to prevent clipping:
-   for(let j=i-1;j>=0;j--){
+   for(let j=cars.length-1;j>=0;j--){
+    if(j===i)continue;
     const other=cars[j];if(other.burning||other.destroyed)continue;
-    const distSq=c.root.position.distanceToSquared(other.root.position);
-    if(distSq<18&&Math.abs(c.root.position.z-other.root.position.z)<2.6){
-     if((other.root.position.x-c.root.position.x)*c.dir>0){
-      c.speed=Math.min(c.speed,other.speed*.85);
+    const ahead=(other.root.position.x-c.root.position.x)*c.dir;
+    const latDiff=c.root.position.z-other.root.position.z;
+    const absLat=Math.abs(latDiff);
+    if(ahead>0&&ahead<7.5&&absLat<2.4){
+     c.speed=Math.min(c.speed,Math.max(0,other.speed*0.88-(7.5-ahead)*0.35));
+     c.braking=true;
+     if(ahead<5.0&&other.speed<1.2&&!c.rearStreet&&!c.emergency){
+      const passing=choosePassingLane(c,cars,craters);
+      if(passing!==null)c.laneZ=passing;
      }
-     const latDiff=c.root.position.z-other.root.position.z;
-     const steerNudge=latDiff>=0?1.1:-1.1;
-     c.root.position.z+=steerNudge*dt*1.4;
+    }
+    if(Math.abs(c.root.position.x-other.root.position.x)<4.6&&absLat<2.3){
+     const steerNudge=latDiff>=0?1.2:-1.2;
+     c.root.position.z+=steerNudge*dt*2.5;
+     c.steerAngle=(c.steerAngle||0)+steerNudge*0.12;
+     if(ahead>-2.5&&ahead<2.5){
+      c.bumpRoll=(Math.random()-.5)*.18;
+      c.bumpImpulse=Math.max(c.bumpImpulse||0,.5);
+     }
     }
    }
+   if(c.laneZ>-20){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,15.6,32.4);}
+   else if(c.laneZ===-37){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-39.0,-35.0);}
 if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery>0?.18:1);
   if(c.root.userData.ladder)c.root.userData.ladder.rotation.z=THREE.MathUtils.lerp(c.root.userData.ladder.rotation.z,c.serviceStop?.35:0,Math.min(1,dt*.8));
   if(streetStop<=0&&obstruction&&obstruction.life>0){const laneZ=c.laneZ;c.root.position.z=THREE.MathUtils.lerp(c.root.position.z,laneZ+(c.dir>0?2:-2),Math.min(1,dt*1.2));}
@@ -1122,7 +1137,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
 // Dynamic arcade city activity. Stylized, not real-world simulation.
 const helicopters=[],crowd=[],gasClouds=[];let ambulanceTimer=10;let helicopterTimer=8,crowdTimer=0,gasCooldown=0,dragonLives=3,invulnerable=0,waterDisable=0;
 const heliBody=material(0xe3c23d),heliGlass=material(0x32485c),rotorMat=material(0x252b33),greenGas=new THREE.MeshBasicMaterial({color:0x6cdb4b,transparent:true,opacity:.4,depthWrite:false});
-const helicopterLightPool=createStableLightPool(scene,3,()=>new THREE.SpotLight(0xe8f4ff,0,30,Math.PI/6,.6,1.5));
+const helicopterLightPool=createStableLightPool(scene,3,()=>new THREE.SpotLight(0xe8f4ff,0,55,Math.PI/5,.75,1.5));
 const helicopterModels=new Map();
 const heliTargetScratch=new THREE.Vector3(),heliMountScratch=new THREE.Vector3(),heliAimScratch=new THREE.Vector3(),heliLocalTargetScratch=new THREE.Vector3(),heliLocalAimScratch=new THREE.Vector3(),heliMountOffset=new THREE.Vector3(1.35,-.62,0),heliUpVector=new THREE.Vector3(0,-1,0),heliForwardScratch=new THREE.Vector3();
 function spawnHelicopter(forcedVariant=null){if(wave<5||helicopters.length>=3)return;
@@ -1616,7 +1631,7 @@ function updateWorld(dt){
    h.root.rotation.z=THREE.MathUtils.lerp(h.root.rotation.z,desiredBank,Math.min(1,dt*2.4));
   }
   h.beacon.visible=Math.sin(elapsed*9+h.root.position.x)>.15;
-  h.searchlight.intensity=wave>=5?Math.min(2.2,Math.max(0,(wave-3)*.55)):0;
+  h.searchlight.intensity=wave>=5?Math.min(5.2,Math.max(0,(wave-3)*1.25))*Math.min(1,Math.max(0,(displayedDarkness-.12)/.42)):0;
   if(h.root.userData.strobe)h.root.userData.strobe.visible=Math.floor(elapsed*8+h.variant)%2===0;
   if(h.root.userData.cockpitGlow)h.root.userData.cockpitGlow.visible=!h.crashing;
   // Chin-mounted searchlight tracking & realistic ground illumination pool
@@ -1699,18 +1714,23 @@ function updateWorld(dt){
     h.root.rotation.z=THREE.MathUtils.lerp(h.root.rotation.z,Math.sin(elapsed*13+h.variant)*.92*strength,Math.min(1,dt*6));
     h.root.rotation.x=Math.sin(elapsed*10+h.variant)*.40*strength;
    } else {
-    // Authentic helicopter aerodynamics: smooth acceleration, cyclic pitch & banking roll
+    // Authentic helicopter flight aerodynamics:
+    // Tactical loiter orbit with aerodynamic collective inertia, cyclic pitch, and banking roll
     h.loiterTime-=dt;
     if((h.role==='police'||h.role==='ice')&&h.loiterTime>0){
      const patrolSide=h.dir>0?1:-1;
-     const targetX=THREE.MathUtils.clamp(dragon.position.x-patrolSide*16,-68,68);
-     const targetY=THREE.MathUtils.clamp(dragon.position.y+7.5,17,30);
-     const targetZ=THREE.MathUtils.clamp(dragon.position.z-2,12,22);
-     const accelX=THREE.MathUtils.clamp(targetX-h.root.position.x,-h.speed*1.3,h.speed*1.3);
-     h.vel.x=THREE.MathUtils.lerp(h.vel.x,accelX,Math.min(1,dt*1.6));
+     const orbitX=Math.sin(elapsed*0.65+i*1.8)*14.0;
+     const orbitZ=Math.cos(elapsed*0.55+i*1.5)*3.5;
+     const targetX=THREE.MathUtils.clamp(dragon.position.x-patrolSide*20+orbitX,-70,70);
+     const cruiseCeiling=20.0+(i%2)*3.5;
+     const targetY=THREE.MathUtils.clamp(cruiseCeiling+Math.sin(elapsed*0.75+i)*1.6,17,28);
+     const targetZ=THREE.MathUtils.clamp(16+orbitZ,11,22);
+
+     const accelX=THREE.MathUtils.clamp(targetX-h.root.position.x,-h.speed*1.2,h.speed*1.2);
+     h.vel.x=THREE.MathUtils.lerp(h.vel.x,accelX,Math.min(1,dt*1.4));
      h.root.position.x+=h.vel.x*dt;
-     h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,targetY+Math.sin(elapsed*2.5+h.variant)*.35,Math.min(1,dt*.85));
-     h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,targetZ,Math.min(1,dt*.85));
+     h.root.position.y=THREE.MathUtils.lerp(h.root.position.y,targetY,Math.min(1,dt*0.65));
+     h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,targetZ,Math.min(1,dt*0.75));
     } else if(h.role==='news'&&h.loiterTime>0&&Math.abs(h.root.position.x)<55){
      const event=schoolFire[0]?.root.position||new THREE.Vector3(0,8,0);
      h.vel.x=THREE.MathUtils.lerp(h.vel.x,THREE.MathUtils.clamp(event.x-h.root.position.x,-h.speed,h.speed),Math.min(1,dt*1.8));
@@ -1722,7 +1742,7 @@ function updateWorld(dt){
      h.root.position.x+=h.vel.x*dt;
      h.root.position.z=THREE.MathUtils.lerp(h.root.position.z,16,dt*.5);
     }
-    h.root.position.y+=Math.sin(elapsed*2.4+i)*dt*.45;
+    h.root.position.y+=Math.sin(elapsed*2.0+i)*dt*.35;
     if(h.firefighting&&schoolFire.length){
      const f=schoolFire.reduce((a,b)=>Math.abs(a.root.position.x-h.root.position.x)<Math.abs(b.root.position.x-h.root.position.x)?a:b);
      h.root.position.x=THREE.MathUtils.lerp(h.root.position.x,f.root.position.x,Math.min(1,dt*.7));
@@ -1735,8 +1755,10 @@ function updateWorld(dt){
      }
     }
     // Cyclic pitch forward when accelerating, banking roll into turns, subtle collective wobble
-    const forwardPitch=-h.vel.x*0.032;
-    h.pitch=THREE.MathUtils.lerp(h.pitch||0,forwardPitch,Math.min(1,dt*3.8));
+    const forwardPitch=-h.vel.x*0.038;
+    h.pitch=THREE.MathUtils.lerp(h.pitch||0,forwardPitch,Math.min(1,dt*3.5));
+    const bankAngle=THREE.MathUtils.clamp(-h.vel.x*0.024+(h.dodgeSide?h.dodgeSide*0.28:0),-.38,.38);
+    h.roll=THREE.MathUtils.lerp(h.roll||0,bankAngle,Math.min(1,dt*2.8));
     h.bumpTime=Math.max(0,(h.bumpTime||0)-dt);
     const bumpRoll=Math.sin(elapsed*30)*.38*Math.min(1,h.bumpTime);
     const bumpPitch=Math.cos(elapsed*24)*.25*Math.min(1,h.bumpTime);
@@ -1749,17 +1771,20 @@ function updateWorld(dt){
     const bldgBounds=[schoolBounds,...neighborhood.targetBuildings.filter(b=>!b.background).map(b=>({min:new THREE.Vector3(b.x-b.w/2-1.2,0,b.z-b.d/2-1.2),max:new THREE.Vector3(b.x+b.w/2+1.2,b.h+1.5,b.front+1.8)}))];
     for(const bb of bldgBounds){
      if(h.root.position.x>bb.min.x&&h.root.position.x<bb.max.x&&h.root.position.z>bb.min.z&&h.root.position.z<bb.max.z&&h.root.position.y<bb.max.y){
-      if(h.root.position.y>bb.max.y-3.5){
-       h.root.position.y=bb.max.y+0.4;
+      if(h.root.position.y>bb.max.y-3.0){
+       h.root.position.y=bb.max.y+0.6;
        h.vel.y=Math.max(h.vel.y||0,5.0);
       }else{
+       const centerX=(bb.min.x+bb.max.x)/2;
+       const pushDir=h.root.position.x>centerX?1:-1;
+       h.root.position.x+=pushDir*1.2;
+       h.vel.x=pushDir*Math.max(5.0,Math.abs(h.vel.x));
        h.root.position.z=bb.max.z+0.5;
-       h.vel.z=Math.max(h.vel.z||0,6.0);
       }
       if(h.bldgBumpCooldown<=0){
        h.bldgBumpCooldown=0.85;
-       h.bumpTime=0.8;
-       emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,14,.28);
+       h.bumpTime=0.9;
+       emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,24,.38);
        sound('impact');
       }
      }
