@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc65",
-  "version": "5.5.0-rc.65",
+  "build": "5.5-north-broad-refinement-rc66",
+  "version": "5.5.0-rc.66",
   "gameplay_base": "5.2.3",
-  "scope": "RC65: Climactic Chapter 4 overhaul & gameplay loop balance: multi-phase finale with escort comet barrage, orbital colossus descent with dynamic magma fracturing, community solidarity barricades & rally staging, tactical F-16/F-22 dogfight with wind deflection & gas seeker blinding, catastrophic core airburst, and automatic 'Call the Block' emergency community shield & rapid-fire finale.",
+  "scope": "RC66: Dynamic projectile illumination & celestial radiance, responsive mouse-aim gas boost propulsion, tank shell midground collateral ballistics, expanded biker gang traffic formations, and zero-block background meteor cadence contract alignment.",
   "new_gameplay_features": false,
-  "release_status": "RC65 candidate: Chapter 4 climactic finale overhaul, multi-phase boss encounter, community solidarity staging, dogfight wind/gas mechanics, local contracts passing."
+  "release_status": "RC66 candidate: Dynamic projectile light tracking, responsive gas propulsion, tank shell midground ballistics, Chapter 1-2 biker gang packs, local contracts passing."
 }
