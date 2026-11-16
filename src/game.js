@@ -1613,7 +1613,7 @@ function addCrater(x,z,radius=3){
  craters.push({x,z,radius,mesh,inner,ember,life:120});streetStop=Math.max(streetStop,20);
  if(craters.length>7){const c=craters.shift();scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();}
 }
-function updateCraters(dt){streetStop=Math.max(0,streetStop-dt);for(let i=craters.length-1;i>=0;i--){const c=craters[i];c.life-=dt;if(c.ember)c.ember.material.opacity=Math.max(0,(c.life/120))*(.55+.25*Math.sin(elapsed*4.5));if(c.life<=0){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();craters.splice(i,1)}}}
+function updateCraters(dt){streetStop=Math.max(0,streetStop-dt);for(let i=craters.length-1;i>=0;i--){const c=craters[i];c.life-=dt;if(c.ember)c.ember.material.opacity=Math.max(0,(c.life/120))*(.55+.25*Math.sin(elapsed*4.5));if(Math.random()<dt*6&&quality.allowTrail(trailParticles.length)){emitTrail(new THREE.Vector3(c.x+(Math.random()-.5)*c.radius*.5,0.5,c.z+(Math.random()-.5)*c.radius*.5),true);}if(c.life<=0){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();craters.splice(i,1)}}}
 function updateWorld(dt){
  if(chapterSettlement.active)militaryOccupation.suppress(1);
  militaryOccupation.update(dt,meteors,shots);updateCraters(dt);if(performanceLab.isEnabled('backgroundMeteors'))updateSkyBursts(dt);updateSignals();updatePoliceBlockades(dt);updateSkylineDamage(dt);
