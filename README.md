@@ -7,3 +7,5 @@ Current development lives on the `feature/north-broad-graphics` branch; draft PR
 Start from the latest source on the development branch and read `AI-HANDOFF.md` **before** making changes. That document contains the copyable Google setup prompt, current verified/unverified project state, QA and safety rules, priorities, response template, and handoff update requirements.
 
 Never edit `main`, `production`, original FBX, or the separate Building Explorer while developing Dragon Defense. Do not merge or deploy automatically.
+
+<!-- Preview packaging trigger: RC78 exact-source CI requested by project owner 2026-11-16; documentation-only, no gameplay change. -->
