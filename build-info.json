@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc75",
-  "version": "5.5.0-rc.75",
+  "build": "5.5-north-broad-refinement-rc76",
+  "version": "5.5.0-rc.76",
   "gameplay_base": "5.2.3",
-  "scope": "RC75: Tech Freire illuminated classroom interiors & entrance spiderweb glass fracture, SEPTA bus passenger cabin illumination, and crater billowing smoke column matching guiding visual mockup.",
+  "scope": "RC76: Gameplay Refinement Directive — active stun recovery, steamy non-locking water soak, gale convergence combo synergy, multi-target blast streaks, near-misses, heroic last-second saves, and 2.5-minute repeatable tactical defense trial.",
   "new_gameplay_features": true,
-  "release_status": "RC75 candidate: Tech Freire Charter School illuminated upper-floor classrooms with warm fluorescent ceiling lights and student desk silhouettes; entrance glass storefront spiderweb impact fracture; authentic Philadelphia SEPTA transit bus with glowing passenger cabin windows and amber destination sign; Broad Street impact crater with persistent embers and billowing vertical smoke column matching the reference screenshot mockup."
+  "release_status": "RC76 candidate: Gameplay Refinement Directive execution featuring active button-mashing stun recovery (0.6-0.8s break-out), steamy continuous firebreath during water soak (50% dmg, slower velocity), Gale Convergence combo synergy (+500 pts when destroying wind-grouped meteors), multi-meteor blast destruction combos (+300 double, +600 triple, +1200 mass convergence), dynamic near-miss close call camera tremor and sound whoosh, last-second heroic save bonuses (+200 pts), and a compact, repeatable 2.5-minute Tactical Defense Trial encounter with telemetry assessment card."
 }

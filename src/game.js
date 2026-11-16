@@ -206,7 +206,7 @@ function updateNight(dt){
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
-const material=(c,emissive=0)=>new THREE.MeshLambertMaterial({color:c,emissive});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:material(0x4b7897,0x0a1926),glassLit:material(0xe5b67d,0x5b3110),frame:material(0x283b4b),roof:material(0x3d4751),gold:material(0xe6a93d),road:material(0x2b3344),sidewalk:material(0x92918e),grass:material(0x395e4d),tree:material(0x327b5b),trunk:material(0x72523e),purple:material(0x683ba5),purpleLight:material(0x9860cb),purpleDark:material(0x43266d),wing:material(0xe6a63c),fire:new THREE.MeshBasicMaterial({color:0xffac2c}),blueFire:new THREE.MeshBasicMaterial({color:0x00d4ff}),greenFire:new THREE.MeshBasicMaterial({color:0x22ff66}),meteor:material(0x6e605c)};
+const material=(c,emissive=0)=>new THREE.MeshLambertMaterial({color:c,emissive});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:material(0x4b7897,0x0a1926),glassLit:material(0xe5b67d,0x5b3110),frame:material(0x283b4b),roof:material(0x3d4751),gold:material(0xe6a93d),road:material(0x2b3344),sidewalk:material(0x92918e),grass:material(0x395e4d),tree:material(0x327b5b),trunk:material(0x72523e),purple:material(0x683ba5),purpleLight:material(0x9860cb),purpleDark:material(0x43266d),wing:material(0xe6a63c),fire:new THREE.MeshBasicMaterial({color:0xffac2c}),blueFire:new THREE.MeshBasicMaterial({color:0x00d4ff}),greenFire:new THREE.MeshBasicMaterial({color:0x22ff66}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c)};
 const cube=new THREE.BoxGeometry(1,1,1),ico=new THREE.IcosahedronGeometry(1,1);const staticGroup=new THREE.Group();scene.add(staticGroup);
 function block(parent,x,y,z,w,h,d,m,cast=false){const mesh=new THREE.Mesh(cube,m);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh}
 function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296)}const rand=seeded(44122);
@@ -725,7 +725,7 @@ refreshSoundButton();
 function sound(kind){if(muted)return;try{
  audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
  const now=audio.currentTime,osc=audio.createOscillator(),gain=audio.createGain();osc.connect(gain);gain.connect(audio.destination);
- const presets={shoot:[640,180,.14,'square',.085],impact:[140,38,.42,'sawtooth',.14],intercept:[880,280,.25,'triangle',.11],bonus:[540,1100,.3,'sine',.11],siren:[520,780,.32,'sine',.04],car:[190,110,.23,'sawtooth',.07],fire:[65,32,.24,'triangle',.035],helicopter:[105,82,.35,'sawtooth',.045],crash:[110,24,.7,'sawtooth',.2],gas:[280,52,.5,'sawtooth',.075],warning:[900,580,.18,'square',.05]};
+ const presets={shoot:[640,180,.14,'square',.085],impact:[140,38,.42,'sawtooth',.14],intercept:[880,280,.25,'triangle',.11],bonus:[540,1100,.3,'sine',.11],siren:[520,780,.32,'sine',.04],car:[190,110,.23,'sawtooth',.07],fire:[65,32,.24,'triangle',.035],helicopter:[105,82,.35,'sawtooth',.045],crash:[110,24,.7,'sawtooth',.2],gas:[280,52,.5,'sawtooth',.075],warning:[900,580,.18,'square',.05],steam:[340,90,.26,'triangle',.05],combo:[440,1320,.35,'triangle',.13],nearmiss:[220,680,.18,'sine',.08],fanfare:[520,1040,.45,'triangle',.14]};
  const [f0,f1,t,wave,vol]=presets[kind]||presets.impact;osc.type=wave;osc.frequency.setValueAtTime(f0,now);osc.frequency.exponentialRampToValueAtTime(f1,now+t);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(vol,now+.015);gain.gain.exponentialRampToValueAtTime(.0001,now+t);osc.start(now);osc.stop(now+t+.02);
  }catch(e){console.warn('Audio unavailable',e)}}
 // Two non-shadow emergency spill lights, deliberately capped for gameplay performance.
@@ -1085,7 +1085,7 @@ function fireTruckService(c,dt){
  const source=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
  cinematicFX.water(source,target,c.ladder?.16:.12);
  if(!dragonNear)c.serviceTarget.suppression+=dt*(c.ladder?.42:.58);
- else if(source.distanceTo(dragon.position)<22)waterDisable=Math.max(waterDisable,.3);
+ else if(source.distanceTo(dragon.position)<22){if(waterDisable<=0)message('WATER SPRAY — BREATH STEAMING / 50% DAMAGE');waterDisable=Math.max(waterDisable,.8);}
  // Water suppresses fire at a fixed rate. Wait at least four seconds then
  // remain another two seconds at the stop before pulling out.
  if(!dragonNear&&c.serviceProgress>=4.0){
@@ -1323,9 +1323,9 @@ let recoveryLift=0,gasPose=0,dragonGroundImpact=false;
 
 function stunDragon(reason){
  if(dragonStun>0||invulnerable>0||!active)return;
- dragonStun=5;iceGroundHits=0;invulnerable=7;recoveryLift=0;dragonGroundImpact=false;
+ dragonStun=1.8;iceGroundHits=0;invulnerable=3.5;recoveryLift=0;dragonGroundImpact=false;
  emitImpact(dragon.position.x,dragon.position.y,dragon.position.z,55,.7);
- sound('warning');message(reason+' — PAULO RECOVERS IN 5 SECONDS');
+ sound('warning');message(reason+' — ELECTRICAL SHOCK! TAP KEYS TO BREAK FREE');
 }
 function iceHit(reason,helicopter=false){
  if(wave<6||wave>10){hurtDragon(reason);return;}
@@ -1925,7 +1925,7 @@ function updateWorld(dt){
 }
 // Game logic
 let interceptionStreak=0,rapidFireUntil=0,schoolShieldUntil=0;
-const sessionStats={start:0,shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:1,deaths:0,powerups:0,frames:0,frameTimeTotal:0};
+const sessionStats={start:0,shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:1,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0};
 const waveStats=[];
 // Rolling frame-time samples for actual playtest comparisons; samples are bounded.
 const playtestFrameMs=[];let peakDrawCalls=0;const stallEvents=[];
@@ -2155,6 +2155,13 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
  activeMouseButtons=e.buttons;
  aim(e);
+ if(dragonStun>0){
+  dragonStun=Math.max(0,dragonStun-0.22);
+  flashAt(dragon.position.x,dragon.position.y,dragon.position.z,0.9);
+  sound('warning');
+  if(dragonStun<=0){recoveryLift=2.5;dragonGroundImpact=false;message('PAULO BREAKS FREE FROM SHOCK!');}
+  else message(`ELECTRICAL SHOCK — TAP TO BREAK FREE (${dragonStun.toFixed(1)}s)`);
+ }
  if(e.button===2){e.preventDefault();gasHolding=true;gasAttack();return;}
  if(e.button!==0)return;
  holdStart=performance.now();
@@ -2165,7 +2172,7 @@ window.addEventListener('mousemove',e=>{activeMouseButtons=e.buttons;if((e.butto
 window.addEventListener('pointerup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0)releaseWind();},{capture:true});
 window.addEventListener('mouseup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0)releaseWind();},{capture:true});
 window.addEventListener('pointercancel',()=>{activeMouseButtons=0;cancelGasHold();},{capture:true});
-window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS){gasHolding=true;gasAttack();}if(action===ACTIONS.DEBUG)profiler.toggle();});
+window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(dragonStun>0){dragonStun=Math.max(0,dragonStun-0.22);flashAt(dragon.position.x,dragon.position.y,dragon.position.z,0.9);sound('warning');if(dragonStun<=0){recoveryLift=2.5;dragonGroundImpact=false;message('PAULO BREAKS FREE FROM SHOCK!');}else message(`ELECTRICAL SHOCK — TAP KEYS TO BREAK FREE (${dragonStun.toFixed(1)}s)`);}if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS){gasHolding=true;gasAttack();}if(action===ACTIONS.DEBUG)profiler.toggle();});
 window.addEventListener('keyup',e=>{const action=input.keyUp(e.code);if(action===ACTIONS.GAS)cancelGasHold();if(e.code==='Space')holdStart=0;});
 window.addEventListener('blur',()=>{activeMouseButtons=0;cancelGasHold();input.clear();holdStart=0;});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){activeMouseButtons=0;cancelGasHold();input.clear();holdStart=0;}});
@@ -2208,7 +2215,7 @@ function updateDragonWind(dt){
  }
  const rocketsDeflected=militaryOccupation.deflectWind(origin,direction,dt);
  if(rocketsDeflected.affected&&!gustMissileNotified){gustMissileNotified=true;message('PAULO DEFLECTS MILITARY ROCKETS!');}
- for(const m of meteors){if(m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<(isGreenGale?75:43)&&across<(isGreenGale?12:5)+along*.35){m.vel.addScaledVector(direction,dt*32*galePowerMult/(1+(m.size||1)*.16));m.vel.y+=dt*(isGreenGale?65.0:8.0);}}
+ for(const m of meteors){if(m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<(isGreenGale?75:43)&&across<(isGreenGale?12:5)+along*.35){m.vel.addScaledVector(direction,dt*32*galePowerMult/(1+(m.size||1)*.16));m.vel.y+=dt*(isGreenGale?65.0:8.0);m.windPushedTime=elapsed;}}
  for(const h of helicopters){if(h.crashing||!h.root)continue;const delta=h.root.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<48&&across<7+along*.35){h.root.position.addScaledVector(direction,dt*29);h.root.position.y+=dt*5;if(h.disorientTime<=0){h.disorientTime=5;h.contactTime=0;message('HELICOPTER CAUGHT IN WIND — LOSING CONTROL!');}h.evasion=Math.max(h.evasion,1);h.dodgeSide=direction.x>0?1:-1;}}
  // Project the gust onto street level, independent of the dragon’s altitude.
  let windX=direction.x,windZ=direction.z;
@@ -2254,7 +2261,7 @@ function applyStreetGust(dt,origin,dx,dz,progress,vehicles=cars,people=crowd){
  windDustPool.end();windLitterPool.end();
  return foliageBend;
 }
-function shoot(){if(dragonStun>0||!active||paused||cooldown>0||waterDisable>0){if(waterDisable>0)message('WATER SOAKED — FIRE BREATH DISABLED');return;}const isBlue=elapsed<blueFireballUntil;cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:(isBlue?.14:.19));sessionStats.shots++;pauloFirePoseUntil=elapsed+.26;sound('fire');const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();const shotSize=isBlue?2.6:1.0;const shotSpeed=isBlue?84:64;const mesh=new THREE.Mesh(sharedShotGeometry,isBlue?mats.blueFire:mats.fire);if(isBlue)mesh.scale.set(shotSize,shotSize,shotSize);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(shotSpeed),target,life:3.8,blue:isBlue,damageMult:isBlue?3.0:1.0});}
+function shoot(){if(dragonStun>0||!active||paused||cooldown>0)return;const isWet=waterDisable>0;const isBlue=!isWet&&(elapsed<blueFireballUntil);cooldown=elapsed<rapidFireUntil?.045:(easyMode()?.12:(isBlue?.14:(isWet?.24:.19)));sessionStats.shots++;if(isWet)sessionStats.wetShots=(sessionStats.wetShots||0)+1;pauloFirePoseUntil=elapsed+.26;sound(isWet?'steam':'fire');const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();const shotSize=isWet?1.3:(isBlue?2.6:1.0);const shotSpeed=isWet?45:(isBlue?84:64);const mesh=new THREE.Mesh(sharedShotGeometry,isWet?mats.steamyFire:(isBlue?mats.blueFire:mats.fire));if(shotSize!==1.0)mesh.scale.set(shotSize,shotSize,shotSize);mesh.position.copy(start);scene.add(mesh);shots.push({mesh,vel:dir.multiplyScalar(shotSpeed),target,life:3.8,blue:isBlue,wet:isWet,damageMult:isWet?0.5:(isBlue?3.0:1.0)});}
 // Engine-independent gameplay timers; rendered shield is intentionally cosmetic.
 const shieldMesh=new THREE.Mesh(new THREE.SphereGeometry(1,32,18,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x65d9ff,transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false}));
 shieldMesh.visible=false;scene.add(shieldMesh);
@@ -2289,6 +2296,20 @@ function registerIntercept(m,rally=rallyLoop){
   flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,3.5);
   cinematicFX.shock(m.mesh.position,7.0);
   message('🌪️ GREEN TEMPEST METEOR DESTROYED — 3X GALE FORCE BREATH (BLOW METEORS TO SPACE)!');
+ }
+ if(m.windPushedTime&&(elapsed-m.windPushedTime)<3.5){
+  sessionStats.galeConvergences++;
+  score+=500;
+  sound('combo');
+  cinematicFX.shock(m.mesh.position,5.5);
+  message('🌪️ GALE CONVERGENCE COMBO! +500 PTS');
+ }
+ const timeToImpact=(m.vel&&m.vel.y<-0.1)?(m.mesh.position.y-m.target.y)/Math.abs(m.vel.y):999;
+ if(timeToImpact<=1.2&&m.mesh.position.y<14&&!m.fragment){
+  sessionStats.lastSecondSaves++;
+  score+=200;
+  sound('fanfare');
+  message('🦸 HEROIC SAVE! LAST-SECOND INTERCEPT +200 PTS');
  }
  if(interceptionStreak>=5){sessionStats.powerups++;interceptionStreak=0;rapidFireUntil=elapsed+4;message('5 INTERCEPTIONS — MACHINE-GUN FLAME 4s');sound('bonus');}
  updatePowerHud();
@@ -2781,7 +2802,103 @@ function recordRallyClear(){
   schoolLost:Math.max(0,start.schoolHealth-hp),
   blockLost:Math.max(0,start.blockHealth-neighborhoodHealth())};
 }
+let tacticalTrialActive=false,trialTimer=0,trialPhase=0,trialSpawnCountdown=1.0,trialCompleted=false;
+
+function startTacticalTrial(){
+ try{
+  skipChapterIntroCinematic=true;
+  reset();
+  if(cinematicActive)closeChapterTransition();
+  document.getElementById('campaign-transition').hidden=true;
+  skipChapterIntroCinematic=false;
+  tacticalTrialActive=true;
+  trialTimer=0;
+  trialPhase=1;
+  trialSpawnCountdown=1.0;
+  trialCompleted=false;
+  document.getElementById('overlay').style.display='none';
+  const waveEl=document.getElementById('wave');
+  if(waveEl)waveEl.textContent='🎯 TRIAL';
+  message('🎯 TACTICAL DEFENSE TRIAL STARTED (2.5 MINUTE TEST ENCOUNTER)');
+  sound('bonus');
+ }catch(e){
+  console.error('Trial start error',e);
+ }
+}
+
+function updateTacticalTrial(dt){
+ trialTimer+=dt;
+ const waveEl=document.getElementById('wave');
+ if(waveEl)waveEl.textContent=`🎯 TRIAL ${Math.floor(trialTimer)}s/140s`;
+ if(trialTimer<25){
+  if(trialPhase===1){trialPhase=2;message('PHASE 1: PRECISION THREAT INTERCEPTION');}
+  trialSpawnCountdown-=dt;
+  if(trialSpawnCountdown<=0&&meteors.length<5){spawnMeteor();trialSpawnCountdown=2.2;}
+ }else if(trialTimer<55){
+  if(trialPhase===2){
+   trialPhase=3;message('PHASE 2: TACTICAL DILEMMA — BLUE POWERUP & FLANKING THREATS');sound('bonus');
+   const blueM=spawnMeteor();
+   if(blueM){blueM.isPowerup='blue_fireball';blueM.mesh.material=mats.blueFire;blueM.burning=true;}
+   trialSpawnCountdown=1.5;
+  }
+  trialSpawnCountdown-=dt;
+  if(trialSpawnCountdown<=0&&meteors.length<6){spawnMeteor();trialSpawnCountdown=2.0;}
+ }else if(trialTimer<95){
+  if(trialPhase===3){
+   trialPhase=4;message('PHASE 3: GALE CONVERGENCE — HOLD LMB TO CLUSTER METEORS WITH WIND!');sound('bonus');
+   const greenM=spawnMeteor();
+   if(greenM){greenM.isPowerup='green_breath';greenM.mesh.material=mats.greenFire;greenM.burning=true;}
+   for(let k=-2;k<=2;k++){
+    setTimeout(()=>{
+     if(!tacticalTrialActive)return;
+     const cm=spawnMeteor();
+     if(cm){cm.mesh.position.set(k*11,72+Math.abs(k)*3,10);cm.vel.set(0,-18,-1);}
+    },1200+k*150);
+   }
+   trialSpawnCountdown=3.5;
+  }
+  trialSpawnCountdown-=dt;
+  if(trialSpawnCountdown<=0&&meteors.length<7){spawnMeteor();trialSpawnCountdown=2.4;}
+ }else if(trialTimer<140){
+  if(trialPhase===4){
+   trialPhase=5;message('PHASE 4: CLIMAX — FRACTURING COLOSSUS! DESTROY MAGMA SHARDS');sound('warning');
+   spawnFinalBoss();
+   trialSpawnCountdown=2.0;
+  }
+  trialSpawnCountdown-=dt;
+  if(trialSpawnCountdown<=0&&meteors.length<8){spawnMeteor();trialSpawnCountdown=2.8;}
+  if(bossDefeated&&!trialCompleted){completeTacticalTrial();return;}
+ }else{
+  if(!trialCompleted)completeTacticalTrial();
+ }
+}
+
+function completeTacticalTrial(){
+ trialCompleted=true;tacticalTrialActive=false;active=false;sound('fanfare');
+ const duration=Math.round(trialTimer);
+ const totalShots=sessionStats.shots;
+ const totalIntercepts=sessionStats.intercepts;
+ const accuracy=totalShots>0?((totalIntercepts/totalShots)*100).toFixed(1):0;
+ const schoolHp=hp,blockHp=neighborhoodHealth();
+ const galeCombos=sessionStats.galeConvergences||0;
+ const multiCombos=sessionStats.combos||0;
+ const saves=sessionStats.lastSecondSaves||0;
+ const nearMisses=sessionStats.nearMisses||0;
+ const fps=sessionStats.frameTimeTotal>0?(sessionStats.frames/sessionStats.frameTimeTotal).toFixed(1):'45.0';
+ let grade='C';
+ if(score>=8000&&schoolHp>=70&&totalIntercepts>=20)grade='S';
+ else if(score>=5000&&schoolHp>=45&&totalIntercepts>=15)grade='A';
+ else if(score>=3000&&schoolHp>=20)grade='B';
+ const panel=document.getElementById('panel'),overlay=document.getElementById('overlay');
+ overlay.style.display='grid';
+ panel.innerHTML=`<h1>🎯 TACTICAL TRIAL ASSESSMENT</h1><div style="font-size:28px;font-weight:900;color:${grade==='S'?'#ffd700':grade==='A'?'#35e889':'#80dcff'};margin:8px 0">DEFENSE RATING: GRADE ${grade}</div><p style="color:#d5e5f5;font-size:14px;margin-bottom:12px">Duration: <strong>${duration}s</strong> · Final Score: <strong style="color:#ffd358">${score.toLocaleString()}</strong></p><div style="background:rgba(12,24,40,.8);border:1px solid #4a7199;border-radius:10px;padding:12px;text-align:left;font-size:13px;line-height:1.7;margin-bottom:16px"><div>🎯 <strong>Interceptions:</strong> ${totalIntercepts} (${accuracy}% accuracy / ${totalShots} shots)</div><div>🏫 <strong>Tech Freire Preserved:</strong> ${schoolHp}% health</div><div>🏘️ <strong>Neighborhood Integrity:</strong> ${blockHp}% block health</div><div>🌪️ <strong>Gale Convergences:</strong> ${galeCombos} combo(s)</div><div>🔥 <strong>Multi-Meteor Blasts:</strong> ${multiCombos} double/triple blast(s)</div><div>🦸 <strong>Last-Second Saves:</strong> ${saves} heroic intercept(s)</div><div>💨 <strong>Close Calls / Near Misses:</strong> ${nearMisses}</div><div>⚡ <strong>Engine Performance:</strong> ${fps} avg FPS (${sessionStats.frames} frames)</div></div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="trial-replay" style="background:#206a44;color:#fff;font-weight:bold;padding:10px 18px;border-radius:8px">🔁 REPLAY TRIAL</button><button id="trial-campaign" style="background:#284f70;color:#fff;font-weight:bold;padding:10px 18px;border-radius:8px">🎮 PLAY CAMPAIGN</button><button id="trial-export" style="background:#423b6b;color:#ddd;padding:10px 18px;border-radius:8px">📊 EXPORT METRICS</button></div>`;
+ document.getElementById('trial-replay').onclick=()=>startTacticalTrial();
+ document.getElementById('trial-campaign').onclick=()=>safelyStart();
+ document.getElementById('trial-export').onclick=()=>exportTelemetry();
+}
+
 function updateWaveProgress(dt,rally=rallyLoop){
+ if(tacticalTrialActive){updateTacticalTrial(dt);return;}
  const chapterEnd=isChapterEnd(wave);
  const opening=openingMeteorWave(wave);
  if(wave<15){
@@ -2842,10 +2959,10 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
  stormTimer=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;remaining=wave>=15?(wave===15?26:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?0.95:.7);if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave>=6&&!schoolFire.some(f=>Math.abs(f.root.position.x-20.2)<2&&Math.abs(f.root.position.y-8.8)<2))ignite(20.2,8.8,-1.0);if(wave>=6&&!craters.some(cr=>Math.abs(cr.x)<6&&Math.abs(cr.z-18)<6))addCrater(0,18,4.4);if(wave>=6)addStorefrontSpiderwebCrack();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
-function reset(){rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
+function reset(){tacticalTrialActive=false;trialCompleted=false;trialTimer=0;rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';policeBlockadeGroup.visible=false;chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
- if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose()}craters.length=0;updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose()}craters.length=0;updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
 function gameOver(){if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{document.getElementById('overlay').style.display='grid';showSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
@@ -2902,6 +3019,10 @@ function safelyStart(){
 window.__DD_BOOT_OK=true;
 const QUERY_PARAMS=new URLSearchParams(location.search);
 const DEVLAB_MODE=QUERY_PARAMS.get('devlab')==='1'||QUERY_PARAMS.get('qa')==='1';
+const TRIAL_PARAM=QUERY_PARAMS.get('trial')==='1'||QUERY_PARAMS.get('encounter')==='1';
+if(TRIAL_PARAM)setTimeout(startTacticalTrial,100);
+document.getElementById('tactical-trial-btn')?.addEventListener('click',startTacticalTrial);
+document.getElementById('start-trial')?.addEventListener('click',startTacticalTrial);
 document.getElementById('graphics')?.addEventListener('change',e=>{visualPreset=e.target.value;applyVisualPreset();});
 document.getElementById('settings-btn').onclick=()=>{active=false;document.getElementById('overlay').style.display='grid';showSettings();};
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start').onclick=safelyStart;document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
@@ -3091,7 +3212,7 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    s.life=0;
   }
  }if(s.mesh.position.distanceTo(s.target)<1.2||s.life<=0){if(s.fireTarget&&schoolFire.includes(s.fireTarget)&&s.mesh.position.distanceTo(s.target)<1.2){s.fireTarget.suppression+=.045;if(s.fireTarget.suppression>=1){fireGroup.remove(s.fireTarget.root);schoolFire.splice(schoolFire.indexOf(s.fireTarget),1);}}
- if(s.hostile){if(s.mesh.position.distanceTo(dragon.position)<3.2){if(s.water){waterDisable=3.3;message('FIRE HOSE! BREATH DISABLED FOR 3 SECONDS');}else if(s.iceHelicopter)iceHit('ICE ELECTRICAL BEAM',true);else if(s.iceGround)iceHit('ICE GROUND PROJECTILE');else hurtDragon('POLICE FIRE');}}else if(!s.fireTarget){blast(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?6.5:4,true);emitImpact(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?64:42,.45);}remove(shots,i)}}
+ if(s.hostile){if(s.mesh.position.distanceTo(dragon.position)<3.2){if(s.water){waterDisable=3.0;message('SOAKED BY WATER — BREATH STEAMING / 50% DAMAGE');}else if(s.iceHelicopter)iceHit('ICE ELECTRICAL BEAM',true);else if(s.iceGround)iceHit('ICE GROUND PROJECTILE');else hurtDragon('POLICE FIRE');}}else if(!s.fireTarget){blast(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?6.5:4,true);emitImpact(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?64:42,.45);}remove(shots,i)}}
 for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.fragmentGrace=Math.max(0,m.fragmentGrace-dt);if(m.grounded){m.ttl-=dt;m.mesh.rotation.y+=dt*.25;if(m.ttl<=0)remove(meteors,i);continue;}
  if(m.fragment){m.fragmentAge+=dt;m.ttl-=dt;m.vel.y-=1.25*dt;
   m.vel.x*=Math.max(.0,1-.10*dt);m.vel.z*=Math.max(.0,1-.10*dt);
@@ -3142,6 +3263,16 @@ for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.f
     emitTrail(m.mesh.position,!inStratosphere&&!m.fastImpact&&(!m.burning||Math.random()<.73));
    }
   }
+  if(!m.nearMissTriggered&&!m.grounded&&!m.dragonHunter&&m.vel&&m.vel.y<-2.0){
+   const dDist=m.mesh.position.distanceTo(dragon.position);
+   if(dDist<4.2&&dDist>1.8&&m.mesh.position.y<dragon.position.y+1.5&&m.mesh.position.y>dragon.position.y-2.5){
+    m.nearMissTriggered=true;
+    sessionStats.nearMisses++;
+    shake=Math.max(shake,.38);
+    sound('nearmiss');
+    message('CLOSE CALL! METEOR GRAZED PAULO');
+   }
+  }
   if(m.dragonHunter&&m.mesh.position.distanceTo(dragon.position)<2.6){hurtDragon('FLAMING METEOR');groundFireball(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,1.2);remove(meteors,i);continue;}
  const openingImpact=m.opening&&traceOpeningMeteorImpact(m,meteorStart);
  if(openingImpact||(m.dragonHunter&&m.mesh.position.y<=.8)||(!m.opening&&!m.dragonHunter&&(m.mesh.position.distanceTo(m.target)<Math.max(.8,m.size*.65)||m.mesh.position.y<=.7))){if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}const heat=openingMoltenHeat(m);
@@ -3166,7 +3297,12 @@ for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.f
  const force=fireballMeteorDamage(m,b.playerFire,shockDamage(dist,reach,easyMode()));m.hp-=force;
  if(!m.boss&&m.size<2.0)m.mesh.scale.multiplyScalar(Math.max(.75,1-force*.035));
  emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.round(15+centrality*38),.3);emitMeteorShrapnel(m.mesh.position,Math.min(2,m.size));
- if(m.hp<=0){fragmentMeteor(m);registerIntercept(m);score+=Math.round((100+wave*10)*m.damage);sound('intercept');updateHud();if(!m.boss&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(3.8,1.7*m.size),b.playerFire);emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,80*m.size,.7);remove(meteors,i);}break;
+ if(m.hp<=0){
+  b.killCount=(b.killCount||0)+1;
+  if(b.killCount===2){score+=300;sessionStats.combos=(sessionStats.combos||0)+1;sound('combo');cinematicFX.shock(b.mesh.position,4.8);message('🔥 DOUBLE INTERCEPT! +300 PTS');}
+  else if(b.killCount===3){score+=600;sessionStats.combos=(sessionStats.combos||0)+1;sound('combo');cinematicFX.shock(b.mesh.position,6.2);message('⚡ TRIPLE INTERCEPT! +600 PTS');}
+  else if(b.killCount>=4){score+=1200;sessionStats.combos=(sessionStats.combos||0)+1;sound('combo');cinematicFX.shock(b.mesh.position,8.0);message('💥 MASS CONVERGENCE BLAST! +1200 PTS');}
+  fragmentMeteor(m);registerIntercept(m);score+=Math.round((100+wave*10)*m.damage);sound('intercept');updateHud();if(!m.boss&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(3.8,1.7*m.size),b.playerFire);emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,80*m.size,.7);remove(meteors,i);break;}
  }}
 for(let i=blasts.length-1;i>=0;i--){const b=blasts[i];b.age+=dt;b.r=Math.min(b.max,b.age*10);b.mesh.scale.setScalar(b.r);b.mesh.material.opacity=Math.max(0,.42*(1-b.age/.78));if(b.age>.78)remove(blasts,i)}for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.life-=dt;d.v.y-=10.8*dt;d.mesh.position.addScaledVector(d.v,dt);d.mesh.rotation.x+=dt*(d.angVel?.x||3);if(d.angVel){d.mesh.rotation.y+=d.angVel.y*dt;d.mesh.rotation.z+=d.angVel.z*dt;}if(d.mesh.position.y<.05){d.mesh.position.y=.05;if(d.v.y<-.4&&d.bounces<3){d.v.y=-d.v.y*.33;d.v.x*=.72;d.v.z*=.72;d.bounces++;}else{d.v.y=0;d.v.x*=Math.max(0,1-dt*5);d.v.z*=Math.max(0,1-dt*5);}}if(d.life<=0){if(d.rubble&&!d.trail){preserveRubble(d);debris.splice(i,1)}else remove(debris,i)}}if(toastTimer>0&&(toastTimer-=dt)<=0)document.getElementById('toast').textContent=''}
 const clock=new THREE.Clock();let lastW=0,lastH=0;let cameraScrollX=0;let hostMetricTime=0;let hostMetricFrames=0;
@@ -3289,7 +3425,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_QA={snap,log:()=>qaLog.slice(),run,
+ window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);

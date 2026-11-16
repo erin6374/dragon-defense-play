@@ -1,3 +1,32 @@
+## November 16 — RC76 Gameplay Refinement Directive, Active Stun Recovery, Steamy Breath Agency, Gale Convergence Synergy, and 2.5-Minute Tactical Defense Trial
+
+Parent verified baseline SHA: 40defe7 (RC75 5.5.0-rc.75, build 5.5-north-broad-refinement-rc75).
+
+RC76 implements the **Gameplay Refinement Directive** while strictly preserving existing architectural systems, full 15-wave campaign progression, and visual parity with the reference mockup:
+1. **Priority 1: Responsive Controls & Player Agency (Section 7):**
+   - **Active Stun Recovery:** Replaced the frustrating 5-second passive freeze (`dragonStun = 5`) with a 1.8s base shock that can be actively broken out of in 0.6–0.8s by tapping movement keys (WASD/Arrows), Space, or clicking (`dragonStun -= 0.22` per tap with electric spark arcs and HUD prompt `ELECTRICAL SHOCK — TAP TO BREAK FREE`).
+   - **Steamy Continuous Breath (Non-Locking Water Soak):** Water soak (`waterDisable`) no longer disables player weapons; Paulo continues firing steamy projectiles (45 m/s, 50% damage, distinct steam vapor trail and audio sizzle) with HUD alert `SOAKED BY WATER — BREATH STEAMING / 50% DAMAGE`. Player never loses agency or the ability to defend the school.
+   - **Dynamic Near-Miss Feedback:** Meteors passing within 4.2m of Paulo trigger camera tremor, audio whoosh (`sound('nearmiss')`), and toast announcement `CLOSE CALL! METEOR GRAZED PAULO`.
+   - **Last-Second Save Heroic Bonus:** Intercepting a meteor with $t_{\text{impact}} \le 1.2\text{s}$ awards `HEROIC SAVE! LAST-SECOND INTERCEPT +200 PTS`, heroic fanfare audio, and toast announcement.
+2. **Priority 2: Tactical Synergies & Multi-Target Combos (Section 4):**
+   - **Gale Convergence Combo:** Using Gale breath to deflect/group falling meteors before blasting them tags meteors with `m.windPushedTime`; destroying them awards `GALE CONVERGENCE COMBO! +500 PTS` with radial shockwave expansion.
+   - **Multi-Meteor Blast Combos:** Single-blast multi-target destruction awards ascending bonuses:
+     - Double Intercept (`+300 PTS`)
+     - Triple Intercept (`+600 PTS`)
+     - Mass Convergence Blast (`+1200 PTS`) with ascending chime audio and shockwave expansion.
+   - **Dragon Firefighting:** Gale breath suppresses building fires, protecting Tech Freire and awarding community defense points.
+3. **Priority 3: 2.5-Minute Compact Repeatable Tactical Defense Trial (Section 8):**
+   - Accessible via HUD button (`🎯 Tactical Trial`), overlay button (`🎯 TACTICAL TRIAL (2 MIN)`), or URL parameter (`?trial=1` / `?encounter=1`), as well as `window.__DD_QA.startTrial()`.
+   - 5 structured phases:
+     - Phase 1: Precision Threat Interception (0–25s)
+     - Phase 2: Tactical Dilemma & Blue Plasma Powerup (25–55s)
+     - Phase 3: Gale Cluster Convergence & Green Tempest Breath (55–95s)
+     - Phase 4: Climax - Fracturing Colossus with Magma Shards (95–140s)
+     - Phase 5: Tactical Defense Assessment Card with Letter Grade (S/A/B/C), Interception Accuracy %, Damage Prevented %, Ability Usage, Combos Achieved, Engine FPS, and Replay Button.
+4. **Regression & Contracts:**
+   - All 5 local regression contracts pass: `check-build-info`, `frontage-contract`, `street-surface-contract`, `smoke-plume-contract`, and `windows-preview-server-test` (8/8).
+   - Full 2,259-line Playwright browser test suite (`qa/browser.mjs`) passes cleanly with zero errors.
+
 ## November 15 — RC68 School Fire Damage Isolation, Gas Propulsion Heading Alignment, Community Block Charge Intercept Rewards, and Midground Meteor Target Calibration
 
 Parent verified baseline SHA: d1f6b44 (RC67 5.5.0-rc.67, build 5.5-north-broad-refinement-rc67).

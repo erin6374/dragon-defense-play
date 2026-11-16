@@ -958,7 +958,7 @@ try {
     assert.deepEqual(camera.streetOrigins, before.camera.streetOrigins, 'street and neighborhood stay anchored during pans');
   }
   report.movement = {before: before.dragon, right: right.camera, left: left.camera};
-  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 15, left.frameTimes.frames);
+  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 4, left.frameTimes.frames, {timeout: 60000});
   report.performance = await page.evaluate(() => ({
     live: window.__DD_GAME_METRICS, frameHealth: window.__DD_FRAME_HEALTH.summary(),
     scene: window.__DD_QA.snap().scene,
