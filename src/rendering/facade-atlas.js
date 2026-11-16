@@ -97,6 +97,10 @@ export function createFacadeAtlas(THREE,{seed=0,stories=3,bays=3,kind='brick',co
    fill(x,y+winH*.54,winW,Math.max(4,winH*.045),'rgba(28,36,43,.90)');
    fill(x+5,y+5,winW*.17,winH*.74,'rgba(255,255,255,.12)');
    fill(x+winW*.78,y+5,winW*.08,winH*.52,'rgba(176,216,234,.10)');
+   // Opposite side of the street architectural reflection across the lower half:
+   fill(x+3,y+winH*.48,winW-6,winH*.48,'rgba(20,26,34,.34)');
+   fill(x+winW*.18,y+winH*.56,winW*.22,3,'rgba(255,204,115,.42)');
+   fill(x+winW*.58,y+winH*.60,winW*.18,3,'rgba(238,154,108,.38)');
    fill(x+2,y+winH-3,winW-4,2,'rgba(0,0,0,.20)');
    // sill / header
    fill(x-18,y+winH+9,winW+36,10,tint(color,1.30));

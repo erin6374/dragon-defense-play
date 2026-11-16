@@ -16,7 +16,7 @@ export function installSchoolFlankingHouses(scene,bounds){
   const hex='#'+house.base.toString(16).padStart(6,'0');
   const texture=createFacadeAtlas(THREE,{seed:house.seed,stories:3,bays:2,kind:house.kind,color:hex,store:false});
   const main=new THREE.MeshStandardMaterial({color:house.base,roughness:.93});
-  const facade=new THREE.MeshStandardMaterial({map:texture,roughness:.83,side:THREE.DoubleSide});
+  const facade=new THREE.MeshStandardMaterial({map:texture,roughness:.74,metalness:.08,envMapIntensity:1.4,side:THREE.DoubleSide});
   const roof=new THREE.MeshStandardMaterial({color:0x484747,roughness:.92});
   // Narrow frontage receives the same deep-glazing artwork as the neighborhood,
   // but retains an independently bounded masonry shell for lighting and roof depth.
@@ -32,7 +32,7 @@ export function installSchoolFlankingHouses(scene,bounds){
    mk(house.x,y,frontage+.11,house.w*.89,.08,.27,trim);
   }
   // Roof drain and parapet crest.
-  const metal=new THREE.MeshStandardMaterial({color:0x55585a,roughness:.65,metalness:.48});
+  const metal=new THREE.MeshStandardMaterial({color:0x55585a,roughness:.60,metalness:.52,envMapIntensity:1.8});
   mk(house.x+house.w*.43,house.h*.5,frontage+.14,.075,house.h*.94,.09,metal);
  }
  return group;

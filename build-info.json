@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc73",
-  "version": "5.5.0-rc.73",
+  "build": "5.5-north-broad-refinement-rc74",
+  "version": "5.5.0-rc.74",
   "gameplay_base": "5.2.3",
-  "scope": "RC73: Wet asphalt puddle specular reflections, Game of Thrones aerodynamic wingtip soaring vapor contrails, transformer explosion illumination & skyline blackout arc flashes, and supercharged power-up HUD badges.",
+  "scope": "RC74: Opposite-street window reflections, meteor impact street illumination & multi-point fire flares, right-mouse long press input lock fix, aerodynamic flight elevation pointing, and second-floor venting rowhouse fire.",
   "new_gameplay_features": true,
-  "release_status": "RC73 candidate: Wet asphalt puddle reflections and specular sheen along North Broad Street; Game of Thrones inspired aerodynamic wingtip vapor contrails during high-speed dragon soaring; transformer strike illumination casting blue-white electrical arcs with distant skyline blackout flashes; supercharged powerup HUD indicators with active countdowns for Blue Plasma Fireballs and Green Tempest Gale; 100% contract-compliant reusable Paulo kinematics rig."
+  "release_status": "RC74 candidate: Procedural opposite-street reflections on North Broad rowhouse glazing and high-intensity specular envMap reflection on Tech Freire glass curtain wall; explosive meteor impact street illumination casting radiant amber light across wet asphalt and building facades with secondary road ignition; right-mouse long press input lock bug resolved via global capture phase listener and active-button state synchronization; Game of Thrones inspired aerodynamic flight elevation pointing along velocity trajectory vector with soaring wing dihedral; second-floor window venting fire and billowing dark smoke plume on North Broad rowhouse matching visual reference mockup."
 }
