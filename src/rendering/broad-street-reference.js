@@ -15,10 +15,11 @@ export function createBroadStreetReferenceFacades(scene, buildings){
  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.84,metalness:.05});
  const brickTrim=mat(0x4a302b),warmStone=mat(0xc9b9a0),ivory=mat(0xe6dfcf),alum=mat(0x8aa2a8),red=mat(0xb93f3d),dark=mat(0x2a2e31),gold=mat(0xb69a61),brownstoneSill=mat(0xb58f74),glass=mat(0x5c8793),shadow=mat(0x1b232b),green=mat(0x1a6a4b),blue=mat(0x1f4574),cream=mat(0xd5c7b1),black=mat(0x16181b),tan=mat(0x9e7454),slate=mat(0x38414a);
  const objects=[];
+ const illuminatedSigns=[];
  function bx(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(boxGeometry,m);o.scale.set(w,h,d);o.position.set(x,y,z);parent.add(o);objects.push(o);return o;}
  function plane(parent,x,y,z,w,h,m){const o=new THREE.Mesh(planeGeometry,m);o.position.set(x,y,z);o.scale.set(w,h,1);parent.add(o);objects.push(o);return o;}
  function signTexture(lines,bg,fg){const canvas=document.createElement('canvas');canvas.width=768;canvas.height=160;const c=canvas.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,768,160);c.fillStyle=fg;c.font=lines.length>1?'bold 52px sans-serif':'bold 72px sans-serif';c.textAlign='center';c.textBaseline='middle';lines.forEach((line,i)=>c.fillText(line,384,lines.length>1?48+i*54:80,728));const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;return t;}
- function makeSign(parent,b,text,bg,fg,y=2.5,wScale=.88,h=.95){const g=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(b.w*wScale,10),h),new THREE.MeshBasicMaterial({map:signTexture(text,bg,fg),side:THREE.DoubleSide,transparent:true}));g.position.set(b.x,y,b.front+.25);parent.add(g);objects.push(g);return g;}
+ function makeSign(parent,b,text,bg,fg,y=2.5,wScale=.88,h=.95){const g=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(b.w*wScale,10),h),new THREE.MeshBasicMaterial({map:signTexture(text,bg,fg),side:THREE.DoubleSide,transparent:true}));g.position.set(b.x,y,b.front+.25);parent.add(g);objects.push(g);illuminatedSigns.push(g);return g;}
  function stoop(parent,b,offsetX,width=1.5,depth=1.8,steps=3){for(let i=0;i<steps;i++)bx(parent,b.x+offsetX,.10+i*.10,b.front+.75+depth*.2*(steps-i),width+.2*i,.10,depth*.38,warmStone);}
  function awning(parent,b,offsetX,width,colorHex,text){bx(parent,b.x+offsetX,2.15,b.front+.62,width,.17,1.10,mat(colorHex));if(text){const t=makeSign(parent,{...b,x:b.x+offsetX,w:width},[text],'#00000000','#f6f1e3',2.17,.96,.42);t.position.z=b.front+1.12;}}
 
@@ -75,8 +76,9 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    bx(group,b.x+b.w*.16,1.72,b.front+1.90,.20,3.25,.20,alum);
    bx(group,b.x,1.60,z+.18,b.w*.26,3.0,.08,glass);
    // Illuminated entrance canopy soffit and marquee halo matching reference mockup
-   bx(group,b.x,3.34,b.front+1.05,b.w*.34,.04,1.6,new THREE.MeshBasicMaterial({color:0xffecb8}));
-   bx(group,b.x,3.85,b.front+2.00,b.w*.42+.12,.86,.04,new THREE.MeshBasicMaterial({color:0xecd6ac}));
+   const soffit=bx(group,b.x,3.34,b.front+1.05,b.w*.34,.04,1.6,new THREE.MeshBasicMaterial({color:0xffecb8}));
+   const halo=bx(group,b.x,3.85,b.front+2.00,b.w*.42+.12,.86,.04,new THREE.MeshBasicMaterial({color:0xecd6ac}));
+   illuminatedSigns.push(soffit,halo);
    const sign=makeSign(group,{...b,x:b.x,w:b.w*.42},['TECH FREIRE','CHARTER SCHOOL'],'#1c2838','#fff8d6',3.85,.98,.76);
    sign.position.set(b.x,3.85,b.front+2.03);
    stoop(group,b,-b.w*.29,1.6,2.2,4);
@@ -341,7 +343,16 @@ export function createBroadStreetReferenceFacades(scene, buildings){
  }
 
  return {root,referenceBuildings:mapping.length,drawObjects:objects.length,
-  update(){for(const entry of mapping)synchronize(entry);},
+  update(brownout=1.0){
+   for(const entry of mapping)synchronize(entry);
+   for(const sign of illuminatedSigns){
+    if(sign.material){
+     if(sign.material.userData.baseOpacity===undefined)sign.material.userData.baseOpacity=sign.material.opacity||1.0;
+     sign.material.opacity=sign.material.userData.baseOpacity*brownout;
+     sign.material.transparent=true;
+    }
+   }
+  },
   setExternalFacade(name,loaded){if(loaded)externalFacadeNames.add(name);else externalFacadeNames.delete(name);
    for(const entry of mapping)if(entry.building.name===name)synchronize(entry);},
   snapshots:()=>mapping.map(({group,building,bindings})=>({building:building.name,damage:building.damage,

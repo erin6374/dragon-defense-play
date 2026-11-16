@@ -216,13 +216,13 @@ export function createPowerGrid(THREE, scene) {
         s.mesh.position.copy(pos);
         s.mesh.visible = true;
         const angle = Math.random() * Math.PI * 2;
-        const speed = 2.5 + Math.random() * 6.5;
+        const speed = 3.8 + Math.random() * 8.5;
         s.vel.set(
           Math.cos(angle) * speed,
-          1.5 + Math.random() * 4.5,
-          Math.sin(angle) * speed * 0.4
+          2.0 + Math.random() * 5.8,
+          Math.sin(angle) * speed * 0.45
         );
-        s.maxLife = 0.35 + Math.random() * 0.55;
+        s.maxLife = 0.45 + Math.random() * 0.65;
         s.life = s.maxLife;
         spawned++;
         if (spawned >= count) break;
@@ -239,14 +239,14 @@ export function createPowerGrid(THREE, scene) {
   function sparkTransformer(pole, flashFn = null, soundFn = null) {
     if (!pole) return;
     const pos = pole.transformerPos || new THREE.Vector3(pole.x, pole.yTop - 1, pole.z);
-    spawnElectricalSparks(pos, 35);
+    spawnElectricalSparks(pos, 48);
     if (typeof flashFn === 'function') {
-      flashFn(pos.x, pos.y, pos.z, 2.8);
+      flashFn(pos.x, pos.y, pos.z, 3.4);
     }
     if (typeof soundFn === 'function') {
       soundFn('crash');
     }
-    triggerBrownout(3.8 + Math.random() * 2.0, 0.88);
+    triggerBrownout(4.6 + Math.random() * 2.2, 0.92);
   }
 
   function checkMeteorInterception(meteorPos, radius, flashFn = null, soundFn = null) {

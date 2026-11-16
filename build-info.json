@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc76",
-  "version": "5.5.0-rc.76",
+  "build": "5.5-north-broad-refinement-rc77",
+  "version": "5.5.0-rc.77",
   "gameplay_base": "5.2.3",
-  "scope": "RC76: Gameplay Refinement Directive — active stun recovery, steamy non-locking water soak, gale convergence combo synergy, multi-target blast streaks, near-misses, heroic last-second saves, and 2.5-minute repeatable tactical defense trial.",
+  "scope": "RC77: Multi-Colossus Meteor Breakup Finale, high-intensity impact illumination, stratosphere burning entry effects, opposite-street window reflections, and power grid cascading brownout surges.",
   "new_gameplay_features": true,
-  "release_status": "RC76 candidate: Gameplay Refinement Directive execution featuring active button-mashing stun recovery (0.6-0.8s break-out), steamy continuous firebreath during water soak (50% dmg, slower velocity), Gale Convergence combo synergy (+500 pts when destroying wind-grouped meteors), multi-meteor blast destruction combos (+300 double, +600 triple, +1200 mass convergence), dynamic near-miss close call camera tremor and sound whoosh, last-second heroic save bonuses (+200 pts), and a compact, repeatable 2.5-minute Tactical Defense Trial encounter with telemetry assessment card."
+  "release_status": "RC77 candidate: Full multi-Colossus breakup finale with 3-stage crust/core fractures and 7-shard aerodynamic shatter explosions across Philadelphia skyline; high-power meteor impact illumination with lingering radial ambient bounce; stratosphere re-entry friction corona bloom and ionization embers; opposite-street architectural window reflections; and cascading powerline electrical arc sparks with storefront brownouts."
 }
