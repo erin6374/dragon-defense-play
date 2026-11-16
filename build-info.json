@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc78",
-  "version": "5.5.0-rc.78",
+  "build": "5.5-north-broad-refinement-rc79",
+  "version": "5.5.0-rc.79",
   "gameplay_base": "5.2.3",
-  "scope": "RC78: Permanent asset lifecycles (no blinking out), cross-street traffic on Dauphin and Susquehanna entering and exiting towards camera, midground/background traffic grid on Carlisle, Park Ave, and 13th St, midground firefighting routes and helicopter water drops, and Wave 15 finale Blue and Green power-up meteors.",
+  "scope": "RC79: Extended 3-screen high-orbit atmosphere, screen-stretching titan asteroid skimming Earth, Elon Musk Starlink satellite laser array with forcefield shields and EMP shock beams, surviving pilot evacuation with cockpit debris, facing-camera dragon resting posture (+10% scale), and dual powerups (plain 8s fire breath stream and Wave 15 gold-red mega fire breath).",
   "new_gameplay_features": true,
-  "release_status": "RC78 candidate: Zero asset disappearance guarantee (meteors land and cool into permanent crater slag/rubble; helicopters bank and accelerate out of camera view or leave smoking crash wreckage; vehicles cross North Broad onto Susquehanna and Dauphin past camera or deep background); multi-corridor traffic on Carlisle (-37m), Park Ave (-88m), and 13th St (-112m) with headlights/taillights; midground firefighting operations; and Wave 15 Colossus Armada power-up meteors."
+  "release_status": "RC79 candidate: 3-screen vertical atmospheric elevation; continuous skimming titan mother asteroid ejecting orbital debris; rows of Elon Musk orbital satellites firing upward lasers at asteroid and downward EMP shock beams at dragon; non-fatal helicopter crashes leaving cockpit debris and escaping running pilot; Paulo +10% larger resting facing camera; 8s fire breath flamethrower stream powerup; and Wave 15 gold-red mega fire breath satellite disintegration finale."
 }
