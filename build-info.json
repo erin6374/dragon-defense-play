@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc77",
-  "version": "5.5.0-rc.77",
+  "build": "5.5-north-broad-refinement-rc78",
+  "version": "5.5.0-rc.78",
   "gameplay_base": "5.2.3",
-  "scope": "RC77: Multi-Colossus Meteor Breakup Finale, high-intensity impact illumination, stratosphere burning entry effects, opposite-street window reflections, and power grid cascading brownout surges.",
+  "scope": "RC78: Permanent asset lifecycles (no blinking out), cross-street traffic on Dauphin and Susquehanna entering and exiting towards camera, midground/background traffic grid on Carlisle, Park Ave, and 13th St, midground firefighting routes and helicopter water drops, and Wave 15 finale Blue and Green power-up meteors.",
   "new_gameplay_features": true,
-  "release_status": "RC77 candidate: Full multi-Colossus breakup finale with 3-stage crust/core fractures and 7-shard aerodynamic shatter explosions across Philadelphia skyline; high-power meteor impact illumination with lingering radial ambient bounce; stratosphere re-entry friction corona bloom and ionization embers; opposite-street architectural window reflections; and cascading powerline electrical arc sparks with storefront brownouts."
+  "release_status": "RC78 candidate: Zero asset disappearance guarantee (meteors land and cool into permanent crater slag/rubble; helicopters bank and accelerate out of camera view or leave smoking crash wreckage; vehicles cross North Broad onto Susquehanna and Dauphin past camera or deep background); multi-corridor traffic on Carlisle (-37m), Park Ave (-88m), and 13th St (-112m) with headlights/taillights; midground firefighting operations; and Wave 15 Colossus Armada power-up meteors."
 }
