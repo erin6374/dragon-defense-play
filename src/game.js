@@ -2950,6 +2950,15 @@ for(const w of wings){
  const soarDihedral=isSoaring?-0.15:0;
  w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.32+(gasPose>0?-.22:0));
 }
+if(isSoaring&&quality.allowTrail(trailParticles.length)&&Math.random()<dt*22){
+ for(const sign of [-1,1]){
+  const tipPos=dragon.position.clone().add(new THREE.Vector3(-facing*1.5,Math.sin(elapsed*flapFreq)*.6,sign*3.6));
+  emitTrail(tipPos,true);
+ }
+}
+if(elapsed<blueFireballUntil&&Math.random()<dt*18){
+ flashAt(dragon.position.x+(Math.random()-.5)*1.8,dragon.position.y+(Math.random()-.5)*1.2,dragon.position.z+(Math.random()-.5)*1.6,.48);
+}
 pauloPoseDriver?.update(dt,{
  stunned:dragonStun>0,recovering:recoveryLift>0,windGust:gustTime>0,
  gasAttack:gasPose>0,windCharging:holdStart>0&&windCooldown<=0,
@@ -2958,6 +2967,11 @@ pauloPoseDriver?.update(dt,{
  gliding:isSoaring,
  perched:!dragonLeavingRoof,horizontal:move,facing
 });
+if(!dragonLeavingRoof&&pauloPreviewRig){
+ pauloPreviewRig.legs.forEach(({hip,knee,foot,fore})=>{
+  hip.rotation.z=fore?-.78:-.38;knee.rotation.z=fore?-.42:.58;foot.rotation.z=fore?.35:-.20;
+ });
+}
 // Wind samples the finished movement and head pose, not the previous frame.
 updateDragonWind(dt);
 updateExplosionLights(dt);
@@ -3585,7 +3599,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   }),
   labStageMilitaryWind:()=>run('labStageMilitaryWind',()=>{
    if(!active)reset();if(cinematicActive)closeChapterTransition();paused=false;
-   wave=11;dragon.position.set(-3,13,15);facing=1;militaryOccupation.reset();
+   wave=11;dragon.position.set(-3,13,15);facing=1;dragonLeavingRoof=true;dragon.rotation.set(0,0,0);pointer.set(25,13,15);militaryOccupation.reset();
    militaryOccupation.stageWindRocket(new THREE.Vector3(12,13,15));
    const before=militaryOccupation.windRocketStates();
    gustOrigin.copy(dragon.position);gustDirection.set(1,0,0);gustTime=.85;windCooldown=4;windActive=true;gustMissileNotified=false;
@@ -3911,7 +3925,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    registerIntercept({});
    registerIntercept({});
    hp-=7;
-   for(const building of neighborhood.targetBuildings.slice(0,3))building.damage=.5;
+   for(const building of neighborhood.targetBuildings.slice(0,40))building.damage=.5;
    updateHud();
    updateWaveProgress(.1);
    const recap=waveStats.at(-1).rallyResult;

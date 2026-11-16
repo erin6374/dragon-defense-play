@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc72",
-  "version": "5.5.0-rc.72",
+  "build": "5.5-north-broad-refinement-rc73",
+  "version": "5.5.0-rc.73",
   "gameplay_base": "5.2.3",
-  "scope": "RC72: 80% biggest meteor spawns, extended stratosphere viewport with re-entry atmospheric burning, blue plasma fireball & green tempest gale powerups with space ejection, utility power grid with catenary cables and brownout surges, and multi-colossus final wave armada breakup.",
+  "scope": "RC73: Wet asphalt puddle specular reflections, Game of Thrones aerodynamic wingtip soaring vapor contrails, transformer explosion illumination & skyline blackout arc flashes, and supercharged power-up HUD badges.",
   "new_gameplay_features": true,
-  "release_status": "RC72 candidate: 80% meteors spawn as massive boulders; extended stratosphere camera and sky dome transition into deep space with glowing atmospheric limb; meteors descending through stratosphere show blazing incandescent atmospheric friction shock envelopes; rare blue plasma meteors award supercharged 3x damage blue fireballs; green tempest meteors grant 3x gale force breath capable of ejecting meteors back into space; authentic North Broad utility poles with catenary power lines, transformer electrical sparks, and neighborhood brownouts; Wave 15 Colossus armada of 5 colossal meteors with cascade fracture breakup."
+  "release_status": "RC73 candidate: Wet asphalt puddle reflections and specular sheen along North Broad Street; Game of Thrones inspired aerodynamic wingtip vapor contrails during high-speed dragon soaring; transformer strike illumination casting blue-white electrical arcs with distant skyline blackout flashes; supercharged powerup HUD indicators with active countdowns for Blue Plasma Fireballs and Green Tempest Gale; 100% contract-compliant reusable Paulo kinematics rig."
 }

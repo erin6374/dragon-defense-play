@@ -237,8 +237,7 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  // retains authority over the actual facing flip and collision geometry.
  const groundTurn=state==='ground-turn'?
   Math.sin(Math.PI*Math.min(1,Math.max(0,poseElapsed)/.8)):0;
- const perched=state==='idle';
- root.position.y=(airborne?.3+cycle*.11*power:perched?0.48+Math.sin(t*1.5)*.025:Math.sin(t*1.5)*.035)+groundTurn*.18;
+ root.position.y=(airborne?.3+cycle*.11*power:Math.sin(t*1.5)*.035)+groundTurn*.18;
  // Paulo faces +X, so banking rolls about his longitudinal X axis, not Z (pitch).
  root.rotation.x=bank*(.78+.22*Math.cos(t*.9));
  // Coordinated yaw and slight nose-down pitch make a banking turn read as
@@ -248,11 +247,11 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
  // Impact recoil decays from time IN THIS pose, not session time. Otherwise
  // a late-level hit would vanish because the global wingbeat clock is large.
  root.rotation.z=state==='hit'?Math.sin(poseElapsed*12)*Math.exp(-poseElapsed*2)*.18:
-  perched?.58:state==='bank'?-.09*Math.abs(bank)/.35:state==='ground-turn'?groundTurn*.28:0;
+  state==='bank'?-.09*Math.abs(bank)/.35:state==='ground-turn'?groundTurn*.28:0;
  torso.scale.set(1,1+(state==='inhale'?.16:0)+soft*.015,1);
  chest.scale.set(1,1+(state==='inhale'?.19:state==='wind'?.10:0),1);
- neck.rotation.z=perched?-.32:state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
- head.rotation.z=perched?-.26:state==='wind'||state==='fire'?-.16:state==='gas'?.23:Math.sin(t*.9)*.035;
+ neck.rotation.z=state==='inhale'?.24:state==='wind'||state==='fire'?-.12:Math.sin(t*.8)*.04;
+ head.rotation.z=state==='wind'||state==='fire'?-.16:state==='gas'?.23:Math.sin(t*.9)*.035;
  // Paulo looks into the turn before the tail finishes steering behind him.
  head.rotation.y=state==='bank'?bank*.35:groundTurn*bankDirection*.25;
  jaw.rotation.z=['wind','fire','gas'].includes(state)?-.37:state==='inhale'?-.11:0;
@@ -297,17 +296,11 @@ function applyPose(t,state,bankDirection=1,poseElapsed=t){
   // Deepen the full fold so the claws follow the belly instead of hanging down.
   // Keep the original hover posture and ease into the deeper fold after it.
   const flightFold=Math.max(0,(tuck-.28)/.72);
-  if(perched){
-   hip.rotation.z=fore?-.78:-.38;
-   knee.rotation.z=fore?-.42:.58;
-   foot.rotation.z=fore?.35:-.20;
-  }else{
-   hip.rotation.z=-(fore?1.30:1.19)*tuck-(fore?.34:.27)*flightFold+(fore?.55:-.22)*groundTurn;
-   knee.rotation.z=-(fore?.69:.61)*tuck-(fore?.45:.67)*flightFold+
-     (state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
-   foot.rotation.z=(fore?.64:.55)*tuck-(fore?.61:.54)*flightFold+
-     (fore?.2:0)*groundTurn;
-  }
+  hip.rotation.z=-(fore?1.30:1.19)*tuck-(fore?.34:.27)*flightFold+(fore?.55:-.22)*groundTurn;
+  knee.rotation.z=-(fore?.69:.61)*tuck-(fore?.45:.67)*flightFold+
+    (state==='land'?.2*(1-tuck):0)-(fore?.25:0)*groundTurn;
+  foot.rotation.z=(fore?.64:.55)*tuck-(fore?.61:.54)*flightFold+
+    (fore?.2:0)*groundTurn;
  });
  deformMembranes(t,state==='glide'?.35:state==='idle'?.12:power);
  breathPreview.update(state,t);
