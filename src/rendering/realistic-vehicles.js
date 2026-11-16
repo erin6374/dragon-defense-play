@@ -11,7 +11,7 @@ function kit(T){if(caches.has(T))return caches.get(T);const mats=new Map(),geo=n
  function profile(g,m,points,width){const key=JSON.stringify([points,width]);if(!geo.has(key)){const shape=new T.Shape();points.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();const e=new T.ExtrudeGeometry(shape,{depth:width,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.055,bevelThickness:.055,curveSegments:12});e.translate(0,0,-width/2);geo.set(key,e)}return part(g,geo.get(key),m,0,0,0)}
  const result={mat,part,block,oval,rod,profile,geo};caches.set(T,result);return result}
 export function buildRoadVehicle(T,root,o){
- const k=kit(T),{mat,block,oval,rod,profile,part,geo}=k,L=o.length,body=mat(o.bodyHex,.32,.36),chrome=mat(0xaeb6ba,.78,.27),rubber=mat(0x171a1e,.03,.95),glass=mat(0x325264,.48,.16),black=mat(0x272e35,.22,.64),white=mat(0xe5e5df,.24,.42);
+ const k=kit(T),{mat,block,oval,rod,profile,part,geo}=k,L=o.length,body=mat(o.bodyHex,.32,.36),chrome=mat(0xaeb6ba,.78,.27),rubber=mat(0x171a1e,.03,.95),glass=mat(0x325264,.48,.16),black=mat(0x272e35,.22,.64),white=mat(0xe5e5df,.24,.42); const busGlass=mat(0xffe2a4,.15,.1); busGlass.emissive.setHex(0xe8be72); busGlass.emissiveIntensity=.38;
  const brakes=[];const tailDim=mat(0x7d1715,.1,.3),tailBright=new T.MeshStandardMaterial({color:0xff3023,emissive:0xff2014,emissiveIntensity:2.2,roughness:.2});
  const frontSteer=[];
  const wheel=(x,z,r=.44)=>{
@@ -41,7 +41,8 @@ export function buildRoadVehicle(T,root,o){
   }else{for(let hose=0;hose<5;hose++)rod(root,mat(0xc3ae88),[-L/2+.5,2.12,-.6+hose*.27],[.1,2.12,-.6+hose*.27],.105);rod(root,chrome,[1,2.1,0],[1,2.65,0],.13);rod(root,chrome,[1,2.65,0],[1.7,2.8,0],.12)}
  }else if(heavy||o.van){
   profile(root,body,[[-L/2,.48],[L/2,.48],[L/2,top-.5],[L/2-.45,top],[-L/2+.18,top],[-L/2,top-.2]],1.75);
-  for(const z of [-.96,.96]){if(o.bus){for(let x=-L/2+.7;x<L/2-.4;x+=.86)block(root,glass,x,1.93,z,.73,.77,.025);block(root,white,0,.88,z,L-.2,.14,.025)}else block(root,glass,L/2-.86,top-.43,z,1.25,.58,.03)}
+  if(o.bus)block(root,new T.MeshBasicMaterial({color:0xffe070}),L/2+.08,top-.24,0,.02,.18,1.05);
+  for(const z of [-.96,.96]){if(o.bus){for(let x=-L/2+.7;x<L/2-.4;x+=.86)block(root,busGlass,x,1.93,z,.73,.77,.025);block(root,white,0,.88,z,L-.2,.14,.025)}else block(root,glass,L/2-.86,top-.43,z,1.25,.58,.03)}
   if(o.ambulance)for(const z of [-.91,.91]){block(root,mat(0xb82824),-.5,1.35,z,.16,.65,.025);block(root,mat(0xb82824),-.5,1.35,z,.65,.16,.03)}
  }else{
   const cabin=o.style==='crossover'?1.78:1.49,rear=o.style==='wagon'||o.style==='crossover'?-L/2+.28:-.97;
@@ -74,7 +75,7 @@ export function buildRoadVehicle(T,root,o){
  root.userData.headlightBeam=beam;root.userData.headlightMaterial=head;
  for(const z of [-.65,.65]){block(root,head,L/2+.08,.88,z,.06,.19,.35);brakes.push(block(root,tailDim,-L/2-.09,.88,z,.06,.18,.31))}
  if(o.taxi)block(root,mat(0xfff2b4),-.4,top+.12,0,.55,.18,.4);
- let beacon=null;if(o.emergency)beacon=block(root,mat(0x287eff),L/2-1.1,top+.13,0,.7,.17,.8);
+ let beacon=null;if(o.emergency){if(o.police){const bar=new T.Group();bar.position.set(L/2-1.1,top+.13,0);root.add(bar);block(bar,chrome,0,-.04,0,.55,.05,.85);block(bar,mat(0xee2211,.1,.2),0,.02,-.28,.28,.14,.32);block(bar,mat(0x1177ee,.1,.2),0,.02,.28,.28,.14,.32);beacon=block(bar,mat(0xffffff,.1,.1),0,.02,0,.26,.14,.22);}else beacon=block(root,mat(0x287eff),L/2-1.1,top+.13,0,.7,.17,.8);}
  root.userData.frontSteer=frontSteer;root.userData.brakes=brakes;root.userData.tailDim=tailDim;root.userData.tailBright=tailBright;
  return {beacon,brakes,tailDim,tailBright};
 }

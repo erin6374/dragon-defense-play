@@ -150,6 +150,12 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
   // Repeating corridor soffits and classroom sightlines visible after impact.
   beam(centerX,y0+h*.85,back+depth*.42,width-3,.21,.31);
+  if(level>=2){
+   for(const fx of [-width*.32,-width*.12,width*.12,width*.32]){
+    piece(4,centerX+fx,y0+h-.22,front-2.8,width*.14,.08,1.4,{zone:'classroom-light',strength:.3});
+    piece(3,centerX+fx,y0+.42,front-2.6,width*.12,.48,.75,{zone:'classroom-desk',strength:.4});
+   }
+  }
  }
  // Distinct industrial roof equipment; avoid a flat white slab silhouette.
  // Each vent/housing is independently detachable at high damage.

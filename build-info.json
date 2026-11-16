@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc74",
-  "version": "5.5.0-rc.74",
+  "build": "5.5-north-broad-refinement-rc75",
+  "version": "5.5.0-rc.75",
   "gameplay_base": "5.2.3",
-  "scope": "RC74: Opposite-street window reflections, meteor impact street illumination & multi-point fire flares, right-mouse long press input lock fix, aerodynamic flight elevation pointing, and second-floor venting rowhouse fire.",
+  "scope": "RC75: Tech Freire illuminated classroom interiors & entrance spiderweb glass fracture, SEPTA bus passenger cabin illumination, and crater billowing smoke column matching guiding visual mockup.",
   "new_gameplay_features": true,
-  "release_status": "RC74 candidate: Procedural opposite-street reflections on North Broad rowhouse glazing and high-intensity specular envMap reflection on Tech Freire glass curtain wall; explosive meteor impact street illumination casting radiant amber light across wet asphalt and building facades with secondary road ignition; right-mouse long press input lock bug resolved via global capture phase listener and active-button state synchronization; Game of Thrones inspired aerodynamic flight elevation pointing along velocity trajectory vector with soaring wing dihedral; second-floor window venting fire and billowing dark smoke plume on North Broad rowhouse matching visual reference mockup."
+  "release_status": "RC75 candidate: Tech Freire Charter School illuminated upper-floor classrooms with warm fluorescent ceiling lights and student desk silhouettes; entrance glass storefront spiderweb impact fracture; authentic Philadelphia SEPTA transit bus with glowing passenger cabin windows and amber destination sign; Broad Street impact crater with persistent embers and billowing vertical smoke column matching the reference screenshot mockup."
 }
