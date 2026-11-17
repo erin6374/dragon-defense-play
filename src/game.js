@@ -2334,18 +2334,31 @@ const isWet=waterDisable>0;
 const isMega=!isWet&&(elapsed<megaFireBreathUntil);
 const isStream=!isWet&&(elapsed<fireStreamUntil);
 const isBlue=!isWet&&!isMega&&!isStream&&(elapsed<blueFireballUntil);
-cooldown=isStream?.038:(elapsed<rapidFireUntil?.045:(easyMode()?.12:(isMega?.10:(isBlue?.14:(isWet?.24:.19)))));
+cooldown=isStream?.038:(elapsed<rapidFireUntil?.045:(easyMode()?.12:(isMega?.048:(isBlue?.14:(isWet?.24:.19)))));
 sessionStats.shots++;
 if(isWet)sessionStats.wetShots=(sessionStats.wetShots||0)+1;
 pauloFirePoseUntil=elapsed+.26;
 sound(isWet?'steam':(isMega?'fanfare':(isStream?'fire':'fire')));
 const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();
-const shotSize=isWet?1.3:(isMega?4.2:(isStream?1.8:(isBlue?2.6:1.0)));
-const shotSpeed=isWet?45:(isMega?115:(isStream?72:(isBlue?84:64)));
+const shotSize=isWet?1.3:(isMega?3.6:(isStream?1.8:(isBlue?2.6:1.0)));
+const shotSpeed=isWet?45:(isMega?120:(isStream?78:(isBlue?84:64)));
 const mesh=new THREE.Mesh(sharedShotGeometry,isWet?mats.steamyFire:(isMega?goldRedPlasmaMaterial:(isStream?fizzingFireMaterial:(isBlue?mats.blueFire:mats.fire))));
 if(shotSize!==1.0)mesh.scale.set(shotSize,shotSize,shotSize);
-mesh.position.copy(start);scene.add(mesh);
-shots.push({mesh,vel:dir.multiplyScalar(shotSpeed),target,life:isStream?.65:3.8,blue:isBlue,mega:isMega,isStream,wet:isWet,damageMult:isWet?0.5:(isMega?15.0:(isBlue?3.0:(isStream?2.2:1.0)))});
+mesh.position.copy(start);
+if(isStream||isMega){
+ const flameMat=isMega?goldRedPowerupCoronaMat:fizzingPowerupCoronaMat;
+ const s1=new THREE.Sprite(flameMat),s2=new THREE.Sprite(flameMat);
+ s1.scale.setScalar(shotSize*1.8);s2.scale.setScalar(shotSize*1.5);
+ s2.position.set(0,.2,-.2);mesh.add(s1,s2);
+ dragonFireLight.position.copy(start);
+ dragonFireLight.intensity=isMega?9.5:5.5;
+ dragonFireLight.color.setHex(isMega?0xffcc33:0xff6611);
+ flashAt(start.x,start.y,start.z,isMega?2.8:1.6);
+ shake=Math.max(shake,isMega?.20:.08);
+}
+scene.add(mesh);
+const life=isStream?.75:(isMega?1.2:3.8);
+shots.push({mesh,vel:dir.multiplyScalar(shotSpeed),target,life,maxLife:life,baseSize:shotSize,blue:isBlue,mega:isMega,isStream,wet:isWet,damageMult:isWet?0.5:(isMega?15.0:(isBlue?3.0:(isStream?2.2:1.0)))});
 }
 // Engine-independent gameplay timers; rendered shield is intentionally cosmetic.
 const shieldMesh=new THREE.Mesh(new THREE.SphereGeometry(1,32,18,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x65d9ff,transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false}));
@@ -2460,8 +2473,24 @@ bluePlasmaMaterial.onBeforeCompile=shader=>{
  float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance*=energy*1.4;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.05,.45,.95),energy*.8);`);
 };
 const greenPlasmaMaterial=rockMaterialVariants[5].clone();
-const fizzingFireMaterial=rockMaterialVariants[5].clone();fizzingFireMaterial.emissive.setHex(0xff7700);fizzingFireMaterial.emissiveIntensity=3.6;fizzingFireMaterial.color.setHex(0x703510);
-const goldRedPlasmaMaterial=rockMaterialVariants[5].clone();goldRedPlasmaMaterial.emissive.setHex(0xffaa22);goldRedPlasmaMaterial.emissiveIntensity=4.2;goldRedPlasmaMaterial.color.setHex(0x801515);
+const fizzingFireMaterial=rockMaterialVariants[5].clone();fizzingFireMaterial.emissive.setHex(0xff5500);fizzingFireMaterial.emissiveIntensity=4.2;fizzingFireMaterial.color.setHex(0x902500);
+fizzingFireMaterial.onBeforeCompile=shader=>{
+ shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
+ shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
+ shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
+ shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+ float veins=abs(sin(rockPoint.x*6.0+sin(rockPoint.y*6.5)*1.2)*sin(rockPoint.z*6.0+rockPoint.y*4.0));
+ float energy=1.-smoothstep(.02,.18,veins);totalEmissiveRadiance*=energy*1.8;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,.45,.05),energy*.85);`);
+};
+const goldRedPlasmaMaterial=rockMaterialVariants[5].clone();goldRedPlasmaMaterial.emissive.setHex(0xffaa00);goldRedPlasmaMaterial.emissiveIntensity=4.8;goldRedPlasmaMaterial.color.setHex(0x8a1200);
+goldRedPlasmaMaterial.onBeforeCompile=shader=>{
+ shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
+ shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
+ shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
+ shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+ float veins=abs(sin(rockPoint.x*5.2+sin(rockPoint.y*5.8)*1.1)*sin(rockPoint.z*5.5+rockPoint.y*3.8));
+ float energy=1.-smoothstep(.025,.15,veins);totalEmissiveRadiance*=energy*2.2;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,.85,.2),energy*.9);`);
+};
 greenPlasmaMaterial.emissive.setHex(0x00ff55);greenPlasmaMaterial.emissiveIntensity=3.2;greenPlasmaMaterial.color.setHex(0x185528);
 greenPlasmaMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
@@ -2475,6 +2504,10 @@ let blueFireballUntil=0,greenBreathUntil=0,waveBlueMeteorsRemaining=2,waveGreenM
 moltenMaterial.onBeforeCompile=shader=>{shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*3.5+sin(rockPoint.y*4.)*.8)*sin(rockPoint.z*4.5+rockPoint.y*2.7));float lava=1.-smoothstep(.035,.13,veins);totalEmissiveRadiance*=lava;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.22,.035,.006),lava*.6);`)};
 const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6b18,transparent:true,opacity:.72,depthWrite:false,blending:THREE.AdditiveBlending});
+const fizzingPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff5500,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
+const goldRedPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xffaa00,transparent:true,opacity:.98,depthWrite:false,blending:THREE.AdditiveBlending});
+const bluePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00bfff,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
+const greenPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00ff66,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
 function createPlayableRock(size=1,variant=-1){
  const gi=Math.floor(Math.random()*rockGeometryVariants.length);
  const mi=variant<0?Math.floor(Math.random()*5):Math.max(0,Math.min(5,variant));
@@ -2496,15 +2529,15 @@ function spawnMeteor(random=Math.random,opening=null){
  let kind=opening?.kind;
  let isPowerup=null;
  if(!kind){
-  if(!isDeterministic&&waveFireStreamRemaining>0&&Math.random()<.25&&!opening){
+  if(!isDeterministic&&waveFireStreamRemaining>0&&(meteors.length>=2||Math.random()<.45)&&!opening){
    waveFireStreamRemaining--;
    isPowerup='fire_stream';
    kind='fizzing_flame';
-  }else if(!isDeterministic&&waveGreenMeteorRemaining>0&&Math.random()<.22&&!opening){
+  }else if(!isDeterministic&&waveGreenMeteorRemaining>0&&Math.random()<.28&&!opening){
    waveGreenMeteorRemaining--;
    isPowerup='green_breath';
    kind='green_plasma';
-  }else if(!isDeterministic&&waveBlueMeteorsRemaining>0&&Math.random()<.28&&!opening){
+  }else if(!isDeterministic&&waveBlueMeteorsRemaining>0&&Math.random()<.32&&!opening){
    waveBlueMeteorsRemaining--;
    isPowerup='blue_fireball';
    kind='blue_plasma';
@@ -2527,13 +2560,17 @@ function spawnMeteor(random=Math.random,opening=null){
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random,diffMode);
  const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-220,220);
  const mesh=createPlayableRock(size);
- if(kind==='blue_plasma')mesh.material=bluePlasmaMaterial;
- else if(kind==='green_plasma')mesh.material=greenPlasmaMaterial;
- else if(kind==='fizzing_flame')mesh.material=fizzingFireMaterial;
- else if(kind==='mega_fire_breath')mesh.material=goldRedPlasmaMaterial;
+ if(kind==='blue_plasma'){mesh.material=bluePlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=bluePowerupCoronaMat;c.scale.setScalar(size*3.4);}}
+ else if(kind==='green_plasma'){mesh.material=greenPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=greenPowerupCoronaMat;c.scale.setScalar(size*3.4);}}
+ else if(kind==='fizzing_flame'){mesh.material=fizzingFireMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=fizzingPowerupCoronaMat;c.scale.setScalar(size*4.2);}}
+ else if(kind==='mega_fire_breath'){mesh.material=goldRedPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=goldRedPowerupCoronaMat;c.scale.setScalar(size*4.8);}}
  else if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
  else if(fastImpact)mesh.material=fastImpactMaterial;
  else if(kind==='molten')mesh.material=moltenMaterial;
+ if(isPowerup==='fire_stream'){message('🔥 FIZZING FLAME POWERUP INCOMING! DESTROY FOR CONTINUOUS FIRE BREATH!');sound('bonus');}
+ else if(isPowerup==='green_breath'){message('🌪️ GREEN TEMPEST METEOR INCOMING — GALE BREATH POWERUP!');sound('bonus');}
+ else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
+ else if(isPowerup==='mega_fire_breath'){message('⚡ TITAN CORE GOLD & RED POWERUP INCOMING! DESTROY FOR MEGA FIRE BREATH!');sound('bonus');}
  mesh.position.set(x,meteorEntryHeight(target.z-3,size,148+random()*22),target.z-3);scene.add(mesh);
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
@@ -3306,7 +3343,7 @@ const turningRearUp=turning*.38;
 if(dragonLeavingRoof)flightPitch=THREE.MathUtils.lerp(flightPitch,targetElevationPitch+turningRearUp,Math.min(1,dt*8));
 dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));
 if(dragonLeavingRoof)dragon.rotation.z=flightPitch+(dragonStun>0?Math.sin(elapsed*35)*.14:Math.sin(elapsed*4)*.035);
-dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*16*dt,dragonStun>0?1.3:1.7,flightCeiling);
+const climbRate=dragon.position.y>60?13.8:16.5;dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*climbRate*dt,dragonStun>0?1.3:1.7,flightCeiling);
 dragon.children.forEach((part,i)=>{if(i<3)part.rotation.z=Math.sin(elapsed*6+i)*.04;});
 if(dragonLeavingRoof)dragon.rotation.y=Math.sin(elapsed*2)*.09+turning*.65*facing;
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
@@ -3377,9 +3414,32 @@ if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  if(!settling)updateWaveProgress(dt);
 const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=shotScratchClosest;
 for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.position);s.mesh.position.addScaledVector(s.vel,dt);s.life-=dt;if(wave===15&&!s.hostile&&finalSquadron.intercept(s.mesh.position,1.7,pos=>groundFireball(pos.x,pos.y,pos.z,1.4))){s.life=0;score+=75;}
- if(!s.hostile&&!s.fireTarget){
-  // Swept screen-aim first-contact selection: array order must not determine which
-  // meteor intercepts Paulo's fireball. A shot damages only the closest hit.
+ if(s.isStream||s.mega){
+  const progress=Math.max(0,1-(s.life/(s.maxLife||1)));
+  const expand=1.0+progress*(s.mega?3.5:2.4);
+  s.mesh.scale.setScalar(s.baseSize*expand);
+  if(performanceLab.isEnabled('particles')){
+   trailEmberPool.add(s.mesh.position,(s.mega?1.6:.85)*expand);
+   if(Math.random()<.35)trailSmokePool.add(s.mesh.position,(s.mega?2.0:1.1)*expand);
+  }
+ }
+ if(!s.hostile&&orbitalTheater){
+  for(const sat of (orbitalTheater.satellites||[])){
+   if(!sat.destroyed&&s.mesh.position.distanceTo(sat.root.position)<(s.mega?11.5:9.0)){
+    orbitalTheater.hitSatellite(sat,s.mega?35:10,s.mega);
+    s.life=0;break;
+   }
+  }
+ }
+ if((s.isStream||s.mega)&&!s.hostile){
+  for(const c of cars){
+   if(c.life>0&&s.mesh.position.distanceTo(c.root.position)<6.0)ignite(c.root.position.x,1,c.root.position.z);
+  }
+  for(const h of helicopters){
+   if(!h.crashing&&s.mesh.position.distanceTo(h.root.position)<7.0){crashHelicopter(h);if(!s.mega)s.life=0;}
+  }
+ }
+ if(!s.hostile&&!s.fireTarget&&s.life>0){
   projectDefensePoint(shotPrevious,camera.position,defensePrevious);
   projectDefensePoint(s.mesh.position,camera.position,defenseCurrent);
   path.copy(defenseCurrent).sub(defensePrevious);
@@ -3405,28 +3465,19 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    const dmgMult=s.damageMult||1.0;
    m.hp-=fireballMeteorDamage(m)*dmgMult;
    if(s.mega){
-    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.5);
-    cinematicFX.shock(m.mesh.position,8.0);
+    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.8);
+    cinematicFX.shock(m.mesh.position,8.5);
     m.hp=0;
     message('⚡ MEGA FIRE BREATH DISINTEGRATED METEOR!');
    }else if(s.isStream){
-    if(m.size<1.8){m.hp=0;}else{m.hp-=3.8;if(m.hp<=0)fragmentMeteor(m);}
-   }
-   for(const sat of (orbitalTheater?.satellites||[])){
-    if(!sat.destroyed&&s.mesh.position.distanceTo(sat.root.position)<8.5){
-     orbitalTheater.hitSatellite(sat,s.mega?35:10,s.mega);
-     s.life=0;break;
-    }
-   }
-   if(s.isStream){
-    for(const c of cars)if(c.life>0&&s.mesh.position.distanceTo(c.root.position)<4.0)ignite(c.root.position.x,1,c.root.position.z);
-    for(const h of helicopters)if(!h.crashing&&s.mesh.position.distanceTo(h.root.position)<5.0){crashHelicopter(h);s.life=0;}
+    if(m.size<2.0){m.hp=0;}else{m.hp-=4.5;if(m.hp<=0)fragmentMeteor(m);}
+    sound('fire');
    }
    if(s.blue){
     flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,2.8);
     cinematicFX.shock(m.mesh.position,4.2);
    }
-   emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,s.blue?55:30,.4);
+   emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,s.blue?55:(s.mega?75:35),.4);
    emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));
    checkBossFracture(m);
    if(m.hp<=0){
@@ -3448,6 +3499,34 @@ if(m.grounded){
  if(m.fragment){m.fragmentAge+=dt;m.ttl-=dt;m.vel.y-=1.25*dt;
   m.vel.x*=Math.max(.0,1-.10*dt);m.vel.z*=Math.max(.0,1-.10*dt);
   if(m.ttl<=0){remove(meteors,i);continue;}}
+ if(orbitalTheater&&m.mesh.position.y>150&&m.mesh.position.y<270){
+  for(const sat of (orbitalTheater.satellites||[])){
+   if(!sat.destroyed&&m.mesh.position.distanceTo(sat.root.position)<10.5){
+    orbitalTheater.triggerShieldDeflection(sat);
+    const pushDir=m.mesh.position.x>=sat.root.position.x?1:-1;
+    m.vel.x=pushDir*(14+Math.random()*8);
+    m.vel.y=-Math.max(16,Math.abs(m.vel.y)*1.15);
+    emitMeteorShrapnel(m.mesh.position,Math.min(2.5,m.size));
+    break;
+   }
+  }
+ }
+ if(m.isPowerup){
+  const c=m.mesh.getObjectByName('threat-corona');
+  if(c){
+   const pulseRate=m.isPowerup==='mega_fire_breath'?14:9;
+   const baseScale=m.isPowerup==='mega_fire_breath'?5.0:(m.isPowerup==='fire_stream'?4.2:3.4);
+   c.scale.setScalar(m.size*(baseScale+Math.sin(elapsed*pulseRate)*.7));
+  }
+  if(performanceLab.isEnabled('particles')){
+   if(m.isPowerup==='fire_stream'){
+    trailEmberPool.add(m.mesh.position,.65);
+   }else if(m.isPowerup==='mega_fire_breath'){
+    trailEmberPool.add(m.mesh.position,1.1);
+    if(Math.random()<.35)flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,.9);
+   }
+  }
+ }
  if(m.dragonHunter){
    // A flaming meteor tracks the dragon horizontally but must finish its fall even if dodged.
    const remainingHeight=Math.max(0,m.mesh.position.y-.65);
@@ -3613,6 +3692,13 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  cameraScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone);
  skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
+ const altRatio=THREE.MathUtils.clamp((dragon.position.y-44)/(flightCeiling-44),0,1);
+ const skylineShrink=1.0-altRatio*.36;
+ skyline.scale.set(4.35*skylineShrink,2.80*(1.0-altRatio*.44),1.15);
+ skyline.position.y=-18-altRatio*38;
+ const baseFog=.00105+displayedDarkness*.00020;
+ scene.fog.density=baseFog*(1.0+altRatio*2.2);
+ skylineAirUniforms.opacity.value=.26+altRatio*.48;
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
  camera.lookAt(cameraScrollX,streetView.targetY+follow,streetView.targetZ);
