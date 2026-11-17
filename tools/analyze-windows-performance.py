@@ -99,8 +99,8 @@ def summarize(path):
 
     times = [t for row in rows if (t := timestamp(row)) is not None]
     duration = round((max(times) - min(times)).total_seconds(), 2) if len(times) > 1 else None
-    foreground_times = sorted(t for row in foreground_browser if (t := timestamp(row)) is not None)
-    # A freeze in the middle can leave the first and last browser heartbeat
+    foreground_times = sorted(t for row in fresh_foreground_browser if (t := timestamp(row)) is not None)
+    # Only fresh-render browser samples may establish FPS coverage. A freeze in the middle can leave the first and last browser heartbeat
     # far apart, falsely passing a span-only 75% coverage test.
     foreground_gaps = [(b - a).total_seconds() for a, b in zip(foreground_times, foreground_times[1:])]
     max_foreground_gap = round(max(foreground_gaps), 2) if foreground_gaps else None
@@ -118,9 +118,9 @@ def summarize(path):
     if len(fresh_foreground_browser) < MIN_FOREGROUND_BROWSER_SAMPLES:
         quality_issues.append('Fewer than two visible, focused browser heartbeats with fresh rendering: FPS distribution insufficient.')
     elif browser_coverage is None or browser_coverage < MIN_FOREGROUND_BROWSER_COVERAGE:
-        quality_issues.append('Visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
+        quality_issues.append('Fresh-render visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
     if max_foreground_gap is not None and max_foreground_gap > MAX_FOREGROUND_BROWSER_GAP_SECONDS:
-        quality_issues.append('Visible browser heartbeat gap exceeds 5 seconds: foreground FPS may omit a mid-capture freeze.')
+        quality_issues.append('Fresh-render visible browser heartbeat gap exceeds 5 seconds: foreground FPS may omit a mid-capture freeze.')
     if stale_foreground_browser:
         quality_issues.append('Visible browser heartbeats report stale rendering: foreground FPS may repeat frozen frames.')
     if unknown_render_age_browser:
