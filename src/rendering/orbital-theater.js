@@ -1,37 +1,40 @@
 import * as THREE from 'three';
 
-export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, message, emitImpact, cinematicFX) {
+export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, message, emitImpact, cinematicFX, onSatWarning, onHideSatWarning) {
   const group = new THREE.Group();
   group.name = 'orbital-theater';
   scene.add(group);
 
-  // 1. Enhanced Massive Skimming Titan Meteor
-  // Radius 580, skimming horizontally across the upper atmosphere at y ~ 190-230.
-  // Featuring multi-colored mineral rocks (obsidian, iron ochre, teal silicate, sulfur)
-  // and glowing seething fissures of living magma fire.
-  const titanRadius = 580;
-  const titanGeo = new THREE.SphereGeometry(titanRadius, 64, 48);
+  // =========================================================================
+  // 1. COLOSSAL TITAN METEOR (RADIUS 1450, DEPTH Z = -180)
+  // Immense planetary curve sweeping across the ENTIRE top width of the screen.
+  // Rotated 90 deg so the equator passes through the bottom rim, completely
+  // eliminating pole-pinching/starburst artifacts and providing uniform rock crust.
+  // =========================================================================
+  const titanRadius = 1450;
+  const titanGeo = new THREE.SphereGeometry(titanRadius, 72, 54);
+  titanGeo.rotateX(Math.PI * 0.5); // Orient equator at bottom rim to eliminate pole pinch!
 
   const titanCanvas = document.createElement('canvas');
   titanCanvas.width = 1024;
   titanCanvas.height = 1024;
   const tCtx = titanCanvas.getContext('2d');
 
-  // Base deep space obsidian / basalt crust
-  tCtx.fillStyle = '#120f0e';
+  // Deep space basalt/obsidian mantle
+  tCtx.fillStyle = '#0a0908';
   tCtx.fillRect(0, 0, 1024, 1024);
 
   // Multi-colored mineral patches: iron oxide rust, silicate teals, sulfur yellows, deep basalt
   const mineralColors = [
-    { fill: '#802200', size: 140 }, // Iron rust red
-    { fill: '#5c1d0c', size: 180 }, // Deep ochre
-    { fill: '#1b3b3a', size: 110 }, // Silicate mineral teal
-    { fill: '#3d3014', size: 130 }, // Sulfur olivine
-    { fill: '#2a1a12', size: 160 }, // Dark basalt
-    { fill: '#a84400', size: 90 }   // Raw magma basin
+    { fill: '#7c1c00', size: 160 }, // Iron rust red
+    { fill: '#54160a', size: 190 }, // Deep ochre / terracotta
+    { fill: '#123432', size: 120 }, // Silicate mineral teal
+    { fill: '#362d0e', size: 140 }, // Sulfur olivine
+    { fill: '#1e120d', size: 170 }, // Dark basalt
+    { fill: '#a83c00', size: 100 }  // Magma caldera basin
   ];
 
-  for (let p = 0; p < 80; p++) {
+  for (let p = 0; p < 90; p++) {
     const min = mineralColors[p % mineralColors.length];
     const mx = Math.random() * 1024, my = Math.random() * 1024;
     const rad = (min.size * 0.5) + Math.random() * (min.size * 0.8);
@@ -45,14 +48,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   }
 
   // Deep impact craters with glowing molten centers
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 150; i++) {
     const cx = Math.random() * 1024, cy = Math.random() * 1024;
-    const cr = 12 + Math.random() * 42;
-    const cg = tCtx.createRadialGradient(cx, cy, cr * 0.1, cx, cy, cr);
-    cg.addColorStop(0, '#ff6600');
-    cg.addColorStop(0.3, '#bb2200');
-    cg.addColorStop(0.65, '#3a1e16');
-    cg.addColorStop(0.85, '#1e1410');
+    const cr = 14 + Math.random() * 48;
+    const cg = tCtx.createRadialGradient(cx, cy, cr * 0.08, cx, cy, cr);
+    cg.addColorStop(0, '#ff7700');
+    cg.addColorStop(0.32, '#c42000');
+    cg.addColorStop(0.68, '#3d1c14');
+    cg.addColorStop(0.88, '#1b120e');
     cg.addColorStop(1, 'transparent');
     tCtx.fillStyle = cg;
     tCtx.beginPath();
@@ -61,15 +64,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   }
 
   // Seething glowing veins of fire (magma fissures)
-  for (let j = 0; j < 55; j++) {
+  for (let j = 0; j < 70; j++) {
     let vx = Math.random() * 1024, vy = Math.random() * 1024;
-    tCtx.strokeStyle = j % 3 === 0 ? '#ffcc33' : (j % 2 === 0 ? '#ff5500' : '#ff2200');
-    tCtx.lineWidth = 2.0 + Math.random() * 3.5;
+    tCtx.strokeStyle = j % 3 === 0 ? '#ffcc22' : (j % 2 === 0 ? '#ff5500' : '#ff1a00');
+    tCtx.lineWidth = 2.4 + Math.random() * 3.6;
     tCtx.shadowColor = '#ff5500';
-    tCtx.shadowBlur = 8;
+    tCtx.shadowBlur = 10;
     tCtx.beginPath();
     tCtx.moveTo(vx, vy);
-    const steps = 6 + Math.floor(Math.random() * 8);
+    const steps = 7 + Math.floor(Math.random() * 9);
     for (let k = 0; k < steps; k++) {
       vx += (Math.random() - 0.5) * 85;
       vy += (Math.random() - 0.5) * 85;
@@ -82,36 +85,115 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   const titanTexture = new THREE.CanvasTexture(titanCanvas);
   titanTexture.wrapS = THREE.RepeatWrapping;
   titanTexture.wrapT = THREE.RepeatWrapping;
-  titanTexture.repeat.set(3, 2);
+  titanTexture.repeat.set(4, 2);
 
   const titanMat = new THREE.MeshStandardMaterial({
     map: titanTexture,
     color: 0x5a4840,
-    roughness: 0.82,
-    metalness: 0.25,
-    emissive: 0xff3800,
-    emissiveIntensity: 0.65,
+    roughness: 0.88,
+    metalness: 0.20,
+    emissive: 0xff3300,
+    emissiveIntensity: 0.70,
     emissiveMap: titanTexture
   });
 
   const titanMesh = new THREE.Mesh(titanGeo, titanMat);
-  // Positioned lower so its immense smoldering lower curve skims along y ~ 190 across the upper sky
-  titanMesh.position.set(0, titanRadius + 188, -25);
+  const TITAN_BASE_Y = titanRadius + 192;
+  const TITAN_BASE_Z = -180;
+  titanMesh.position.set(0, TITAN_BASE_Y, TITAN_BASE_Z);
   group.add(titanMesh);
 
-  // Atmospheric plasma burn rim along bottom arc of skimming meteor
-  const rimGeo = new THREE.TorusGeometry(titanRadius * 0.985, 5.5, 12, 80, Math.PI * 0.75);
-  const rimMat = new THREE.MeshBasicMaterial({
-    color: 0xff8c1a,
+  // =========================================================================
+  // ATMOSPHERIC RE-ENTRY PLASMA BURN SHEET
+  // Fiery atmospheric friction plasma sheet following Titan's bottom curve.
+  // Ionization flame gradient: solar flare orange -> searing amber -> atmospheric crimson.
+  // =========================================================================
+  const ribbonSegments = 64;
+  const ribbonGeo = new THREE.BufferGeometry();
+  const ribbonPositions = new Float32Array((ribbonSegments + 1) * 2 * 3);
+  const ribbonUvs = new Float32Array((ribbonSegments + 1) * 2 * 2);
+  const ribbonIndices = [];
+
+  const spanX = 560;
+  for (let s = 0; s <= ribbonSegments; s++) {
+    const t = s / ribbonSegments;
+    const x = -spanX + t * (spanX * 2);
+    const curveY = TITAN_BASE_Y - Math.sqrt(Math.max(1, titanRadius * titanRadius - x * x));
+    const idx = s * 2;
+
+    // Bottom vertex (leading atmospheric shock front)
+    ribbonPositions[idx * 3] = x;
+    ribbonPositions[idx * 3 + 1] = curveY - 4;
+    ribbonPositions[idx * 3 + 2] = -174;
+    ribbonUvs[idx * 2] = t;
+    ribbonUvs[idx * 2 + 1] = 0;
+
+    // Top vertex (trailing thermal ionization plume)
+    ribbonPositions[(idx + 1) * 3] = x;
+    ribbonPositions[(idx + 1) * 3 + 1] = curveY + 28;
+    ribbonPositions[(idx + 1) * 3 + 2] = -177;
+    ribbonUvs[(idx + 1) * 2] = t;
+    ribbonUvs[(idx + 1) * 2 + 1] = 1;
+
+    if (s < ribbonSegments) {
+      const v0 = idx, v1 = idx + 1, v2 = idx + 2, v3 = idx + 3;
+      ribbonIndices.push(v0, v2, v1);
+      ribbonIndices.push(v1, v2, v3);
+    }
+  }
+
+  ribbonGeo.setAttribute('position', new THREE.BufferAttribute(ribbonPositions, 3));
+  ribbonGeo.setAttribute('uv', new THREE.BufferAttribute(ribbonUvs, 2));
+  ribbonGeo.setIndex(ribbonIndices);
+
+  const plasmaRibbonUniforms = {
+    time: { value: 0 }
+  };
+
+  const plasmaRibbonMat = new THREE.ShaderMaterial({
+    uniforms: plasmaRibbonUniforms,
+    side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.72,
-    side: THREE.DoubleSide
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: `
+      varying vec2 vUv;
+      uniform float time;
+      void main() {
+        vUv = uv;
+        vec3 pos = position;
+        float wave = sin(time * 5.0 + pos.x * 0.045) * 1.4;
+        pos.y += wave * (1.0 - uv.y);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float time;
+      void main() {
+        float t = vUv.y;
+        float shimmer = sin(time * 7.5 + vUv.x * 28.0) * 0.10 + cos(time * 11.0 + vUv.x * 44.0) * 0.07;
+        float intensity = clamp(1.0 - t + shimmer * (1.0 - t), 0.0, 1.0);
+
+        // Organic atmospheric friction flame palette:
+        // Searing flame core -> Solar orange -> Deep atmospheric crimson ion glow
+        vec3 flameCore = vec3(1.0, 0.72, 0.28);
+        vec3 solarOrange = vec3(1.0, 0.36, 0.04);
+        vec3 deepCrimson = vec3(0.85, 0.08, 0.02);
+
+        vec3 color = mix(flameCore, solarOrange, smoothstep(0.0, 0.40, t));
+        color = mix(color, deepCrimson, smoothstep(0.40, 0.88, t));
+
+        float edgeFade = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
+        float alpha = pow(intensity, 1.4) * 0.82 * edgeFade;
+
+        gl_FragColor = vec4(color * 1.25, alpha);
+      }
+    `
   });
-  const plasmaRim = new THREE.Mesh(rimGeo, rimMat);
-  plasmaRim.rotation.x = Math.PI * 0.48;
-  plasmaRim.rotation.z = Math.PI * 0.12;
-  plasmaRim.position.set(0, -titanRadius + 10, 2);
-  titanMesh.add(plasmaRim);
+
+  const plasmaRibbon = new THREE.Mesh(ribbonGeo, plasmaRibbonMat);
+  group.add(plasmaRibbon);
 
   // Surface explosion sparks on Titan where lasers blast fissures
   const surfaceExplosions = [];
@@ -124,14 +206,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     depthWrite: false
   });
 
-  for (let b = 0; b < 10; b++) {
+  for (let b = 0; b < 12; b++) {
     const sp = new THREE.Sprite(blastSpriteMat.clone());
     sp.visible = false;
     group.add(sp);
     surfaceExplosions.push({ sprite: sp, life: 0, maxLife: 0.55 });
   }
 
-  function triggerTitanSurfaceBlast(x, y, z, scale = 14) {
+  function triggerTitanSurfaceBlast(x, y, z, scale = 18) {
     const b = surfaceExplosions.find(e => e.life <= 0) || surfaceExplosions[0];
     b.sprite.position.set(x, y, z);
     b.sprite.scale.setScalar(scale);
@@ -143,21 +225,25 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     emitImpact?.(x, y, z, 45, 1.4);
   }
 
-  // 2. High-Tech Militaristic Satellites in Upper Orbit
+  // =========================================================================
+  // 2. HIGH-TECH MILITARISTIC SATELLITES WITH HELICOPTER-STYLE ELECTRIC SHOCK
+  // Staggered altitude: y ~ 140 to 164, z ~ -4 to 12.
+  // Features prominent blinking strobes, upward lasers, and sustained cyan shock arcs!
+  // =========================================================================
   const satellites = [];
   const SAT_COUNT = 7;
-  const satSpacing = 52;
+  const satSpacing = 46;
 
-  // Shared high-tech militaristic materials
+  // Shared high-tech militaristic materials with subtle celestial rim reflections
   const satStealthMat = new THREE.MeshStandardMaterial({
-    color: 0x181c22, // Matte stealth carbon gunmetal
+    color: 0x222730, // Faceted stealth carbon gunmetal
     metalness: 0.88,
-    roughness: 0.28
+    roughness: 0.30
   });
   const satArmorPlatingMat = new THREE.MeshStandardMaterial({
-    color: 0x2d3440, // Tactical armor plating
-    metalness: 0.75,
-    roughness: 0.38
+    color: 0x364150, // Tactical armor plating with slight edge sheen
+    metalness: 0.82,
+    roughness: 0.32
   });
   const satGoldFoilMat = new THREE.MeshStandardMaterial({
     color: 0xd4af37, // Gold thermal foil insulation
@@ -166,15 +252,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     emissive: 0x3d3008
   });
   const satSolarWingMat = new THREE.MeshStandardMaterial({
-    color: 0x091c36, // Deep dark blue photovoltaic cells
-    metalness: 0.65,
-    roughness: 0.20,
-    emissive: 0x040e1c
+    color: 0x0a1e38, // Dark navy blue photovoltaic cells
+    metalness: 0.75,
+    roughness: 0.18,
+    emissive: 0x040f1f
   });
   const satSolarFrameMat = new THREE.MeshStandardMaterial({
-    color: 0x11161d, // Carbon composite frame
-    metalness: 0.85,
-    roughness: 0.30
+    color: 0x141820,
+    metalness: 0.90,
+    roughness: 0.25
   });
   const satIonThrusterMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
   const satLaserBarrelMat = new THREE.MeshStandardMaterial({
@@ -191,99 +277,119 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   const beaconWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const sensorCyanMat = new THREE.MeshBasicMaterial({ color: 0x00d9ff });
 
-  // Forcefield shield material (INDEPENDENT INSTANCES - invisible by default)
-  const shieldGeo = new THREE.SphereGeometry(6.6, 16, 12);
+  // Reusable Electric Shock Beam Materials (Identical to ICE Helicopter)
+  const satElectricArcMat = new THREE.LineBasicMaterial({
+    color: 0x55cbff,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false
+  });
+  const satElectricCoreMat = new THREE.MeshBasicMaterial({
+    color: 0xbaf6ff,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false
+  });
+  const satElectricCoreGeo = new THREE.CylinderGeometry(0.18, 0.18, 1, 8);
+
+  // Forcefield shield geometry
+  const shieldGeo = new THREE.SphereGeometry(7.2, 16, 12);
+
+  const electricFrom = new THREE.Vector3();
+  const electricTo = new THREE.Vector3();
+  const electricDiff = new THREE.Vector3();
 
   for (let s = 0; s < SAT_COUNT; s++) {
     const satGroup = new THREE.Group();
+    satGroup.scale.setScalar(1.35);
     const baseX = (s - (SAT_COUNT - 1) / 2) * satSpacing;
-    const baseY = 248 + Math.sin(s * 1.3) * 6;
-    const baseZ = 2 + (s % 2) * 5;
+    const baseY = 152 + Math.sin(s * 1.3) * 12;
+    const baseZ = -4 + (s % 2) * 14;
     satGroup.position.set(baseX, baseY, baseZ);
 
     // Main faceted stealth bus chassis
-    const busMain = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.95, 2.8), satStealthMat);
+    const busMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 3.0), satStealthMat);
     satGroup.add(busMain);
 
     // Dorsal armor sloped top casing
-    const topArmor = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.45, 2.2), satArmorPlatingMat);
-    topArmor.position.set(0, 0.65, 0);
+    const topArmor = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.55, 2.4), satArmorPlatingMat);
+    topArmor.position.set(0, 0.75, 0);
     satGroup.add(topArmor);
 
     // Gold thermal foil telemetry pod
-    const foilPod = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 1.2), satGoldFoilMat);
-    foilPod.position.set(0, 0.45, 0.85);
+    const foilPod = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.65, 1.4), satGoldFoilMat);
+    foilPod.position.set(0, 0.55, 0.95);
     satGroup.add(foilPod);
 
-    // Ventral FLIR tactical sensor dome
-    const sensorDome = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 10), sensorCyanMat);
-    sensorDome.position.set(0, -0.65, 0.6);
-    satGroup.add(sensorDome);
+    // Ventral FLIR tactical sensor dome (turret base)
+    const turretBase = new THREE.Group();
+    turretBase.position.set(0, -0.75, 0.6);
+    const sensorDome = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 10), sensorCyanMat);
+    turretBase.add(sensorDome);
+    satGroup.add(turretBase);
 
     // High-gain communications dish
-    const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.1, 0.3, 12), satArmorPlatingMat);
+    const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.12, 0.35, 12), satArmorPlatingMat);
     dish.rotation.x = Math.PI * 0.35;
-    dish.position.set(-1.4, -0.6, -0.6);
+    dish.position.set(-1.6, -0.65, -0.7);
     satGroup.add(dish);
 
     // Articulated dual solar array wings with structural carbon trusses
     const wingDir = s % 2 === 0 ? 1 : -1;
     const wingGroup = new THREE.Group();
-    wingGroup.position.set(wingDir * 2.5, 0, 0);
+    wingGroup.position.set(wingDir * 2.8, 0, 0);
 
     // Carbon boom arm
-    const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.4, 8), satSolarFrameMat);
+    const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.6, 8), satSolarFrameMat);
     boom.rotation.z = Math.PI * 0.5;
-    boom.position.set(wingDir * 1.2, 0, 0);
+    boom.position.set(wingDir * 1.3, 0, 0);
     wingGroup.add(boom);
 
     // Inner solar panel
-    const solarInner = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.08, 2.5), satSolarWingMat);
-    solarInner.position.set(wingDir * 4.2, 0, 0);
+    const solarInner = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.08, 2.8), satSolarWingMat);
+    solarInner.position.set(wingDir * 4.6, 0, 0);
     wingGroup.add(solarInner);
 
     // Outer solar panel
-    const solarOuter = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.08, 2.5), satSolarWingMat);
-    solarOuter.position.set(wingDir * 9.8, 0, 0);
+    const solarOuter = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.08, 2.8), satSolarWingMat);
+    solarOuter.position.set(wingDir * 10.8, 0, 0);
     wingGroup.add(solarOuter);
 
     // Solar panel frame border
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.12, 2.65), satSolarFrameMat);
-    frame.position.set(wingDir * 7.0, 0, 0);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.12, 2.95), satSolarFrameMat);
+    frame.position.set(wingDir * 7.7, 0, 0);
     wingGroup.add(frame);
 
     satGroup.add(wingGroup);
 
     // Heavy militaristic dual laser cannon rail turrets
     const turretL = new THREE.Group();
-    const barrelL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.26, 1.8, 8), satLaserBarrelMat);
-    barrelL.position.y = 0.9;
+    const barrelL = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.28, 2.0, 8), satLaserBarrelMat);
+    barrelL.position.y = 1.0;
     turretL.add(barrelL);
-    // Cooling radiator heatsink fins
     for (let f = 0; f < 3; f++) {
-      const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 8), satArmorPlatingMat);
-      fin.position.y = 0.5 + f * 0.35;
+      const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.08, 8), satArmorPlatingMat);
+      fin.position.y = 0.55 + f * 0.38;
       turretL.add(fin);
     }
-    // Luminous laser focus muzzle
-    const muzzleL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.2, 8), satLaserMuzzleMat);
-    muzzleL.position.y = 1.85;
+    const muzzleL = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.22, 8), satLaserMuzzleMat);
+    muzzleL.position.y = 2.05;
     turretL.add(muzzleL);
-    turretL.position.set(-1.25, 0.6, 0.4);
+    turretL.position.set(-1.4, 0.7, 0.4);
     satGroup.add(turretL);
 
     const turretR = turretL.clone();
-    turretR.position.x = 1.25;
+    turretR.position.x = 1.4;
     satGroup.add(turretR);
 
     // Twin ion plasma thrusters
-    const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.18, 0.65, 8), satIonThrusterMat);
+    const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.20, 0.75, 8), satIonThrusterMat);
     thrusterL.rotation.x = Math.PI * 0.5;
-    thrusterL.position.set(-wingDir * 1.5, 0, -1.5);
+    thrusterL.position.set(-wingDir * 1.6, 0, -1.6);
     satGroup.add(thrusterL);
 
     const thrusterR = thrusterL.clone();
-    thrusterR.position.x = -wingDir * 0.4;
+    thrusterR.position.x = -wingDir * 0.5;
     satGroup.add(thrusterR);
 
     // --- HIGH-TECH BLINKING LIGHTS SUITE ---
@@ -291,32 +397,31 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
 
     // Wingtip navigation strobes (Red / Green)
     const wingtipLight = new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 8, 8),
+      new THREE.SphereGeometry(0.25, 8, 8),
       s % 2 === 0 ? navRedMat.clone() : navGreenMat.clone()
     );
-    wingtipLight.position.set(wingDir * 15.6, 0.15, 0);
+    wingtipLight.position.set(wingDir * 16.8, 0.15, 0);
     satGroup.add(wingtipLight);
-    blinkingLights.push({ mesh: wingtipLight, rate: 1.8, phase: s * 0.8, baseColor: s % 2 === 0 ? 0xff1122 : 0x00ff66 });
+    blinkingLights.push({ mesh: wingtipLight, rate: 1.8, phase: s * 0.8 });
 
     // Chassis telemetry LEDs (Amber / White)
-    const ledAmber = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), beaconAmberMat.clone());
-    ledAmber.position.set(-1.8, 0.55, 1.42);
+    const ledAmber = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.20, 0.20), beaconAmberMat.clone());
+    ledAmber.position.set(-2.0, 0.65, 1.55);
     satGroup.add(ledAmber);
-    blinkingLights.push({ mesh: ledAmber, rate: 3.5, phase: s * 1.2, baseColor: 0xffaa00 });
+    blinkingLights.push({ mesh: ledAmber, rate: 3.5, phase: s * 1.2 });
 
-    const ledWhite = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), beaconWhiteMat.clone());
-    ledWhite.position.set(1.8, 0.55, 1.42);
+    const ledWhite = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.20, 0.20), beaconWhiteMat.clone());
+    ledWhite.position.set(2.0, 0.65, 1.55);
     satGroup.add(ledWhite);
-    blinkingLights.push({ mesh: ledWhite, rate: 4.8, phase: s * 0.5, baseColor: 0xffffff });
+    blinkingLights.push({ mesh: ledWhite, rate: 4.8, phase: s * 0.5 });
 
     // Dorsal tactical beacon (Cyan)
-    const ledCyan = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), sensorCyanMat.clone());
-    ledCyan.position.set(0, 0.95, -0.6);
+    const ledCyan = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), sensorCyanMat.clone());
+    ledCyan.position.set(0, 1.1, -0.7);
     satGroup.add(ledCyan);
-    blinkingLights.push({ mesh: ledCyan, rate: 2.2, phase: s * 1.5, baseColor: 0x00d9ff });
+    blinkingLights.push({ mesh: ledCyan, rate: 2.2, phase: s * 1.5 });
 
-    // Translucent hexagonal energy shield bubble
-    // CRITICAL REQUIREMENT: INVISIBLE BY DEFAULT! ONLY TRIGGERS ON DEFLECTION!
+    // Translucent hexagonal energy shield bubble (DORMANT BY DEFAULT)
     const satShieldMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
@@ -331,31 +436,43 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     // Upward coherent laser beam line
     const laserMat = new THREE.LineBasicMaterial({ color: 0x44ff88, linewidth: 3, transparent: true, opacity: 0 });
     const laserGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 1.8, 0.4),
-      new THREE.Vector3(0, 85, 0)
+      new THREE.Vector3(0, 2.0, 0.4),
+      new THREE.Vector3(0, 95, 0)
     ]);
     const laserLine = new THREE.Line(laserGeo, laserMat);
     satGroup.add(laserLine);
 
-    // Downward EMP shock beam line targeting dragon
-    const empMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 3, transparent: true, opacity: 0 });
-    const empGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, -50, 0)
-    ]);
-    const empLine = new THREE.Line(empGeo, empMat);
-    satGroup.add(empLine);
+    // =======================================================================
+    // SUSTAINED 3D ELECTRIC SHOCK BEAM (IDENTICAL TO HELICOPTER SHOCK MECHANIC)
+    // =======================================================================
+    const electricGroup = new THREE.Group();
+    electricGroup.visible = false;
+    const arcSegments = 14;
+    const arcPositions = new Float32Array(arcSegments * 2 * 3);
+    const arcGeo = new THREE.BufferGeometry();
+    const arcAttr = new THREE.BufferAttribute(arcPositions, 3);
+    arcAttr.setUsage(THREE.DynamicDrawUsage);
+    arcGeo.setAttribute('position', arcAttr);
+    const electricArcs = new THREE.LineSegments(arcGeo, satElectricArcMat);
+    electricArcs.frustumCulled = false;
+    electricGroup.add(electricArcs);
+
+    const electricCore = new THREE.Mesh(satElectricCoreGeo, satElectricCoreMat);
+    electricGroup.add(electricCore);
+    group.add(electricGroup);
 
     group.add(satGroup);
 
     satellites.push({
       root: satGroup,
       bus: busMain,
+      turretBase,
       shield,
       laserLine,
       laserMat,
-      empLine,
-      empMat,
+      electricGroup,
+      electricArcs,
+      electricCore,
       blinkingLights,
       baseX,
       baseY,
@@ -366,10 +483,28 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       dodgeSpeed: 24,
       laserTimer: 0.8 + Math.random() * 2.2,
       laserFiring: false,
-      empCooldown: 2.5,
+      contactTime: 0,
+      shockCooldown: 0,
       shieldFlash: 0
     });
   }
+
+  // =========================================================================
+  // 3. STRATOSPHERIC ATMOSPHERIC CLOUD DECK (ALTITUDE Y = 52)
+  // Soft, glowing atmospheric cloud deck that envelops the repetitive district
+  // roofs when soaring in the stratosphere, providing lush aerial perspective.
+  // =========================================================================
+  const cloudDeckGeo = new THREE.PlaneGeometry(1600, 600, 1, 1);
+  cloudDeckGeo.rotateX(-Math.PI * 0.5);
+  const cloudDeckMat = new THREE.MeshBasicMaterial({
+    color: 0x486078,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  const cloudDeck = new THREE.Mesh(cloudDeckGeo, cloudDeckMat);
+  cloudDeck.position.set(0, 52, -120);
+  group.add(cloudDeck);
 
   let meteorEjectTimer = 3.2;
   let goldRedPowerupSpawned = false;
@@ -378,12 +513,23 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     group,
     satellites,
     titanMesh,
+    plasmaRibbon,
+    cloudDeck,
     update(dt, elapsed, wave, dragonPos, isMegaFireActive, onSpawnPowerup, onSpawnMeteor, onShockDragon) {
-      // 1. Skimming Titan continuous drift across the top of the sky
-      titanMesh.position.x += dt * 1.8;
-      if (titanMesh.position.x > 340) titanMesh.position.x = -340;
-      titanMesh.rotation.y += dt * 0.009;
-      plasmaRim.material.opacity = 0.65 + Math.sin(elapsed * 5.5) * 0.22;
+      // 1. Skimming Titan continuous drift across the upper exosphere
+      titanMesh.position.x += dt * 1.5;
+      if (titanMesh.position.x > 380) titanMesh.position.x = -380;
+      titanMesh.rotation.z += dt * 0.008; // Equatorial rotation
+
+      // Pulse Titan seething living magma fissures
+      titanMat.emissiveIntensity = 0.85 + Math.sin(elapsed * 2.5) * 0.28;
+
+      // Update atmospheric plasma burn sheet
+      plasmaRibbonMat.uniforms.time.value = elapsed;
+
+      // Update stratospheric cloud deck opacity as Paulo ascends above altitude 45
+      const stratClimb = THREE.MathUtils.clamp((dragonPos.y - 45) / 60, 0, 1);
+      cloudDeckMat.opacity = stratClimb * 0.70;
 
       // Update surface explosion blossoms
       for (const ex of surfaceExplosions) {
@@ -391,7 +537,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           ex.life -= dt;
           const prog = 1 - (ex.life / ex.maxLife);
           ex.sprite.material.opacity = Math.max(0, 1 - prog);
-          ex.sprite.scale.setScalar(12 + prog * 16);
+          ex.sprite.scale.setScalar(14 + prog * 18);
           if (ex.life <= 0) ex.sprite.visible = false;
         }
       }
@@ -400,16 +546,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       meteorEjectTimer -= dt;
       if (meteorEjectTimer <= 0) {
         meteorEjectTimer = 2.8 + Math.random() * 2.6;
-        const ejectX = (Math.random() - 0.5) * 160;
-        // Trigger visual rupture on Titan surface where chunk breaks off
-        triggerTitanSurfaceBlast(ejectX, 192, -18, 18);
+        const ejectX = (Math.random() - 0.5) * 180;
+        triggerTitanSurfaceBlast(ejectX, 192, -165, 20);
         onSpawnMeteor?.(ejectX, 186, -5);
       }
 
       // In Wave 15 finale, after main armada, titan ejects sparkling gold-red powerup
       if (wave === 15 && !goldRedPowerupSpawned && satellites.some(s => !s.destroyed)) {
         goldRedPowerupSpawned = true;
-        triggerTitanSurfaceBlast(0, 190, 0, 24);
+        triggerTitanSurfaceBlast(0, 190, -165, 26);
         onSpawnPowerup?.('mega_fire_breath', 0, 184, 5);
         message?.('⚡ OVERHEAD TITAN FRACTURED — GOLD-RED MEGA POWERUP EJECTED! DESTROY FOR MEGA FIRE BREATH!');
       }
@@ -418,12 +563,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       const activeSats = satellites.filter(s => !s.destroyed);
       const isFinaleEvasion = wave === 15 && isMegaFireActive;
 
+      let anySatShocking = false;
+      let maxContactProgress = 0;
+
       for (const s of activeSats) {
         // High-tech blinking lights animation
         for (const bl of s.blinkingLights) {
           const blink = Math.sin(elapsed * (bl.rate * Math.PI * 2) + bl.phase);
-          const isOn = blink > 0.15;
-          bl.mesh.visible = isOn;
+          bl.mesh.visible = blink > 0.15;
         }
 
         // Laser firing at the titan meteor causing surface ruptures
@@ -433,16 +580,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           s.laserTimer = s.laserFiring ? 0.48 : (1.2 + Math.random() * 2.0);
           s.laserMat.opacity = s.laserFiring ? 0.95 : 0;
           if (s.laserFiring) {
-            // Laser strikes titan: trigger explosion blossom and fissure
-            const strikeX = s.root.position.x + (Math.random() - 0.5) * 12;
-            const strikeY = s.root.position.y + 78;
-            triggerTitanSurfaceBlast(strikeX, strikeY, s.root.position.z - 15, 14);
+            const strikeX = s.root.position.x + (Math.random() - 0.5) * 14;
+            const strikeY = 192 + (Math.random() - 0.5) * 12;
+            triggerTitanSurfaceBlast(strikeX, strikeY, -170, 16);
             sound?.('laser');
           }
         }
 
-        // SHIELD DEFLECTION ANIMATION:
-        // Shield ONLY visible when shieldFlash > 0! Completely invisible/dormant otherwise!
+        // Shield Deflection Flash: completely invisible by default!
         if (s.shieldFlash > 0) {
           s.shieldFlash -= dt * 3.2;
           s.shield.visible = true;
@@ -454,35 +599,84 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           s.shield.material.opacity = 0;
         }
 
-        // Proximity EMP shock attack on Dragon when dragon ascends into upper orbit
-        s.empCooldown -= dt;
+        s.shockCooldown = Math.max(0, s.shockCooldown - dt);
+
+        // ===================================================================
+        // HELICOPTER-STYLE ELECTRICAL SHOCK BEAM TARGETING PAULO
+        // When dragon enters upper orbit defense sector (altitude > 105, dist < 45)
+        // ===================================================================
         const distToDragon = s.root.position.distanceTo(dragonPos);
-        if (dragonPos.y > 155 && distToDragon < 65 && s.empCooldown <= 0) {
-          s.empCooldown = 4.2;
-          s.empMat.opacity = 1.0;
-          const localDragon = s.root.worldToLocal(dragonPos.clone());
-          const positions = s.empLine.geometry.attributes.position.array;
-          positions[3] = localDragon.x;
-          positions[4] = localDragon.y;
-          positions[5] = localDragon.z;
-          s.empLine.geometry.attributes.position.needsUpdate = true;
-          onShockDragon?.('SATELLITE EMP SHOCK BEAM');
-          sound?.('electric');
-          setTimeout(() => { s.empMat.opacity = 0; }, 450);
+        const inShockRange = dragonPos.y > 105 && distToDragon < 45 && s.shockCooldown <= 0;
+
+        if (inShockRange) {
+          anySatShocking = true;
+          s.electricGroup.visible = true;
+
+          s.turretBase.lookAt(dragonPos);
+
+          electricFrom.set(s.root.position.x, s.root.position.y - 1.0, s.root.position.z + 0.6);
+          electricTo.copy(dragonPos).add(new THREE.Vector3(0, 0.4, 0));
+          electricDiff.subVectors(electricTo, electricFrom);
+          const len = electricDiff.length();
+          const segments = 14;
+          const arr = s.electricArcs.geometry.attributes.position.array;
+
+          for (let i = 0; i < segments; i++) {
+            const a = i / segments, b = (i + 1) / segments;
+            for (const [idx, t] of [[0, a], [1, b]]) {
+              const nearEnd = Math.sin(t * Math.PI), jitter = nearEnd * 1.5;
+              const off = Math.sin(elapsed * 36 + i * 5 + idx * 2 + s.baseX) * jitter;
+              const k = Math.cos(elapsed * 42 + i * 3 + idx * 4 + s.baseX) * jitter;
+              const n = i * 6 + idx * 3;
+              arr[n] = electricFrom.x + electricDiff.x * t;
+              arr[n + 1] = electricFrom.y + electricDiff.y * t + off;
+              arr[n + 2] = electricFrom.z + electricDiff.z * t + k;
+            }
+          }
+          s.electricArcs.geometry.attributes.position.needsUpdate = true;
+
+          s.electricCore.position.copy(electricFrom).addScaledVector(electricDiff, 0.5);
+          s.electricCore.scale.set(1, len, 1);
+          s.electricCore.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), electricDiff.clone().normalize());
+
+          s.contactTime += dt;
+          const progress = Math.min(1.0, s.contactTime / 2.2);
+          maxContactProgress = Math.max(maxContactProgress, progress);
+
+          if (Math.random() < 0.28) sound?.('electric');
+
+          if (s.contactTime >= 2.2) {
+            s.contactTime = 0;
+            s.shockCooldown = 4.8;
+            s.electricGroup.visible = false;
+            onShockDragon?.('SATELLITE ELECTRICAL DEFENSE GRID');
+            sound?.('warning');
+          }
+        } else {
+          if (s.contactTime > 0.05) s.shockCooldown = Math.max(s.shockCooldown, 1.2);
+          s.contactTime = 0;
+          s.electricGroup.visible = false;
         }
 
-        // Finale evasive maneuvers (Wave 15): satellites dart and dodge to avoid Paulo
+        // Finale evasive maneuvers (Wave 15)
         if (isFinaleEvasion) {
           const avoidDir = s.root.position.x > dragonPos.x ? 1 : -1;
-          s.dodgeX = THREE.MathUtils.lerp(s.dodgeX, avoidDir * 28 + Math.sin(elapsed * 4 + s.baseX) * 18, dt * 2.5);
+          s.dodgeX = THREE.MathUtils.lerp(s.dodgeX, avoidDir * 32 + Math.sin(elapsed * 4 + s.baseX) * 20, dt * 2.5);
           s.root.position.x = s.baseX + s.dodgeX;
-          s.root.position.y = s.baseY + Math.cos(elapsed * 3.5 + s.baseX) * 12;
-          s.root.rotation.z = THREE.MathUtils.lerp(s.root.rotation.z, -avoidDir * 0.32, dt * 4);
+          s.root.position.y = s.baseY + Math.cos(elapsed * 3.5 + s.baseX) * 14;
+          s.root.rotation.z = THREE.MathUtils.lerp(s.root.rotation.z, -avoidDir * 0.35, dt * 4);
         } else {
-          s.root.position.x = s.baseX + Math.sin(elapsed * 0.8 + s.baseX) * 5;
-          s.root.position.y = s.baseY + Math.sin(elapsed * 1.2 + s.baseX) * 3;
+          s.root.position.x = s.baseX + Math.sin(elapsed * 0.8 + s.baseX) * 6;
+          s.root.position.y = s.baseY + Math.sin(elapsed * 1.2 + s.baseX) * 3.5;
           s.root.rotation.z = THREE.MathUtils.lerp(s.root.rotation.z, 0, dt * 2);
         }
+      }
+
+      // Update HUD Satellite Contact Warning
+      if (anySatShocking) {
+        onSatWarning?.(maxContactProgress);
+      } else {
+        onHideSatWarning?.();
       }
     },
     triggerShieldDeflection(sat) {
@@ -497,19 +691,17 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     hitSatellite(sat, damage, isMegaFire) {
       if (sat.destroyed) return false;
       if (!isMegaFire) {
-        // Shield absorbs and deflects ordinary fire with visible flash ripple
         this.triggerShieldDeflection(sat);
         message?.('🛡️ SATELLITE FORCEFIELD DEFLECTS ATTACK — REQUIRE MEGA FIRE BREATH!');
         return false;
       }
-      // Mega Fire Breath penetrates and destroys satellite!
       sat.hp -= damage;
       sat.shieldFlash = 1.8;
       if (sat.hp <= 0) {
         sat.destroyed = true;
         sat.shield.visible = false;
         sat.laserMat.opacity = 0;
-        sat.empMat.opacity = 0;
+        sat.electricGroup.visible = false;
         for (const bl of sat.blinkingLights) bl.mesh.visible = false;
         sound?.('crash');
         flashAt?.(sat.root.position.x, sat.root.position.y, sat.root.position.z, 5.5);
@@ -527,6 +719,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     reset() {
       goldRedPowerupSpawned = false;
       meteorEjectTimer = 3.2;
+      onHideSatWarning?.();
+      cloudDeckMat.opacity = 0;
       for (const s of satellites) {
         s.destroyed = false;
         s.hp = 100;
@@ -535,8 +729,10 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         s.shield.visible = false;
         s.shield.material.opacity = 0;
         s.laserMat.opacity = 0;
-        s.empMat.opacity = 0;
+        s.electricGroup.visible = false;
         s.shieldFlash = 0;
+        s.contactTime = 0;
+        s.shockCooldown = 0;
         for (const bl of s.blinkingLights) bl.mesh.visible = true;
         if (!group.children.includes(s.root)) group.add(s.root);
       }

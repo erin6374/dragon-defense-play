@@ -111,7 +111,16 @@ const cinematicLighting=createCinematicLighting(renderer,scene,'cinematic');
 const cinematicFX=createCinematicEffects(THREE,scene,camera,visualBank);
 const finalSquadron=createFinalSquadron(scene);
 const powerGrid=createPowerGrid(THREE,scene);
-const orbitalTheater=createOrbitalTheater(scene,camera,visualBank,(x,y,z,p)=>flashAt(x,y,z,p),(k)=>sound(k),(m)=>message(m),(x,y,z,c,s)=>emitImpact(x,y,z,c,s),cinematicFX);
+const satWarning=document.createElement('div');satWarning.id='sat-contact-warning';
+satWarning.style.cssText='position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:30;display:none;pointer-events:none;background:#081c30dd;color:#a5f3fc;border:1px solid #38bdf8;border-radius:7px;padding:7px 14px;text-align:center;font:800 14px system-ui;box-shadow:0 0 22px #0284c766';
+satWarning.innerHTML='⚡ SATELLITE DEFENSE GRID — ELECTRICAL CONTACT!<div style="margin-top:5px;background:#0d263b;height:6px;width:230px;border-radius:4px"><div id="sat-contact-fill" style="width:0;height:100%;background:#38bdf8"></div></div>';
+document.body.appendChild(satWarning);
+const satContactFill=satWarning.querySelector('#sat-contact-fill');
+const orbitalTheater=createOrbitalTheater(scene,camera,visualBank,(x,y,z,p)=>flashAt(x,y,z,p),(k)=>sound(k),(m)=>message(m),(x,y,z,c,s)=>emitImpact(x,y,z,c,s),cinematicFX,(progress)=>{
+ if(satWarning){satWarning.style.display='block';satContactFill.style.width=Math.min(100,progress*100)+'%';}
+},()=>{
+ if(satWarning)satWarning.style.display='none';
+});
 const DAY_PHASE_WAVES=10;
 function dayPhase(w){
  if(w>=11&&w<=15)return 0.55; // Chapter 3 starts at dramatic night
@@ -3291,7 +3300,7 @@ document.getElementById('settings-btn').onclick=()=>{active=false;document.getEl
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start').onclick=safelyStart;document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
 const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3(),defenseMeteor=new THREE.Vector3();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{const mesh=createPlayableRock(2.2);mesh.material=moltenMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind:'molten',mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*20,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,-14,0),trail:0,hp:4,size:2.2,damage:2,burning:true});},(reason)=>{iceHit(reason,true);});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{const mesh=createPlayableRock(2.2);mesh.material=moltenMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind:'molten',mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*20,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,-14,0),trail:0,hp:4,size:2.2,damage:2,burning:true});},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
  if(!active&&impactMarker)impactMarker.visible=false;
  if(targetingReticle)targetingReticle.visible=false;
  if(!paused&&neighborhoodHealth()===0&&performanceLab.isEnabled('backgroundMeteors')){
@@ -3697,11 +3706,13 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  skyline.scale.set(4.35*skylineShrink,2.80*(1.0-altRatio*.44),1.15);
  skyline.position.y=-18-altRatio*38;
  const baseFog=.00105+displayedDarkness*.00020;
- scene.fog.density=baseFog*(1.0+altRatio*2.2);
- skylineAirUniforms.opacity.value=.26+altRatio*.48;
+ scene.fog.density=baseFog*(1.0+altRatio*1.15);
+ skylineAirUniforms.opacity.value=.14+altRatio*.14;
  neighborhood.foreground.position.x=-cameraScrollX*.035;
+ const skyAscent=THREE.MathUtils.clamp((dragon.position.y-32)/110,0,1);
+ const pitchLift=skyAscent*16.2;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
- camera.lookAt(cameraScrollX,streetView.targetY+follow,streetView.targetZ);
+ camera.lookAt(cameraScrollX,streetView.targetY+follow+pitchLift,streetView.targetZ);
  const targetZoom=wave===15?.86:1;
  const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*1.8));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
