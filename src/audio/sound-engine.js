@@ -96,7 +96,17 @@ export function createSoundEngine() {
 
       masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(muted ? 0 : 1, ctx.currentTime);
-      masterGain.connect(ctx.destination);
+
+      // Hollywood Cinema Limiter / Dynamics Compressor on Master Bus
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-14, ctx.currentTime);
+      compressor.knee.setValueAtTime(8, ctx.currentTime);
+      compressor.ratio.setValueAtTime(4.5, ctx.currentTime);
+      compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+      compressor.release.setValueAtTime(0.22, ctx.currentTime);
+
+      masterGain.connect(compressor);
+      compressor.connect(ctx.destination);
 
       sfxBus = ctx.createGain();
       sfxBus.gain.setValueAtTime(0.9, ctx.currentTime);
@@ -134,7 +144,7 @@ export function createSoundEngine() {
     }
   }
 
-  function playSample(key, { volume = 1.0, playbackRate = 1.0, detune = 0, delay = 0, bus = null } = {}) {
+  function playSample(key, { volume = 1.0, playbackRate = 1.0, detune = 0, delay = 0, pan = 0, bus = null } = {}) {
     if (!ctx || muted) return null;
     const buf = buffers.get(key);
     if (!buf) return null;
@@ -153,9 +163,17 @@ export function createSoundEngine() {
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
-
       source.connect(gain);
-      gain.connect(bus || sfxBus || masterGain);
+
+      // Cinematic Stereo Panning based on horizontal world coordinate
+      if (ctx.createStereoPanner && typeof pan === 'number' && pan !== 0) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(Math.max(-0.95, Math.min(0.95, pan)), now);
+        gain.connect(panner);
+        panner.connect(bus || sfxBus || masterGain);
+      } else {
+        gain.connect(bus || sfxBus || masterGain);
+      }
 
       source.start(now);
       return source;
@@ -266,107 +284,112 @@ export function createSoundEngine() {
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
 
+    // Stereophonic spatial panning: maps world X coordinate (-85 to +85) to stereo field (-0.95 to +0.95)
+    const pan = typeof opt.x === 'number'
+      ? Math.max(-0.95, Math.min(0.95, opt.x / 85.0))
+      : (typeof opt.pan === 'number' ? Math.max(-0.95, Math.min(0.95, opt.pan)) : 0);
+
     switch (kind) {
       // 1. Heavy Meteor Impact / Ground Explosion
       case 'impact':
       case 'crash': {
         // Multi-track physical layering: Sub-bass shock + rocky crunch + deep explosion
-        playSample('impact_sub_deep', { volume: 0.55 });
-        playSample(Math.random() < 0.5 ? 'explosion_crunch_0' : 'explosion_crunch_1', { volume: 0.48 });
-        playSample('warfork_rocket_boom', { volume: 0.35, delay: 0.02 });
+        playSample('impact_sub_deep', { volume: 0.55, pan });
+        playSample(Math.random() < 0.5 ? 'explosion_crunch_0' : 'explosion_crunch_1', { volume: 0.48, pan });
+        playSample('warfork_rocket_boom', { volume: 0.35, delay: 0.02, pan });
         break;
       }
 
       // 2. School Structural Damage & Building Collapse
       case 'buildingCollapse': {
-        playSample('building_crush_0', { volume: 0.58 });
-        playSample('building_crush_1', { volume: 0.50, delay: 0.06 });
-        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42, delay: 0.08 });
-        playSample('impact_sub_deep_2', { volume: 0.52, delay: 0.04 });
+        playSample('building_crush_0', { volume: 0.58, pan });
+        playSample('building_crush_1', { volume: 0.50, delay: 0.06, pan });
+        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42, delay: 0.08, pan });
+        playSample('impact_sub_deep_2', { volume: 0.52, delay: 0.04, pan });
         break;
       }
 
       // 3. Inter-Meteor Mid-Air Collisions & Fracturing
       case 'meteorCollision': {
         const rockSfx = ['rock_fracture_0', 'rock_fracture_1', 'rock_fracture_2'][Math.floor(Math.random() * 3)];
-        playSample(rockSfx, { volume: 0.52 });
-        playSample('warfork_plasma_boom', { volume: 0.38, playbackRate: 1.15 });
-        playSample('explosion_crunch_2', { volume: 0.32, delay: 0.03 });
+        playSample(rockSfx, { volume: 0.52, pan });
+        playSample('warfork_plasma_boom', { volume: 0.38, playbackRate: 1.15, pan });
+        playSample('explosion_crunch_2', { volume: 0.32, delay: 0.03, pan });
         break;
       }
 
       // 4. Dragon Fireball Launch / Flame Breath
       case 'shoot': {
-        playSample('fireball_blast', { volume: 0.45, playbackRate: 1.05 });
-        playSample('whoosh_launch', { volume: 0.32, playbackRate: 1.15, delay: 0.01 });
+        playSample('fireball_blast', { volume: 0.45, playbackRate: 1.05, pan });
+        playSample('whoosh_launch', { volume: 0.32, playbackRate: 1.15, delay: 0.01, pan });
         break;
       }
 
       // 5. Fireball Precision Intercept / Hit
       case 'intercept': {
         const rockSfx = Math.random() < 0.5 ? 'rock_fracture_0' : 'rock_fracture_1';
-        playSample(rockSfx, { volume: 0.46, playbackRate: 1.1 });
-        playSample('warfork_plasma_boom', { volume: 0.38 });
+        playSample(rockSfx, { volume: 0.46, playbackRate: 1.1, pan });
+        playSample('warfork_plasma_boom', { volume: 0.38, pan });
         break;
       }
 
       // 6. Powerup Pickup / Plasma Shimmer (Warm harmonic resonance, NO arcade beeps)
       case 'bonus': {
-        playSample('force_field_2', { volume: 0.42, playbackRate: 1.25 });
-        playSample('warfork_electro_hum', { volume: 0.28, playbackRate: 1.4, delay: 0.03 });
+        playSample('force_field_2', { volume: 0.42, playbackRate: 1.25, pan });
+        playSample('warfork_electro_hum', { volume: 0.28, playbackRate: 1.4, delay: 0.03, pan });
         break;
       }
 
       // 7. Elon Musk Orbital Satellite Laser Cannon
       case 'satLaser': {
         const laser = ['laser_heavy_0', 'laser_heavy_1', 'laser_heavy_2'][Math.floor(Math.random() * 3)];
-        playSample(laser, { volume: 0.48 });
+        playSample(laser, { volume: 0.48, pan });
         break;
       }
 
       // 8. Satellite Forcefield Deflection / Impact Shield
       case 'clang':
       case 'satShield': {
-        playSample('force_field_0', { volume: 0.46 });
-        playSample('warfork_electro_shock', { volume: 0.35, delay: 0.02 });
+        playSample('force_field_0', { volume: 0.46, pan });
+        playSample('warfork_electro_shock', { volume: 0.35, delay: 0.02, pan });
         break;
       }
 
       // 9. Electric Arc / Satellite Shock Stun
       case 'electric':
       case 'shock': {
-        playSample('warfork_electro_shock', { volume: 0.42 });
-        playSample('warfork_electro_hum', { volume: 0.38 });
+        playSample('warfork_electro_shock', { volume: 0.42, pan });
+        playSample('warfork_electro_hum', { volume: 0.38, pan });
         break;
       }
 
       // 10. Dragon Broad Street Pavement Footstep (Quadruped Trot Gait)
       case 'dragonStep': {
         const stepSfx = ['footstep_concrete_0', 'footstep_concrete_1', 'footstep_concrete_2', 'footstep_concrete_3'][Math.floor(Math.random() * 4)];
-        playSample(stepSfx, { volume: 0.36, playbackRate: 0.88 });
+        playSample(stepSfx, { volume: 0.36, playbackRate: 0.88, pan });
         break;
       }
 
       // 11. Dragon Heavy Aerodynamic Wing Flap
       case 'dragonFlap': {
-        playSample('wing_whoosh', { volume: 0.45, playbackRate: 0.95 });
+        playSample('wing_whoosh', { volume: 0.45, playbackRate: 0.95, pan });
         break;
       }
 
       // 12. Dragon Shoving Car / Metal Crunch Foley
       case 'carCrunch': {
         const carSfx = ['car_crunch_0', 'car_crunch_1', 'car_crunch_2'][Math.floor(Math.random() * 3)];
-        playSample(carSfx, { volume: 0.52 });
-        playSample('building_crush_1', { volume: 0.34, delay: 0.03 });
+        playSample(carSfx, { volume: 0.52, pan });
+        playSample('building_crush_1', { volume: 0.34, delay: 0.03, pan });
         break;
       }
 
       // 13. Purple "Meteor-Buster" Ramming Detonation
       case 'purpleRamHit': {
-        playSample('warfork_plasma_boom', { volume: 0.56, playbackRate: 0.9 });
-        playSample('force_field_1', { volume: 0.48 });
-        playSample('explosion_crunch_2', { volume: 0.45, delay: 0.02 });
-        playSample('impact_sub_deep', { volume: 0.42, delay: 0.01 });
+        playSample('warfork_plasma_boom', { volume: 0.56, playbackRate: 0.9, pan });
+        playSample('force_field_1', { volume: 0.48, pan });
+        playSample('explosion_crunch_2', { volume: 0.45, delay: 0.02, pan });
+        playSample('impact_sub_deep', { volume: 0.42, delay: 0.01, pan });
         break;
       }
 
@@ -378,32 +401,32 @@ export function createSoundEngine() {
 
       // 15. Emergency Sirens & City Ambient Alerts
       case 'siren': {
-        playSample('siren_loop', { volume: 0.35, bus: ambientBus });
+        playSample('siren_loop', { volume: 0.35, bus: ambientBus, pan });
         break;
       }
 
       case 'helicopter': {
-        playSample('helicopter_loop', { volume: 0.32, bus: ambientBus });
+        playSample('helicopter_loop', { volume: 0.32, bus: ambientBus, pan });
         break;
       }
 
       case 'warning': {
-        playSample('alarm_warning', { volume: 0.40 });
+        playSample('alarm_warning', { volume: 0.40, pan });
         break;
       }
 
       case 'glass': {
-        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42 });
+        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42, pan });
         break;
       }
 
       case 'fire': {
-        playSample('fire_thruster_1', { volume: 0.30, playbackRate: 1.3 });
+        playSample('fire_thruster_1', { volume: 0.30, playbackRate: 1.3, pan });
         break;
       }
 
       case 'gas': {
-        playSample('whoosh_launch', { volume: 0.34, playbackRate: 0.8 });
+        playSample('whoosh_launch', { volume: 0.34, playbackRate: 0.8, pan });
         break;
       }
 
@@ -414,12 +437,12 @@ export function createSoundEngine() {
       }
 
       case 'nearmiss': {
-        playSample('whoosh_launch', { volume: 0.38, playbackRate: 1.4 });
+        playSample('whoosh_launch', { volume: 0.38, playbackRate: 1.4, pan });
         break;
       }
 
       default: {
-        playSample('rock_fracture_0', { volume: 0.35 });
+        playSample('rock_fracture_0', { volume: 0.35, pan });
         break;
       }
     }

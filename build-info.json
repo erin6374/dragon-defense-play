@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc85",
-  "version": "5.5.0-rc.85",
+  "build": "5.5-north-broad-refinement-rc86",
+  "version": "5.5.0-rc.86",
   "gameplay_base": "5.2.3",
-  "scope": "RC85: Authentic open-source CC0 cinematic sound design overhaul and full gameplay verification. Replaced all synthetic/arcade beeps and bops with 43 decoded CC0 acoustic audio recordings (multi-track deep sub impacts, rock fragmentation, structural crumble, car crunches, concrete claw footsteps, heavy wing flap whooshes, railgun lasers, forcefield harmonics, continuous thruster flamethrower loops, and orchestral victory jingles); two staggered rows of Elon Musk satellites in Starlink orbital constellation; Paulo sized up 10% with natural camera-facing resting pose; surviving pilots climbing out of helicopter wreckage and running down sidewalks; flamethrower building facade fires; and midground fire truck routing.",
+  "scope": "RC86: True cinematic audio spatialization, accelerated orbital ascent perspective, dynamic camera zooming, heavy wing flap audio, Purple Ram satellite obliteration, and verified Wave 15 orbital victory enforcement. Complete integration of stereophonic spatial panning across all physical impacts, crunches, and blasts; downward aerial sightline and vertical skyline parallax on ascent into orbit; dynamic framing across pavement runs, high-speed dives, and orbital dogfights; periodic gold-red mega powerup drops during the satellite battle; and strict multi-stage Wave 15 victory enforcement requiring total constellation destruction.",
   "new_gameplay_features": true,
-  "release_status": "RC85 candidate: Authentic open-source CC0 cinematic sound design overhaul, double-row satellite constellation, camera-facing resting dragon, surviving crash pilots, and full gameplay polish."
+  "release_status": "RC86 candidate: Stereophonic cinematic sound spatialization, accelerated orbital ascent perspective, dynamic camera framing, heavy wing flap audio, Purple Ram satellite destruction, and Wave 15 finale enforcement."
 }

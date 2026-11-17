@@ -378,6 +378,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
 
   let meteorEjectTimer = 3.2;
   let goldRedPowerupSpawned = false;
+  let goldRedPowerupTimer = 1.5;
   let satelliteBattery = 1.0;
 
   return {
@@ -426,12 +427,17 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         }
       }
 
-      // In Wave 15 finale, after main armada, titan ejects sparkling gold-red powerup
-      if (wave === 15 && !goldRedPowerupSpawned && satellites.some(s => !s.destroyed)) {
-        goldRedPowerupSpawned = true;
-        triggerTitanSurfaceBlast(0, 368, -165, 26);
-        onSpawnPowerup?.('mega_fire_breath', 0, 350, 5);
-        message?.('⚡ OVERHEAD TITAN FRACTURED — GOLD-RED MEGA POWERUP EJECTED! DESTROY FOR MEGA FIRE BREATH!');
+      // In Wave 15 finale, titan periodically ejects sparkling gold-red mega powerups until all satellites are destroyed!
+      if (wave === 15 && satellites.some(s => !s.destroyed)) {
+        goldRedPowerupTimer -= dt;
+        if (!goldRedPowerupSpawned || (!isMegaFireActive && goldRedPowerupTimer <= 0) || goldRedPowerupTimer <= 0) {
+          goldRedPowerupSpawned = true;
+          goldRedPowerupTimer = 11.0;
+          const ejectX = (Math.random() - 0.5) * 120;
+          triggerTitanSurfaceBlast(ejectX, 368, -165, 26);
+          onSpawnPowerup?.('mega_fire_breath', ejectX, 350, 5);
+          message?.('⚡ TITAN OVERCHARGE — GOLD-RED MEGA POWERUP EJECTED! DESTROY FOR MEGA FIRE BREATH!');
+        }
       }
 
       // 2. Satellites update
@@ -566,7 +572,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       sat.shield.visible = true;
       sat.shield.material.opacity = 0.85;
       sat.shield.material.color.setHex(0xffffff);
-      sound?.('clang');
+      sound?.('clang', { x: sat.root.position.x });
       cinematicFX?.shock(sat.root.position, 6.5);
     },
     hitSatellite(sat, damage, isMegaFire) {
@@ -584,7 +590,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         sat.laserMat.opacity = 0;
         sat.electricGroup.visible = false;
         for (const bl of sat.blinkingLights) bl.mesh.visible = false;
-        sound?.('crash');
+        sound?.('crash', { x: sat.root.position.x });
         flashAt?.(sat.root.position.x, sat.root.position.y, sat.root.position.z, 5.5);
         cinematicFX?.shock(sat.root.position, 9.5);
         emitImpact?.(sat.root.position.x, sat.root.position.y, sat.root.position.z, 95, 2.4);
@@ -599,6 +605,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     },
     reset() {
       goldRedPowerupSpawned = false;
+      goldRedPowerupTimer = 1.5;
       meteorEjectTimer = 3.2;
       satelliteBattery = 1.0;
       onHideSatWarning?.();
