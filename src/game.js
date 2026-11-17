@@ -1,3 +1,4 @@
+import {createSoundEngine} from './audio/sound-engine.js';
 import {renderPixelRatio} from './rendering/render-budget.js';
 import {createChapterStaging} from './simulation/chapter-staging.js';
 import {createFinalSquadron} from './simulation/final-squadron.js';
@@ -377,7 +378,7 @@ function syncSchoolVisibility(){
  schoolSignGroup.visible=visible&&schoolDamage<.75;
 }
 function syncStructuralDamage(){
- if(schoolDamage>=1)neighborhood.city.forceDamage(neighborhood.school,1);
+ neighborhood.city.forceDamage(neighborhood.school,schoolDamage);
  if(schoolDamage>=1)schoolReconstruction?.collapse();
  syncSchoolVisibility();
 }
@@ -729,18 +730,25 @@ if(new URLSearchParams(location.search).get('qa')==='1')window.__DD_PAULO_PREVIE
  })
 };
 dragon.position.set(0,2,15);
-// Synthesized, license-free arcade audio. Initialized on first user gesture.
+// High-fidelity synthesized audio engine with noise buffers, FM, and sub-bass celestial rumble.
+const soundEngine=createSoundEngine();
 let audio=null,muted=false;
 const soundButton=document.getElementById('sound-toggle');
-function refreshSoundButton(){soundButton.textContent=muted?'🔇 Sound Off':'🔊 Sound On';soundButton.setAttribute('aria-pressed',String(!muted));}
-soundButton.addEventListener('click',async()=>{muted=!muted;refreshSoundButton();if(!muted){try{audio??=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();sound('bonus')}catch(err){console.warn('Audio unavailable',err)}}});
+function refreshSoundButton(){const isM=soundEngine.isMuted();soundButton.textContent=isM?'🔇 Sound Off':'🔊 Sound On';soundButton.setAttribute('aria-pressed',String(!isM));}
+soundButton.addEventListener('click',async()=>{
+ const nextMuted=!soundEngine.isMuted();
+ soundEngine.setMuted(nextMuted);
+ muted=nextMuted;
+ refreshSoundButton();
+ if(!nextMuted){
+  soundEngine.init();
+  sound('bonus');
+ }
+});
 refreshSoundButton();
-function sound(kind){if(muted)return;try{
- audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
- const now=audio.currentTime,osc=audio.createOscillator(),gain=audio.createGain();osc.connect(gain);gain.connect(audio.destination);
- const presets={shoot:[640,180,.14,'square',.085],impact:[140,38,.42,'sawtooth',.14],intercept:[880,280,.25,'triangle',.11],bonus:[540,1100,.3,'sine',.11],siren:[520,780,.32,'sine',.04],car:[190,110,.23,'sawtooth',.07],fire:[65,32,.24,'triangle',.035],helicopter:[105,82,.35,'sawtooth',.045],crash:[110,24,.7,'sawtooth',.2],gas:[280,52,.5,'sawtooth',.075],warning:[900,580,.18,'square',.05],steam:[340,90,.26,'triangle',.05],combo:[440,1320,.35,'triangle',.13],nearmiss:[220,680,.18,'sine',.08],fanfare:[520,1040,.45,'triangle',.14]};
- const [f0,f1,t,wave,vol]=presets[kind]||presets.impact;osc.type=wave;osc.frequency.setValueAtTime(f0,now);osc.frequency.exponentialRampToValueAtTime(f1,now+t);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(vol,now+.015);gain.gain.exponentialRampToValueAtTime(.0001,now+t);osc.start(now);osc.stop(now+t+.02);
- }catch(e){console.warn('Audio unavailable',e)}}
+window.addEventListener('pointerdown',()=>soundEngine.init(),{once:true});
+window.addEventListener('keydown',()=>soundEngine.init(),{once:true});
+function sound(kind,opt){soundEngine.sound(kind,opt);}
 // Two non-shadow emergency spill lights, deliberately capped for gameplay performance.
 const responseSpillLights=[new THREE.PointLight(0xff323a,0,17,2),new THREE.PointLight(0x297dff,0,17,2)];
 for(const light of responseSpillLights)scene.add(light);
@@ -1528,18 +1536,18 @@ function updateDistantMeteors(dt){
   const to=target?skyline.worldToLocal(target.clone()):new THREE.Vector3(x+20,-10,15);
   distantStreaks.push({sprite,life:travel,travel,from,to,targetX:x,v:(16+Math.random()*14+waveProgress*5)*(flaming?skylineCrisis===2?2.6:1.9:1),impact:flaming||Math.random()<(.58+waveProgress*.25),flaming,waveProgress});
  }
- // Fast-moving streaking comets cutting across the expanded upper sky
+ // Fast-moving streaking comets cutting across the expanded upper sky as white flaming streaks
  cometTimer-=dt;
  if(cometTimer<=0&&distantStreaks.length<streakCap){
   cometTimer=0.8+Math.random()*1.5;
-  const cometSprite=new THREE.Sprite(flamingDistantMeteorMaterial);
+  const cometSprite=new THREE.Sprite(whiteFlamingStreakMaterial);
   const startX=cameraScrollX+(Math.random()<.5?-240:240);
   const startY=105+Math.random()*45;
   const endX=startX+(startX>cameraScrollX?-1:1)*(220+Math.random()*160);
   const endY=startY-55-Math.random()*40;
   const cometZ=-120-Math.random()*280;
   cometSprite.position.set(startX,startY,cometZ);
-  cometSprite.scale.set(4.2,24,1);
+  cometSprite.scale.set(3.2,32,1);
   scene.add(cometSprite);
   const cometSpeed=65+Math.random()*35;
   const travel=Math.max(.6,(startY-endY)/cometSpeed);
@@ -2013,14 +2021,24 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
 function exportTelemetry(){const blob=new Blob([JSON.stringify(telemetrySnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dragon-defense-session-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 document.getElementById('export-stats')?.addEventListener('click',exportTelemetry);
-function updatePowerHud(){const e=document.getElementById('power-status');if(!e)return;const rapid=Math.max(0,rapidFireUntil-elapsed),shield=Math.max(0,schoolShieldUntil-elapsed),blue=Math.max(0,blueFireballUntil-elapsed),green=Math.max(0,greenBreathUntil-elapsed);
- const stream=Math.max(0,fireStreamUntil-elapsed),mega=Math.max(0,megaFireBreathUntil-elapsed);
- let extra='';if(stream>0)extra+=`  |  🔥 STREAM ${stream.toFixed(1)}s`;if(mega>0)extra+=`  |  ⚡ MEGA ${mega.toFixed(1)}s`;if(blue>0)extra+=`  |  💙 BLUE ${blue.toFixed(1)}s`;if(green>0)extra+=`  |  💚 GALE ${green.toFixed(1)}s`;e.textContent=`INTERCEPT ${interceptionStreak}/5  |  RAPID ${rapid.toFixed(1)}s  |  SHIELD ${shield.toFixed(1)}s${extra}`;}
+function updatePowerHud(){const e=document.getElementById('power-status');if(!e)return;
+ const rapid=Math.max(0,rapidFireUntil-elapsed),shield=Math.max(0,schoolShieldUntil-elapsed),blue=Math.max(0,blueFireballUntil-elapsed),green=Math.max(0,greenBreathUntil-elapsed);
+ const stream=Math.max(0,fireStreamUntil-elapsed),mega=Math.max(0,megaFireBreathUntil-elapsed),purple=Math.max(0,purpleRamUntil-elapsed);
+ let extra='';
+ if(stream>0)extra+=`  |  🔥 STREAM ${stream.toFixed(1)}s`;
+ if(mega>0)extra+=`  |  ⚡ MEGA ${mega.toFixed(1)}s`;
+ if(purple>0)extra+=`  |  💜 RAM BUSTER ${purple.toFixed(1)}s`;
+ if(blue>0)extra+=`  |  💙 BLUE ${blue.toFixed(1)}s`;
+ if(green>0)extra+=`  |  💚 GALE ${green.toFixed(1)}s`;
+ const satBat=orbitalTheater?Math.round(orbitalTheater.getBattery()*100):100;
+ const satStatus=satBat>0?`⚡ SATS ${satBat}%`:'⚡ SATS RECHARGING';
+ e.textContent=`INTERCEPT ${interceptionStreak}/5  |  ${satStatus}  |  RAPID ${rapid.toFixed(1)}s  |  SHIELD ${shield.toFixed(1)}s${extra}`;
+}
 const hunterWarnings=[];
 function warnHunter(){const el=document.getElementById('hunter-warning');if(el){el.textContent='⚠ FLAMING METEOR INBOUND — DODGE OR INTERCEPT';el.style.opacity='1';setTimeout(()=>{el.style.opacity='0'},1800)}}
 
 let score=0,hp=100,wave=1,active=false,paused=false,spawnTimer=0,remaining=0,between=0,stormTimer=0,elapsed=0,shake=0,cooldown=0;
-let fireStreamUntil=0,megaFireBreathUntil=0,waveFireStreamRemaining=1,satellitesCleared=false;
+let fireStreamUntil=0,megaFireBreathUntil=0,purpleRamUntil=0,waveFireStreamRemaining=1,wavePurpleRemaining=1,satellitesCleared=false;
 const escapingPilots=[];
 const loopOptions=new URLSearchParams(location.search);
 const rallyLoop=loopOptions.get('loop')==='rally';
@@ -2349,7 +2367,7 @@ cooldown=isStream?.038:(elapsed<rapidFireUntil?.045:(easyMode()?.12:(isMega?.048
 sessionStats.shots++;
 if(isWet)sessionStats.wetShots=(sessionStats.wetShots||0)+1;
 pauloFirePoseUntil=elapsed+.26;
-sound(isWet?'steam':(isMega?'fanfare':(isStream?'fire':'fire')));
+sound(isWet?'steam':(isMega?'megaFire':(isStream?'fire':'shoot')));
 const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();
 const shotSize=isWet?1.3:(isMega?3.6:(isStream?1.8:(isBlue?2.6:1.0)));
 const shotSpeed=isWet?45:(isMega?120:(isStream?78:(isBlue?84:64)));
@@ -2519,6 +2537,33 @@ const fizzingPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.fl
 const goldRedPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xffaa00,transparent:true,opacity:.98,depthWrite:false,blending:THREE.AdditiveBlending});
 const bluePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00bfff,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
 const greenPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00ff66,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
+const purpleCrystalMaterial=rockMaterialVariants[5].clone();
+purpleCrystalMaterial.emissive.setHex(0xa855f7);purpleCrystalMaterial.emissiveIntensity=4.6;purpleCrystalMaterial.color.setHex(0x581c87);
+purpleCrystalMaterial.onBeforeCompile=shader=>{
+ shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
+ shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
+ shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
+ shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+ float veins=abs(sin(rockPoint.x*5.8+sin(rockPoint.y*6.2)*1.1)*sin(rockPoint.z*5.8+rockPoint.y*4.1));
+ float energy=1.-smoothstep(.02,.17,veins);totalEmissiveRadiance*=energy*2.2;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.75,.35,1.0),energy*.9);`);
+};
+const purplePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xc084fc,transparent:true,opacity:.96,depthWrite:false,blending:THREE.AdditiveBlending});
+
+// Purple Meteor-Buster kinetic ram shield mesh
+const purpleRamShieldGeo=new THREE.SphereGeometry(3.6,24,16);
+const purpleRamShieldMat=new THREE.MeshBasicMaterial({color:0xc084fc,wireframe:true,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
+const purpleRamShieldMesh=new THREE.Mesh(purpleRamShieldGeo,purpleRamShieldMat);
+scene.add(purpleRamShieldMesh);
+
+// Fast-moving background meteors as white flaming streaks
+const whiteStreakCanvas=document.createElement('canvas');whiteStreakCanvas.width=64;whiteStreakCanvas.height=256;
+const wsCtx=whiteStreakCanvas.getContext('2d');
+const wsGrad=wsCtx.createLinearGradient(32,0,32,256);
+wsGrad.addColorStop(0,'#ffffff');wsGrad.addColorStop(0.28,'#e0f2fe');wsGrad.addColorStop(0.65,'#38bdf8');wsGrad.addColorStop(1,'transparent');
+wsCtx.fillStyle=wsGrad;wsCtx.fillRect(0,0,64,256);
+const whiteStreakTexture=new THREE.CanvasTexture(whiteStreakCanvas);
+const whiteFlamingStreakMaterial=new THREE.SpriteMaterial({map:whiteStreakTexture,transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false});
+
 function createPlayableRock(size=1,variant=-1){
  const gi=Math.floor(Math.random()*rockGeometryVariants.length);
  const mi=variant<0?Math.floor(Math.random()*5):Math.max(0,Math.min(5,variant));
@@ -2540,7 +2585,11 @@ function spawnMeteor(random=Math.random,opening=null){
  let kind=opening?.kind;
  let isPowerup=null;
  if(!kind){
-  if(!isDeterministic&&waveFireStreamRemaining>0&&(meteors.length>=2||Math.random()<.45)&&!opening){
+  if(!isDeterministic&&wave>=4&&wavePurpleRemaining>0&&(meteors.length>=2||Math.random()<.32)&&!opening){
+   wavePurpleRemaining--;
+   isPowerup='purple_ram';
+   kind='purple_crystal';
+  }else if(!isDeterministic&&waveFireStreamRemaining>0&&(meteors.length>=2||Math.random()<.45)&&!opening){
    waveFireStreamRemaining--;
    isPowerup='fire_stream';
    kind='fizzing_flame';
@@ -2558,15 +2607,17 @@ function spawnMeteor(random=Math.random,opening=null){
  }
  let size;
  if(opening?.size)size=opening.size;
- else if(isPowerup)size=2.5+Math.random()*.7;
+ else if(isPowerup)size=2.8+Math.random()*.6;
  else if(!isDeterministic){
-  size=wave===1?.62:(Math.random()<.80?2.4+Math.random()*1.2:(Math.random()<.5?1.2+Math.random()*.4:.55+Math.random()*.45));
+  const sRoll=Math.random();
+  size=wave===1?1.6:(sRoll<.65?3.6+Math.random()*.9:(sRoll<.90?2.1+Math.random()*.5:1.0+Math.random()*.4));
  }else{
-  size=wave===1?.62:(random()<.19?2.0+random()*.8:random()<.43?1.2+random()*.4:.52+random()*.45);
+  const sRoll=random();
+  size=wave===1?1.6:(sRoll<.65?3.6+random()*.9:(sRoll<.90?2.1+random()*.5:1.0+random()*.4));
  }
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
- const midgroundZ=-52;
- const buildings=neighborhood.targetBuildings.filter(b=>b.z>=midgroundZ&&(!opening||!b.background));
+ // Meteors strike full depth from foreground to deep background blocks
+ const buildings=neighborhood.targetBuildings.filter(b=>!opening||!b.background);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const target=chooseMeteorTarget(buildings,schoolBounds.max.z,random,diffMode);
  const x=THREE.MathUtils.clamp(target.x+(random()-.5)*15,-220,220);
@@ -2575,6 +2626,7 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(kind==='green_plasma'){mesh.material=greenPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=greenPowerupCoronaMat;c.scale.setScalar(size*3.4);}}
  else if(kind==='fizzing_flame'){mesh.material=fizzingFireMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=fizzingPowerupCoronaMat;c.scale.setScalar(size*4.2);}}
  else if(kind==='mega_fire_breath'){mesh.material=goldRedPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=goldRedPowerupCoronaMat;c.scale.setScalar(size*4.8);}}
+ else if(kind==='purple_crystal'){mesh.material=purpleCrystalMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=purplePowerupCoronaMat;c.scale.setScalar(size*4.5);}}
  else if(opening?.kind==='flaming')mesh.material=moltenMaterial; // textured rock with localized hot fissures
  else if(fastImpact)mesh.material=fastImpactMaterial;
  else if(kind==='molten')mesh.material=moltenMaterial;
@@ -2582,10 +2634,11 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(isPowerup==='green_breath'){message('🌪️ GREEN TEMPEST METEOR INCOMING — GALE BREATH POWERUP!');sound('bonus');}
  else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
  else if(isPowerup==='mega_fire_breath'){message('⚡ TITAN CORE GOLD & RED POWERUP INCOMING! DESTROY FOR MEGA FIRE BREATH!');sound('bonus');}
+ else if(isPowerup==='purple_ram'){message('💜 PURPLE METEOR-BUSTER POWERUP INCOMING! DESTROY FOR 10s INVULNERABLE RAM SHIELD!');sound('bonus');}
  mesh.position.set(x,meteorEntryHeight(target.z-3,size,148+random()*22),target.z-3);scene.add(mesh);
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
- meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.65),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:wave===1?1:Math.max(1,Math.ceil(size*(easyMode()?.62:1.45))),size,damage:size>1.8?2:size>1.1?1.5:1});
+ meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.65),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:wave===1?1:Math.max(1,Math.ceil(size*(easyMode()?.62:1.45))),size,damage:size>1.8?2:size>1.1?1.5:1});
 }
 function spawnFragmentMeteor(x,y,z,size=1.2,vx=0,vy=-3,vz=0,parent=null){
  const mesh=createPlayableRock(size);
@@ -3175,15 +3228,16 @@ function updateWaveProgress(dt,rally=rallyLoop){
  if(tacticalTrialActive){updateTacticalTrial(dt);return;}
  const chapterEnd=isChapterEnd(wave);
  const opening=openingMeteorWave(wave);
+ const satBattery=orbitalTheater?orbitalTheater.getBattery():1.0;
  if(wave<15){
-  if(!rally&&!opening){
+  if(!rally&&!opening&&satBattery>0){
    stormTimer-=dt;
    if(!chapterSettlement.active&&stormTimer<=0&&meteors.length<(easyMode()?9:13)){
     spawnMeteor();
     stormTimer=(chapterEnd?3.4:5.5)/Math.max(.7,difficulty())*(.75+Math.random()*.5);
    }
   }
-  if(remaining>0){
+  if(remaining>0&&satBattery>0){
    spawnTimer-=dt;
    if(spawnTimer<=0){
     spawnMeteor(Math.random,opening);
@@ -3192,20 +3246,28 @@ function updateWaveProgress(dt,rally=rallyLoop){
    }
    return;
   }
-  if((rally||opening)&&meteors.some(m=>!m.grounded)){
-   between=0;
-   return;
+  // When satellite battery reaches 0 (or opening ends), wait for active airborne meteors to clear
+  if(satBattery<=0||rally||opening){
+   remaining=0;
+   if(meteors.some(m=>!m.grounded)){
+    between=0;
+    return;
+   }
   }
  }else if(meteors.length>0)return;
  const previous=between;
- if(rally&&wave<15&&previous===0)recordRallyClear();
+ if(wave<15&&previous===0){
+  sound('waveWin');
+  message('⚡ SATELLITE ARRAY RECHARGING — WAVE CLEAR!');
+  if(rally)recordRallyClear();
+ }
  between+=dt;
  if(wave===15&&previous===0)message('PHILADELPHIA SAVED — THE BLOCK HAS PREVAILED!');
  if(chapterEnd){
   if(between>2.6)beginChapterSettlement();
   return;
  }
- const recovery=wave===15?4.5:rally&&!rallyRecoveryChoice?4:7;
+ const recovery=wave===15?4.5:rally&&!rallyRecoveryChoice?4:5.5;
  if(between>recovery){
   if(wave===15){winGame();return;}
   wave++;between=0;updateHud();newWave();
@@ -3215,15 +3277,12 @@ function updateWaveProgress(dt,rally=rallyLoop){
    updateBlockButton();updatePowerHud();
    message('SCHOOL SHIELD ACTIVE — 9s');
   }
- }else if(rally&&wave<15&&(previous===0||Math.floor(between)>Math.floor(previous))){
+ }else if(wave<15&&(previous===0||Math.floor(between)>Math.floor(previous))){
   message('WAVE CLEAR — NEXT WAVE IN '+Math.max(1,Math.ceil(recovery-between))+'s');
  }
 }
 function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'||chapterStaging.mode==='settlement'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
  if(impactMarker)impactMarker.visible=false;
- // Ordinary waves preserve Paulo's free-flight position. Chapter transitions
- // and a fresh game explicitly manage the roof perch separately.
- // Frozen emergency responders remain until this wave ends.
  for(let i=cars.length-1;i>=0;i--)if(cars[i].frozen){recycleCar(cars[i]);cars.splice(i,1)}
  updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);
  const entry={wave,startedAt:Math.round(elapsed),scoreAtStart:score};
@@ -3231,12 +3290,12 @@ function newWave(){const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(cha
  waveStats.push(entry);
  if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
- stormTimer=0;waveBlueMeteorsRemaining=wave===15?6:2;waveGreenMeteorRemaining=wave===15?3:1;waveFireStreamRemaining=wave===15?4:2;remaining=wave>=15?(wave===15?26:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?0.95:.7);if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave>=6&&!schoolFire.some(f=>Math.abs(f.root.position.x-20.2)<2&&Math.abs(f.root.position.y-8.8)<2))ignite(20.2,8.8,-1.0);if(wave>=6&&!craters.some(cr=>Math.abs(cr.x)<6&&Math.abs(cr.z-18)<6))addCrater(0,18,4.4);if(wave>=6)addStorefrontSpiderwebCrack();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
+ stormTimer=0;waveBlueMeteorsRemaining=wave===15?6:2;waveGreenMeteorRemaining=wave===15?3:1;waveFireStreamRemaining=wave===15?4:2;wavePurpleRemaining=wave>=4?2:0;orbitalTheater?.setBattery(1.0);remaining=wave>=15?(wave===15?26:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?0.95:.7);if(wave===1)message('WAVE '+wave); if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave>=6&&!schoolFire.some(f=>Math.abs(f.root.position.x-20.2)<2&&Math.abs(f.root.position.y-8.8)<2))ignite(20.2,8.8,-1.0);if(wave>=6&&!craters.some(cr=>Math.abs(cr.x)<6&&Math.abs(cr.z-18)<6))addCrater(0,18,4.4);if(wave>=6)addStorefrontSpiderwebCrack();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
 function reset(){tacticalTrialActive=false;trialCompleted=false;trialTimer=0;rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubblePool.clear();for(const w of crashedWrecks){scene.remove(w.root);w.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();})}crashedWrecks.length=0;skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters){disposeHelicopterElectric(h);scene.remove(h.root);for(const resource of h.gooResources||[])resource.dispose();if(!h.gasHit){const pool=helicopterModels.get(h.variant)||[];if(pool.length<3)pool.push(h);helicopterModels.set(h.variant,pool)}}helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';policeBlockadeGroup.visible=false;chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
- if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;satellitesCleared=false;orbitalTheater?.reset();for(const p of escapingPilots){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose()}craters.length=0;updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;purpleRamUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;wavePurpleRemaining=1;purpleRamShieldMesh.visible=false;satellitesCleared=false;orbitalTheater?.reset();for(const p of escapingPilots){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose()}craters.length=0;updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(false);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
 function gameOver(){if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{document.getElementById('overlay').style.display='grid';showSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
@@ -3319,7 +3378,7 @@ if(active&&!paused){
  }
 }
 if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(elapsed*7)*.08;targetingReticle.scale.set(pulse,pulse,pulse);targetingReticle.position.set(pointer.x,pointer.y,1.5);targetingReticle.visible=active&&!paused;}
- const isFiringContinuous=(elapsed<rapidFireUntil||elapsed<fireStreamUntil||elapsed<megaFireBreathUntil);const firePressed=input.isDown(ACTIONS.FIRE)||(activeMouseButtons&1)!==0;if(isFiringContinuous&&cooldown<=0&&firePressed)shoot();updateMeteorRadar(dt);
+ const isFiringContinuous=(elapsed<rapidFireUntil||elapsed<fireStreamUntil||elapsed<megaFireBreathUntil);const firePressed=input.isDown(ACTIONS.FIRE)||(activeMouseButtons&1)!==0;if(isFiringContinuous&&cooldown<=0&&firePressed)shoot();soundEngine.setFlameStreamAudio(isFiringContinuous&&firePressed,elapsed<megaFireBreathUntil);updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
  dragonMeteorTimer-=dt;if(!settling&&wave>4&&wave<15&&dragonMeteorTimer<=0&&(!rallyLoop||remaining>0)){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
@@ -3374,8 +3433,9 @@ if(dragonLeavingRoof&&dragonStun<=0){
  }
  dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
  if(Math.abs(dragon.position.x)>=DRAGON_BOUND_X)dragonVelX=0;
- dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.7,flightCeiling);
- if(dragon.position.y>=flightCeiling||dragon.position.y<=1.7){dragonVelY=0;diveEnergy=0;}
+ if(rise>0&&dragon.position.y<=2.25)dragonVelY=Math.max(dragonVelY,17.5);
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.35,flightCeiling);
+ if(dragon.position.y>=flightCeiling||dragon.position.y<=1.35){dragonVelY=0;diveEnergy=0;}
 }else if(dragonStun>0){
  dragonVelX*=Math.exp(-5.0*dt);
  dragonVelY=Math.max(-18.0,dragonVelY-22.0*dt);
@@ -3425,9 +3485,44 @@ const isSoaring=isBoosting||isCoasting;
 const flapFreq=recoveryLift>0?20:(isClimbing?7.5:(isDiving?2.2:(isSoaring?3.4:5.2)));
 const flapAmp=isDiving?0.08:(isSoaring?0.16:(isClimbing?0.42:0.32));
 const soarDihedral=isDiving?0.26:(isSoaring?-0.18:0);
-for(const w of wings){
- w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
- w.pivot.rotation.z=isDiving?(w.sign*0.42):(w.sign*(0.05+Math.cos(elapsed*flapFreq)*0.08));
+const isOnPavement=dragonLeavingRoof&&dragon.position.y<=2.25;
+if(isOnPavement){
+ const trotCycle=elapsed*11.0+Math.abs(dragon.position.x)*1.8;
+ for(const w of wings){
+  w.pivot.rotation.x=w.sign*0.10;
+  w.pivot.rotation.z=w.sign*0.68;
+ }
+ if(pauloPreviewRig){
+  const moving=Math.abs(dragonVelX)>1.0;
+  pauloPreviewRig.legs.forEach(({hip,knee,foot,fore,side})=>{
+   const legSign=(fore?1:-1)*(side==='left'?1:-1);
+   const swing=moving?Math.sin(trotCycle*legSign):0;
+   hip.rotation.z=-0.50+swing*0.42;
+   knee.rotation.z=0.45+Math.max(0,-swing)*0.50;
+   foot.rotation.z=-0.22-swing*0.30;
+  });
+ }
+ if(Math.abs(dragonVelX)>1.8&&Math.sin(trotCycle)>0.88){
+  sound('dragonStep');
+  emitTrail(new THREE.Vector3(dragon.position.x,0.45,dragon.position.z),false);
+ }
+ for(const c of cars){
+  if(c.life>0&&Math.abs(c.root.position.x-dragon.position.x)<4.6&&Math.abs(c.root.position.z-dragon.position.z)<3.4){
+   const pushDir=Math.sign(c.root.position.x-dragon.position.x)||1;
+   c.root.position.x+=pushDir*3.4;
+   c.root.rotation.z+=pushDir*0.22;
+   c.speed*=0.25;
+   sound('carCrunch');
+   shake=Math.max(shake,0.22);
+   flashAt(c.root.position.x,1.2,c.root.position.z,1.8);
+  }
+ }
+ panicCrowdAt(dragon.position.x,dragon.position.z,22);
+}else{
+ for(const w of wings){
+  w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
+  w.pivot.rotation.z=isDiving?(w.sign*0.42):(w.sign*(0.05+Math.cos(elapsed*flapFreq)*0.08));
+ }
 }
 const isHighSpeed=isDiving||isSoaring||Math.abs(dragonVelX)>15.0;
 if(isHighSpeed&&quality.allowTrail(trailParticles.length)&&Math.random()<dt*36){
@@ -3451,7 +3546,7 @@ pauloPoseDriver?.update(dt,{
  gliding:isSoaring||isDiving,
  perched:!dragonLeavingRoof,horizontal:move||Math.sign(dragonVelX),facing
 });
-if(!dragonLeavingRoof&&pauloPreviewRig){
+if(!dragonLeavingRoof&&pauloPreviewRig&&!isOnPavement){
  pauloPreviewRig.legs.forEach(({hip,knee,foot,fore})=>{
   hip.rotation.z=fore?-.78:-.38;knee.rotation.z=fore?-.42:.58;foot.rotation.z=fore?.35:-.20;
  });
@@ -3550,6 +3645,11 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));
    checkBossFracture(m);
    if(m.hp<=0){
+    if(m.isPowerup==='purple_ram'){
+     purpleRamUntil=elapsed+10.0;
+     sound('bonus');
+     message('💜 METEOR-BUSTER ACTIVE (10s) — FLY DIRECTLY INTO METEORS TO OBLITERATE THEM!');
+    }
     fragmentMeteor(m);registerIntercept(m);score+=100+wave*10;sound('intercept');
     if(!m.boss&&!m.fragment)blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(3.8,2.2*m.size),true);
     remove(meteors,hitIndex);updateHud();
@@ -3565,6 +3665,53 @@ if(m.grounded){
  if(m.ttl<=0){settleMeteorAsPermanentSlag(m);meteors.splice(i,1);}
  continue;
 }
+ // Inter-meteor pairwise mid-air collisions & mutual destruction
+ for(let j=i-1;j>=0;j--){
+  const m2=meteors[j];
+  if(m2.grounded||m2.hp<=0)continue;
+  const minDist=(m.size+m2.size)*0.85;
+  const distSq=m.mesh.position.distanceToSquared(m2.mesh.position);
+  if(distSq<minDist*minDist){
+   const dist=Math.sqrt(distSq);
+   const normal=m.mesh.position.clone().sub(m2.mesh.position).normalize();
+   if(dist<0.001)normal.set(0,1,0);
+   const relVel=m.vel.clone().sub(m2.vel);
+   const impulse=Math.max(2.8,relVel.dot(normal));
+   m.vel.addScaledVector(normal,impulse*0.48);
+   m2.vel.addScaledVector(normal,-impulse*0.48);
+   const colDmg=Math.max(1,Math.round((m.size+m2.size)*0.65));
+   m.hp-=colDmg;
+   m2.hp-=colDmg;
+   sound('meteorCollision');
+   flashAt((m.mesh.position.x+m2.mesh.position.x)*0.5,(m.mesh.position.y+m2.mesh.position.y)*0.5,(m.mesh.position.z+m2.mesh.position.z)*0.5,2.4);
+   emitMeteorShrapnel(m.mesh.position,Math.min(2.5,m.size));
+   if(m2.hp<=0){
+    if(m2.isPowerup==='purple_ram'){purpleRamUntil=elapsed+10.0;sound('bonus');message('💜 METEOR-BUSTER ACTIVE (10s)!');}
+    fragmentMeteor(m2);blast(m2.mesh.position.x,m2.mesh.position.y,m2.mesh.position.z,m2.size*1.8,false);remove(meteors,j);
+   }
+   if(m.hp<=0){
+    if(m.isPowerup==='purple_ram'){purpleRamUntil=elapsed+10.0;sound('bonus');message('💜 METEOR-BUSTER ACTIVE (10s)!');}
+    fragmentMeteor(m);blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,m.size*1.8,false);remove(meteors,i);break;
+   }
+  }
+ }
+ if(m.hp<=0)continue;
+
+ // Purple Meteor-Buster Ram vs Meteors
+ const distToDragon=m.mesh.position.distanceTo(dragon.position);
+ if(!m.grounded&&distToDragon<(m.size*0.85+2.8)){
+  if(elapsed<purpleRamUntil){
+   sound('purpleRamHit');
+   flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.5);
+   cinematicFX.shock(m.mesh.position,8.0);
+   score+=350;sessionStats.intercepts++;
+   message('💥 METEOR-BUSTER IMPACT! METEOR OBLITERATED +350 PTS');
+   emitMeteorShrapnel(m.mesh.position,Math.min(4,m.size*1.6));
+   blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(4.0,m.size*2.2),true);
+   if(m.isPowerup==='purple_ram')purpleRamUntil=elapsed+10.0;
+   remove(meteors,i);updateHud();continue;
+  }
+ }
  if(m.fragment){m.fragmentAge+=dt;m.ttl-=dt;m.vel.y-=1.25*dt;
   m.vel.x*=Math.max(.0,1-.10*dt);m.vel.z*=Math.max(.0,1-.10*dt);
   if(m.ttl<=0){remove(meteors,i);continue;}}
@@ -3583,16 +3730,20 @@ if(m.grounded){
  if(m.isPowerup){
   const c=m.mesh.getObjectByName('threat-corona');
   if(c){
-   const pulseRate=m.isPowerup==='mega_fire_breath'?14:9;
-   const baseScale=m.isPowerup==='mega_fire_breath'?5.0:(m.isPowerup==='fire_stream'?4.2:3.4);
+   const pulseRate=m.isPowerup==='mega_fire_breath'?14:(m.isPowerup==='purple_ram'?12:9);
+   const baseScale=m.isPowerup==='mega_fire_breath'?5.0:(m.isPowerup==='purple_ram'?4.6:(m.isPowerup==='fire_stream'?4.2:3.4));
    c.scale.setScalar(m.size*(baseScale+Math.sin(elapsed*pulseRate)*.7));
   }
   if(performanceLab.isEnabled('particles')){
    if(m.isPowerup==='fire_stream'){
     trailEmberPool.add(m.mesh.position,.65);
+    if(Math.random()<.25)flashAt(m.mesh.position.x+(Math.random()-.5)*1.2,m.mesh.position.y+(Math.random()-.5)*1.2,m.mesh.position.z,.55);
    }else if(m.isPowerup==='mega_fire_breath'){
     trailEmberPool.add(m.mesh.position,1.1);
-    if(Math.random()<.35)flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,.9);
+    if(Math.random()<.40)flashAt(m.mesh.position.x+(Math.random()-.5)*1.8,m.mesh.position.y+(Math.random()-.5)*1.8,m.mesh.position.z,1.2);
+   }else if(m.isPowerup==='purple_ram'){
+    trailEmberPool.add(m.mesh.position,.85);
+    if(Math.random()<.30)flashAt(m.mesh.position.x+(Math.random()-.5)*1.5,m.mesh.position.y+(Math.random()-.5)*1.5,m.mesh.position.z,1.0);
    }
   }
  }
@@ -3758,24 +3909,36 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  shake=Math.max(0,shake-Math.min(dt,.1));
  const follow=skyCameraLift(dragon.position.y);
  const deadZone=35*Math.min(1,camera.aspect/(16/9));
- cameraScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone);
+ const targetScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone)+(dragonVelX*0.35);
+ cameraScrollX=THREE.MathUtils.lerp(cameraScrollX,targetScrollX,Math.min(1,dt*4.8));
  skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
  const altRatio=THREE.MathUtils.clamp((dragon.position.y-44)/(flightCeiling-44),0,1);
- const groundShrink=1.0/(1.0+Math.pow(altRatio,1.65)*3.6);
- skyline.scale.set(4.35*groundShrink,2.80*groundShrink,1.15);
- skyline.position.y=-18-Math.pow(altRatio,1.35)*62.0;
+ skyline.scale.set(4.35,2.80,1.15);
+ skyline.position.y=-18;
  const baseFog=.00105+displayedDarkness*.00020;
- scene.fog.density=baseFog*(1.0+Math.pow(altRatio,1.4)*1.8);
+ scene.fog.density=baseFog*(1.0+Math.pow(altRatio,1.2)*1.4);
  skylineAirUniforms.opacity.value=.14+altRatio*.22;
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  const skyAscent=THREE.MathUtils.clamp((dragon.position.y-32)/110,0,1);
  const pitchLift=skyAscent*16.2+Math.pow(altRatio,1.25)*24.0;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
  camera.lookAt(cameraScrollX,streetView.targetY+follow+pitchLift,streetView.targetZ);
- const targetZoom=wave===15?.86:1;
- const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*1.8));
+ let targetZoom=wave===15?.86:1.0;
+ if(dragonVelY<-10.0||(typeof isDiving!=='undefined'&&isDiving))targetZoom+=0.08;
+ if(altRatio>0.25)targetZoom-=altRatio*0.12;
+ const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*2.5));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
+ soundEngine.update(dt,camera.position.y,368,altRatio>0.15);
+ if(purpleRamShieldMesh){
+  const purpleActive=elapsed<purpleRamUntil;
+  purpleRamShieldMesh.visible=purpleActive;
+  if(purpleActive){
+   purpleRamShieldMesh.position.copy(dragon.position);
+   purpleRamShieldMesh.scale.setScalar(3.4+Math.sin(elapsed*16.0)*0.4);
+   purpleRamShieldMat.opacity=0.65+Math.sin(elapsed*22.0)*0.25;
+  }
+ }
  const renderStartUTC=Date.now();const renderStart=performance.now();
  visualBank.advanceFireVisuals(elapsed);
  cinematicFX.flush();renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
@@ -4430,11 +4593,11 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   simulationDetails:()=>({cars:cars.map(c=>({x:c.root.position.x,z:c.root.position.z,routing:!!c.routing,serviceProgress:c.serviceProgress,speed:c.speed,braking:c.braking,ladder:!!c.ladder,fireTruck:c.fireTruck})),pedestrians:crowd.map(p=>({x:p.g.position.x,z:p.g.position.z,crossing:p.crossing,jaywalker:p.jaywalker,heading:p.g.rotation.y})),helicopters:helicopters.map(h=>({variant:h.root.userData.aircraftVariant,role:h.role,firefighting:h.firefighting,x:h.root.position.x,y:h.root.position.y,z:h.root.position.z,crashing:h.crashing,gasHit:h.gasHit,loiterTime:h.loiterTime,disorientTime:+(h.disorientTime||0).toFixed(2),electricContactTime:+(h.contactTime||0).toFixed(2),electricVisible:!!h.electric?.visible})),fires:schoolFire.length,burning:schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,suppression:f.suppression}))}),
   advanceStructures:(dt=1)=>run('advanceStructures',()=>{for(let t=0;t<dt;t+=1/60)neighborhood.update(1/60);return snap()}),
   spawnHelicopter:(variant=null)=>run('spawnHelicopter',()=>{spawnHelicopter(variant);return snap()}),
-  activatePowerup:(type)=>run('activatePowerup',()=>{if(type==='fire_stream')fireStreamUntil=elapsed+8;else if(type==='mega_fire_breath')megaFireBreathUntil=elapsed+16;updatePowerHud();return snap()}),
+  activatePowerup:(type)=>run('activatePowerup',()=>{if(type==='fire_stream')fireStreamUntil=elapsed+8;else if(type==='mega_fire_breath')megaFireBreathUntil=elapsed+16;else if(type==='purple_ram')purpleRamUntil=elapsed+10;updatePowerHud();return snap()}),
   triggerHelicopterCrash:(variant=1)=>run('triggerHelicopterCrash',()=>{spawnHelicopter(variant);const h=helicopters.at(-1);if(h)crashHelicopter(h);return snap()}),
   stageFirefighter:()=>run('stageFirefighter',()=>{ignite(0,3,3);spawnHelicopter(2);const h=helicopters[helicopters.length-1];h.root.position.set(0,16,3);return snap()}),
   start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();if(cinematicActive)closeChapterTransition();return snap()}),
-  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-230,230),THREE.MathUtils.clamp(y,2,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
+  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-230,230),THREE.MathUtils.clamp(y,1.35,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
   advanceOrdinaryWave:()=>run('advanceOrdinaryWave',()=>{if(!active||wave>=15||[5,10,14].includes(wave))throw Error('QA ordinary-wave transition requires active non-chapter boundary wave');const before=snap();wave++;between=0;updateHud();newWave();return {before,after:snap()}}),
   stageRallyLoop:()=>run('stageRallyLoop',()=>{
    remaining=0;

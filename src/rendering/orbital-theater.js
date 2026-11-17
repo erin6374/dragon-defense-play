@@ -93,7 +93,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     roughness: 0.88,
     metalness: 0.20,
     emissive: 0xff3300,
-    emissiveIntensity: 0.70,
+    emissiveIntensity: 0.75,
     emissiveMap: titanTexture
   });
 
@@ -103,90 +103,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   const TITAN_BASE_Z = -180;
   titanMesh.position.set(0, TITAN_BASE_Y, TITAN_BASE_Z);
   group.add(titanMesh);
-
-  // =========================================================================
-  // ATMOSPHERIC RE-ENTRY PLASMA BURN SHEET (ALTITUDE Y ~ 368)
-  // Fiery atmospheric friction plasma sheet along Titan's bottom curve at ceiling.
-  // =========================================================================
-  const ribbonSegments = 64;
-  const ribbonGeo = new THREE.BufferGeometry();
-  const ribbonPositions = new Float32Array((ribbonSegments + 1) * 2 * 3);
-  const ribbonUvs = new Float32Array((ribbonSegments + 1) * 2 * 2);
-  const ribbonIndices = [];
-
-  const spanX = 560;
-  for (let s = 0; s <= ribbonSegments; s++) {
-    const t = s / ribbonSegments;
-    const x = -spanX + t * (spanX * 2);
-    const curveY = TITAN_BASE_Y - Math.sqrt(Math.max(1, titanRadius * titanRadius - x * x));
-    const idx = s * 2;
-
-    ribbonPositions[idx * 3] = x;
-    ribbonPositions[idx * 3 + 1] = curveY - 4;
-    ribbonPositions[idx * 3 + 2] = -174;
-    ribbonUvs[idx * 2] = t;
-    ribbonUvs[idx * 2 + 1] = 0;
-
-    ribbonPositions[(idx + 1) * 3] = x;
-    ribbonPositions[(idx + 1) * 3 + 1] = curveY + 28;
-    ribbonPositions[(idx + 1) * 3 + 2] = -177;
-    ribbonUvs[(idx + 1) * 2] = t;
-    ribbonUvs[(idx + 1) * 2 + 1] = 1;
-
-    if (s < ribbonSegments) {
-      const v0 = idx, v1 = idx + 1, v2 = idx + 2, v3 = idx + 3;
-      ribbonIndices.push(v0, v2, v1);
-      ribbonIndices.push(v1, v2, v3);
-    }
-  }
-
-  ribbonGeo.setAttribute('position', new THREE.BufferAttribute(ribbonPositions, 3));
-  ribbonGeo.setAttribute('uv', new THREE.BufferAttribute(ribbonUvs, 2));
-  ribbonGeo.setIndex(ribbonIndices);
-
-  const plasmaRibbonUniforms = { time: { value: 0 } };
-  const plasmaRibbonMat = new THREE.ShaderMaterial({
-    uniforms: plasmaRibbonUniforms,
-    side: THREE.DoubleSide,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexShader: `
-      varying vec2 vUv;
-      uniform float time;
-      void main() {
-        vUv = uv;
-        vec3 pos = position;
-        float wave = sin(time * 5.0 + pos.x * 0.045) * 1.4;
-        pos.y += wave * (1.0 - uv.y);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-      }
-    `,
-    fragmentShader: `
-      varying vec2 vUv;
-      uniform float time;
-      void main() {
-        float t = vUv.y;
-        float shimmer = sin(time * 7.5 + vUv.x * 28.0) * 0.10 + cos(time * 11.0 + vUv.x * 44.0) * 0.07;
-        float intensity = clamp(1.0 - t + shimmer * (1.0 - t), 0.0, 1.0);
-
-        vec3 flameCore = vec3(1.0, 0.72, 0.28);
-        vec3 solarOrange = vec3(1.0, 0.36, 0.04);
-        vec3 deepCrimson = vec3(0.85, 0.08, 0.02);
-
-        vec3 color = mix(flameCore, solarOrange, smoothstep(0.0, 0.40, t));
-        color = mix(color, deepCrimson, smoothstep(0.40, 0.88, t));
-
-        float edgeFade = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
-        float alpha = pow(intensity, 1.4) * 0.82 * edgeFade;
-
-        gl_FragColor = vec4(color * 1.25, alpha);
-      }
-    `
-  });
-
-  const plasmaRibbon = new THREE.Mesh(ribbonGeo, plasmaRibbonMat);
-  group.add(plasmaRibbon);
 
   // Surface explosion sparks on Titan where lasers blast fissures
   const surfaceExplosions = [];
@@ -456,40 +372,23 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     });
   }
 
-  // Stratospheric cloud deck (altitude y = 75)
-  const cloudDeckGeo = new THREE.PlaneGeometry(1600, 600, 1, 1);
-  cloudDeckGeo.rotateX(-Math.PI * 0.5);
-  const cloudDeckMat = new THREE.MeshBasicMaterial({
-    color: 0x486078,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false
-  });
-  const cloudDeck = new THREE.Mesh(cloudDeckGeo, cloudDeckMat);
-  cloudDeck.position.set(0, 75, -120);
-  group.add(cloudDeck);
-
   let meteorEjectTimer = 3.2;
   let goldRedPowerupSpawned = false;
+  let satelliteBattery = 1.0;
 
   return {
     group,
     satellites,
     titanMesh,
-    plasmaRibbon,
-    cloudDeck,
-    update(dt, elapsed, wave, dragonPos, isMegaFireActive, onSpawnPowerup, onSpawnMeteor, onShockDragon) {
+    getBattery() { return satelliteBattery; },
+    setBattery(v) { satelliteBattery = Math.max(0, Math.min(1, v)); },
+    update(dt, elapsed, wave, dragonPos, isMegaFireActive, onSpawnPowerup, onSpawnMeteor, onShockDragon, onBatteryDepleted) {
       // 1. Skimming Titan continuous drift across the upper exosphere
       titanMesh.position.x += dt * 1.5;
       if (titanMesh.position.x > 380) titanMesh.position.x = -380;
       titanMesh.rotation.z += dt * 0.008;
 
       titanMat.emissiveIntensity = 0.85 + Math.sin(elapsed * 2.5) * 0.28;
-      plasmaRibbonMat.uniforms.time.value = elapsed;
-
-      // Update stratospheric cloud deck opacity as Paulo punches above altitude 60
-      const stratClimb = THREE.MathUtils.clamp((dragonPos.y - 60) / 90, 0, 1);
-      cloudDeckMat.opacity = stratClimb * 0.75;
 
       // Update surface explosion blossoms
       for (const ex of surfaceExplosions) {
@@ -502,13 +401,25 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         }
       }
 
-      // Titan periodically ejects falling chunks when ruptured by satellite laser fire
-      meteorEjectTimer -= dt;
-      if (meteorEjectTimer <= 0) {
-        meteorEjectTimer = 2.8 + Math.random() * 2.6;
-        const ejectX = (Math.random() - 0.5) * 180;
-        triggerTitanSurfaceBlast(ejectX, 368, -165, 20);
-        onSpawnMeteor?.(ejectX, 355, -5);
+      // Battery drains while satellites operate (Waves 1-14 have finite battery pacing)
+      const prevBattery = satelliteBattery;
+      if (wave < 15 && satelliteBattery > 0) {
+        const waveDuration = Math.min(48, 26 + wave * 1.6);
+        satelliteBattery = Math.max(0, satelliteBattery - dt / waveDuration);
+        if (satelliteBattery === 0 && prevBattery > 0) {
+          onBatteryDepleted?.();
+        }
+      }
+
+      // Titan periodically ejects falling chunks ONLY while satellite battery is active
+      if (satelliteBattery > 0) {
+        meteorEjectTimer -= dt;
+        if (meteorEjectTimer <= 0) {
+          meteorEjectTimer = 2.8 + Math.random() * 2.6;
+          const ejectX = (Math.random() - 0.5) * 180;
+          triggerTitanSurfaceBlast(ejectX, 368, -165, 20);
+          onSpawnMeteor?.(ejectX, 355, -5);
+        }
       }
 
       // In Wave 15 finale, after main armada, titan ejects sparkling gold-red powerup
@@ -529,27 +440,29 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       for (const s of activeSats) {
         for (const bl of s.blinkingLights) {
           const blink = Math.sin(elapsed * (bl.rate * Math.PI * 2) + bl.phase);
-          bl.mesh.visible = blink > 0.15;
+          bl.mesh.visible = blink > (satelliteBattery > 0 ? 0.15 : 0.55);
         }
 
-        // Laser firing at the titan meteor causing surface ruptures
-        s.laserTimer -= dt;
-        if (s.laserTimer <= 0) {
-          s.laserFiring = !s.laserFiring;
-          s.laserTimer = s.laserFiring ? 0.48 : (1.2 + Math.random() * 2.0);
-          s.laserMat.opacity = s.laserFiring ? 0.95 : 0;
-          if (s.laserFiring) {
-            const strikeX = s.root.position.x + (Math.random() - 0.5) * 14;
-            const strikeY = 368 + (Math.random() - 0.5) * 8;
-            triggerTitanSurfaceBlast(strikeX, strikeY, -170, 16);
-            sound?.('laser');
-            if (Math.random() < 0.40) {
-              onSpawnMeteor?.(strikeX, strikeY - 14, -5);
-            }
-            if (Math.random() < 0.40) {
-              onSpawnMeteor?.(strikeX, strikeY - 14, -5);
+        // Laser firing at the titan meteor causing surface ruptures - ONLY while battery > 0!
+        if (satelliteBattery > 0) {
+          s.laserTimer -= dt;
+          if (s.laserTimer <= 0) {
+            s.laserFiring = !s.laserFiring;
+            s.laserTimer = s.laserFiring ? 0.48 : (1.2 + Math.random() * 2.0);
+            s.laserMat.opacity = s.laserFiring ? 0.95 : 0;
+            if (s.laserFiring) {
+              const strikeX = s.root.position.x + (Math.random() - 0.5) * 14;
+              const strikeY = 368 + (Math.random() - 0.5) * 8;
+              triggerTitanSurfaceBlast(strikeX, strikeY, -170, 16);
+              sound?.('satLaser');
+              if (Math.random() < 0.40) {
+                onSpawnMeteor?.(strikeX, strikeY - 14, -5);
+              }
             }
           }
+        } else {
+          s.laserFiring = false;
+          s.laserMat.opacity = 0;
         }
 
         // Shield Deflection Flash
@@ -683,8 +596,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     reset() {
       goldRedPowerupSpawned = false;
       meteorEjectTimer = 3.2;
+      satelliteBattery = 1.0;
       onHideSatWarning?.();
-      cloudDeckMat.opacity = 0;
       for (const s of satellites) {
         s.destroyed = false;
         s.hp = 100;
