@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc82",
-  "version": "5.5.0-rc.82",
+  "build": "5.5-north-broad-refinement-rc83",
+  "version": "5.5.0-rc.83",
   "gameplay_base": "5.2.3",
-  "scope": "RC82: Complete dragon flight and movement overhaul with smooth aerodynamic kinematics (continuous 2D velocity integration, coasting glides, counter-thrust airbrake, gravity-assisted dives and zoom climb momentum transfer); speed-adaptive wingbeats (soar, climb, dive tuck); continuous aerodynamic banking (roll, pitch, yaw) and catenary tail snaking; relocation of orbital theater (satellites at y ~ 325, Titan at y ~ 368) to the map ceiling on the final reachable top screen; accelerated artificial-perspective ground and skyline contraction (78% shrink towards curved horizon at orbit); and stratospheric upward camera pitch commanding the orbital ceiling while preserving full 1:1 ground scale at street level.",
+  "scope": "RC83: Complete dragon flight and movement overhaul with smooth aerodynamic kinematics (continuous 2D velocity integration, coasting glides, counter-thrust airbrake, gravity-assisted dives and zoom climb momentum transfer); speed-adaptive wingbeats (soar, climb, dive tuck); continuous aerodynamic banking (roll, pitch, yaw) and catenary tail snaking; relocation of orbital theater (satellites at y ~ 325, Titan at y ~ 368) to the map ceiling on the final reachable top screen; accelerated artificial-perspective ground and skyline contraction (78% shrink towards curved horizon at orbit); and stratospheric upward camera pitch commanding the orbital ceiling while preserving full 1:1 ground scale at street level.",
   "new_gameplay_features": true,
-  "release_status": "RC82 candidate: Aerodynamic dragon flight overhaul with momentum, glides, raptor dives, and zoom climbs; orbital theater stationed at final top screen ceiling; accelerated artificial-perspective ground contraction; and speed-adaptive flight animations."
+  "release_status": "RC83 candidate: Aerodynamic dragon flight overhaul with momentum, glides, raptor dives, and zoom climbs; orbital theater stationed at final top screen ceiling; accelerated artificial-perspective ground contraction; and speed-adaptive flight animations."
 }

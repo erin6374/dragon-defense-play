@@ -543,6 +543,12 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
             const strikeY = 368 + (Math.random() - 0.5) * 8;
             triggerTitanSurfaceBlast(strikeX, strikeY, -170, 16);
             sound?.('laser');
+            if (Math.random() < 0.40) {
+              onSpawnMeteor?.(strikeX, strikeY - 14, -5);
+            }
+            if (Math.random() < 0.40) {
+              onSpawnMeteor?.(strikeX, strikeY - 14, -5);
+            }
           }
         }
 

@@ -2243,6 +2243,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.button===2){e.preventDefault();gasHolding=true;gasAttack();return;}
  if(e.button!==0)return;
  holdStart=performance.now();
+ if(elapsed<fireStreamUntil||elapsed<megaFireBreathUntil||elapsed<rapidFireUntil)shoot();
 });
 window.addEventListener('pointerdown',e=>{activeMouseButtons=e.buttons;},{capture:true,passive:true});
 window.addEventListener('pointermove',e=>{activeMouseButtons=e.buttons;if((e.buttons&2)===0&&!input.isDown(ACTIONS.GAS))cancelGasHold();},{capture:true,passive:true});
@@ -3318,7 +3319,7 @@ if(active&&!paused){
  }
 }
 if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(elapsed*7)*.08;targetingReticle.scale.set(pulse,pulse,pulse);targetingReticle.position.set(pointer.x,pointer.y,1.5);targetingReticle.visible=active&&!paused;}
- if(elapsed<rapidFireUntil&&cooldown<=0&&input.isDown(ACTIONS.FIRE))shoot();updateMeteorRadar(dt);
+ const isFiringContinuous=(elapsed<rapidFireUntil||elapsed<fireStreamUntil||elapsed<megaFireBreathUntil);const firePressed=input.isDown(ACTIONS.FIRE)||(activeMouseButtons&1)!==0;if(isFiringContinuous&&cooldown<=0&&firePressed)shoot();updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
  dragonMeteorTimer-=dt;if(!settling&&wave>4&&wave<15&&dragonMeteorTimer<=0&&(!rallyLoop||remaining>0)){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
@@ -3428,11 +3429,16 @@ for(const w of wings){
  w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
  w.pivot.rotation.z=isDiving?(w.sign*0.42):(w.sign*(0.05+Math.cos(elapsed*flapFreq)*0.08));
 }
-if(isSoaring&&quality.allowTrail(trailParticles.length)&&Math.random()<dt*22){
+const isHighSpeed=isDiving||isSoaring||Math.abs(dragonVelX)>15.0;
+if(isHighSpeed&&quality.allowTrail(trailParticles.length)&&Math.random()<dt*36){
  for(const sign of [-1,1]){
-  const tipPos=dragon.position.clone().add(new THREE.Vector3(-facing*1.5,Math.sin(elapsed*flapFreq)*.6,sign*3.6));
+  const tipY=isDiving?-0.32:Math.sin(elapsed*flapFreq)*0.6;
+  const tipPos=dragon.position.clone().add(new THREE.Vector3(-facing*1.5,tipY,sign*3.6));
   emitTrail(tipPos,true);
  }
+}
+if(dragon.position.y<7.5&&dragonVelY<-2.0){
+ dragonVelY*=Math.exp(-8.0*dt);
 }
 if(elapsed<blueFireballUntil&&Math.random()<dt*18){
  flashAt(dragon.position.x+(Math.random()-.5)*1.8,dragon.position.y+(Math.random()-.5)*1.2,dragon.position.z+(Math.random()-.5)*1.6,.48);
