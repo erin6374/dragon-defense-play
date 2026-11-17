@@ -649,9 +649,10 @@ dragon.scale.set(1.14,1.14,1.14);
 dragon.scale.setScalar(1.20);
 // Legacy mouth socket follows the original visual snout's world transform.
 const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
-let dragonLeavingRoof=false,flightPitch=0;
+let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0;
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
+ dragonVelX=0;dragonVelY=0;flightRoll=0;flightYaw=0;diveEnergy=0;
  facing=1;turnTime=0;gasPose=0;dragonGroundImpact=false;recoveryLift=0;windActive=false;gustTime=0;pauloFirePoseUntil=0;flightPitch=0;
  dragon.position.set(0,schoolBounds.max.y+2.4,schoolBounds.max.z-1.8);
  dragon.rotation.x=-0.52;dragon.rotation.y=1.35;dragon.rotation.z=-0.10;
@@ -3325,18 +3326,13 @@ if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(
 if(move||rise||dragonStun>0)dragonLeavingRoof=true;
 if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
 const DRAGON_BOUND_X=230;
-dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+move*17*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
 if(gasHolding&&!input.isDown(ACTIONS.GAS)&&(activeMouseButtons&2)===0)cancelGasHold();
-if(gasHolding&&dragonStun<=0&&active&&!paused){
+const isBoosting=gasHolding&&dragonStun<=0&&active&&!paused;
+if(isBoosting){
  dragonLeavingRoof=true;
- const boostSpeed=34.0;
- const boostDirX=move!==0?move:facing;
- const boostDirY=rise!==0?rise:0;
- if(move!==0&&move!==facing){facing=move;turnTime=.28;}
- dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+boostDirX*boostSpeed*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
- dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+boostDirY*(boostSpeed*.75)*dt,1.7,flightCeiling);
  gasPose=Math.max(gasPose,.45);
  if(Math.random()<dt*32){
+  const boostDirX=move!==0?move:facing;
   const rear=dragon.position.clone().add(new THREE.Vector3(-boostDirX*1.3,-.35,0));
   const m=new THREE.Sprite(new THREE.SpriteMaterial({map:visualBank.images.smoke,color:0x78e058,transparent:true,opacity:.52,depthWrite:false}));
   m.scale.setScalar(.85+Math.random()*.5);
@@ -3345,20 +3341,74 @@ if(gasHolding&&dragonStun<=0&&active&&!paused){
   gasClouds.push({mesh:m,life:1.1+Math.random()*.6,v:new THREE.Vector3(-boostDirX*(8+Math.random()*6),-2-Math.random()*2,(Math.random()-.5)*2),age:0});
  }
 }
-if(move&&move!==facing){facing=move;turnTime=.28;}turnTime=Math.max(0,turnTime-dt);
-const turning=turnTime>0?Math.sin(Math.PI*(turnTime/.28)) :0;
-const targetElevationPitch=(rise!==0)?Math.atan2(rise*16,Math.max(6,Math.abs(move)*17))*facing*.95:0;
-const turningRearUp=turning*.38;
-if(dragonLeavingRoof)flightPitch=THREE.MathUtils.lerp(flightPitch,targetElevationPitch+turningRearUp,Math.min(1,dt*8));
+if(dragonLeavingRoof&&dragonStun<=0){
+ if(move!==0){
+  const maxHorizSpeed=isBoosting?38.0:22.0;
+  const targetVelX=move*maxHorizSpeed;
+  const accelRate=(move*dragonVelX<0)?140.0:(isBoosting?150.0:120.0);
+  const diff=targetVelX-dragonVelX;
+  dragonVelX+=Math.sign(diff)*Math.min(Math.abs(diff),accelRate*dt);
+ }else{
+  dragonVelX*=Math.exp(-3.6*dt);
+  if(Math.abs(dragonVelX)<0.06)dragonVelX=0;
+ }
+ if(rise<0){
+  const diveTargetSpeed=isBoosting?-36.0:-28.0;
+  const diveAccel=95.0;
+  const diffY=diveTargetSpeed-dragonVelY;
+  dragonVelY+=Math.sign(diffY)*Math.min(Math.abs(diffY),diveAccel*dt);
+  diveEnergy=Math.min(24.0,diveEnergy+dt*15.0);
+ }else if(rise>0){
+  const zoomBoost=diveEnergy*0.85;
+  diveEnergy=Math.max(0,diveEnergy-dt*20.0);
+  const climbBaseSpeed=isBoosting?28.0:(dragon.position.y>60?17.5:19.5);
+  const targetVelY=climbBaseSpeed+zoomBoost;
+  const climbAccel=110.0;
+  const diffY=targetVelY-dragonVelY;
+  dragonVelY+=Math.sign(diffY)*Math.min(Math.abs(diffY),climbAccel*dt);
+ }else{
+  dragonVelY*=Math.exp(-4.6*dt);
+  if(Math.abs(dragonVelY)<0.06)dragonVelY=0;
+  diveEnergy=Math.max(0,diveEnergy-dt*8.0);
+ }
+ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+ if(Math.abs(dragon.position.x)>=DRAGON_BOUND_X)dragonVelX=0;
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.7,flightCeiling);
+ if(dragon.position.y>=flightCeiling||dragon.position.y<=1.7){dragonVelY=0;diveEnergy=0;}
+}else if(dragonStun>0){
+ dragonVelX*=Math.exp(-5.0*dt);
+ dragonVelY=Math.max(-18.0,dragonVelY-22.0*dt);
+ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.3,flightCeiling);
+}
+if(dragonVelX>1.2&&facing!==1){facing=1;turnTime=.28;}
+else if(dragonVelX<-1.2&&facing!==-1){facing=-1;turnTime=.28;}
+turnTime=Math.max(0,turnTime-dt);
+const turning=turnTime>0?Math.sin(Math.PI*(turnTime/.28)):0;
 dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));
-if(dragonLeavingRoof)dragon.rotation.z=flightPitch+(dragonStun>0?Math.sin(elapsed*35)*.14:Math.sin(elapsed*4)*.035);
-const climbRate=dragon.position.y>60?13.8:16.5;dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+rise*climbRate*dt,dragonStun>0?1.3:1.7,flightCeiling);
-dragon.children.forEach((part,i)=>{if(i<3)part.rotation.z=Math.sin(elapsed*6+i)*.04;});
-if(dragonLeavingRoof)dragon.rotation.y=Math.sin(elapsed*2)*.09+turning*.65*facing;
+const targetRoll=-dragonVelX*0.022-move*0.16;
+flightRoll=THREE.MathUtils.lerp(flightRoll,targetRoll,Math.min(1,dt*8.5));
+const targetElevationPitch=(dragonVelY*0.025)*facing+(turning*0.34);
+flightPitch=THREE.MathUtils.lerp(flightPitch,targetElevationPitch,Math.min(1,dt*9.0));
+const targetYaw=Math.sin(elapsed*2.2)*0.08+(dragonVelX*0.012)+(turning*0.55*facing);
+flightYaw=THREE.MathUtils.lerp(flightYaw,targetYaw,Math.min(1,dt*8.0));
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
 const shocked=dragonStun>0||helicopters.some(h=>h.role==='ice'&&h.contactTime>.01);
-if(dragonLeavingRoof)dragon.rotation.x=shocked?Math.sin(elapsed*24)*.24:turning*.34+(gasPose>0?-.22:0)+(gustTime>0?.15:0);
-if(dragonLeavingRoof)dragon.rotation.z+=shocked?Math.sin(elapsed*17)*.23:0;
+if(dragonLeavingRoof){
+ dragon.rotation.x=shocked?Math.sin(elapsed*24)*.24:flightRoll+(gasPose>0?-.22:0)+(gustTime>0?.15:0);
+ dragon.rotation.y=flightYaw;
+ dragon.rotation.z=flightPitch+(shocked?Math.sin(elapsed*17)*.23:(dragonStun>0?Math.sin(elapsed*35)*.14:Math.sin(elapsed*3.5)*.03));
+}
+dragon.children.forEach((part,i)=>{
+ if(i>=17&&i<=23){
+  const tailIdx=i-17;
+  const tailLag=(tailIdx+1)*0.18;
+  part.rotation.z=0.23+Math.sin(elapsed*4.5-tailLag)*0.12*(tailIdx/6)+(dragonVelY*0.008);
+  part.rotation.y=Math.cos(elapsed*4.0-tailLag)*0.14*(tailIdx/6)-(dragonVelX*0.010);
+ }else if(i<3){
+  part.rotation.z=Math.sin(elapsed*6+i)*.04;
+ }
+});
 if(recoveryLift>0&&dragonStun<=0){
  const recoverProgress=1-recoveryLift/2.5;
  const risePhase=Math.max(0,(recoverProgress-.30)/.70);
@@ -3367,12 +3417,16 @@ if(recoveryLift>0&&dragonStun<=0){
  dragon.scale.y=1-Math.sin(Math.min(1,recoverProgress/.28)*Math.PI)*.12;
 }else dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,1,Math.min(1,dt*8));
 for(let k=0;k<shockArcs.length;k++){const arc=shockArcs[k];arc.visible=shocked&&(Math.sin(elapsed*33+k*4)>-.25);if(arc.visible){const a=k*2.4+elapsed*14;arc.position.set(Math.cos(a)*1.4,Math.sin(a)*1.2,Math.sin(a*2)*.65);arc.rotation.set(a,a*.6,a*1.7);}}
-const isSoaring=gasHolding||(Math.abs(move)>0&&gasPose>.1);
-const flapFreq=isSoaring?4.8:(recoveryLift>0?20:9);
+const isDiving=dragonVelY<-7.0;
+const isClimbing=dragonVelY>5.0;
+const isCoasting=Math.abs(move)===0&&Math.abs(dragonVelX)>3.5;
+const isSoaring=isBoosting||isCoasting;
+const flapFreq=recoveryLift>0?20:(isClimbing?7.5:(isDiving?2.2:(isSoaring?3.4:5.2)));
+const flapAmp=isDiving?0.08:(isSoaring?0.16:(isClimbing?0.42:0.32));
+const soarDihedral=isDiving?0.26:(isSoaring?-0.18:0);
 for(const w of wings){
- const flapAmp=isSoaring?0.18:0.37;
- const soarDihedral=isSoaring?-0.15:0;
- w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.32+(gasPose>0?-.22:0));
+ w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
+ w.pivot.rotation.z=isDiving?(w.sign*0.42):(w.sign*(0.05+Math.cos(elapsed*flapFreq)*0.08));
 }
 if(isSoaring&&quality.allowTrail(trailParticles.length)&&Math.random()<dt*22){
  for(const sign of [-1,1]){
@@ -3387,9 +3441,9 @@ pauloPoseDriver?.update(dt,{
  stunned:dragonStun>0,recovering:recoveryLift>0,windGust:gustTime>0,
  gasAttack:gasPose>0,windCharging:holdStart>0&&windCooldown<=0,
  fireAttack:elapsed<pauloFirePoseUntil,
- turning:turnTime>0,moving:move!==0,rising:rise!==0,
- gliding:isSoaring,
- perched:!dragonLeavingRoof,horizontal:move,facing
+ turning:turnTime>0,moving:Math.abs(dragonVelX)>1.5,rising:Math.abs(dragonVelY)>2.0,
+ gliding:isSoaring||isDiving,
+ perched:!dragonLeavingRoof,horizontal:move||Math.sign(dragonVelX),facing
 });
 if(!dragonLeavingRoof&&pauloPreviewRig){
  pauloPreviewRig.legs.forEach(({hip,knee,foot,fore})=>{
@@ -3508,7 +3562,7 @@ if(m.grounded){
  if(m.fragment){m.fragmentAge+=dt;m.ttl-=dt;m.vel.y-=1.25*dt;
   m.vel.x*=Math.max(.0,1-.10*dt);m.vel.z*=Math.max(.0,1-.10*dt);
   if(m.ttl<=0){remove(meteors,i);continue;}}
- if(orbitalTheater&&m.mesh.position.y>150&&m.mesh.position.y<270){
+ if(orbitalTheater&&m.mesh.position.y>290&&m.mesh.position.y<370){
   for(const sat of (orbitalTheater.satellites||[])){
    if(!sat.destroyed&&m.mesh.position.distanceTo(sat.root.position)<10.5){
     orbitalTheater.triggerShieldDeflection(sat);
@@ -3702,15 +3756,15 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
  const altRatio=THREE.MathUtils.clamp((dragon.position.y-44)/(flightCeiling-44),0,1);
- const skylineShrink=1.0-altRatio*.36;
- skyline.scale.set(4.35*skylineShrink,2.80*(1.0-altRatio*.44),1.15);
- skyline.position.y=-18-altRatio*38;
+ const groundShrink=1.0/(1.0+Math.pow(altRatio,1.65)*3.6);
+ skyline.scale.set(4.35*groundShrink,2.80*groundShrink,1.15);
+ skyline.position.y=-18-Math.pow(altRatio,1.35)*62.0;
  const baseFog=.00105+displayedDarkness*.00020;
- scene.fog.density=baseFog*(1.0+altRatio*1.15);
- skylineAirUniforms.opacity.value=.14+altRatio*.14;
+ scene.fog.density=baseFog*(1.0+Math.pow(altRatio,1.4)*1.8);
+ skylineAirUniforms.opacity.value=.14+altRatio*.22;
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  const skyAscent=THREE.MathUtils.clamp((dragon.position.y-32)/110,0,1);
- const pitchLift=skyAscent*16.2;
+ const pitchLift=skyAscent*16.2+Math.pow(altRatio,1.25)*24.0;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,streetView.z);
  camera.lookAt(cameraScrollX,streetView.targetY+follow+pitchLift,streetView.targetZ);
  const targetZoom=wave===15?.86:1;
@@ -4374,7 +4428,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   triggerHelicopterCrash:(variant=1)=>run('triggerHelicopterCrash',()=>{spawnHelicopter(variant);const h=helicopters.at(-1);if(h)crashHelicopter(h);return snap()}),
   stageFirefighter:()=>run('stageFirefighter',()=>{ignite(0,3,3);spawnHelicopter(2);const h=helicopters[helicopters.length-1];h.root.position.set(0,16,3);return snap()}),
   start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();if(cinematicActive)closeChapterTransition();return snap()}),
-  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-230,230),THREE.MathUtils.clamp(y,2,flightCeiling),15);dragonLeavingRoof=true;return snap()}),
+  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-230,230),THREE.MathUtils.clamp(y,2,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
   advanceOrdinaryWave:()=>run('advanceOrdinaryWave',()=>{if(!active||wave>=15||[5,10,14].includes(wave))throw Error('QA ordinary-wave transition requires active non-chapter boundary wave');const before=snap();wave++;between=0;updateHud();newWave();return {before,after:snap()}}),
   stageRallyLoop:()=>run('stageRallyLoop',()=>{
    remaining=0;

@@ -6,10 +6,10 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   scene.add(group);
 
   // =========================================================================
-  // 1. COLOSSAL TITAN METEOR (RADIUS 1450, DEPTH Z = -180)
-  // Immense planetary curve sweeping across the ENTIRE top width of the screen.
-  // Rotated 90 deg so the equator passes through the bottom rim, completely
-  // eliminating pole-pinching/starburst artifacts and providing uniform rock crust.
+  // 1. COLOSSAL TITAN METEOR AT ABSOLUTE CEILING (RADIUS 1450, Y_BASE = R + 368, Z = -180)
+  // Positioned at the very top reachable screen of the map (flight ceiling ~ 378).
+  // The bottom curve skims along y = 368 across the top of the sky (x from -560 to +560).
+  // Rotated 90 deg along X to position equator at bottom rim (zero UV pole distortion).
   // =========================================================================
   const titanRadius = 1450;
   const titanGeo = new THREE.SphereGeometry(titanRadius, 72, 54);
@@ -98,15 +98,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   });
 
   const titanMesh = new THREE.Mesh(titanGeo, titanMat);
-  const TITAN_BASE_Y = titanRadius + 192;
+  // Positioned at the very ceiling of the vertical map: bottom contour at y = 368
+  const TITAN_BASE_Y = titanRadius + 368;
   const TITAN_BASE_Z = -180;
   titanMesh.position.set(0, TITAN_BASE_Y, TITAN_BASE_Z);
   group.add(titanMesh);
 
   // =========================================================================
-  // ATMOSPHERIC RE-ENTRY PLASMA BURN SHEET
-  // Fiery atmospheric friction plasma sheet following Titan's bottom curve.
-  // Ionization flame gradient: solar flare orange -> searing amber -> atmospheric crimson.
+  // ATMOSPHERIC RE-ENTRY PLASMA BURN SHEET (ALTITUDE Y ~ 368)
+  // Fiery atmospheric friction plasma sheet along Titan's bottom curve at ceiling.
   // =========================================================================
   const ribbonSegments = 64;
   const ribbonGeo = new THREE.BufferGeometry();
@@ -121,14 +121,12 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     const curveY = TITAN_BASE_Y - Math.sqrt(Math.max(1, titanRadius * titanRadius - x * x));
     const idx = s * 2;
 
-    // Bottom vertex (leading atmospheric shock front)
     ribbonPositions[idx * 3] = x;
     ribbonPositions[idx * 3 + 1] = curveY - 4;
     ribbonPositions[idx * 3 + 2] = -174;
     ribbonUvs[idx * 2] = t;
     ribbonUvs[idx * 2 + 1] = 0;
 
-    // Top vertex (trailing thermal ionization plume)
     ribbonPositions[(idx + 1) * 3] = x;
     ribbonPositions[(idx + 1) * 3 + 1] = curveY + 28;
     ribbonPositions[(idx + 1) * 3 + 2] = -177;
@@ -146,10 +144,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   ribbonGeo.setAttribute('uv', new THREE.BufferAttribute(ribbonUvs, 2));
   ribbonGeo.setIndex(ribbonIndices);
 
-  const plasmaRibbonUniforms = {
-    time: { value: 0 }
-  };
-
+  const plasmaRibbonUniforms = { time: { value: 0 } };
   const plasmaRibbonMat = new THREE.ShaderMaterial({
     uniforms: plasmaRibbonUniforms,
     side: THREE.DoubleSide,
@@ -175,8 +170,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         float shimmer = sin(time * 7.5 + vUv.x * 28.0) * 0.10 + cos(time * 11.0 + vUv.x * 44.0) * 0.07;
         float intensity = clamp(1.0 - t + shimmer * (1.0 - t), 0.0, 1.0);
 
-        // Organic atmospheric friction flame palette:
-        // Searing flame core -> Solar orange -> Deep atmospheric crimson ion glow
         vec3 flameCore = vec3(1.0, 0.72, 0.28);
         vec3 solarOrange = vec3(1.0, 0.36, 0.04);
         vec3 deepCrimson = vec3(0.85, 0.08, 0.02);
@@ -226,33 +219,31 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   }
 
   // =========================================================================
-  // 2. HIGH-TECH MILITARISTIC SATELLITES WITH HELICOPTER-STYLE ELECTRIC SHOCK
-  // Staggered altitude: y ~ 140 to 164, z ~ -4 to 12.
-  // Features prominent blinking strobes, upward lasers, and sustained cyan shock arcs!
+  // 2. HIGH-TECH MILITARISTIC SATELLITES AT MAP CEILING (ALTITUDE Y ~ 325)
+  // Hovering on the final top reachable screen (y ~ 315 to 345, z ~ -4 to 12).
   // =========================================================================
   const satellites = [];
   const SAT_COUNT = 7;
   const satSpacing = 46;
 
-  // Shared high-tech militaristic materials with subtle celestial rim reflections
   const satStealthMat = new THREE.MeshStandardMaterial({
-    color: 0x222730, // Faceted stealth carbon gunmetal
+    color: 0x222730,
     metalness: 0.88,
     roughness: 0.30
   });
   const satArmorPlatingMat = new THREE.MeshStandardMaterial({
-    color: 0x364150, // Tactical armor plating with slight edge sheen
+    color: 0x364150,
     metalness: 0.82,
     roughness: 0.32
   });
   const satGoldFoilMat = new THREE.MeshStandardMaterial({
-    color: 0xd4af37, // Gold thermal foil insulation
+    color: 0xd4af37,
     metalness: 0.95,
     roughness: 0.18,
     emissive: 0x3d3008
   });
   const satSolarWingMat = new THREE.MeshStandardMaterial({
-    color: 0x0a1e38, // Dark navy blue photovoltaic cells
+    color: 0x0a1e38,
     metalness: 0.75,
     roughness: 0.18,
     emissive: 0x040f1f
@@ -270,14 +261,12 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   });
   const satLaserMuzzleMat = new THREE.MeshBasicMaterial({ color: 0x44ff88 });
 
-  // Blinking light materials
   const navRedMat = new THREE.MeshBasicMaterial({ color: 0xff1122 });
   const navGreenMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
   const beaconAmberMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
   const beaconWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const sensorCyanMat = new THREE.MeshBasicMaterial({ color: 0x00d9ff });
 
-  // Reusable Electric Shock Beam Materials (Identical to ICE Helicopter)
   const satElectricArcMat = new THREE.LineBasicMaterial({
     color: 0x55cbff,
     transparent: true,
@@ -291,8 +280,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     depthWrite: false
   });
   const satElectricCoreGeo = new THREE.CylinderGeometry(0.18, 0.18, 1, 8);
-
-  // Forcefield shield geometry
   const shieldGeo = new THREE.SphereGeometry(7.2, 16, 12);
 
   const electricFrom = new THREE.Vector3();
@@ -303,66 +290,56 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     const satGroup = new THREE.Group();
     satGroup.scale.setScalar(1.35);
     const baseX = (s - (SAT_COUNT - 1) / 2) * satSpacing;
-    const baseY = 152 + Math.sin(s * 1.3) * 12;
+    // Satellites placed at top screen (y ~ 325)
+    const baseY = 325 + Math.sin(s * 1.3) * 12;
     const baseZ = -4 + (s % 2) * 14;
     satGroup.position.set(baseX, baseY, baseZ);
 
-    // Main faceted stealth bus chassis
     const busMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 3.0), satStealthMat);
     satGroup.add(busMain);
 
-    // Dorsal armor sloped top casing
     const topArmor = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.55, 2.4), satArmorPlatingMat);
     topArmor.position.set(0, 0.75, 0);
     satGroup.add(topArmor);
 
-    // Gold thermal foil telemetry pod
     const foilPod = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.65, 1.4), satGoldFoilMat);
     foilPod.position.set(0, 0.55, 0.95);
     satGroup.add(foilPod);
 
-    // Ventral FLIR tactical sensor dome (turret base)
     const turretBase = new THREE.Group();
     turretBase.position.set(0, -0.75, 0.6);
     const sensorDome = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 10), sensorCyanMat);
     turretBase.add(sensorDome);
     satGroup.add(turretBase);
 
-    // High-gain communications dish
     const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.12, 0.35, 12), satArmorPlatingMat);
     dish.rotation.x = Math.PI * 0.35;
     dish.position.set(-1.6, -0.65, -0.7);
     satGroup.add(dish);
 
-    // Articulated dual solar array wings with structural carbon trusses
     const wingDir = s % 2 === 0 ? 1 : -1;
     const wingGroup = new THREE.Group();
     wingGroup.position.set(wingDir * 2.8, 0, 0);
 
-    // Carbon boom arm
     const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.6, 8), satSolarFrameMat);
     boom.rotation.z = Math.PI * 0.5;
     boom.position.set(wingDir * 1.3, 0, 0);
     wingGroup.add(boom);
 
-    // Inner solar panel
     const solarInner = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.08, 2.8), satSolarWingMat);
     solarInner.position.set(wingDir * 4.6, 0, 0);
     wingGroup.add(solarInner);
 
-    // Outer solar panel
     const solarOuter = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.08, 2.8), satSolarWingMat);
     solarOuter.position.set(wingDir * 10.8, 0, 0);
     wingGroup.add(solarOuter);
 
-    // Solar panel frame border
     const frame = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.12, 2.95), satSolarFrameMat);
     frame.position.set(wingDir * 7.7, 0, 0);
     wingGroup.add(frame);
 
     satGroup.add(wingGroup);
 
-    // Heavy militaristic dual laser cannon rail turrets
     const turretL = new THREE.Group();
     const barrelL = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.28, 2.0, 8), satLaserBarrelMat);
     barrelL.position.y = 1.0;
@@ -382,7 +359,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     turretR.position.x = 1.4;
     satGroup.add(turretR);
 
-    // Twin ion plasma thrusters
     const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.20, 0.75, 8), satIonThrusterMat);
     thrusterL.rotation.x = Math.PI * 0.5;
     thrusterL.position.set(-wingDir * 1.6, 0, -1.6);
@@ -392,10 +368,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     thrusterR.position.x = -wingDir * 0.5;
     satGroup.add(thrusterR);
 
-    // --- HIGH-TECH BLINKING LIGHTS SUITE ---
     const blinkingLights = [];
-
-    // Wingtip navigation strobes (Red / Green)
     const wingtipLight = new THREE.Mesh(
       new THREE.SphereGeometry(0.25, 8, 8),
       s % 2 === 0 ? navRedMat.clone() : navGreenMat.clone()
@@ -404,7 +377,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     satGroup.add(wingtipLight);
     blinkingLights.push({ mesh: wingtipLight, rate: 1.8, phase: s * 0.8 });
 
-    // Chassis telemetry LEDs (Amber / White)
     const ledAmber = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.20, 0.20), beaconAmberMat.clone());
     ledAmber.position.set(-2.0, 0.65, 1.55);
     satGroup.add(ledAmber);
@@ -415,13 +387,11 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     satGroup.add(ledWhite);
     blinkingLights.push({ mesh: ledWhite, rate: 4.8, phase: s * 0.5 });
 
-    // Dorsal tactical beacon (Cyan)
     const ledCyan = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), sensorCyanMat.clone());
     ledCyan.position.set(0, 1.1, -0.7);
     satGroup.add(ledCyan);
     blinkingLights.push({ mesh: ledCyan, rate: 2.2, phase: s * 1.5 });
 
-    // Translucent hexagonal energy shield bubble (DORMANT BY DEFAULT)
     const satShieldMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
@@ -433,18 +403,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     shield.visible = false;
     satGroup.add(shield);
 
-    // Upward coherent laser beam line
     const laserMat = new THREE.LineBasicMaterial({ color: 0x44ff88, linewidth: 3, transparent: true, opacity: 0 });
     const laserGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 2.0, 0.4),
-      new THREE.Vector3(0, 95, 0)
+      new THREE.Vector3(0, 55, 0)
     ]);
     const laserLine = new THREE.Line(laserGeo, laserMat);
     satGroup.add(laserLine);
 
-    // =======================================================================
-    // SUSTAINED 3D ELECTRIC SHOCK BEAM (IDENTICAL TO HELICOPTER SHOCK MECHANIC)
-    // =======================================================================
+    // Sustained 3D electric shock beam
     const electricGroup = new THREE.Group();
     electricGroup.visible = false;
     const arcSegments = 14;
@@ -489,11 +456,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     });
   }
 
-  // =========================================================================
-  // 3. STRATOSPHERIC ATMOSPHERIC CLOUD DECK (ALTITUDE Y = 52)
-  // Soft, glowing atmospheric cloud deck that envelops the repetitive district
-  // roofs when soaring in the stratosphere, providing lush aerial perspective.
-  // =========================================================================
+  // Stratospheric cloud deck (altitude y = 75)
   const cloudDeckGeo = new THREE.PlaneGeometry(1600, 600, 1, 1);
   cloudDeckGeo.rotateX(-Math.PI * 0.5);
   const cloudDeckMat = new THREE.MeshBasicMaterial({
@@ -503,7 +466,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     depthWrite: false
   });
   const cloudDeck = new THREE.Mesh(cloudDeckGeo, cloudDeckMat);
-  cloudDeck.position.set(0, 52, -120);
+  cloudDeck.position.set(0, 75, -120);
   group.add(cloudDeck);
 
   let meteorEjectTimer = 3.2;
@@ -519,17 +482,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       // 1. Skimming Titan continuous drift across the upper exosphere
       titanMesh.position.x += dt * 1.5;
       if (titanMesh.position.x > 380) titanMesh.position.x = -380;
-      titanMesh.rotation.z += dt * 0.008; // Equatorial rotation
+      titanMesh.rotation.z += dt * 0.008;
 
-      // Pulse Titan seething living magma fissures
       titanMat.emissiveIntensity = 0.85 + Math.sin(elapsed * 2.5) * 0.28;
-
-      // Update atmospheric plasma burn sheet
       plasmaRibbonMat.uniforms.time.value = elapsed;
 
-      // Update stratospheric cloud deck opacity as Paulo ascends above altitude 45
-      const stratClimb = THREE.MathUtils.clamp((dragonPos.y - 45) / 60, 0, 1);
-      cloudDeckMat.opacity = stratClimb * 0.70;
+      // Update stratospheric cloud deck opacity as Paulo punches above altitude 60
+      const stratClimb = THREE.MathUtils.clamp((dragonPos.y - 60) / 90, 0, 1);
+      cloudDeckMat.opacity = stratClimb * 0.75;
 
       // Update surface explosion blossoms
       for (const ex of surfaceExplosions) {
@@ -547,15 +507,15 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       if (meteorEjectTimer <= 0) {
         meteorEjectTimer = 2.8 + Math.random() * 2.6;
         const ejectX = (Math.random() - 0.5) * 180;
-        triggerTitanSurfaceBlast(ejectX, 192, -165, 20);
-        onSpawnMeteor?.(ejectX, 186, -5);
+        triggerTitanSurfaceBlast(ejectX, 368, -165, 20);
+        onSpawnMeteor?.(ejectX, 355, -5);
       }
 
       // In Wave 15 finale, after main armada, titan ejects sparkling gold-red powerup
       if (wave === 15 && !goldRedPowerupSpawned && satellites.some(s => !s.destroyed)) {
         goldRedPowerupSpawned = true;
-        triggerTitanSurfaceBlast(0, 190, -165, 26);
-        onSpawnPowerup?.('mega_fire_breath', 0, 184, 5);
+        triggerTitanSurfaceBlast(0, 368, -165, 26);
+        onSpawnPowerup?.('mega_fire_breath', 0, 350, 5);
         message?.('⚡ OVERHEAD TITAN FRACTURED — GOLD-RED MEGA POWERUP EJECTED! DESTROY FOR MEGA FIRE BREATH!');
       }
 
@@ -567,7 +527,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       let maxContactProgress = 0;
 
       for (const s of activeSats) {
-        // High-tech blinking lights animation
         for (const bl of s.blinkingLights) {
           const blink = Math.sin(elapsed * (bl.rate * Math.PI * 2) + bl.phase);
           bl.mesh.visible = blink > 0.15;
@@ -581,13 +540,13 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           s.laserMat.opacity = s.laserFiring ? 0.95 : 0;
           if (s.laserFiring) {
             const strikeX = s.root.position.x + (Math.random() - 0.5) * 14;
-            const strikeY = 192 + (Math.random() - 0.5) * 12;
+            const strikeY = 368 + (Math.random() - 0.5) * 8;
             triggerTitanSurfaceBlast(strikeX, strikeY, -170, 16);
             sound?.('laser');
           }
         }
 
-        // Shield Deflection Flash: completely invisible by default!
+        // Shield Deflection Flash
         if (s.shieldFlash > 0) {
           s.shieldFlash -= dt * 3.2;
           s.shield.visible = true;
@@ -603,10 +562,10 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
 
         // ===================================================================
         // HELICOPTER-STYLE ELECTRICAL SHOCK BEAM TARGETING PAULO
-        // When dragon enters upper orbit defense sector (altitude > 105, dist < 45)
+        // Activates when dragon enters top orbital sector (altitude > 280, dist < 48)
         // ===================================================================
         const distToDragon = s.root.position.distanceTo(dragonPos);
-        const inShockRange = dragonPos.y > 105 && distToDragon < 45 && s.shockCooldown <= 0;
+        const inShockRange = dragonPos.y > 280 && distToDragon < 48 && s.shockCooldown <= 0;
 
         if (inShockRange) {
           anySatShocking = true;
@@ -672,7 +631,6 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         }
       }
 
-      // Update HUD Satellite Contact Warning
       if (anySatShocking) {
         onSatWarning?.(maxContactProgress);
       } else {
