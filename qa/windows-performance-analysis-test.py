@@ -179,7 +179,8 @@ class AnalyzerTests(unittest.TestCase):
         self.write(rows)
         quality = analyzer.summarize(self.path)['capture_quality']
         self.assertGreater(quality['foreground_browser_coverage_fraction'], .75)
-        self.assertEqual(quality['max_foreground_browser_gap_seconds'], 5)
+        # Fresh-render-only gaps must expose the 20s freeze hidden by timer heartbeats.
+        self.assertEqual(quality['max_foreground_browser_gap_seconds'], 20)
         self.assertEqual(quality['foreground_browser_stale_render_samples'], 3)
         self.assertFalse(quality['foreground_fps_usable'])
         self.assertTrue(quality['host_stall_evidence_available'])
