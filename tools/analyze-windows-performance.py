@@ -115,8 +115,8 @@ def summarize(path):
         quality_issues.append('Capture shorter than 30 seconds or timestamps invalid.')
     if len(visible_host) < MIN_VISIBLE_HOST_SAMPLES:
         quality_issues.append('Fewer than 20 visible, focused independent host samples.')
-    if len(foreground_browser) < MIN_FOREGROUND_BROWSER_SAMPLES:
-        quality_issues.append('Fewer than two visible, focused browser heartbeats: FPS distribution insufficient.')
+    if len(fresh_foreground_browser) < MIN_FOREGROUND_BROWSER_SAMPLES:
+        quality_issues.append('Fewer than two visible, focused browser heartbeats with fresh rendering: FPS distribution insufficient.')
     elif browser_coverage is None or browser_coverage < MIN_FOREGROUND_BROWSER_COVERAGE:
         quality_issues.append('Visible browser heartbeats cover less than 75% of capture: foreground FPS may omit a prolonged freeze.')
     if max_foreground_gap is not None and max_foreground_gap > MAX_FOREGROUND_BROWSER_GAP_SECONDS:
