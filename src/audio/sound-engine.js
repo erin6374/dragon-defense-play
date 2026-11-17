@@ -1,209 +1,242 @@
-// High-Fidelity Synthesized Web Audio Engine for Dragon Defense
-// Provides procedural noise synthesis, resonant biquad filtering, FM modulation,
-// continuous atmospheric sub-bass celestial rumble, and per-entity audio cues.
+// High-Fidelity Cinematic Sound Engine for Dragon Defense
+// Powered by authentic open-source CC0 acoustic recordings (Kenney, Public Domain, Warfork)
+// Delivers multi-layered physical impacts, continuous thruster combustion,
+// celestial sub-bass drones, and organic foley with zero arcade beeps or bops.
+
+const AUDIO_MANIFEST = {
+  // Deep Impacts & Explosions
+  impact_sub_deep: '/assets/audio/impact_sub_deep.ogg',
+  impact_sub_deep_2: '/assets/audio/impact_sub_deep_2.ogg',
+  explosion_crunch_0: '/assets/audio/explosion_crunch_0.ogg',
+  explosion_crunch_1: '/assets/audio/explosion_crunch_1.ogg',
+  explosion_crunch_2: '/assets/audio/explosion_crunch_2.ogg',
+  warfork_rocket_boom: '/assets/audio/warfork_rocket_boom.ogg',
+  warfork_grenade_boom: '/assets/audio/warfork_grenade_boom.ogg',
+  warfork_plasma_boom: '/assets/audio/warfork_plasma_boom.ogg',
+
+  // Rock Fracturing & Inter-Meteor Collisions
+  rock_fracture_0: '/assets/audio/rock_fracture_0.ogg',
+  rock_fracture_1: '/assets/audio/rock_fracture_1.ogg',
+  rock_fracture_2: '/assets/audio/rock_fracture_2.ogg',
+
+  // Structural Crumble & Glass Shatter
+  building_crush_0: '/assets/audio/building_crush_0.ogg',
+  building_crush_1: '/assets/audio/building_crush_1.ogg',
+  glass_shatter_0: '/assets/audio/glass_shatter_0.ogg',
+  glass_shatter_1: '/assets/audio/glass_shatter_1.ogg',
+
+  // Vehicle Collisions & Metal Foley
+  car_crunch_0: '/assets/audio/car_crunch_0.ogg',
+  car_crunch_1: '/assets/audio/car_crunch_1.ogg',
+  car_crunch_2: '/assets/audio/car_crunch_2.ogg',
+
+  // Concrete Claw Footsteps
+  footstep_concrete_0: '/assets/audio/footstep_concrete_0.ogg',
+  footstep_concrete_1: '/assets/audio/footstep_concrete_1.ogg',
+  footstep_concrete_2: '/assets/audio/footstep_concrete_2.ogg',
+  footstep_concrete_3: '/assets/audio/footstep_concrete_3.ogg',
+
+  // Orbital Satellite Cannons & Defense
+  laser_heavy_0: '/assets/audio/laser_heavy_0.ogg',
+  laser_heavy_1: '/assets/audio/laser_heavy_1.ogg',
+  laser_heavy_2: '/assets/audio/laser_heavy_2.ogg',
+  force_field_0: '/assets/audio/force_field_0.ogg',
+  force_field_1: '/assets/audio/force_field_1.ogg',
+  force_field_2: '/assets/audio/force_field_2.ogg',
+  warfork_electro_shock: '/assets/audio/warfork_electro_shock.ogg',
+  warfork_electro_hum: '/assets/audio/warfork_electro_hum.ogg',
+
+  // Dragon Combustion & Flight Motion
+  fire_thruster_0: '/assets/audio/fire_thruster_0.ogg',
+  fire_thruster_1: '/assets/audio/fire_thruster_1.ogg',
+  fireball_blast: '/assets/audio/fireball_blast.ogg',
+  whoosh_launch: '/assets/audio/whoosh_launch.ogg',
+  wing_whoosh: '/assets/audio/wing_whoosh.wav',
+
+  // Celestial Space Engine & Loops
+  titan_drone_sub: '/assets/audio/titan_drone_sub.ogg',
+  titan_drone_deep: '/assets/audio/titan_drone_deep.ogg',
+  helicopter_loop: '/assets/audio/helicopter_loop.ogg',
+  siren_loop: '/assets/audio/siren_loop.ogg',
+  alarm_warning: '/assets/audio/alarm_warning.ogg',
+
+  // Cinematic Victories & Shimmers
+  victory_fanfare_steel: '/assets/audio/victory_fanfare_steel.ogg',
+  victory_fanfare_0: '/assets/audio/victory_fanfare_0.ogg',
+  victory_fanfare_1: '/assets/audio/victory_fanfare_1.ogg'
+};
 
 export function createSoundEngine() {
   let ctx = null;
   let muted = false;
   let masterGain = null;
-  let rumbleGain = null;
-  let rumbleOsc = null;
-  let rumbleOsc2 = null;
-  let rumbleFilter = null;
-  let noiseBuffer = null;
-  let pinkNoiseBuffer = null;
+  let sfxBus = null;
+  let ambientBus = null;
 
-  function init() {
+  // Buffer cache: Map<string, AudioBuffer>
+  const buffers = new Map();
+  let loadingInitiated = false;
+
+  // Continuous looping sources
+  let flameLoopSource = null;
+  let flameLoopGain = null;
+  let flameLoopFilter = null;
+
+  let titanDroneSubSource = null;
+  let titanDroneDeepSource = null;
+  let titanRumbleGain = null;
+  let titanRumbleFilter = null;
+
+  function initContext() {
     if (ctx) return ctx;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return null;
       ctx = new AudioCtx();
+
       masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(muted ? 0 : 1, ctx.currentTime);
       masterGain.connect(ctx.destination);
 
-      // Generate procedural white and pink noise buffers (2 seconds each)
-      const sampleRate = ctx.sampleRate;
-      const bufferSize = sampleRate * 2;
-      noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
+      sfxBus = ctx.createGain();
+      sfxBus.gain.setValueAtTime(0.9, ctx.currentTime);
+      sfxBus.connect(masterGain);
 
-      pinkNoiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-      const pOutput = pinkNoiseBuffer.getChannelData(0);
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        pOutput[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-        b6 = white * 0.115926;
-      }
+      ambientBus = ctx.createGain();
+      ambientBus.gain.setValueAtTime(0.85, ctx.currentTime);
+      ambientBus.connect(masterGain);
 
-      // Initialize continuous Sub-Bass Titan Celestial Rumble
-      rumbleGain = ctx.createGain();
-      rumbleGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-
-      rumbleFilter = ctx.createBiquadFilter();
-      rumbleFilter.type = 'lowpass';
-      rumbleFilter.frequency.setValueAtTime(68, ctx.currentTime);
-      rumbleFilter.Q.setValueAtTime(2.8, ctx.currentTime);
-
-      rumbleOsc = ctx.createOscillator();
-      rumbleOsc.type = 'sine';
-      rumbleOsc.frequency.setValueAtTime(42, ctx.currentTime);
-
-      rumbleOsc2 = ctx.createOscillator();
-      rumbleOsc2.type = 'triangle';
-      rumbleOsc2.frequency.setValueAtTime(46.5, ctx.currentTime);
-
-      rumbleOsc.connect(rumbleFilter);
-      rumbleOsc2.connect(rumbleFilter);
-      rumbleFilter.connect(rumbleGain);
-      rumbleGain.connect(masterGain);
-
-      rumbleOsc.start();
-      rumbleOsc2.start();
+      loadAllAudioBuffers();
+      startTitanCelestialRumble();
     } catch (e) {
-      console.warn('AudioContext init failed', e);
+      console.warn('SoundEngine AudioContext init failed', e);
     }
     return ctx;
   }
 
-  function playNoise(duration, filterType, startFreq, endFreq, peakGain, Q = 1.0, isPink = false) {
-    if (!ctx || muted) return;
-    try {
-      const now = ctx.currentTime;
-      const buf = (isPink && pinkNoiseBuffer) ? pinkNoiseBuffer : (noiseBuffer || null);
-      if (!buf) return;
+  async function loadAllAudioBuffers() {
+    if (loadingInitiated || !ctx) return;
+    loadingInitiated = true;
 
+    for (const [key, url] of Object.entries(AUDIO_MANIFEST)) {
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+          return res.arrayBuffer();
+        })
+        .then(arr => ctx.decodeAudioData(arr))
+        .then(audioBuf => {
+          buffers.set(key, audioBuf);
+        })
+        .catch(err => {
+          // Keep silent fallback if individual sound fails
+        });
+    }
+  }
+
+  function playSample(key, { volume = 1.0, playbackRate = 1.0, detune = 0, delay = 0, bus = null } = {}) {
+    if (!ctx || muted) return null;
+    const buf = buffers.get(key);
+    if (!buf) return null;
+
+    try {
+      const now = ctx.currentTime + Math.max(0, delay);
       const source = ctx.createBufferSource();
       source.buffer = buf;
-      source.loop = true;
 
-      const filter = ctx.createBiquadFilter();
-      filter.type = filterType;
-      filter.Q.setValueAtTime(Q, now);
-      filter.frequency.setValueAtTime(startFreq, now);
-      if (endFreq !== startFreq) {
-        filter.frequency.exponentialRampToValueAtTime(Math.max(10, endFreq), now + duration);
+      // Realistic pitch variation (subtle randomized detuning for organic feel)
+      const randomPitch = 1.0 + (Math.random() - 0.5) * 0.08;
+      source.playbackRate.setValueAtTime(playbackRate * randomPitch, now);
+      if (detune !== 0 && source.detune) {
+        source.detune.setValueAtTime(detune, now);
       }
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peakGain), now + Math.min(0.03, duration * 0.2));
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
 
-      source.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterGain);
+      source.connect(gain);
+      gain.connect(bus || sfxBus || masterGain);
 
       source.start(now);
-      source.stop(now + duration + 0.05);
+      return source;
     } catch (e) {
-      // safe fallback
+      return null;
     }
   }
 
-  function playTone(type, startFreq, endFreq, duration, peakGain) {
-    if (!ctx || muted) return;
+  function startTitanCelestialRumble() {
+    if (!ctx || titanDroneDeepSource) return;
     try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(Math.max(10, startFreq), now);
-      if (endFreq !== startFreq) {
-        osc.frequency.exponentialRampToValueAtTime(Math.max(10, endFreq), now + duration);
-      }
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(peakGain, now + Math.min(0.02, duration * 0.15));
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      titanRumbleGain = ctx.createGain();
+      titanRumbleGain.gain.setValueAtTime(0.0001, ctx.currentTime);
 
-      osc.connect(gain);
-      gain.connect(masterGain);
-      osc.start(now);
-      osc.stop(now + duration + 0.03);
-    } catch (e) {
-      // safe fallback
-    }
+      titanRumbleFilter = ctx.createBiquadFilter();
+      titanRumbleFilter.type = 'lowpass';
+      titanRumbleFilter.frequency.setValueAtTime(120, ctx.currentTime);
+      titanRumbleFilter.Q.setValueAtTime(1.8, ctx.currentTime);
+
+      titanRumbleFilter.connect(titanRumbleGain);
+      titanRumbleGain.connect(ambientBus || masterGain);
+
+      // We hook up the deep drone loop once buffers are decoded
+      const checkAndStartDrone = () => {
+        if (!ctx) return;
+        const deepBuf = buffers.get('titan_drone_deep');
+        const subBuf = buffers.get('titan_drone_sub');
+        if (deepBuf && !titanDroneDeepSource) {
+          titanDroneDeepSource = ctx.createBufferSource();
+          titanDroneDeepSource.buffer = deepBuf;
+          titanDroneDeepSource.loop = true;
+          titanDroneDeepSource.playbackRate.setValueAtTime(0.85, ctx.currentTime);
+          titanDroneDeepSource.connect(titanRumbleFilter);
+          titanDroneDeepSource.start();
+        }
+        if (subBuf && !titanDroneSubSource) {
+          titanDroneSubSource = ctx.createBufferSource();
+          titanDroneSubSource.buffer = subBuf;
+          titanDroneSubSource.loop = true;
+          titanDroneSubSource.playbackRate.setValueAtTime(0.92, ctx.currentTime);
+          titanDroneSubSource.connect(titanRumbleFilter);
+          titanDroneSubSource.start();
+        }
+        if (!titanDroneDeepSource || !titanDroneSubSource) {
+          setTimeout(checkAndStartDrone, 300);
+        }
+      };
+      checkAndStartDrone();
+    } catch (e) {}
   }
-
-  function playFM(carrierFreq, modFreq, modIndex, duration, peakGain) {
-    if (!ctx || muted) return;
-    try {
-      const now = ctx.currentTime;
-      const carrier = ctx.createOscillator();
-      const modulator = ctx.createOscillator();
-      const modGain = ctx.createGain();
-      const gain = ctx.createGain();
-
-      carrier.type = 'sine';
-      carrier.frequency.setValueAtTime(carrierFreq, now);
-
-      modulator.type = 'sine';
-      modulator.frequency.setValueAtTime(modFreq, now);
-
-      modGain.gain.setValueAtTime(modFreq * modIndex, now);
-      modGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-      modulator.connect(modGain);
-      modGain.connect(carrier.frequency);
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(peakGain, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-      carrier.connect(gain);
-      gain.connect(masterGain);
-
-      carrier.start(now);
-      modulator.start(now);
-      carrier.stop(now + duration + 0.02);
-      modulator.stop(now + duration + 0.02);
-    } catch (e) {
-      // safe fallback
-    }
-  }
-
-  // Flamethrower looping sound state
-  let flameLoopSource = null;
-  let flameLoopGain = null;
-  let flameLoopFilter = null;
 
   function setFlameStreamAudio(active, isMega = false) {
     if (!ctx || muted) return;
     try {
       const now = ctx.currentTime;
       if (active) {
-        if (!flameLoopSource && noiseBuffer) {
-          flameLoopSource = ctx.createBufferSource();
-          flameLoopSource.buffer = noiseBuffer;
-          flameLoopSource.loop = true;
+        if (!flameLoopSource) {
+          const buf = buffers.get(isMega ? 'fire_thruster_1' : 'fire_thruster_0');
+          if (buf) {
+            flameLoopSource = ctx.createBufferSource();
+            flameLoopSource.buffer = buf;
+            flameLoopSource.loop = true;
+            flameLoopSource.playbackRate.setValueAtTime(isMega ? 0.92 : 1.05, now);
 
-          flameLoopFilter = ctx.createBiquadFilter();
-          flameLoopFilter.type = 'bandpass';
-          flameLoopFilter.frequency.setValueAtTime(isMega ? 520 : 740, now);
-          flameLoopFilter.Q.setValueAtTime(2.2, now);
+            flameLoopFilter = ctx.createBiquadFilter();
+            flameLoopFilter.type = 'lowpass';
+            flameLoopFilter.frequency.setValueAtTime(isMega ? 1800 : 2600, now);
+            flameLoopFilter.Q.setValueAtTime(1.2, now);
 
-          flameLoopGain = ctx.createGain();
-          flameLoopGain.gain.setValueAtTime(0.0001, now);
-          flameLoopGain.gain.exponentialRampToValueAtTime(isMega ? 0.22 : 0.16, now + 0.08);
+            flameLoopGain = ctx.createGain();
+            flameLoopGain.gain.setValueAtTime(0.0001, now);
+            flameLoopGain.gain.exponentialRampToValueAtTime(isMega ? 0.48 : 0.38, now + 0.08);
 
-          flameLoopSource.connect(flameLoopFilter);
-          flameLoopFilter.connect(flameLoopGain);
-          flameLoopGain.connect(masterGain);
-          flameLoopSource.start();
-        } else if (flameLoopFilter && flameLoopGain) {
-          flameLoopFilter.frequency.setTargetAtTime(isMega ? 520 : 740, now, 0.05);
-          flameLoopGain.gain.setTargetAtTime(isMega ? 0.22 : 0.16, now, 0.05);
+            flameLoopSource.connect(flameLoopFilter);
+            flameLoopFilter.connect(flameLoopGain);
+            flameLoopGain.connect(sfxBus || masterGain);
+            flameLoopSource.start();
+          }
+        } else if (flameLoopGain && flameLoopFilter) {
+          flameLoopFilter.frequency.setTargetAtTime(isMega ? 1800 : 2600, now, 0.05);
+          flameLoopGain.gain.setTargetAtTime(isMega ? 0.48 : 0.38, now, 0.05);
         }
       } else {
         if (flameLoopGain && flameLoopSource) {
@@ -223,169 +256,189 @@ export function createSoundEngine() {
           }, 120);
         }
       }
-    } catch (e) {
-      // safe fallback
-    }
+    } catch (e) {}
   }
 
+  // Master Sound Dispatch: 100% Real Acoustic Samples & Multi-Layered Foley
   function sound(kind, opt = {}) {
     if (muted) return;
-    init();
+    initContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
 
     switch (kind) {
-      // Multi-layer Meteor / Bombardment Impact
+      // 1. Heavy Meteor Impact / Ground Explosion
       case 'impact':
       case 'crash': {
-        // Layer 1: Sub-thud punch
-        playTone('sine', 180, 24, 0.55, 0.22);
-        // Layer 2: Resonant noise blast
-        playNoise(0.65, 'lowpass', 850, 60, 0.24, 3.2, true);
+        // Multi-track physical layering: Sub-bass shock + rocky crunch + deep explosion
+        playSample('impact_sub_deep', { volume: 0.55 });
+        playSample(Math.random() < 0.5 ? 'explosion_crunch_0' : 'explosion_crunch_1', { volume: 0.48 });
+        playSample('warfork_rocket_boom', { volume: 0.35, delay: 0.02 });
         break;
       }
 
-      // Building Collapse / Structural Shatter
+      // 2. School Structural Damage & Building Collapse
       case 'buildingCollapse': {
-        playTone('sawtooth', 95, 20, 0.85, 0.18);
-        playNoise(1.1, 'bandpass', 620, 90, 0.28, 2.0, true);
+        playSample('building_crush_0', { volume: 0.58 });
+        playSample('building_crush_1', { volume: 0.50, delay: 0.06 });
+        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42, delay: 0.08 });
+        playSample('impact_sub_deep_2', { volume: 0.52, delay: 0.04 });
         break;
       }
 
-      // Meteor Collision in Mid-Air
+      // 3. Inter-Meteor Mid-Air Collisions & Fracturing
       case 'meteorCollision': {
-        playTone('triangle', 320, 55, 0.45, 0.19);
-        playNoise(0.48, 'bandpass', 1100, 180, 0.22, 4.5, false);
+        const rockSfx = ['rock_fracture_0', 'rock_fracture_1', 'rock_fracture_2'][Math.floor(Math.random() * 3)];
+        playSample(rockSfx, { volume: 0.52 });
+        playSample('warfork_plasma_boom', { volume: 0.38, playbackRate: 1.15 });
+        playSample('explosion_crunch_2', { volume: 0.32, delay: 0.03 });
         break;
       }
 
-      // Dragon Fireball Launch
+      // 4. Dragon Fireball Launch / Flame Breath
       case 'shoot': {
-        playTone('triangle', 580, 190, 0.16, 0.14);
-        playNoise(0.12, 'highpass', 400, 1200, 0.06, 1.2, false);
+        playSample('fireball_blast', { volume: 0.45, playbackRate: 1.05 });
+        playSample('whoosh_launch', { volume: 0.32, playbackRate: 1.15, delay: 0.01 });
         break;
       }
 
-      // Intercept / Precision Hit
+      // 5. Fireball Precision Intercept / Hit
       case 'intercept': {
-        playTone('triangle', 920, 280, 0.24, 0.15);
-        playNoise(0.20, 'bandpass', 1400, 300, 0.10, 3.0, false);
+        const rockSfx = Math.random() < 0.5 ? 'rock_fracture_0' : 'rock_fracture_1';
+        playSample(rockSfx, { volume: 0.46, playbackRate: 1.1 });
+        playSample('warfork_plasma_boom', { volume: 0.38 });
         break;
       }
 
-      // Powerup Pickup / Sparkle Chime
+      // 6. Powerup Pickup / Plasma Shimmer (Warm harmonic resonance, NO arcade beeps)
       case 'bonus': {
-        const now = ctx.currentTime;
-        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-          setTimeout(() => {
-            playTone('sine', freq, freq * 1.05, 0.22, 0.12);
-          }, idx * 45);
-        });
+        playSample('force_field_2', { volume: 0.42, playbackRate: 1.25 });
+        playSample('warfork_electro_hum', { volume: 0.28, playbackRate: 1.4, delay: 0.03 });
         break;
       }
 
-      // High-Tech Satellite Laser Strike
+      // 7. Elon Musk Orbital Satellite Laser Cannon
       case 'satLaser': {
-        playTone('sawtooth', 2600, 280, 0.14, 0.12);
-        playTone('square', 1400, 180, 0.10, 0.06);
+        const laser = ['laser_heavy_0', 'laser_heavy_1', 'laser_heavy_2'][Math.floor(Math.random() * 3)];
+        playSample(laser, { volume: 0.48 });
         break;
       }
 
-      // Electric Arc / Satellite Shock Defense
-      case 'shock':
+      // 8. Satellite Forcefield Deflection / Impact Shield
+      case 'clang':
       case 'satShield': {
-        playFM(840, 120, 6.0, 0.35, 0.18);
-        playNoise(0.25, 'highpass', 1600, 2400, 0.09, 2.5, false);
+        playSample('force_field_0', { volume: 0.46 });
+        playSample('warfork_electro_shock', { volume: 0.35, delay: 0.02 });
         break;
       }
 
-      // Dragon Footstep on Broad Street Pavement
+      // 9. Electric Arc / Satellite Shock Stun
+      case 'electric':
+      case 'shock': {
+        playSample('warfork_electro_shock', { volume: 0.42 });
+        playSample('warfork_electro_hum', { volume: 0.38 });
+        break;
+      }
+
+      // 10. Dragon Broad Street Pavement Footstep (Quadruped Trot Gait)
       case 'dragonStep': {
-        playNoise(0.045, 'bandpass', 1200, 400, 0.08, 2.0, true);
-        playTone('sine', 110, 45, 0.06, 0.09);
+        const stepSfx = ['footstep_concrete_0', 'footstep_concrete_1', 'footstep_concrete_2', 'footstep_concrete_3'][Math.floor(Math.random() * 4)];
+        playSample(stepSfx, { volume: 0.36, playbackRate: 0.88 });
         break;
       }
 
-      // Dragon Shoving Car / Props
+      // 11. Dragon Heavy Aerodynamic Wing Flap
+      case 'dragonFlap': {
+        playSample('wing_whoosh', { volume: 0.45, playbackRate: 0.95 });
+        break;
+      }
+
+      // 12. Dragon Shoving Car / Metal Crunch Foley
       case 'carCrunch': {
-        playFM(340, 75, 4.2, 0.28, 0.16);
-        playNoise(0.30, 'bandpass', 900, 250, 0.15, 2.4, false);
+        const carSfx = ['car_crunch_0', 'car_crunch_1', 'car_crunch_2'][Math.floor(Math.random() * 3)];
+        playSample(carSfx, { volume: 0.52 });
+        playSample('building_crush_1', { volume: 0.34, delay: 0.03 });
         break;
       }
 
-      // Purple Ramming Detonation
+      // 13. Purple "Meteor-Buster" Ramming Detonation
       case 'purpleRamHit': {
-        playTone('sine', 480, 40, 0.45, 0.26);
-        playFM(980, 180, 8.5, 0.35, 0.22);
-        playNoise(0.5, 'bandpass', 1800, 140, 0.25, 3.8, true);
+        playSample('warfork_plasma_boom', { volume: 0.56, playbackRate: 0.9 });
+        playSample('force_field_1', { volume: 0.48 });
+        playSample('explosion_crunch_2', { volume: 0.45, delay: 0.02 });
+        playSample('impact_sub_deep', { volume: 0.42, delay: 0.01 });
         break;
       }
 
-      // Victory Fanfare / Wave Win
+      // 14. Wave Victory Fanfare (Authentic Cinematic Music Fanfare)
       case 'waveWin': {
-        const notes = [440, 554.37, 659.25, 880, 1108.73];
-        notes.forEach((freq, idx) => {
-          setTimeout(() => {
-            playTone('triangle', freq, freq * 1.02, 0.38, 0.16);
-          }, idx * 75);
-        });
+        playSample('victory_fanfare_steel', { volume: 0.55 });
         break;
       }
 
-      // Classic Sounds Retained with Enhanced Fidelity
-      case 'siren':
-        playTone('sine', 520, 780, 0.35, 0.06);
+      // 15. Emergency Sirens & City Ambient Alerts
+      case 'siren': {
+        playSample('siren_loop', { volume: 0.35, bus: ambientBus });
         break;
-      case 'car':
-        playTone('sawtooth', 190, 105, 0.25, 0.08);
-        break;
-      case 'fire':
-        playNoise(0.35, 'bandpass', 550, 180, 0.10, 2.0, true);
-        break;
-      case 'helicopter':
-        playTone('sawtooth', 105, 78, 0.38, 0.06);
-        playNoise(0.18, 'lowpass', 180, 70, 0.08, 1.5, true);
-        break;
-      case 'gas':
-        playNoise(0.45, 'bandpass', 850, 120, 0.12, 1.8, false);
-        break;
-      case 'warning':
-        playTone('square', 950, 620, 0.20, 0.09);
-        break;
-      case 'steam':
-        playNoise(0.28, 'highpass', 1200, 400, 0.08, 1.0, false);
-        break;
-      case 'combo':
-        playTone('triangle', 480, 1400, 0.35, 0.15);
-        break;
-      case 'nearmiss':
-        playTone('sine', 260, 720, 0.22, 0.11);
-        break;
-      case 'fanfare':
-        playTone('triangle', 520, 1040, 0.45, 0.16);
-        break;
+      }
 
-      default:
-        playTone('triangle', 220, 110, 0.25, 0.1);
+      case 'helicopter': {
+        playSample('helicopter_loop', { volume: 0.32, bus: ambientBus });
         break;
+      }
+
+      case 'warning': {
+        playSample('alarm_warning', { volume: 0.40 });
+        break;
+      }
+
+      case 'glass': {
+        playSample(Math.random() < 0.5 ? 'glass_shatter_0' : 'glass_shatter_1', { volume: 0.42 });
+        break;
+      }
+
+      case 'fire': {
+        playSample('fire_thruster_1', { volume: 0.30, playbackRate: 1.3 });
+        break;
+      }
+
+      case 'gas': {
+        playSample('whoosh_launch', { volume: 0.34, playbackRate: 0.8 });
+        break;
+      }
+
+      case 'combo':
+      case 'fanfare': {
+        playSample('victory_fanfare_0', { volume: 0.44 });
+        break;
+      }
+
+      case 'nearmiss': {
+        playSample('whoosh_launch', { volume: 0.38, playbackRate: 1.4 });
+        break;
+      }
+
+      default: {
+        playSample('rock_fracture_0', { volume: 0.35 });
+        break;
+      }
     }
   }
 
   // Update dynamic atmospheric audio parameters (Sub-Bass Titan celestial rumble)
   function update(dt, cameraAltitude, titanAltitude, titanOnScreen) {
-    if (!ctx || muted || !rumbleGain) return;
+    if (!ctx || muted || !titanRumbleGain) return;
     try {
       const now = ctx.currentTime;
       // Rumble intensifies as altitude approaches orbit (y > 70) and Titan is on screen
-      const altNorm = Math.min(1.0, Math.max(0.0, (cameraAltitude - 30) / 280));
-      const targetVolume = (titanOnScreen ? 0.18 : 0.04) * (0.15 + altNorm * 0.85);
-      rumbleGain.gain.setTargetAtTime(targetVolume, now, 0.25);
+      const altNorm = Math.min(1.0, Math.max(0.0, (cameraAltitude - 20) / 300));
+      const targetVolume = (titanOnScreen ? 0.34 : 0.08) * (0.15 + altNorm * 0.85);
+      titanRumbleGain.gain.setTargetAtTime(targetVolume, now, 0.25);
 
-      if (rumbleOsc && rumbleFilter) {
-        // Slow seismic wobble modulation
-        const wobble = Math.sin(now * 1.8) * 3.5;
-        rumbleOsc.frequency.setTargetAtTime(42 + wobble, now, 0.1);
-        rumbleFilter.frequency.setTargetAtTime(65 + wobble * 2.5, now, 0.1);
+      if (titanRumbleFilter) {
+        // High altitude opens filter for deep planetary bass roar
+        const targetFreq = 90 + altNorm * 180 + (titanOnScreen ? 70 : 0);
+        titanRumbleFilter.frequency.setTargetAtTime(targetFreq, now, 0.2);
       }
     } catch (e) {}
   }
@@ -395,8 +448,11 @@ export function createSoundEngine() {
     if (masterGain && ctx) {
       masterGain.gain.setValueAtTime(muted ? 0 : 1, ctx.currentTime);
     }
-    if (muted && flameLoopGain && ctx) {
-      flameLoopGain.gain.setValueAtTime(0, ctx.currentTime);
+    if (flameLoopGain && ctx) {
+      flameLoopGain.gain.setValueAtTime(muted ? 0 : 0.38, ctx.currentTime);
+    }
+    if (titanRumbleGain && ctx) {
+      titanRumbleGain.gain.setValueAtTime(muted ? 0 : 0.25, ctx.currentTime);
     }
   }
 
@@ -405,7 +461,7 @@ export function createSoundEngine() {
   }
 
   return {
-    init,
+    init: initContext,
     sound,
     setFlameStreamAudio,
     update,

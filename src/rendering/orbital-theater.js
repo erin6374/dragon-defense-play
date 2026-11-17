@@ -135,12 +135,14 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   }
 
   // =========================================================================
-  // 2. HIGH-TECH MILITARISTIC SATELLITES AT MAP CEILING (ALTITUDE Y ~ 325)
-  // Hovering on the final top reachable screen (y ~ 315 to 345, z ~ -4 to 12).
+  // 2. ROWS OF HIGH-TECH MILITARISTIC SATELLITES AT MAP CEILING (ALTITUDE Y ~ 325)
+  // Hovering on the final top reachable screen in a 2-tier Starlink orbital constellation.
   // =========================================================================
   const satellites = [];
-  const SAT_COUNT = 7;
-  const satSpacing = 46;
+  const SAT_ROWS = 2;
+  const SATS_PER_ROW = 6;
+  const SAT_COUNT = SAT_ROWS * SATS_PER_ROW;
+  const satSpacing = 48;
 
   const satStealthMat = new THREE.MeshStandardMaterial({
     color: 0x222730,
@@ -205,10 +207,12 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   for (let s = 0; s < SAT_COUNT; s++) {
     const satGroup = new THREE.Group();
     satGroup.scale.setScalar(1.35);
-    const baseX = (s - (SAT_COUNT - 1) / 2) * satSpacing;
-    // Satellites placed at top screen (y ~ 325)
-    const baseY = 325 + Math.sin(s * 1.3) * 12;
-    const baseZ = -4 + (s % 2) * 14;
+    const row = Math.floor(s / SATS_PER_ROW);
+    const col = s % SATS_PER_ROW;
+    const baseX = (col - (SATS_PER_ROW - 1) / 2) * satSpacing + (row * 24);
+    // Row 0: Front tier at y ~ 320, z ~ 4; Row 1: Upper tier at y ~ 338, z ~ -18
+    const baseY = (row === 0 ? 320 : 338) + Math.sin(col * 1.3 + row) * 8;
+    const baseZ = (row === 0 ? 4 : -18) + (col % 2) * 8;
     satGroup.position.set(baseX, baseY, baseZ);
 
     const busMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 3.0), satStealthMat);

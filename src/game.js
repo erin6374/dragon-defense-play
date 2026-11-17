@@ -650,7 +650,7 @@ dragon.scale.set(1.14,1.14,1.14);
 dragon.scale.setScalar(1.20);
 // Legacy mouth socket follows the original visual snout's world transform.
 const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
-let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0;
+let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0,restBlend=1.0;
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
  dragonVelX=0;dragonVelY=0;flightRoll=0;flightYaw=0;diveEnergy=0;
@@ -967,7 +967,12 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
    laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
   }
  }else{
-  laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
+  if(fireTruck&&Math.random()<0.45){
+   midgroundStreet=true;
+   laneZ=-88;
+  }else{
+   laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
+  }
  }
  const streetScale=backgroundStreet?.52:(midgroundStreet?.66:(rearStreet?.82:1.0));
  const spawnDist=260+Math.random()*40;
@@ -1785,6 +1790,7 @@ function updateWorld(dt){
     ignite(h.root.position.x,1,h.root.position.z);
     spawnHelicopterCrashDebris(h.root.position,h.variant);
     spawnHelicopterWreck(h.root.position,h.variant);
+    spawnSurvivingPilot(h.root.position);
     neighborhood.impact(h.root.position.x,5,h.root.position.z,4,p=>debrisPiece(p,'brick'));
     panicCrowdAt(h.root.position.x,h.root.position.z,36);
     h.life=0;h.crashed=true;
@@ -3446,12 +3452,20 @@ if(dragonVelX>1.2&&facing!==1){facing=1;turnTime=.28;}
 else if(dragonVelX<-1.2&&facing!==-1){facing=-1;turnTime=.28;}
 turnTime=Math.max(0,turnTime-dt);
 const turning=turnTime>0?Math.sin(Math.PI*(turnTime/.28)):0;
-dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing,Math.min(1,dt*17));
+const BASE_DRAGON_SCALE=1.10; // 10% larger dragon as requested
+dragon.scale.x=THREE.MathUtils.lerp(dragon.scale.x,facing*BASE_DRAGON_SCALE,Math.min(1,dt*17));
+dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,BASE_DRAGON_SCALE,Math.min(1,dt*8));
+dragon.scale.z=BASE_DRAGON_SCALE;
 const targetRoll=-dragonVelX*0.022-move*0.16;
 flightRoll=THREE.MathUtils.lerp(flightRoll,targetRoll,Math.min(1,dt*8.5));
 const targetElevationPitch=(dragonVelY*0.025)*facing+(turning*0.34);
 flightPitch=THREE.MathUtils.lerp(flightPitch,targetElevationPitch,Math.min(1,dt*9.0));
-const targetYaw=Math.sin(elapsed*2.2)*0.08+(dragonVelX*0.012)+(turning*0.55*facing);
+const isResting=(!dragonLeavingRoof||(Math.abs(dragonVelX)<1.2&&Math.abs(move)<0.1&&Math.abs(dragonVelY)<1.5));
+restBlend=THREE.MathUtils.lerp(restBlend,isResting?1.0:0.0,Math.min(1,dt*4.5));
+const flightYawDynamic=Math.sin(elapsed*2.2)*0.08+(dragonVelX*0.012)+(turning*0.55*facing);
+// When resting/hovering, turn to face the camera (towards +Z); smoothly transition to profile flight when moving
+const cameraFacingYaw=(facing>0?1:-1)*1.35;
+const targetYaw=THREE.MathUtils.lerp(flightYawDynamic,cameraFacingYaw+Math.sin(elapsed*1.5)*0.06,restBlend);
 flightYaw=THREE.MathUtils.lerp(flightYaw,targetYaw,Math.min(1,dt*8.0));
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
 const shocked=dragonStun>0||helicopters.some(h=>h.role==='ice'&&h.contactTime>.01);
@@ -3601,6 +3615,14 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
   }
   for(const h of helicopters){
    if(!h.crashing&&s.mesh.position.distanceTo(h.root.position)<7.0){crashHelicopter(h);if(!s.mega)s.life=0;}
+  }
+  if(Math.random()<0.35){
+   for(const b of neighborhood.targetBuildings){
+    if(Math.abs(s.mesh.position.x-b.x)<b.w*0.5+3.0&&Math.abs(s.mesh.position.z-b.z)<b.d*0.5+3.0&&s.mesh.position.y<b.h+5){
+     ignite(s.mesh.position.x,Math.min(b.h,Math.max(1.5,s.mesh.position.y)),b.front+0.5);
+     break;
+    }
+   }
   }
  }
  if(!s.hostile&&!s.fireTarget&&s.life>0){
