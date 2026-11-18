@@ -1422,7 +1422,7 @@ function iceHit(reason,helicopter=false){
  message('ICE PROJECTILE '+iceGroundHits+'/3 — DODGE!');
  if(iceGroundHits>=3)stunDragon('ICE GROUND ATTACK');
 }
-function hurtDragon(reason){if(dragonStun>0||blockShield>0||invulnerable>0||!active)return;dragonLives--;invulnerable=2.2;emitImpact(dragon.position.x,dragon.position.y,dragon.position.z,90,.6);sound('crash');message(reason+' · DRAGON LIVES '+dragonLives);if(dragonLives<=0)gameOver();}
+function hurtDragon(reason){if(dragonStun>0||invulnerable>0||!active)return;if(blockShield>0||elapsed<purpleRamUntil){purpleShieldImpact=1.0;sound('satShield');flashAt(dragon.position.x,dragon.position.y+0.65,dragon.position.z,2.5);return;}dragonLives--;invulnerable=2.2;emitImpact(dragon.position.x,dragon.position.y,dragon.position.z,90,.6);sound('crash');message(reason+' · DRAGON LIVES '+dragonLives);if(dragonLives<=0)gameOver();}
 function activateBlock(){
  if(rallyRecoveryOpen()){
   if(!rallyShieldQueued&&blockCharge>=25){
@@ -1479,9 +1479,9 @@ const distantStreaks=[];let distantTimer=3;
 let backgroundDamageTimer=2.5;
 // One soft, desaturated atmospheric sprite per meteor. No black geometric scribbles.
 const distantVisual=createDistantMeteorVisual(THREE);
-distantVisual.material.color.setHex(0x829cb7);
+distantVisual.material.color.setHex(0xffffff);
 const flamingDistantMeteorMaterial=distantVisual.material.clone();
-flamingDistantMeteorMaterial.color.setHex(0xa9a1b8);
+flamingDistantMeteorMaterial.color.setHex(0xffbb77);
 function neighborhoodHealth(){
  const buildings=neighborhood.targetBuildings;
  return Math.round((1-buildings.reduce((sum,b)=>sum+b.damage,0)/Math.max(1,buildings.length))*100);
@@ -1987,7 +1987,10 @@ function updateWorld(dt){
  for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>Math.abs(p.g.position.x-d.x)<d.r&&Math.abs(p.g.position.z-d.z)<d.r);
   const isPanicked=(p.panic>0)||!!threat;
   if(p.panic>0)p.panic-=dt;
-  if(threat){p.dx=p.g.position.x<threat.x?-1:1;p.life=Math.max(p.life,4);}
+  if(threat){
+   if(!p.panicAudible){p.panicAudible=true;sound('crowdPanic',{x:p.g.position.x});}
+   p.dx=p.g.position.x<threat.x?-1:1;p.life=Math.max(p.life,4);
+  }
   if(isPanicked){p.walkSpeed=Math.max(p.walkSpeed,6.2);}
   if(advancePedestrianWind(p,dt)){animatePerson(p.g,p.walkCycle||0,false,false);}
   else if(p.down>0){p.down-=dt;p.vy-=14*dt;p.g.position.y=Math.max(0,p.g.position.y+p.vy*dt);if(p.g.position.y===0)p.vy=0;p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,(p.dx||1)*1.25,Math.min(1,dt*7));}
@@ -2622,31 +2625,43 @@ varying vec3 vViewPosition;
 varying vec3 vWorldPosition;
 uniform float uTime;
 uniform float uImpact;
+uniform float uShieldType;
 
 void main(){
  vec3 viewDir=normalize(vViewPosition);
  float dotNV=clamp(abs(dot(vNormal,viewDir)),0.0,1.0);
  float fresnel=1.0-dotNV;
- float rim=pow(fresnel,2.3);
+ float rim=pow(fresnel,2.2);
  vec3 iridescence=0.5+0.5*cos(fresnel*6.28318-uTime*2.2+vec3(0.0,2.094,4.188));
- vec3 baseColor=vec3(0.58,0.20,0.96);
- vec3 rimColor=mix(vec3(0.88,0.52,1.0),iridescence,0.45);
- vec3 impactColor=vec3(1.0,0.94,1.0);
+ 
+ // Dual-mode palette:
+ // Mode 0 (Purple Ram): Deep magenta-violet with iridescent rim
+ // Mode 1 (Call the Block): Luminous soft cyan with golden solar rim
+ vec3 basePurple=vec3(0.55,0.18,0.92);
+ vec3 rimPurple=mix(vec3(0.88,0.52,1.0),iridescence,0.45);
+ vec3 baseBlock=vec3(0.12,0.65,0.95);
+ vec3 rimBlock=mix(vec3(0.40,0.92,1.0),vec3(0.98,0.85,0.40),fresnel*0.8);
+ 
+ vec3 baseColor=mix(basePurple,baseBlock,uShieldType);
+ vec3 rimColor=mix(rimPurple,rimBlock,uShieldType);
+ vec3 impactColor=mix(vec3(1.0,0.94,1.0),vec3(0.95,1.0,1.0),uShieldType);
+ 
  vec3 color=mix(baseColor,rimColor,rim);
  if(uImpact>0.0){
   color=mix(color,impactColor,uImpact*0.65);
  }
- float alpha=rim*0.42+0.06;
+ // Soft delicate soap bubble transparency: thin center (0.035), glowing rim (0.28), blurred impact flare (+0.38)
+ float alpha=rim*(0.28-uShieldType*0.06)+0.035;
  if(uImpact>0.0){
-  alpha+=uImpact*0.36;
+  alpha+=uImpact*0.38;
  }
- gl_FragColor=vec4(color,clamp(alpha,0.0,0.92));
+ gl_FragColor=vec4(color,clamp(alpha,0.0,0.85));
 }
 `;
 
 const purpleRamShieldGeo=new THREE.SphereGeometry(3.7,36,26);
 const purpleRamShieldMat=new THREE.ShaderMaterial({
- uniforms:{uTime:{value:0},uImpact:{value:0}},
+ uniforms:{uTime:{value:0},uImpact:{value:0},uShieldType:{value:0}},
  vertexShader:purpleShieldVertexShader,
  fragmentShader:purpleShieldFragmentShader,
  transparent:true,
@@ -2676,9 +2691,12 @@ function spawnMeteor(random=Math.random,opening=null){
  // Rock fragments and intact meteors use identical irregular rotating geometry.
  const isDeterministic=random!==Math.random;
  const roll=random();
- let kind=opening?.kind;
+ let kind=isDeterministic?opening?.kind:null;
  let isPowerup=null;
  if(!kind){
+  if(opening&&!isDeterministic){
+   kind=roll<.18?'iron':roll<.42?'molten':roll<.72?'flaming':'stone';
+  }else
   if(!isDeterministic&&wave>=4&&wavePurpleRemaining>0&&(meteors.length>=2||Math.random()<.32)&&!opening){
    wavePurpleRemaining--;
    isPowerup='purple_ram';
@@ -2700,7 +2718,7 @@ function spawnMeteor(random=Math.random,opening=null){
   }
  }
  let size;
- if(opening?.size)size=opening.size;
+ if(opening?.size&&isDeterministic)size=opening.size;
  else if(isPowerup)size=2.8+Math.random()*.6;
  else {
   // 70% Giant meteor chunks (3.6 to 4.8), 30% smaller debris (1.2 to 2.2) across all waves
@@ -4214,13 +4232,17 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  }
  if(purpleRamShieldMesh){
   const purpleActive=elapsed<purpleRamUntil;
-  purpleRamShieldMesh.visible=purpleActive;
-  if(purpleActive){
+  const blockActive=blockShield>0;
+  const shieldActive=purpleActive||blockActive;
+  purpleRamShieldMesh.visible=shieldActive;
+  if(shieldActive){
    purpleShieldImpact=Math.max(0,purpleShieldImpact-dt*3.5);
    purpleRamShieldMat.uniforms.uTime.value=elapsed;
    purpleRamShieldMat.uniforms.uImpact.value=purpleShieldImpact;
+   purpleRamShieldMat.uniforms.uShieldType.value=purpleActive?0.0:1.0;
    purpleRamShieldMesh.position.set(dragon.position.x+(facing||1)*0.2,dragon.position.y+0.65,dragon.position.z);
-   purpleRamShieldMesh.scale.setScalar(3.6+Math.sin(elapsed*14.0)*0.25+(purpleShieldImpact*0.45));
+   const pulseRate=purpleActive?14.0:8.5;
+   purpleRamShieldMesh.scale.setScalar(3.6+Math.sin(elapsed*pulseRate)*0.22+(purpleShieldImpact*0.45));
   }
  }
  const renderStartUTC=Date.now();const renderStart=performance.now();
@@ -4273,7 +4295,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>purpleRamShieldMesh,neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),
+ window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);

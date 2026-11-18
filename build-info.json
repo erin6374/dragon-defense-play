@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc94",
-  "version": "5.5.0-rc.94",
+  "build": "5.5-north-broad-refinement-rc95",
+  "version": "5.5.0-rc.95",
   "gameplay_base": "5.2.3",
-  "scope": "RC94: Procedural & hybrid cinematic draconic roar vocalization engine. Four distinct draconic vocal variants: furious protective roar on school damage, deep mournful lamentation roar on defeat/game over, commanding challenge roar on boss arrival & powerup surges, and intense combat snarl during high-threat swarms & supersonic kinetic dives; features dual-formant pharyngeal acoustic cavity filtering, LFO vocal cord flutter, waveshaper growl saturation, and zero added draw calls.",
+  "scope": "RC95: Atmospheric ablation bolide streaks replacing cold white streaks, translucent soft refractive bubble shield with dual-mode Call the Block and Purple Ram protection and elastic blur on impact, 70/30 giant-to-small meteor chunk barrage with full mineral variety across all waves, spatial rock crumble cascade foley, and civilian crowd distress acoustics.",
   "new_gameplay_features": true,
-  "release_status": "RC94 candidate: Cinematic Draconic Roar Engine (Furious School Hit, Mournful Defeat, Challenge Boss, Intense Combat Swarm)."
+  "release_status": "RC95 candidate: Atmospheric Reentry Ablation, Soft Translucent Bubble Shield, 70/30 Diverse Meteor Barrage, Rock Cascades, and Evacuation Acoustics."
 }

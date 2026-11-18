@@ -330,6 +330,9 @@ export function createSoundEngine() {
         playSample(rockSfx, { volume: 0.52, pan });
         playSample('warfork_plasma_boom', { volume: 0.38, playbackRate: 1.15, pan });
         playSample('explosion_crunch_2', { volume: 0.32, delay: 0.03, pan });
+        // Secondary cascading rock crumb fracture foley
+        playSample('rock_fracture_1', { volume: 0.38, playbackRate: 1.35, delay: 0.05, pan: pan * 0.9 });
+        playSample('rock_fracture_2', { volume: 0.34, playbackRate: 1.55, delay: 0.08, pan: pan * 1.1 });
         break;
       }
 
@@ -345,6 +348,7 @@ export function createSoundEngine() {
         const rockSfx = ['rock_fracture_0', 'rock_fracture_1', 'rock_fracture_2'][Math.floor(Math.random() * 3)];
         playSample(rockSfx, { volume: 0.44, playbackRate: 1.18, pan });
         playSample('warfork_rocket_boom', { volume: 0.28, playbackRate: 1.35, pan });
+        playSample('rock_fracture_2', { volume: 0.32, playbackRate: 1.45, delay: 0.04, pan });
         break;
       }
 
@@ -449,6 +453,12 @@ export function createSoundEngine() {
 
       case 'warning': {
         playSample('alarm_warning', { volume: 0.40, pan });
+        break;
+      }
+
+      case 'crowdPanic': {
+        playSample('whoosh_launch', { volume: 0.30, playbackRate: 0.65, pan, bus: ambientBus });
+        playSample('alarm_warning', { volume: 0.22, playbackRate: 1.15, delay: 0.05, pan, bus: ambientBus });
         break;
       }
 
