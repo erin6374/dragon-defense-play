@@ -4,6 +4,7 @@
 // celestial sub-bass drones, and organic foley with zero arcade beeps or bops.
 
 import { createTaikoEngine } from './taiko-engine.js';
+import { createDragonRoarEngine } from './dragon-roar.js';
 
 const AUDIO_MANIFEST = {
   // Deep Impacts & Explosions
@@ -76,6 +77,7 @@ export function createSoundEngine() {
   let ambientBus = null;
   let percussionBus = null;
   let taikoEngine = null;
+  let roarEngine = null;
 
   // Buffer cache: Map<string, AudioBuffer>
   const buffers = new Map();
@@ -126,6 +128,8 @@ export function createSoundEngine() {
 
       taikoEngine = createTaikoEngine(ctx, percussionBus);
       taikoEngine.start();
+
+      roarEngine = createDragonRoarEngine(ctx, sfxBus, playSample);
 
       loadAllAudioBuffers();
       startTitanCelestialRumble();
@@ -396,6 +400,18 @@ export function createSoundEngine() {
         break;
       }
 
+      // 11b. Cinematic Draconic Roars (Furious, Mournful, Challenge, Intense)
+      case 'dragonRoar': {
+        const variant = (opt && opt.variant) || 'furious';
+        if (roarEngine) roarEngine.triggerRoar(variant, opt);
+        break;
+      }
+
+      case 'dragonMourn': {
+        if (roarEngine) roarEngine.triggerRoar('mournful', opt);
+        break;
+      }
+
       // 12. Dragon Shoving Car / Metal Crunch Foley
       case 'carCrunch': {
         const carSfx = ['car_crunch_0', 'car_crunch_1', 'car_crunch_2'][Math.floor(Math.random() * 3)];
@@ -421,7 +437,7 @@ export function createSoundEngine() {
 
       // 15. Emergency Sirens with Dynamic Doppler Pitch & Panning
       case 'siren': {
-        const rate = (opts && (opts.playbackRate || opts.doppler)) || 1.0;
+        const rate = (opt && (opt.playbackRate || opt.doppler)) || 1.0;
         playSample('siren_loop', { volume: 0.35, bus: ambientBus, pan, playbackRate: rate });
         break;
       }
@@ -532,6 +548,9 @@ export function createSoundEngine() {
     if (taikoEngine) {
       taikoEngine.setMuted(muted);
     }
+    if (roarEngine) {
+      roarEngine.setMuted(muted);
+    }
   }
 
   function isMuted() {
@@ -542,6 +561,10 @@ export function createSoundEngine() {
     return taikoEngine ? taikoEngine.getStats() : null;
   }
 
+  function getRoarStats() {
+    return roarEngine ? roarEngine.getStats() : null;
+  }
+
   return {
     init: initContext,
     sound,
@@ -549,6 +572,8 @@ export function createSoundEngine() {
     update,
     setMuted,
     isMuted,
-    getTaikoStats
+    getTaikoStats,
+    getRoarStats,
+    dragonRoar: (variant, opts) => (roarEngine ? roarEngine.triggerRoar(variant, opts) : false)
   };
 }

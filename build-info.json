@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc93",
-  "version": "5.5.0-rc.93",
+  "build": "5.5-north-broad-refinement-rc94",
+  "version": "5.5.0-rc.94",
   "gameplay_base": "5.2.3",
-  "scope": "RC93: Procedural dynamic Japanese war drums (Taiko) percussion soundtrack modeled on Kodō Ō-daiko ensemble war drumming. Real-time Jo-Ha-Kyū progression dynamically modulating tempo (108 to 132 BPM), syncopation, and intensity with battle threat, active meteors, school HP, and boss encounters; acoustic physical modeling synthesis for massive Ō-daiko sub-bass, Chū-daiko galloping war groove, Shime-daiko high-tension rolls, and bachi wooden rim clicks.",
+  "scope": "RC94: Procedural & hybrid cinematic draconic roar vocalization engine. Four distinct draconic vocal variants: furious protective roar on school damage, deep mournful lamentation roar on defeat/game over, commanding challenge roar on boss arrival & powerup surges, and intense combat snarl during high-threat swarms & supersonic kinetic dives; features dual-formant pharyngeal acoustic cavity filtering, LFO vocal cord flutter, waveshaper growl saturation, and zero added draw calls.",
   "new_gameplay_features": true,
-  "release_status": "RC93 candidate: Dynamic Japanese Taiko war drum percussion soundtrack (Jo-Ha-Kyū progression, Kodō Ō-daiko acoustic synthesis, dynamic battle threat modulation)."
+  "release_status": "RC94 candidate: Cinematic Draconic Roar Engine (Furious School Hit, Mournful Defeat, Challenge Boss, Intense Combat Swarm)."
 }
