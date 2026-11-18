@@ -28,7 +28,7 @@ for(const token of [
  'vec3(.033,.032,.031),vec3(.088,.099,.109)'
 ])assert.ok(bridge.includes(token),'RC50 soot density missing: '+token);
 assert.equal(bridge.split('float densityShade=').length-1,1,'RC50 soot shade should run once');
-assert.ok(bridge.includes('vec2 atlasUv=plumeMode>.5&&fract(vSeed*.683)>.5 ? vec2(1.-uv.x,uv.y) : uv;'),'RC59 seeded horizontal atlas mirroring missing');
+assert.ok(bridge.includes('vec2 atlasUv=plumeMode>.5&&smokeMirror>.5&&fract(vSeed*.683)>.5 ? vec2(1.-uv.x,uv.y) : uv;'),'RC59 seeded horizontal atlas mirroring missing');
 // RC54: the licensed plume alone gains independent texture clocks and asymmetric edges.
 for(const token of [
  'time=clock*(5.8+2.4*fract(vSeed*.229))+fract(vSeed*.317)*64.;',
@@ -87,3 +87,7 @@ console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader
  assert.equal(new Set(rolls.map(x=>x.toFixed(4))).size,6,'RC59 plume sheets rotate in lockstep');
  assert.equal(bridge.split('flipbook(smokeAtlas,atlasUv,time)').length-1,1,'RC59 added atlas reads');
  console.log('RC59 bounded licensed plume billboard-roll source contract PASS');
+
+// Same-source RC59 A/B: mirror off must preserve plume and GPU sheet budgets.
+for(const token of ["let smokeMirror=true;","params.get('smokemirror')==='off'","setSmokeMirror(next)","if(u.smokeMirror)u.smokeMirror.value=smokeMirror?1:0;","uniform float smokeMirror;"])assert.ok(bridge.includes(token),'RC59 A/B control missing: '+token);
+console.log('RC59 controlled mirror A/B contract PASS');
