@@ -442,9 +442,23 @@ export function createSoundEngine() {
         break;
       }
 
-      // Steam fire breath (when drenched/wet)
+      // Steam fire breath & fire truck water suppression hiss
       case 'steam': {
-        playSample('whoosh_launch', { volume: 0.36, playbackRate: 1.6, pan });
+        playSample('whoosh_launch', { volume: 0.38, playbackRate: 1.75, pan });
+        playSample('glass_shatter_1', { volume: 0.12, playbackRate: 0.45, pan });
+        break;
+      }
+
+      // High-speed dive aerodynamic whoosh & supersonic dive boom
+      case 'sonicBoom': {
+        playSample('warfork_rocket_boom', { volume: 0.62, playbackRate: 0.85, pan });
+        playSample('impact_sub_deep_2', { volume: 0.58, delay: 0.02, pan });
+        playSample('whoosh_launch', { volume: 0.48, playbackRate: 1.15, pan });
+        break;
+      }
+
+      case 'diveWhoosh': {
+        playSample('whoosh_launch', { volume: 0.40, playbackRate: 1.5, pan });
         break;
       }
 

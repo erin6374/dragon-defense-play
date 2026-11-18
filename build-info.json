@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc89",
-  "version": "5.5.0-rc.89",
+  "build": "5.5-north-broad-refinement-rc90",
+  "version": "5.5.0-rc.90",
   "gameplay_base": "5.2.3",
-  "scope": "RC89: AAA-grade cinematic presentation & gameplay polish: 3D volumetric dual-core orbital laser cannons; translucent additive satellite forcefields; surviving helicopter pilot with handheld red distress flare and smoke trail; true conical flamethrower spray with rolling turbulent fire billows; multi-track Mega Fire and steam audio; and pavement locomotion dust shockwaves with vehicle emergency braking.",
+  "scope": "RC90: AAA-grade cinematic choreography & physical immersion: dynamic flight camera choreography with flightRoll G-Force Dutch tilt, vertical velocity dive/climb lookahead, and speed zoom; supersonic dive aerodynamic vapor condensation ring and sonic boom foley; First Responder fire truck water cannon suppression with hissing steam foley, rising steam mist, and extinguish bursts; Colossus boss multi-phase crust fracture screenshake, hit-flash recoil, and glowing molten magma shard rain.",
   "new_gameplay_features": true,
-  "release_status": "RC89 candidate: Volumetric orbital laser cannons, translucent satellite forcefields, pilot emergency distress flare, conical flamethrower spray, and pavement ground-effect dust shockwaves."
+  "release_status": "RC90 candidate: G-Force Dutch tilt camera choreography, supersonic dive sonic boom, fire truck hissing steam suppression, and Colossus boss crust fracture shockwaves."
 }
