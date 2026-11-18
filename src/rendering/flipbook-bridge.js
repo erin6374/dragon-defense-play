@@ -181,7 +181,11 @@ ${anchor}`);
    ageFade=smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
    if(ageFade*feather*.94<.005)discard;
   }
-  vec4 frame=flipbook(smokeAtlas,uv,time);
+  // Alternate horizontal atlas orientation per source to break repeated
+  // plume silhouettes. One UV transform, no new sheets or texture reads;
+  // preserve the legacy smoke A/B path exactly.
+  vec2 atlasUv=plumeMode>.5&&fract(vSeed*.683)>.5 ? vec2(1.-uv.x,uv.y) : uv;
+  vec4 frame=flipbook(smokeAtlas,atlasUv,time);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
