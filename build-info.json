@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc87",
-  "version": "5.5.0-rc.87",
+  "build": "5.5-north-broad-refinement-rc88",
+  "version": "5.5.0-rc.88",
   "gameplay_base": "5.2.3",
-  "scope": "RC87: Complete visual and gameplay balance refinement: removed anomalous sky streaks; overhauled Purple Ram shield into a soft, translucent refractive bubble with impact ripple blur; enforced 70% giant / 30% small meteor chunk ratio across all waves with full mineral/molten/flaming variety; multi-tier cascading fragmentation; satellite laser dislodge variety; airtight end-game win and loss condition guarantees across all waves; and comprehensive historical feature audit verification.",
+  "scope": "RC88: Comprehensive gameplay review refinements: centered iridescent translucent bubble shield with real-time dynamic impact ripples and chromatic dispersion; visceral multi-track meteor damage hit-flash and elastic recoil; heroic rooftop takeoff lift burst with aerodynamic wing flap foley and ground gust puff; atmospheric entry radar indicators for high-altitude colossal chunks; cinematic street-level pavement camera framing and upward tilt; and exosphere microgravity orbital glide momentum.",
   "new_gameplay_features": true,
-  "release_status": "RC87 candidate: Translucent bubble shield with impact ripple blur, 70/30 meteor ratio with cascading fragmentation, anomalous sky streak cleanup, and end-game win condition guarantees."
+  "release_status": "RC88 candidate: Prismatic bubble shield, visceral meteor hit flash and kinetic recoil, rooftop takeoff impulse, atmospheric entry radar chevrons, street-level pavement camera, and orbital glide inertia."
 }

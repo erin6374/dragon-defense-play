@@ -2130,13 +2130,19 @@ function updateMeteorRadar(dt){
  c.fillStyle='#4ff5b3';c.fillRect(77,65,6,6);
  for(const meteor of meteors){
   if(meteor.grounded)continue;
+  const isHighThreat=(meteor.size>=3.0||meteor.boss||meteor.isPowerup);
   const x=80+THREE.MathUtils.clamp((meteor.mesh.position.x-dragon.position.x)*.75,-51,51);
   const y=68-THREE.MathUtils.clamp((meteor.mesh.position.y-dragon.position.y)*.75,-51,51);
-  c.fillStyle=meteor.burning?'#ff7a32':'#ffcf56';
-  c.beginPath();c.arc(x,y,meteor.boss?4:2.7,0,Math.PI*2);c.fill();
+  if(meteor.mesh.position.y>dragon.position.y+45&&isHighThreat){
+   c.fillStyle=meteor.isPowerup==='purple_ram'?'#c084fc':(meteor.burning?'#ff4d32':'#ffd152');
+   c.beginPath();c.moveTo(x-4,17);c.lineTo(x+4,17);c.lineTo(x,22);c.closePath();c.fill();
+  }
+  c.fillStyle=meteor.isPowerup==='purple_ram'?'#c084fc':(meteor.burning?'#ff7a32':'#ffcf56');
+  const dotRadius=meteor.boss?4.5:(meteor.size>=3.0?3.4:2.2);
+  c.beginPath();c.arc(x,y,dotRadius,0,Math.PI*2);c.fill();
   if(warning?.meteor===meteor){
    c.strokeStyle='#fff2ce';
-   c.beginPath();c.arc(x,y,6,0,Math.PI*2);c.stroke();
+   c.beginPath();c.arc(x,y,dotRadius+3.5,0,Math.PI*2);c.stroke();
   }
  }
 }
@@ -2544,7 +2550,7 @@ void main(){
  vec3 pos=position;
  float wobble=sin(pos.y*3.2+uTime*4.5)*cos(pos.x*3.2+uTime*3.5)*0.08;
  if(uImpact>0.0){
-  wobble+=sin(pos.y*12.0+uTime*26.0)*cos(pos.x*12.0+uTime*22.0)*(uImpact*0.28);
+  wobble+=sin(pos.y*14.0+uTime*28.0)*cos(pos.x*14.0+uTime*24.0)*(uImpact*0.35);
  }
  pos+=normal*wobble;
  vec4 mvPosition=modelViewMatrix*vec4(pos,1.0);
@@ -2563,21 +2569,22 @@ uniform float uImpact;
 
 void main(){
  vec3 viewDir=normalize(vViewPosition);
- float dotNV=abs(dot(vNormal,viewDir));
+ float dotNV=clamp(abs(dot(vNormal,viewDir)),0.0,1.0);
  float fresnel=1.0-dotNV;
- float rim=pow(fresnel,2.2);
- vec3 baseColor=vec3(0.66,0.25,0.96);
- vec3 rimColor=vec3(0.92,0.70,1.0);
- vec3 impactColor=vec3(1.0,0.90,1.0);
+ float rim=pow(fresnel,2.3);
+ vec3 iridescence=0.5+0.5*cos(fresnel*6.28318-uTime*2.2+vec3(0.0,2.094,4.188));
+ vec3 baseColor=vec3(0.58,0.20,0.96);
+ vec3 rimColor=mix(vec3(0.88,0.52,1.0),iridescence,0.45);
+ vec3 impactColor=vec3(1.0,0.94,1.0);
  vec3 color=mix(baseColor,rimColor,rim);
  if(uImpact>0.0){
-  color=mix(color,impactColor,uImpact*0.55);
+  color=mix(color,impactColor,uImpact*0.65);
  }
- float alpha=rim*0.38+0.06;
+ float alpha=rim*0.42+0.06;
  if(uImpact>0.0){
-  alpha+=uImpact*0.32;
+  alpha+=uImpact*0.36;
  }
- gl_FragColor=vec4(color,alpha);
+ gl_FragColor=vec4(color,clamp(alpha,0.0,0.92));
 }
 `;
 
@@ -2672,7 +2679,7 @@ function spawnMeteor(random=Math.random,opening=null){
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
  const meteorHp=size>=3.2?Math.max(3,Math.ceil(size*(easyMode()?0.75:1.35))):Math.max(1,Math.ceil(size*(easyMode()?0.6:1.0)));
- meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.75),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:meteorHp,size,damage:size>2.8?2.5:size>1.6?1.8:1});
+ meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.75),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:meteorHp,size,damage:size>2.8?2.5:size>1.6?1.8:1,baseScale:mesh.scale.clone(),hitFlash:0});
 }
 function spawnFragmentMeteor(x,y,z,size=1.2,vx=0,vy=-3,vz=0,parent=null){
  const mesh=createPlayableRock(size);
@@ -2681,7 +2688,7 @@ function spawnFragmentMeteor(x,y,z,size=1.2,vx=0,vy=-3,vz=0,parent=null){
  if(kind==='molten')mesh.material=moltenMaterial;
  mesh.position.set(x,y,z);scene.add(mesh);
  const vel=new THREE.Vector3(vx,vy,vz);
- meteors.push({mesh,target:new THREE.Vector3(x+vx*3,.5,z+vz*3),vel,trail:0,hp:Math.max(2,Math.ceil(size*2.5)),size,kind,opening,damage:Math.max(.15,size*.6),fragment:true,burning:kind==='molten',generation:parent?(parent.generation||0)+1:0,fragmentGrace:opening?.8:.28,fragmentAge:0,ttl:22,hitBlasts:new Set(blasts)});
+ meteors.push({mesh,target:new THREE.Vector3(x+vx*3,.5,z+vz*3),vel,trail:0,hp:Math.max(2,Math.ceil(size*2.5)),size,kind,opening,damage:Math.max(.15,size*.6),fragment:true,burning:kind==='molten',generation:parent?(parent.generation||0)+1:0,fragmentGrace:opening?.8:.28,fragmentAge:0,ttl:22,hitBlasts:new Set(blasts),baseScale:mesh.scale.clone(),hitFlash:0});
 }
 function checkBossFracture(m){
  if(!m.boss||m.hp<=0)return;
@@ -2777,7 +2784,7 @@ function spawnFinalBoss(){if(bossSpawned)return;bossSpawned=true;finalSquadron.s
  for(const spec of bossSpecs){
   const mesh=createPlayableRock(spec.size,5);mesh.position.set(spec.x,meteorEntryHeight(spec.z,spec.size,135+Math.random()*25),spec.z);
   mesh.material=moltenMaterial;scene.add(mesh);
-  meteors.push({mesh,target:new THREE.Vector3(spec.x,1,spec.z),vel:new THREE.Vector3(0,-1.75-Math.random()*.35,0),trail:0,hp:spec.hp,maxHp:spec.hp,size:spec.size,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0,colossusName:spec.name});
+  meteors.push({mesh,target:new THREE.Vector3(spec.x,1,spec.z),vel:new THREE.Vector3(0,-1.75-Math.random()*.35,0),trail:0,hp:spec.hp,maxHp:spec.hp,size:spec.size,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0,colossusName:spec.name,baseScale:mesh.scale.clone(),hitFlash:0});
  }
  // Guaranteed finale power-ups: Blue Plasma (Mega-Fireballs) & Green Tempest (Space Gale)
  function spawnFinalePowerup(kind,x,y,z,tx=x,ty=1,tz=z){
@@ -2789,7 +2796,7 @@ function spawnFinalBoss(){if(bossSpawned)return;bossSpawned=true;finalSquadron.s
   scene.add(mesh);
   const target=new THREE.Vector3(tx,ty,tz);
   const vel=target.clone().sub(mesh.position).normalize().multiplyScalar(7.5);
-  meteors.push({kind,isPowerup:isBlue?'blue_fireball':'green_breath',burning:true,mesh,target,vel,trail:0,hp:Math.ceil(size*1.2),size,damage:1.5});
+  meteors.push({kind,isPowerup:isBlue?'blue_fireball':'green_breath',burning:true,mesh,target,vel,trail:0,hp:Math.ceil(size*1.2),size,damage:1.5,baseScale:mesh.scale.clone(),hitFlash:0});
  }
  spawnFinalePowerup('blue_plasma',-32,94,6,-32,1,6);
  spawnFinalePowerup('blue_plasma',32,96,6,32,1,6);
@@ -3445,7 +3452,15 @@ if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(
 
  dragonMeteorTimer-=dt;if(!settling&&wave>4&&wave<15&&dragonMeteorTimer<=0&&(!rallyLoop||remaining>0)){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
  cooldown=Math.max(0,cooldown-dt);const move=dragonStun>0?0:Number(input.isDown(ACTIONS.RIGHT))-Number(input.isDown(ACTIONS.LEFT));const rise=dragonStun>0?0:Number(input.isDown(ACTIONS.UP))-Number(input.isDown(ACTIONS.DOWN));
+const wasOnRoof=!dragonLeavingRoof;
 if(move||rise||dragonStun>0)dragonLeavingRoof=true;
+if(wasOnRoof&&dragonLeavingRoof){
+ dragonVelY=Math.max(dragonVelY,8.5);
+ sound('dragonFlap',{x:dragon.position.x});
+ if(performanceLab.isEnabled('particles')){
+  for(let k=0;k<6;k++)trailEmberPool.add(dragon.position.clone().add(new THREE.Vector3((Math.random()-.5)*2.5,-0.6,(Math.random()-.5)*1.5)),1.2);
+ }
+}
 if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
 const DRAGON_BOUND_X=230;
 if(gasHolding&&!input.isDown(ACTIONS.GAS)&&(activeMouseButtons&2)===0)cancelGasHold();
@@ -3471,7 +3486,8 @@ if(dragonLeavingRoof&&dragonStun<=0){
   const diff=targetVelX-dragonVelX;
   dragonVelX+=Math.sign(diff)*Math.min(Math.abs(diff),accelRate*dt);
  }else{
-  dragonVelX*=Math.exp(-3.6*dt);
+  const dragX=dragon.position.y>280?1.35:3.6;
+  dragonVelX*=Math.exp(-dragX*dt);
   if(Math.abs(dragonVelX)<0.06)dragonVelX=0;
  }
  if(rise<0){
@@ -3489,11 +3505,12 @@ if(dragonLeavingRoof&&dragonStun<=0){
   const diffY=targetVelY-dragonVelY;
   dragonVelY+=Math.sign(diffY)*Math.min(Math.abs(diffY),climbAccel*dt);
  }else{
-  dragonVelY*=Math.exp(-4.6*dt);
+  const dragY=dragon.position.y>280?1.6:4.6;
+  dragonVelY*=Math.exp(-dragY*dt);
   if(Math.abs(dragonVelY)<0.06)dragonVelY=0;
   diveEnergy=Math.max(0,diveEnergy-dt*8.0);
  }
- dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
  if(Math.abs(dragon.position.x)>=DRAGON_BOUND_X)dragonVelX=0;
  if(rise>0&&dragon.position.y<=2.25){
   dragonVelY=Math.max(dragonVelY,17.5);
@@ -3716,6 +3733,8 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    const m=meteors[hitIndex];
    const dmgMult=s.damageMult||1.0;
    m.hp-=fireballMeteorDamage(m)*dmgMult;
+   m.hitFlash=0.12;
+   if(m.baseScale)m.mesh.scale.copy(m.baseScale).multiplyScalar(1.08);
    if(s.mega){
     flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.8);
     cinematicFX.shock(m.mesh.position,8.5);
@@ -3732,7 +3751,10 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
    emitImpact(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,s.blue?55:(s.mega?75:35),.4);
    emitMeteorShrapnel(m.mesh.position,Math.min(3,m.size));
    checkBossFracture(m);
-   if(m.hp<=0){
+   if(m.hp>0){
+    sound('meteorHit',{x:m.mesh.position.x});
+    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(1.6,m.size*0.75));
+   }else if(m.hp<=0){
     if(m.isPowerup==='purple_ram'){
      purpleRamUntil=elapsed+10.0;
      sound('bonus');
@@ -3747,6 +3769,13 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
  }if(s.mesh.position.distanceTo(s.target)<1.2||s.life<=0){if(s.fireTarget&&schoolFire.includes(s.fireTarget)&&s.mesh.position.distanceTo(s.target)<1.2){s.fireTarget.suppression+=.045;if(s.fireTarget.suppression>=1){fireGroup.remove(s.fireTarget.root);schoolFire.splice(schoolFire.indexOf(s.fireTarget),1);}}
  if(s.hostile){if(s.mesh.position.distanceTo(dragon.position)<3.2){if(s.water){waterDisable=3.0;message('SOAKED BY WATER — BREATH STEAMING / 50% DAMAGE');}else if(s.iceHelicopter)iceHit('ICE ELECTRICAL BEAM',true);else if(s.iceGround)iceHit('ICE GROUND PROJECTILE');else hurtDragon('POLICE FIRE');}}else if(!s.fireTarget){blast(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?6.5:4,true);emitImpact(s.mesh.position.x,s.mesh.position.y,s.mesh.position.z,s.blue?64:42,.45);}remove(shots,i)}}
 for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];if(m.fragmentGrace>0)m.fragmentGrace=Math.max(0,m.fragmentGrace-dt);
+if(m.hitFlash>0){
+ m.hitFlash=Math.max(0,m.hitFlash-dt);
+ if(m.baseScale){
+  const bump=1.0+Math.sin((m.hitFlash/0.12)*Math.PI)*0.10;
+  m.mesh.scale.copy(m.baseScale).multiplyScalar(bump);
+ }
+}
 if(m.grounded){
  m.ttl-=dt;m.mesh.rotation.y+=dt*.25;
  if(m.mesh.material===moltenMaterial&&m.ttl<10)m.mesh.material=mats.stone;
@@ -4023,12 +4052,14 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  skylineAirUniforms.opacity.value=.14+altRatio*.22;
  neighborhood.foreground.position.x=-cameraScrollX*.035;
  const skyAscent=THREE.MathUtils.clamp((dragon.position.y-32)/110,0,1);
- const pitchLift=skyAscent*16.2-Math.pow(altRatio,1.25)*10.0;
- const cameraZ=streetView.z+Math.pow(altRatio,1.1)*32.0;
- camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow,cameraZ);
- camera.lookAt(cameraScrollX,streetView.targetY+follow+pitchLift,streetView.targetZ);
- let targetZoom=wave===15?.88:1.0;
  const isNearPavement=dragonLeavingRoof&&dragon.position.y<=2.25;
+ const pavementPitch=isNearPavement?0.75:0;
+ const pavementFollow=isNearPavement?-0.95:0;
+ const pitchLift=skyAscent*16.2-Math.pow(altRatio,1.25)*10.0+pavementPitch;
+ const cameraZ=streetView.z+Math.pow(altRatio,1.1)*32.0;
+ camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow+pavementFollow,cameraZ);
+ camera.lookAt(cameraScrollX,streetView.targetY+follow+pavementFollow+pitchLift,streetView.targetZ);
+ let targetZoom=wave===15?.88:1.0;
  if(isNearPavement)targetZoom+=0.12;
  if(dragonVelY<-10.0||(typeof isDiving!=='undefined'&&isDiving))targetZoom+=0.10;
  if(altRatio>0.20)targetZoom-=altRatio*0.14;
@@ -4039,9 +4070,11 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
   const purpleActive=elapsed<purpleRamUntil;
   purpleRamShieldMesh.visible=purpleActive;
   if(purpleActive){
-   purpleRamShieldMesh.position.copy(dragon.position);
-   purpleRamShieldMesh.scale.setScalar(3.4+Math.sin(elapsed*16.0)*0.4);
-   purpleRamShieldMat.opacity=0.65+Math.sin(elapsed*22.0)*0.25;
+   purpleShieldImpact=Math.max(0,purpleShieldImpact-dt*3.5);
+   purpleRamShieldMat.uniforms.uTime.value=elapsed;
+   purpleRamShieldMat.uniforms.uImpact.value=purpleShieldImpact;
+   purpleRamShieldMesh.position.set(dragon.position.x+(facing||1)*0.2,dragon.position.y+0.65,dragon.position.z);
+   purpleRamShieldMesh.scale.setScalar(3.6+Math.sin(elapsed*14.0)*0.25+(purpleShieldImpact*0.45));
   }
  }
  const renderStartUTC=Date.now();const renderStart=performance.now();

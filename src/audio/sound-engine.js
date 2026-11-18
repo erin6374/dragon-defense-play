@@ -325,7 +325,15 @@ export function createSoundEngine() {
         break;
       }
 
-      // 5. Fireball Precision Intercept / Hit
+      // 5. Fireball Meteor Hit (Damage without destruction)
+      case 'meteorHit': {
+        const rockSfx = ['rock_fracture_0', 'rock_fracture_1', 'rock_fracture_2'][Math.floor(Math.random() * 3)];
+        playSample(rockSfx, { volume: 0.44, playbackRate: 1.18, pan });
+        playSample('warfork_rocket_boom', { volume: 0.28, playbackRate: 1.35, pan });
+        break;
+      }
+
+      // 6. Fireball Precision Intercept / Destruction
       case 'intercept': {
         const rockSfx = Math.random() < 0.5 ? 'rock_fracture_0' : 'rock_fracture_1';
         playSample(rockSfx, { volume: 0.46, playbackRate: 1.1, pan });
