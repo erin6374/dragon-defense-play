@@ -21,13 +21,14 @@ for(const token of [
  'float lean=(fract(vSeed*.283)-.5)*.12*(q.y-.2);',
  'vec2 uv=clamp(q+vec2(.026*sin(q.y*4.-clock*.18+vSeed)+lean+eddy,0.),.014,.986);'
 ])assert.ok(bridge.includes(token),'RC49 atlas decorrelation missing: '+token);
-assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC49 must preserve one smoke atlas sample');
+assert.equal(bridge.split('flipbook(smokeAtlas,atlasUv,time)').length-1,1,'RC49 must preserve one smoke atlas sample');
 for(const token of [
  'float sootVariation=.76+.36*fract(vSeed*.413);',
  'float densityShade=mix(1.10,.73,smoothstep(.24,.84,frame.a));',
  'vec3(.033,.032,.031),vec3(.088,.099,.109)'
 ])assert.ok(bridge.includes(token),'RC50 soot density missing: '+token);
 assert.equal(bridge.split('float densityShade=').length-1,1,'RC50 soot shade should run once');
+assert.ok(bridge.includes('vec2 atlasUv=plumeMode>.5&&fract(vSeed*.683)>.5 ? vec2(1.-uv.x,uv.y) : uv;'),'RC59 seeded horizontal atlas mirroring missing');
 // RC54: the licensed plume alone gains independent texture clocks and asymmetric edges.
 for(const token of [
  'time=clock*(5.8+2.4*fract(vSeed*.229))+fract(vSeed*.317)*64.;',
@@ -40,17 +41,17 @@ const fract=x=>x-Math.floor(x);
 const rates=Array.from({length:6},(_,i)=>5.8+2.4*fract((13+i*7.13)*.229));
 assert.equal(new Set(rates.map(x=>x.toFixed(4))).size,6,'smoke atlas clocks synchronized');
 assert.ok(rates.every(x=>x>=5.8&&x<8.2),'smoke atlas rate out of range');
-assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'extra smoke atlas fetch');
+assert.equal(bridge.split('flipbook(smokeAtlas,atlasUv,time)').length-1,1,'extra smoke atlas fetch');
 for(const token of ['float ascent=6.25+3.1*fract(vSeed*.719);','float buoyancy=.24*sin(clock*(.17+.09*fract(vSeed*.413))+vSeed*.83)*pow(vAge,1.25);','h*(.20+vAge*ascent+buoyancy)','(plumeMode>.5?((.82+3.9*vAge)*(.76+.5*fract(vSeed*.367))):(.82+2.95*vAge))'])assert.ok(bridge.includes(token),'RC56 plume dispersion missing: '+token);
 const ascents=Array.from({length:6},(_,i)=>6.25+3.1*fract((13+i*7.13)*.719));
 assert.equal(new Set(ascents.map(x=>x.toFixed(4))).size,6,'RC56 ascent rates synchronized');
 assert.ok(ascents.every(x=>x>=6.25&&x<9.35),'RC56 ascent outside bounds');
-assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC56 extra atlas fetch');
+assert.equal(bridge.split('flipbook(smokeAtlas,atlasUv,time)').length-1,1,'RC56 extra atlas fetch');
 // RC57: the conservative alpha upper bound must reject only already-invisible
 // licensed plume pixels, before either smoke-atlas texture lookup.
 const guard='if(ageFade*feather*.94<.005)discard;';
 assert.equal(bridge.split(guard).length-1,1,'RC57 alpha guard must occur once');
-assert.ok(bridge.indexOf(guard)<bridge.indexOf('vec4 frame=flipbook(smokeAtlas,uv,time);'),'RC57 guard must precede atlas reads');
+assert.ok(bridge.indexOf(guard)<bridge.indexOf('vec4 frame=flipbook(smokeAtlas,atlasUv,time);'),'RC57 guard must precede atlas reads');
 assert.ok(bridge.includes('alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*ageFade;'),'RC57 alpha expression changed');
 const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 let skipped=0;
@@ -84,5 +85,5 @@ console.log('RC50 soot density / RC49 smoke decorrelation / RC48 licensed shader
  });
  assert.ok(rolls.every(x=>Math.abs(x)<=.21000001),'RC59 roll exceeds conservative bound');
  assert.equal(new Set(rolls.map(x=>x.toFixed(4))).size,6,'RC59 plume sheets rotate in lockstep');
- assert.equal(bridge.split('flipbook(smokeAtlas,uv,time)').length-1,1,'RC59 added atlas reads');
+ assert.equal(bridge.split('flipbook(smokeAtlas,atlasUv,time)').length-1,1,'RC59 added atlas reads');
  console.log('RC59 bounded licensed plume billboard-roll source contract PASS');
