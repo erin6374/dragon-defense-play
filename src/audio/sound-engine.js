@@ -351,7 +351,8 @@ export function createSoundEngine() {
       // 7. Elon Musk Orbital Satellite Laser Cannon
       case 'satLaser': {
         const laser = ['laser_heavy_0', 'laser_heavy_1', 'laser_heavy_2'][Math.floor(Math.random() * 3)];
-        playSample(laser, { volume: 0.48, pan });
+        playSample(laser, { volume: 0.52, pan });
+        playSample('warfork_electro_shock', { volume: 0.32, playbackRate: 1.4, delay: 0.01, pan });
         break;
       }
 
@@ -429,7 +430,21 @@ export function createSoundEngine() {
       }
 
       case 'fire': {
-        playSample('fire_thruster_1', { volume: 0.30, playbackRate: 1.3, pan });
+        playSample('fire_thruster_1', { volume: 0.32, playbackRate: 1.3, pan });
+        break;
+      }
+
+      // Mega Fire Breath: Roaring furnace thruster + rocket detonation + deep wind whoosh
+      case 'megaFire': {
+        playSample('fire_thruster_1', { volume: 0.55, playbackRate: 0.88, pan });
+        playSample('warfork_rocket_boom', { volume: 0.38, playbackRate: 1.25, pan });
+        playSample('whoosh_launch', { volume: 0.42, playbackRate: 0.9, pan });
+        break;
+      }
+
+      // Steam fire breath (when drenched/wet)
+      case 'steam': {
+        playSample('whoosh_launch', { volume: 0.36, playbackRate: 1.6, pan });
         break;
       }
 

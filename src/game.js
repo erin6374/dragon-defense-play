@@ -2356,6 +2356,13 @@ if(isWet)sessionStats.wetShots=(sessionStats.wetShots||0)+1;
 pauloFirePoseUntil=elapsed+.26;
 sound(isWet?'steam':(isMega?'megaFire':(isStream?'fire':'shoot')),{x:dragon.position.x});
 const start=getBreathMouthWorld(new THREE.Vector3()),target=pointer.clone(),dir=target.clone().sub(start).normalize();
+if(isStream||isMega){
+ const spreadAngle=isMega?0.08:0.055;
+ dir.x+=(Math.random()-0.5)*spreadAngle;
+ dir.y+=(Math.random()-0.5)*spreadAngle;
+ dir.z+=(Math.random()-0.5)*0.03;
+ dir.normalize();
+}
 const shotSize=isWet?1.3:(isMega?3.6:(isStream?1.8:(isBlue?2.6:1.0)));
 const shotSpeed=isWet?45:(isMega?120:(isStream?78:(isBlue?84:64)));
 const mesh=new THREE.Mesh(sharedShotGeometry,isWet?mats.steamyFire:(isMega?goldRedPlasmaMaterial:(isStream?fizzingFireMaterial:(isBlue?mats.blueFire:mats.fire))));
@@ -2883,9 +2890,18 @@ function spawnSurvivingPilot(pos){
  const armR=armL.clone();
  armR.position.x=0.25;
  pilot.add(armR);
+ const flareStick=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.28,6),material(0xdd1100,0.5,0.2));
+ flareStick.position.set(0.32,0.70,0.12);
+ flareStick.rotation.z=-0.35;
+ pilot.add(flareStick);
+ const flareMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff3300,transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending});
+ const flareSprite=new THREE.Sprite(flareMat);
+ flareSprite.scale.setScalar(0.72);
+ flareSprite.position.set(0.36,0.86,0.12);
+ pilot.add(flareSprite);
  scene.add(pilot);
  const dir=startX>=0?1:-1;
- escapingPilots.push({root:pilot,dir,speed:8.5+Math.random()*2.5,life:18,legL,legR,armL,armR});
+ escapingPilots.push({root:pilot,dir,speed:8.5+Math.random()*2.5,life:18,legL,legR,armL,armR,flareSprite});
  message('PILOT ESCAPED COCKPIT WRECKAGE SAFELY!');
  sound('bonus');
 }
@@ -3429,7 +3445,7 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  scene.add(mesh);
  const hp=isGiant?Math.max(4,Math.ceil(size*1.3)):Math.max(2,Math.ceil(size*1.1));
  meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
-},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
 if(active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
  if(!active&&impactMarker)impactMarker.visible=false;
  if(targetingReticle)targetingReticle.visible=false;
@@ -3517,6 +3533,12 @@ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_
   if(elapsed-lastWingFlapTime>0.45){
    lastWingFlapTime=elapsed;
    sound('dragonFlap',{x:dragon.position.x});
+   if(performanceLab.isEnabled('particles')){
+    for(let k=0;k<8;k++){
+     const ang=k*Math.PI*0.25;
+     trailSmokePool.add(new THREE.Vector3(dragon.position.x+Math.cos(ang)*2.2,0.4,dragon.position.z+Math.sin(ang)*1.2),1.8);
+    }
+   }
   }
  }
  dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.35,flightCeiling);
@@ -3603,6 +3625,9 @@ if(isOnPavement){
   sound('dragonStep',{x:dragon.position.x});
   emitTrail(new THREE.Vector3(dragon.position.x,0.45,dragon.position.z),false);
  }
+ if(Math.abs(dragonVelX)>10.0&&Math.random()<dt*18){
+  emitImpact(dragon.position.x+(facing||1)*1.8,0.5,dragon.position.z,14,0.3);
+ }
  for(const c of cars){
   if(c.life>0&&Math.abs(c.root.position.x-dragon.position.x)<4.6&&Math.abs(c.root.position.z-dragon.position.z)<3.4){
    const pushDir=Math.sign(c.root.position.x-dragon.position.x)||1;
@@ -3612,9 +3637,12 @@ if(isOnPavement){
    sound('carCrunch',{x:c.root.position.x});
    shake=Math.max(shake,0.22);
    flashAt(c.root.position.x,1.2,c.root.position.z,1.8);
+  }else if(c.life>0&&Math.abs(c.root.position.x-dragon.position.x)<14.0&&Math.abs(c.root.position.z-dragon.position.z)<4.0){
+   c.braking=true;
+   c.speed=Math.max(0,c.speed-dt*18.0);
   }
  }
- panicCrowdAt(dragon.position.x,dragon.position.z,22);
+ panicCrowdAt(dragon.position.x,dragon.position.z,24);
 }else{
  for(const w of wings){
   w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
@@ -3677,11 +3705,13 @@ const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=
 for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.position);s.mesh.position.addScaledVector(s.vel,dt);s.life-=dt;if(wave===15&&!s.hostile&&finalSquadron.intercept(s.mesh.position,1.7,pos=>groundFireball(pos.x,pos.y,pos.z,1.4))){s.life=0;score+=75;}
  if(s.isStream||s.mega){
   const progress=Math.max(0,1-(s.life/(s.maxLife||1)));
-  const expand=1.0+progress*(s.mega?3.5:2.4);
+  const expand=1.0+progress*(s.mega?3.8:2.6);
   s.mesh.scale.setScalar(s.baseSize*expand);
+  s.mesh.rotation.z+=dt*6.5;
+  s.mesh.rotation.x+=dt*3.5;
   if(performanceLab.isEnabled('particles')){
-   trailEmberPool.add(s.mesh.position,(s.mega?1.6:.85)*expand);
-   if(Math.random()<.35)trailSmokePool.add(s.mesh.position,(s.mega?2.0:1.1)*expand);
+   trailEmberPool.add(s.mesh.position,(s.mega?1.85:.95)*expand);
+   if(Math.random()<0.40)trailSmokePool.add(s.mesh.position,(s.mega?2.2:1.2)*expand);
   }
  }
  if(!s.hostile&&orbitalTheater){

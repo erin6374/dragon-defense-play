@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc88",
-  "version": "5.5.0-rc.88",
+  "build": "5.5-north-broad-refinement-rc89",
+  "version": "5.5.0-rc.89",
   "gameplay_base": "5.2.3",
-  "scope": "RC88: Comprehensive gameplay review refinements: centered iridescent translucent bubble shield with real-time dynamic impact ripples and chromatic dispersion; visceral multi-track meteor damage hit-flash and elastic recoil; heroic rooftop takeoff lift burst with aerodynamic wing flap foley and ground gust puff; atmospheric entry radar indicators for high-altitude colossal chunks; cinematic street-level pavement camera framing and upward tilt; and exosphere microgravity orbital glide momentum.",
+  "scope": "RC89: AAA-grade cinematic presentation & gameplay polish: 3D volumetric dual-core orbital laser cannons; translucent additive satellite forcefields; surviving helicopter pilot with handheld red distress flare and smoke trail; true conical flamethrower spray with rolling turbulent fire billows; multi-track Mega Fire and steam audio; and pavement locomotion dust shockwaves with vehicle emergency braking.",
   "new_gameplay_features": true,
-  "release_status": "RC88 candidate: Prismatic bubble shield, visceral meteor hit flash and kinetic recoil, rooftop takeoff impulse, atmospheric entry radar chevrons, street-level pavement camera, and orbital glide inertia."
+  "release_status": "RC89 candidate: Volumetric orbital laser cannons, translucent satellite forcefields, pilot emergency distress flare, conical flamethrower spray, and pavement ground-effect dust shockwaves."
 }

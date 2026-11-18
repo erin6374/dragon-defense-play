@@ -316,20 +316,40 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       color: 0x38bdf8,
       transparent: true,
       opacity: 0,
-      wireframe: true,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     const shield = new THREE.Mesh(shieldGeo, satShieldMat);
     shield.visible = false;
     satGroup.add(shield);
 
-    const laserMat = new THREE.LineBasicMaterial({ color: 0x44ff88, linewidth: 3, transparent: true, opacity: 0 });
-    const laserGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 2.0, 0.4),
-      new THREE.Vector3(0, 55, 0)
-    ]);
-    const laserLine = new THREE.Line(laserGeo, laserMat);
-    satGroup.add(laserLine);
+    // 3D Volumetric High-Energy Orbital Laser Cannon (outer additive plasma shell + inner white-hot core)
+    const laserGroup = new THREE.Group();
+    const laserBeamGeo = new THREE.CylinderGeometry(0.24, 0.38, 54, 8);
+    laserBeamGeo.translate(0, 27, 0.4);
+    const laserMat = new THREE.MeshBasicMaterial({
+      color: 0x44ff88,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const laserBeam = new THREE.Mesh(laserBeamGeo, laserMat);
+    laserGroup.add(laserBeam);
+
+    const laserCoreGeo = new THREE.CylinderGeometry(0.10, 0.16, 54, 8);
+    laserCoreGeo.translate(0, 27, 0.4);
+    const laserCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const laserCore = new THREE.Mesh(laserCoreGeo, laserCoreMat);
+    laserGroup.add(laserCore);
+    satGroup.add(laserGroup);
 
     // Sustained 3D electric shock beam
     const electricGroup = new THREE.Group();
@@ -355,8 +375,9 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       bus: busMain,
       turretBase,
       shield,
-      laserLine,
+      laserGroup,
       laserMat,
+      laserCoreMat,
       electricGroup,
       electricArcs,
       electricCore,
@@ -459,7 +480,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           if (s.laserTimer <= 0) {
             s.laserFiring = !s.laserFiring;
             s.laserTimer = s.laserFiring ? 0.48 : (1.2 + Math.random() * 2.0);
-            s.laserMat.opacity = s.laserFiring ? 0.95 : 0;
+            s.laserMat.opacity = s.laserFiring ? 0.88 : 0;
+            if (s.laserCoreMat) s.laserCoreMat.opacity = s.laserFiring ? 0.96 : 0;
             if (s.laserFiring) {
               const strikeX = s.root.position.x + (Math.random() - 0.5) * 14;
               const strikeY = 368 + (Math.random() - 0.5) * 8;
@@ -473,15 +495,16 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         } else {
           s.laserFiring = false;
           s.laserMat.opacity = 0;
+          if (s.laserCoreMat) s.laserCoreMat.opacity = 0;
         }
 
         // Shield Deflection Flash
         if (s.shieldFlash > 0) {
           s.shieldFlash -= dt * 3.2;
           s.shield.visible = true;
-          s.shield.material.opacity = Math.max(0, Math.min(0.85, s.shieldFlash));
+          s.shield.material.opacity = Math.max(0, Math.min(0.78, s.shieldFlash * 0.78));
           s.shield.material.color.setHex(s.shieldFlash > 0.7 ? 0xffffff : 0x38bdf8);
-          s.shield.scale.setScalar(1.0 + (1.0 - Math.min(1, s.shieldFlash)) * 0.12);
+          s.shield.scale.setScalar(1.0 + (1.0 - Math.min(1, s.shieldFlash)) * 0.18);
         } else {
           s.shield.visible = false;
           s.shield.material.opacity = 0;
