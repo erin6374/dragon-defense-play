@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "kind": "tech-freire-dragon-defense-ai-handoff",
-  "snapshot_date": "2026-11-17",
+  "snapshot_date": "2026-11-18",
   "snapshot_is_live": false,
   "resolve_current_sha_from_branch": true,
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "864ca10c9bf3c4f4865d2c3b226ddcd97152f984",
+  "observed_parent_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_stale_heartbeat_regression_expectation_fixed_new_head_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_plume_atlas_mirror_candidate_exact_head_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,44 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "source_sha": "b968c49be163fdc1524df704ebe2c6c3f802a350",
+      "run_id": 44168485739,
+      "source_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
       "status": "completed",
-      "conclusion": "failure",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44158889568",
-      "note": "Pre-browser Python regression expected stale-heartbeat gap 5s; actual correct fresh-render gap 20s; test corrected in 864ca10c."
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44168485739"
     },
     {
       "name": "cinematic",
-      "run_id": 44158889728,
-      "source_sha": "b968c49be163fdc1524df704ebe2c6c3f802a350",
+      "run_id": 44168485587,
+      "source_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44158889728"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44168485587"
     },
     {
       "name": "focused fire",
-      "run_id": 44158889668,
-      "source_sha": "b968c49be163fdc1524df704ebe2c6c3f802a350",
+      "run_id": 44168485588,
+      "source_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44158889668"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44168485588"
     },
     {
       "name": "CC0 importer",
-      "run_id": 44158889597,
-      "source_sha": "b968c49be163fdc1524df704ebe2c6c3f802a350",
+      "run_id": 44168485683,
+      "source_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44158889597"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44168485683",
+      "note": "Actual import operations skipped"
     },
     {
       "name": "motion",
-      "run_id": 44158889600,
-      "source_sha": "b968c49be163fdc1524df704ebe2c6c3f802a350",
+      "run_id": 44168485904,
+      "source_sha": "26d2f427f63cbeb48e8cda7dd58e0d6190c827f5",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44158889600"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44168485904"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +91,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify 20-second fresh-render gap regression and all five exact-head Actions, actual artifacts/long MP4/Windows ZIP/CC0 hashes; obtain physical Windows FPS.",
+  "next_task": "Verify five candidate exact-head Actions and before/after cinematic/5s+30s motion artifacts, CRC and license hashes; reject candidate if visual art does not improve; obtain physical Windows telemetry.",
   "implemented": [
+    "2026-11-18: Licensed plume A/B candidate: horizontally mirror smoke atlas UV for deterministic subset of existing sheets using vSeed; same GPU pool and samples, legacy mode unchanged. Implementation 56b0ec7e; base 26d2f427 all five workflows SUCCESS (44168485739/44168485587/44168485588/44168485683/44168485904), candidate CI and art verification pending. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-17: Corrected stale-heartbeat QA test expectation from 5s to 20s (commit 864ca10c) after browser workflow 44158889568 failed before startup; fresh-render gap correctly exposes frozen rAF. Other four workflows on b968c49b SUCCESS. New-head tests/artifacts pending; ART FAIL and Windows hardware FPS unresolved.",
     "2026-11-17: RC59 fresh-render FPS coverage/gap fix in tools/analyze-windows-performance.py, code commit 412922f6332ea7970d654af2e331573b8d0d65b8. Base c4fa21cecc95439bd4846495bd44e16c294fb055 all five Actions success (browser 44124415631, cinematic 44124415445, focused 44124415541, CC0 44124416065, motion 44124415368); candidate exact-head CI/artifacts and regression pending. ART FAIL, physical Windows FPS unmeasured. No gameplay changes.",
     "2026-11-17: Bounded QA fix in tools/analyze-windows-performance.py requires at least two fresh-render focused browser samples for usable FPS. Prior exact base e89c71722f87c6d2e0eef847c63dd29dfd3c2dbc five Actions success (44005284806/804/807/824/802), prior independently verified artifact CRC, genuine 30s MP4, CC0 hashes and FBX. Candidate workflows pending. CC0 import operations skipped; ART FAIL, Windows hardware FPS unmeasured. Google PR #3 isolated.",
@@ -294,5 +296,6 @@
     "original_school_fbx_sha256": "8fe8c980ea7b73795db4c5b947853615d861c2b0c50db37e8a5541560b1d77e4",
     "physical_windows_fps_measured": false,
     "art_approved": false
-  }
+  },
+  "implementation_commit_sha": "56b0ec7e9b4fcebe82cd0fe25929385bd974bbb1"
 }
