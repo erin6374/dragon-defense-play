@@ -408,9 +408,10 @@ export function createSoundEngine() {
         break;
       }
 
-      // 15. Emergency Sirens & City Ambient Alerts
+      // 15. Emergency Sirens with Dynamic Doppler Pitch & Panning
       case 'siren': {
-        playSample('siren_loop', { volume: 0.35, bus: ambientBus, pan });
+        const rate = (opts && (opts.playbackRate || opts.doppler)) || 1.0;
+        playSample('siren_loop', { volume: 0.35, bus: ambientBus, pan, playbackRate: rate });
         break;
       }
 

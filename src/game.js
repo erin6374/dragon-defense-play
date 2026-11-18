@@ -1240,7 +1240,13 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    }
   }
   animateVehicleSteering(c,dt);
-  if(c.emergency&&!c.frozen&&c.stun===0&&c.blink>2.4){sound('siren');c.blink=0;}
+  if(c.emergency&&!c.frozen&&c.stun===0&&c.blink>2.4){
+   const relX=c.root.position.x-cameraScrollX;
+   const movingTowards=(relX*c.dir)<0;
+   const doppler=movingTowards?1.12:0.88;
+   sound('siren',{x:c.root.position.x,doppler});
+   c.blink=0;
+  }
   if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
    if(Math.abs(c.root.position.x-53)<22)c.turnAt=53;
    else if(Math.abs(c.root.position.x-(-53))<22)c.turnAt=-53;
@@ -2872,7 +2878,13 @@ function flashAt(x,y,z,power=1){if(explosionLights.length>=MAX_DYNAMIC_LIGHTS)re
 function remove(arr,i){const o=arr[i];if(!o)return;scene.remove(o.mesh);if(o.mesh.userData.sharedRockAsset){arr.splice(i,1);return;}
  if(arr===blasts){if(blastMeshPool.length<110)blastMeshPool.push(o.mesh);else{o.mesh.material.dispose();}arr.splice(i,1);return;}if(arr===shots){for(const child of [...o.mesh.children]){o.mesh.remove(child);child.geometry?.dispose();if(child.material!==iceBoltMaterial)child.material?.dispose();}}if(arr===blasts||arr===meteors){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}else if(arr===shots){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}arr.splice(i,1)}const sharedBlastGeometry=new THREE.PlaneGeometry(1,1);
 const blastMeshPool=[];const blastStats={created:0,reused:0};
-function blast(x,y,z,max=4,playerFire=false){cinematicFX.shock(new THREE.Vector3(x,y,z),max);let mesh=blastMeshPool.pop();if(!mesh){
+function blast(x,y,z,max=4,playerFire=false){
+ cinematicFX.shock(new THREE.Vector3(x,y,z),max);
+ if(y>85){
+  flashAt(x,y,z,Math.min(4.5,max*0.65));
+  if(playerFire)cinematicFX.shock(new THREE.Vector3(x,y,z),max*1.35);
+ }
+ let mesh=blastMeshPool.pop();if(!mesh){
  mesh=new THREE.Mesh(sharedBlastGeometry,new THREE.MeshBasicMaterial({map:visualBank.images.flash,color:0xffa94e,transparent:true,opacity:.86,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));blastStats.created++;
  }else blastStats.reused++;
  mesh.position.set(x,y,z);mesh.scale.setScalar(1);mesh.material.opacity=.86;scene.add(mesh);
@@ -3591,6 +3603,13 @@ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_
  }
  dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.35,flightCeiling);
  if(dragon.position.y>=flightCeiling||dragon.position.y<=1.35){dragonVelY=0;diveEnergy=0;}
+ const roofY=schoolBounds.max.y+2.4;
+ const isOverRoof=Math.abs(dragon.position.x)<7.5&&Math.abs(dragon.position.z-(schoolBounds.max.z-1.8))<4.5;
+ if(isOverRoof&&Math.abs(dragon.position.y-roofY)<1.1&&dragonVelY<=0&&rise<0&&Math.abs(dragonVelX)<4.0){
+  perchDragon(true);
+  sound('impact',{x:dragon.position.x});
+  message('PAULO ROOSTS ON TECH FREIRE ROOF — BLOCK CHARGING');
+ }
 }else if(dragonStun>0){
  dragonVelX*=Math.exp(-5.0*dt);
  dragonVelY=Math.max(-18.0,dragonVelY-22.0*dt);
@@ -3750,6 +3769,10 @@ if(!dragonLeavingRoof&&pauloPreviewRig&&!isOnPavement){
  pauloPreviewRig.legs.forEach(({hip,knee,foot,fore})=>{
   hip.rotation.z=fore?-.78:-.38;knee.rotation.z=fore?-.42:.58;foot.rotation.z=fore?.35:-.20;
  });
+}
+if(!dragonLeavingRoof&&dragonStun<=0){
+ blockCharge=Math.min(100,blockCharge+dt*9.5);
+ updateBlockButton();
 }
 // Wind samples the finished movement and head pose, not the previous frame.
 updateDragonWind(dt);

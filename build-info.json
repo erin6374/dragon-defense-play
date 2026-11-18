@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc91",
-  "version": "5.5.0-rc.91",
+  "build": "5.5-north-broad-refinement-rc92",
+  "version": "5.5.0-rc.92",
   "gameplay_base": "5.2.3",
-  "scope": "RC91: AAA-grade atmospheric simulation & sensory immersion: exosphere atmospheric re-entry compression friction & ionization plasma spark streams; thermal street craters with multi-phase obsidian cooling (white-hot -> fiery orange -> dark amber -> obsidian slag) and steamy sizzle; radar-integrated pedestrian crowd early warning evacuation & awning shelter scramble; and celestial Colossal Titan solar eclipse shadow ambiance.",
+  "scope": "RC92: AAA-grade tactical choreography & sensory depth: interactive Tech Freire rooftop roosting & tactile architectural perching with automatic Block Shield recharging; dynamic acoustic emergency siren Doppler pitch shifting (1.12 approaching / 0.88 receding) with stereophonic lateral panning; exosphere kinetic shockwave rings and dual-tier atmospheric blast flash illumination.",
   "new_gameplay_features": true,
-  "release_status": "RC91 candidate: Atmospheric re-entry plasma ionization, thermal crater obsidian cooling, radar civilian evacuation, and Titan solar eclipse shadow ambiance."
+  "release_status": "RC92 candidate: Rooftop roosting & block shield recharging, siren Doppler pitch shifting, and exosphere kinetic shockwave rings."
 }
