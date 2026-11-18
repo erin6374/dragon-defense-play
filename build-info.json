@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc86",
-  "version": "5.5.0-rc.86",
+  "build": "5.5-north-broad-refinement-rc87",
+  "version": "5.5.0-rc.87",
   "gameplay_base": "5.2.3",
-  "scope": "RC86: True cinematic audio spatialization, accelerated orbital ascent perspective, dynamic camera zooming, heavy wing flap audio, Purple Ram satellite obliteration, and verified Wave 15 orbital victory enforcement. Complete integration of stereophonic spatial panning across all physical impacts, crunches, and blasts; downward aerial sightline and vertical skyline parallax on ascent into orbit; dynamic framing across pavement runs, high-speed dives, and orbital dogfights; periodic gold-red mega powerup drops during the satellite battle; and strict multi-stage Wave 15 victory enforcement requiring total constellation destruction.",
+  "scope": "RC87: Complete visual and gameplay balance refinement: removed anomalous sky streaks; overhauled Purple Ram shield into a soft, translucent refractive bubble with impact ripple blur; enforced 70% giant / 30% small meteor chunk ratio across all waves with full mineral/molten/flaming variety; multi-tier cascading fragmentation; satellite laser dislodge variety; airtight end-game win and loss condition guarantees across all waves; and comprehensive historical feature audit verification.",
   "new_gameplay_features": true,
-  "release_status": "RC86 candidate: Stereophonic cinematic sound spatialization, accelerated orbital ascent perspective, dynamic camera framing, heavy wing flap audio, Purple Ram satellite destruction, and Wave 15 finale enforcement."
+  "release_status": "RC87 candidate: Translucent bubble shield with impact ripple blur, 70/30 meteor ratio with cascading fragmentation, anomalous sky streak cleanup, and end-game win condition guarantees."
 }

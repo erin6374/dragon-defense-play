@@ -24,7 +24,8 @@ export function meteorSplitPlan(m,activeCount=0){
   const size=childSizes[generation]??0;
   return {count:size?Math.min(generation===0?2:3,room):0,size};
  }
- if((m.generation||0)>=2||m.size<1.1)return {count:0,size:0};
- if(m.size>=1.8)return {count:Math.min(3,room),size:Math.min(1.62,1.36+Math.max(0,m.size-1.8)*.18)};
- return {count:Math.min(3,room),size:Math.min(.88,.66+Math.max(0,m.size-1.1)*.23)};
+ if((m.generation||0)>=3||m.size<1.15)return {count:0,size:0};
+ if(m.size>=3.2)return {count:Math.min(3,Math.max(2,room)),size:Math.min(2.35,m.size*0.52)};
+ if(m.size>=1.8)return {count:Math.min(3,Math.max(2,room)),size:Math.min(1.45,m.size*0.55)};
+ return {count:Math.min(2,room),size:Math.min(.88,.66+Math.max(0,m.size-1.15)*.23)};
 }

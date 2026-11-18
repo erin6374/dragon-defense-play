@@ -1,2 +1,2 @@
-export const GAME_VERSION='5.5.0-rc.86';
-export const BUILD_ID='5.5-north-broad-refinement-rc86';
+export const GAME_VERSION='5.5.0-rc.87';
+export const BUILD_ID='5.5-north-broad-refinement-rc87';

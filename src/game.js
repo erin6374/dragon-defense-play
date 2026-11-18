@@ -1505,7 +1505,6 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  }
 }
 
-let cometTimer=1.2;
 function updateDistantMeteors(dt){
  const chapter=currentChapter();
  const chapterIndex=CAMPAIGN_CHAPTERS.indexOf(chapter);
@@ -1541,31 +1540,7 @@ function updateDistantMeteors(dt){
   const to=target?skyline.worldToLocal(target.clone()):new THREE.Vector3(x+20,-10,15);
   distantStreaks.push({sprite,life:travel,travel,from,to,targetX:x,v:(16+Math.random()*14+waveProgress*5)*(flaming?skylineCrisis===2?2.6:1.9:1),impact:flaming||Math.random()<(.58+waveProgress*.25),flaming,waveProgress});
  }
- // Fast-moving streaking comets cutting across the expanded upper sky as white flaming streaks
- cometTimer-=dt;
- if(cometTimer<=0&&distantStreaks.length<streakCap){
-  cometTimer=0.8+Math.random()*1.5;
-  const cometSprite=new THREE.Sprite(whiteFlamingStreakMaterial);
-  const startX=cameraScrollX+(Math.random()<.5?-240:240);
-  const startY=105+Math.random()*45;
-  const endX=startX+(startX>cameraScrollX?-1:1)*(220+Math.random()*160);
-  const endY=startY-55-Math.random()*40;
-  const cometZ=-120-Math.random()*280;
-  cometSprite.position.set(startX,startY,cometZ);
-  cometSprite.scale.set(3.2,32,1);
-  scene.add(cometSprite);
-  const cometSpeed=65+Math.random()*35;
-  const travel=Math.max(.6,(startY-endY)/cometSpeed);
-  distantStreaks.push({sprite:cometSprite,life:travel,travel,from:new THREE.Vector3(startX,startY,cometZ),to:new THREE.Vector3(endX,endY,cometZ),isComet:true,impact:false});
- }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
-  if(s.isComet){
-   const progress=1-Math.max(0,s.life)/s.travel;
-   s.sprite.position.lerpVectors(s.from,s.to,progress);
-   s.sprite.material.opacity=Math.sin(progress*Math.PI)*.85;
-   if(s.life<=0){s.sprite.removeFromParent();distantStreaks.splice(i,1);}
-   continue;
-  }
   if(s.landing){
    const {point,near,far,strength}=s.landing;
    const remaining=Math.max(0,s.life)/1.8;
@@ -2555,20 +2530,70 @@ purpleCrystalMaterial.onBeforeCompile=shader=>{
 };
 const purplePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xc084fc,transparent:true,opacity:.96,depthWrite:false,blending:THREE.AdditiveBlending});
 
-// Purple Meteor-Buster kinetic ram shield mesh
-const purpleRamShieldGeo=new THREE.SphereGeometry(3.6,24,16);
-const purpleRamShieldMat=new THREE.MeshBasicMaterial({color:0xc084fc,wireframe:true,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
-const purpleRamShieldMesh=new THREE.Mesh(purpleRamShieldGeo,purpleRamShieldMat);
-scene.add(purpleRamShieldMesh);
+// Purple Meteor-Buster translucent refractive bubble shield with impact ripple blur
+let purpleShieldImpact=0;
+const purpleShieldVertexShader=`
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+varying vec3 vWorldPosition;
+uniform float uTime;
+uniform float uImpact;
 
-// Fast-moving background meteors as white flaming streaks
-const whiteStreakCanvas=document.createElement('canvas');whiteStreakCanvas.width=64;whiteStreakCanvas.height=256;
-const wsCtx=whiteStreakCanvas.getContext('2d');
-const wsGrad=wsCtx.createLinearGradient(32,0,32,256);
-wsGrad.addColorStop(0,'#ffffff');wsGrad.addColorStop(0.28,'#e0f2fe');wsGrad.addColorStop(0.65,'#38bdf8');wsGrad.addColorStop(1,'transparent');
-wsCtx.fillStyle=wsGrad;wsCtx.fillRect(0,0,64,256);
-const whiteStreakTexture=new THREE.CanvasTexture(whiteStreakCanvas);
-const whiteFlamingStreakMaterial=new THREE.SpriteMaterial({map:whiteStreakTexture,transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false});
+void main(){
+ vNormal=normalize(normalMatrix*normal);
+ vec3 pos=position;
+ float wobble=sin(pos.y*3.2+uTime*4.5)*cos(pos.x*3.2+uTime*3.5)*0.08;
+ if(uImpact>0.0){
+  wobble+=sin(pos.y*12.0+uTime*26.0)*cos(pos.x*12.0+uTime*22.0)*(uImpact*0.28);
+ }
+ pos+=normal*wobble;
+ vec4 mvPosition=modelViewMatrix*vec4(pos,1.0);
+ vViewPosition=-mvPosition.xyz;
+ vWorldPosition=(modelMatrix*vec4(pos,1.0)).xyz;
+ gl_Position=projectionMatrix*mvPosition;
+}
+`;
+
+const purpleShieldFragmentShader=`
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+varying vec3 vWorldPosition;
+uniform float uTime;
+uniform float uImpact;
+
+void main(){
+ vec3 viewDir=normalize(vViewPosition);
+ float dotNV=abs(dot(vNormal,viewDir));
+ float fresnel=1.0-dotNV;
+ float rim=pow(fresnel,2.2);
+ vec3 baseColor=vec3(0.66,0.25,0.96);
+ vec3 rimColor=vec3(0.92,0.70,1.0);
+ vec3 impactColor=vec3(1.0,0.90,1.0);
+ vec3 color=mix(baseColor,rimColor,rim);
+ if(uImpact>0.0){
+  color=mix(color,impactColor,uImpact*0.55);
+ }
+ float alpha=rim*0.38+0.06;
+ if(uImpact>0.0){
+  alpha+=uImpact*0.32;
+ }
+ gl_FragColor=vec4(color,alpha);
+}
+`;
+
+const purpleRamShieldGeo=new THREE.SphereGeometry(3.7,36,26);
+const purpleRamShieldMat=new THREE.ShaderMaterial({
+ uniforms:{uTime:{value:0},uImpact:{value:0}},
+ vertexShader:purpleShieldVertexShader,
+ fragmentShader:purpleShieldFragmentShader,
+ transparent:true,
+ side:THREE.DoubleSide,
+ blending:THREE.AdditiveBlending,
+ depthWrite:false
+});
+const purpleRamShieldMesh=new THREE.Mesh(purpleRamShieldGeo,purpleRamShieldMat);
+purpleRamShieldMesh.visible=false;
+scene.add(purpleRamShieldMesh);
 
 function createPlayableRock(size=1,variant=-1){
  const gi=Math.floor(Math.random()*rockGeometryVariants.length);
@@ -2608,18 +2633,20 @@ function spawnMeteor(random=Math.random,opening=null){
    isPowerup='blue_fireball';
    kind='blue_plasma';
   }else{
-   kind=roll<.12?'iron':roll<.31?'molten':roll<.60?'flaming':'stone';
+    kind=roll<.18?'iron':roll<.42?'molten':roll<.72?'flaming':'stone';
   }
  }
  let size;
  if(opening?.size)size=opening.size;
  else if(isPowerup)size=2.8+Math.random()*.6;
- else if(!isDeterministic){
-  const sRoll=Math.random();
-  size=wave===1?1.6:(sRoll<.65?3.6+Math.random()*.9:(sRoll<.90?2.1+Math.random()*.5:1.0+Math.random()*.4));
- }else{
-  const sRoll=random();
-  size=wave===1?1.6:(sRoll<.65?3.6+random()*.9:(sRoll<.90?2.1+random()*.5:1.0+random()*.4));
+ else {
+  // 70% Giant meteor chunks (3.6 to 4.8), 30% smaller debris (1.2 to 2.2) across all waves
+  const isGiant=(isDeterministic?random():Math.random())<0.70;
+  if(isGiant){
+   size=isDeterministic?3.6+random()*1.2:3.6+Math.random()*1.2;
+  }else{
+   size=isDeterministic?1.2+random()*1.0:1.2+Math.random()*1.0;
+  }
  }
  const fastImpact=wave>=4&&kind==='flaming'&&roll<.39&&size<1.8;
  // Meteors strike full depth from foreground to deep background blocks
@@ -2640,11 +2667,12 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(isPowerup==='green_breath'){message('🌪️ GREEN TEMPEST METEOR INCOMING — GALE BREATH POWERUP!');sound('bonus');}
  else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
  else if(isPowerup==='mega_fire_breath'){message('⚡ TITAN CORE GOLD & RED POWERUP INCOMING! DESTROY FOR MEGA FIRE BREATH!');sound('bonus');}
- else if(isPowerup==='purple_ram'){message('💜 PURPLE METEOR-BUSTER POWERUP INCOMING! DESTROY FOR 10s INVULNERABLE RAM SHIELD!');sound('bonus');}
+ else if(isPowerup==='purple_ram'){message('💜 PURPLE METEOR-BUSTER POWERUP INCOMING! DESTROY FOR 10s INVULNERABLE RAM SHIELD!');sound('bonus');purpleShieldImpact=1.0;}
  mesh.position.set(x,meteorEntryHeight(target.z-3,size,148+random()*22),target.z-3);scene.add(mesh);
  const speed=opening?(15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
- meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.65),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:wave===1?1:Math.max(1,Math.ceil(size*(easyMode()?.62:1.45))),size,damage:size>1.8?2:size>1.1?1.5:1});
+ const meteorHp=size>=3.2?Math.max(3,Math.ceil(size*(easyMode()?0.75:1.35))):Math.max(1,Math.ceil(size*(easyMode()?0.6:1.0)));
+ meteors.push({kind,isPowerup,opening:!!opening,fastImpact,largeSplitter:!!opening||(size>1.8&&random()<.75),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:meteorHp,size,damage:size>2.8?2.5:size>1.6?1.8:1});
 }
 function spawnFragmentMeteor(x,y,z,size=1.2,vx=0,vy=-3,vz=0,parent=null){
  const mesh=createPlayableRock(size);
@@ -3252,9 +3280,12 @@ function updateWaveProgress(dt,rally=rallyLoop){
    }
    return;
   }
-  // When satellite battery reaches 0 (or opening ends), wait for active airborne meteors to clear
-  if(satBattery<=0||rally||opening){
+  // When satellite battery reaches 0 (or remaining budget exhausted), wait for active airborne meteors to clear
+  if(satBattery<=0||remaining<=0||rally||opening){
    remaining=0;
+   if(orbitalTheater&&orbitalTheater.getBattery()>0&&!rally&&!opening){
+    orbitalTheater.setBattery(0);
+   }
    if(meteors.some(m=>!m.grounded)){
     between=0;
     return;
@@ -3267,6 +3298,10 @@ function updateWaveProgress(dt,rally=rallyLoop){
    finaleAscentPrompted=true;
    message('⚡ ASCEND INTO ORBIT! DESTROY ELON’S SATELLITE FLEET TO DEFEAT TITAN!');
   }
+  between=0;
+  return;
+ }
+ if(wave===15&&meteors.some(m=>!m.grounded)){
   between=0;
   return;
  }
@@ -3376,7 +3411,19 @@ document.getElementById('settings-btn').onclick=()=>{active=false;document.getEl
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start').onclick=safelyStart;document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
 const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3(),defenseMeteor=new THREE.Vector3();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{const mesh=createPlayableRock(2.2);mesh.material=moltenMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind:'molten',mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*20,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,-14,0),trail:0,hp:4,size:2.2,damage:2,burning:true});},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{
+ const isGiant=Math.random()<0.70;
+ const size=isGiant?3.6+Math.random()*1.2:1.2+Math.random()*1.0;
+ const kindRoll=Math.random();
+ const kind=kindRoll<0.35?'molten':kindRoll<0.65?'flaming':kindRoll<0.85?'iron':'stone';
+ const mesh=createPlayableRock(size);
+ if(kind==='molten'||kind==='flaming')mesh.material=moltenMaterial;
+ mesh.position.set(x,y,z);
+ scene.add(mesh);
+ const hp=isGiant?Math.max(4,Math.ceil(size*1.3)):Math.max(2,Math.ceil(size*1.1));
+ meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
+},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+if(active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
  if(!active&&impactMarker)impactMarker.visible=false;
  if(targetingReticle)targetingReticle.visible=false;
  if(!paused&&neighborhoodHealth()===0&&performanceLab.isEnabled('backgroundMeteors')){
@@ -3742,6 +3789,7 @@ if(m.grounded){
  const distToDragon=m.mesh.position.distanceTo(dragon.position);
  if(!m.grounded&&distToDragon<(m.size*0.85+2.8)){
   if(elapsed<purpleRamUntil){
+   purpleShieldImpact=1.0;
    sound('purpleRamHit',{x:m.mesh.position.x});
    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.5);
    cinematicFX.shock(m.mesh.position,8.0);
@@ -3757,6 +3805,7 @@ if(m.grounded){
   for(const sat of (orbitalTheater.satellites||[])){
    if(!sat.destroyed&&dragon.position.distanceTo(sat.root.position)<10.5){
     orbitalTheater.hitSatellite(sat,100,true);
+    purpleShieldImpact=1.0;
     sound('purpleRamHit',{x:sat.root.position.x});
     flashAt(sat.root.position.x,sat.root.position.y,sat.root.position.z,5.0);
     cinematicFX.shock(sat.root.position,9.0);
@@ -4036,7 +4085,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   schoolDamage:+schoolDamage.toFixed(3),scene:{meshes:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderScale:adaptiveResolution},
   lighting:{explosionSlots:explosionLightPool.lights.length,activeExplosions:explosionLightPool.activeCount,helicopterSlots:helicopterLightPool.lights.length,activeHelicopters:helicopterLightPool.activeCount},
   finalSquadron:finalSquadron.stats(),counts:{meteors:meteors.length,fragmentMeteors:meteors.filter(m=>m.fragment).length,bossMeteors:meteors.filter(m=>m.boss).length,shots:shots.length,blasts:blasts.length,debris:debris.length,cars:cars.length,helicopters:helicopters.length,skylineFires:skylineFires.length},
-  meteors:meteors.slice(0,40).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
+  meteors:meteors.slice(0,60).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,kind:m.kind,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
  // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
@@ -4045,7 +4094,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,
+ window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>purpleRamShieldMesh,neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
