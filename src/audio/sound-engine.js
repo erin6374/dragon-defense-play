@@ -3,6 +3,8 @@
 // Delivers multi-layered physical impacts, continuous thruster combustion,
 // celestial sub-bass drones, and organic foley with zero arcade beeps or bops.
 
+import { createTaikoEngine } from './taiko-engine.js';
+
 const AUDIO_MANIFEST = {
   // Deep Impacts & Explosions
   impact_sub_deep: '/assets/audio/impact_sub_deep.ogg',
@@ -72,6 +74,8 @@ export function createSoundEngine() {
   let masterGain = null;
   let sfxBus = null;
   let ambientBus = null;
+  let percussionBus = null;
+  let taikoEngine = null;
 
   // Buffer cache: Map<string, AudioBuffer>
   const buffers = new Map();
@@ -115,6 +119,13 @@ export function createSoundEngine() {
       ambientBus = ctx.createGain();
       ambientBus.gain.setValueAtTime(0.85, ctx.currentTime);
       ambientBus.connect(masterGain);
+
+      percussionBus = ctx.createGain();
+      percussionBus.gain.setValueAtTime(0.88, ctx.currentTime);
+      percussionBus.connect(masterGain);
+
+      taikoEngine = createTaikoEngine(ctx, percussionBus);
+      taikoEngine.start();
 
       loadAllAudioBuffers();
       startTitanCelestialRumble();
@@ -486,8 +497,11 @@ export function createSoundEngine() {
     }
   }
 
-  // Update dynamic atmospheric audio parameters (Sub-Bass Titan celestial rumble)
-  function update(dt, cameraAltitude, titanAltitude, titanOnScreen) {
+  // Update dynamic atmospheric audio parameters (Sub-Bass Titan celestial rumble & Taiko war drums)
+  function update(dt, cameraAltitude, titanAltitude, titanOnScreen, battleTelemetry) {
+    if (taikoEngine && battleTelemetry) {
+      taikoEngine.update(dt, battleTelemetry);
+    }
     if (!ctx || muted || !titanRumbleGain) return;
     try {
       const now = ctx.currentTime;
@@ -515,10 +529,17 @@ export function createSoundEngine() {
     if (titanRumbleGain && ctx) {
       titanRumbleGain.gain.setValueAtTime(muted ? 0 : 0.25, ctx.currentTime);
     }
+    if (taikoEngine) {
+      taikoEngine.setMuted(muted);
+    }
   }
 
   function isMuted() {
     return muted;
+  }
+
+  function getTaikoStats() {
+    return taikoEngine ? taikoEngine.getStats() : null;
   }
 
   return {
@@ -527,6 +548,7 @@ export function createSoundEngine() {
     setFlameStreamAudio,
     update,
     setMuted,
-    isMuted
+    isMuted,
+    getTaikoStats
   };
 }

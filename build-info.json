@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc92",
-  "version": "5.5.0-rc.92",
+  "build": "5.5-north-broad-refinement-rc93",
+  "version": "5.5.0-rc.93",
   "gameplay_base": "5.2.3",
-  "scope": "RC92: AAA-grade tactical choreography & sensory depth: interactive Tech Freire rooftop roosting & tactile architectural perching with automatic Block Shield recharging; dynamic acoustic emergency siren Doppler pitch shifting (1.12 approaching / 0.88 receding) with stereophonic lateral panning; exosphere kinetic shockwave rings and dual-tier atmospheric blast flash illumination.",
+  "scope": "RC93: Procedural dynamic Japanese war drums (Taiko) percussion soundtrack modeled on Kodō Ō-daiko ensemble war drumming. Real-time Jo-Ha-Kyū progression dynamically modulating tempo (108 to 132 BPM), syncopation, and intensity with battle threat, active meteors, school HP, and boss encounters; acoustic physical modeling synthesis for massive Ō-daiko sub-bass, Chū-daiko galloping war groove, Shime-daiko high-tension rolls, and bachi wooden rim clicks.",
   "new_gameplay_features": true,
-  "release_status": "RC92 candidate: Rooftop roosting & block shield recharging, siren Doppler pitch shifting, and exosphere kinetic shockwave rings."
+  "release_status": "RC93 candidate: Dynamic Japanese Taiko war drum percussion soundtrack (Jo-Ha-Kyū progression, Kodō Ō-daiko acoustic synthesis, dynamic battle threat modulation)."
 }

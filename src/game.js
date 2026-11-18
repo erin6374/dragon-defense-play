@@ -4201,7 +4201,7 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  if(altRatio>0.20)targetZoom-=altRatio*0.14;
  const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*2.5));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
- soundEngine.update(dt,camera.position.y,368,altRatio>0.15);
+ soundEngine.update(dt,camera.position.y,368,altRatio>0.15,{wave,active:active&&!paused,meteorsCount:meteors.filter(m=>!m.grounded).length,bossActive:bossSpawned&&!bossDefeated,schoolHp:hp,dragonVelY,isBoosting,elapsed});
  if(purpleRamShieldMesh){
   const purpleActive=elapsed<purpleRamUntil;
   purpleRamShieldMesh.visible=purpleActive;
@@ -4263,7 +4263,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>purpleRamShieldMesh,neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),
+ window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>purpleRamShieldMesh,neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
