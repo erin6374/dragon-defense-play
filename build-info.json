@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc97",
-  "version": "5.5.0-rc.97",
+  "build": "5.5-north-broad-refinement-rc98",
+  "version": "5.5.0-rc.98",
   "gameplay_base": "5.2.3",
-  "scope": "RC97: Cinematic dynamic camera zooming (opening rooftop close-up on dragon with smooth pull-back as action begins, and wave-end victory zoom-in on dragon), definitive Wave 15 finale win condition on satellite fleet destruction via Mega Fire Breath with exosphere clearing shockwave, and radiant white-gold sparkling asteroid visual model for Mega Fire Breath powerups with solar glitter particle emissions.",
+  "scope": "RC98: Full-speed flight meteor buster collision with guttural growl and physical speed hitch; calibrated gradual school destruction gauge (<=5% small meteors, ~15% big meteors) with proportional building chunk collapse; fast-moving foreground atmospheric meteors featuring incandescent white fire rain and near-camera motion-blurred bolides.",
   "new_gameplay_features": true,
-  "release_status": "RC97 candidate: Cinematic Dynamic Camera Zooming (Rooftop Intro & Wave-End Victory), Definitive Satellite Destruction Win Condition, and White-Gold Sparkling Mega Asteroids."
+  "release_status": "RC98 candidate: Flight Meteor Buster Collision & Growl, Calibrated Gradual Building Chunk Destruction, and Foreground White Fire Rain with Motion-Blurred Bolides."
 }

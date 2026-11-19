@@ -10,6 +10,7 @@ export function createSchoolSourceDamage() {
  texture.format=THREE.RedFormat;
  texture.minFilter=texture.magFilter=THREE.LinearFilter;
  texture.needsUpdate=true;
+ const destructionRatio={value:0.0};
  let strikes=0;
  const stamp=(x,y,z,radius)=>{
   const r=radius*1.2;
@@ -39,13 +40,15 @@ export function createSchoolSourceDamage() {
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
    shader.uniforms.schoolDamageSize={value:size};
+   shader.uniforms.schoolDestructionRatio=destructionRatio;
    shader.vertexShader='varying vec3 schoolDamagePosition;\n'+shader.vertexShader;
    shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',
     '#include <worldpos_vertex>\n schoolDamagePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
    shader.fragmentShader=`varying vec3 schoolDamagePosition;
     uniform highp sampler3D schoolDamageMap;
     uniform vec3 schoolDamageMin;
-    uniform vec3 schoolDamageSize;\n`+shader.fragmentShader;
+    uniform vec3 schoolDamageSize;
+    uniform float schoolDestructionRatio;\n`+shader.fragmentShader;
    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',`
     #include <clipping_planes_fragment>
     vec3 damageUv=(schoolDamagePosition-schoolDamageMin)/schoolDamageSize;
@@ -53,7 +56,11 @@ export function createSchoolSourceDamage() {
     if(all(greaterThanEqual(damageUv,vec3(0.0)))&&all(lessThanEqual(damageUv,vec3(1.0)))){
      damage=texture(schoolDamageMap,damageUv).r;
     }
-    if(damage>${glass?'.24':'.53'})discard;`);
+    if(damage>${glass?'.24':'.53'})discard;
+    float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
+    float chunkJagged=sin(schoolDamagePosition.x*0.85+1.2)*0.11+cos(schoolDamagePosition.x*2.3+schoolDamagePosition.z*1.7)*0.07+sin(schoolDamagePosition.z*0.6)*0.05;
+    float collapseCeiling=mix(1.15,0.08,schoolDestructionRatio)+chunkJagged*(0.12+0.20*schoolDestructionRatio);
+    if(normH>collapseCeiling)discard;`);
    if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
     #include <color_fragment>
     vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));
@@ -93,11 +100,12 @@ export function createSchoolSourceDamage() {
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v2-'+material.name;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v3-'+material.name;
  };
- return {stamp,patch,strikes:()=>strikes,reset:()=>{
+ return {stamp,patch,strikes:()=>strikes,setDestruction:ratio=>{destructionRatio.value=THREE.MathUtils.clamp(ratio,0,1);},reset:()=>{
   pixels.fill(0);
   strikes=0;
+  destructionRatio.value=0;
   texture.needsUpdate=true;
  }};
 }

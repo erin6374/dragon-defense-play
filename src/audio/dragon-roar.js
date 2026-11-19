@@ -12,7 +12,8 @@ export function createDragonRoarEngine(ctx, destinationBus, playSampleFn) {
     furious: -999.0,
     mournful: -999.0,
     challenge: -999.0,
-    intense: -999.0
+    intense: -999.0,
+    growl: -999.0
   };
   let totalRoarsTriggered = 0;
   let lastRoarVariant = null;
@@ -111,6 +112,26 @@ export function createDragonRoarEngine(ctx, destinationBus, playSampleFn) {
       sampleVolume: 0.95,
       sampleRate: 1.12,
       gainMaster: 1.15
+    },
+
+    // 5. Combat Growl (Meteor Buster Full-Speed Flight Collision)
+    growl: {
+      duration: 0.85,
+      cooldown: 0.40,
+      startPitch: 105,
+      peakPitch: 132,
+      endPitch: 56,
+      attackTime: 0.03,
+      flutterRate: 22.0,
+      flutterDepth: 30.0,
+      tremoloRate: 9.2,
+      tremoloDepth: 0.35,
+      formant1: 260,
+      formant2: 780,
+      sampleLayer: 'dragon_roar_furious',
+      sampleVolume: 0.90,
+      sampleRate: 1.25,
+      gainMaster: 1.20
     }
   };
 
