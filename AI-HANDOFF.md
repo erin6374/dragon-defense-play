@@ -1,3 +1,13 @@
+## November 19 — smoke A/B PNG integrity evidence candidate
+
+**Last observed verified base SHA (not this commit):** `24f573675723ce947abbf75e93ed902ba620f85e`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Five exact-base workflows SUCCESS: [browser 44505609492](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609492), [cinematic 44505609525](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609525), [focused fire 44505609658](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609658), [CC0 importer 44505609578](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609578), [motion 44505609628](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609628). Actual CC0 import operations skipped. Five unexpired artifacts listed; new candidate CI and artifact bytes are pending.
+
+**Bounded QA change:** `qa/cinematic-review.mjs` now validates PNG signatures and writes per-image byte counts, SHA-256 hashes and an identical-byte flag to the smoke A/B report. This exposes missing/identical captures without asserting artistic improvement; captures remain sequential and simulation time NOT frozen. No gameplay, shaders, GPU pools, FBX, meteor ignition or protected branches modified.
+
+**Blockers:** smoke/facade ART FAIL against `campaign/visual_target.png`; physical Windows FPS/CPU/RAM unmeasured and severe slideshow unresolved. Google PR #3 remains isolated older RC30 per comment 6827300214; independent `agent/google-*` draft PR only, no auto-merge.
+
+**One next action:** Verify new exact-head CI and inspect both actual PNGs plus hashes, motion MP4, ZIP CRC, errors/warnings and license hashes; then implement a truly frozen-time A/B and obtain Windows telemetry.
+
 ## November 19 — smoke A/B same-task QA refinement (candidate)
 
 **Last observed verified base SHA (not this commit):** `fa6e64ffb935d50ffa4f61fb9aa54ff1c3f5aef4`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Five exact-base workflows SUCCESS: [browser 44487396737](https://github.com/erin6374/dragon-defense-play/actions/runs/44487396737), [cinematic 44487396606](https://github.com/erin6374/dragon-defense-play/actions/runs/44487396606), [focused fire 44487396632](https://github.com/erin6374/dragon-defense-play/actions/runs/44487396632), [CC0 importer 44487396613](https://github.com/erin6374/dragon-defense-play/actions/runs/44487396613), [motion 44487396652](https://github.com/erin6374/dragon-defense-play/actions/runs/44487396652). CC0 actual import steps skipped. Five unexpired artifact packages listed (browser, Windows preview, cinematic, focused fire, motion); current contents not independently decoded here.
