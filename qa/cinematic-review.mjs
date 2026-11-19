@@ -67,6 +67,7 @@ try{
   evidence:smokeEvidence,pngBytesIdentical:smokeEvidence[0].sha256===smokeEvidence[1].sha256,
   controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; Playwright page clock paused for both synchronous renders; smoke uniform only toggled',
   limitation:'Browser clock is paused but renderer-internal counters may still change between sequential calls. Compare actual images; not art approval or physical FPS evidence.'};
+ assert.notEqual(smokeEvidence[0].sha256,smokeEvidence[1].sha256,'Smoke A/B produced byte-identical PNGs; mirror toggle may be invisible or scene lacks smoke');
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
  assert.deepEqual(report.errors,[]);
