@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
@@ -48,12 +49,18 @@ try{
   return pairs;
  });
  assert.equal(smoke.length,2);
+ const smokeEvidence=[];
  for(const pair of smoke){
   assert.equal(pair.mirror,pair.enabled,'smoke mirror toggle did not apply');
   assert.equal(pair.mode,'plume','A/B must use licensed plume mode');
-  await writeFile(`${out}/smoke-mirror-${pair.enabled?'on':'off'}.png`,Buffer.from(pair.png,'base64'));
+  const bytes=Buffer.from(pair.png,'base64');
+  assert.ok(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),'Smoke A/B capture is not a PNG');
+  const filename=`smoke-mirror-${pair.enabled?'on':'off'}.png`;
+  await writeFile(`${out}/${filename}`,bytes);
+  smokeEvidence.push({enabled:pair.enabled,filename,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});
  }
  report.smokeComparison={captures:smoke.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),
+  evidence:smokeEvidence,pngBytesIdentical:smokeEvidence[0].sha256===smokeEvidence[1].sha256,
   controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; smoke uniform only toggled',
   limitation:'Captures execute in one JS task without an intervening rAF, but render calls are sequential and the simulation clock is NOT frozen. Visual review required; not art approval.'};
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
