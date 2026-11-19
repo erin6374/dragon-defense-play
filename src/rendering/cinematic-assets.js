@@ -392,9 +392,8 @@ export function createCinematicWeather(THREE,scene,{mobile=false}={}){
  const rain=new THREE.Points(geometry,material);rain.frustumCulled=false;rain.visible=false;scene.add(rain);
  let clock=0;
  return {rain,update(dt,wave,darkness){
-  const storm=wave%10>=4&&wave%10<=7;
-  rain.visible=storm;
-  if(!storm)return;
+   rain.visible=false;
+   return;
   clock+=dt;
   material.opacity=.16+.14*darkness;
   for(let i=0;i<count;i++){

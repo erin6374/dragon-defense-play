@@ -1,8 +1,8 @@
 // Deterministic player fireball and shockwave meteor balance.
 export const MAX_PLAYABLE_METEORS=48;
 const OPENING_WAVES=[
- {count:8,size:8,kind:'stone'},
- {count:12,size:8,kind:'stone'},
+ {count:6,size:8,kind:'stone'},
+ {count:10,size:8,kind:'stone'},
  {count:18,size:11,kind:'flaming'},
  {count:16,size:11,kind:'flaming'}
 ];

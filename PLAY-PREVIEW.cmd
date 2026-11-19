@@ -31,15 +31,12 @@ if not defined PYTHON_CMD (
   exit /b 1
 )
 
-rem The local server must serve this exact extracted folder. If another
-rem process already owns the port, do not launch the wrong saved game.
+rem If port %PORT% is already occupied by a previous or background instance, release it so this launcher starts fresh.
 powershell -NoProfile -Command "try {$t=New-Object Net.Sockets.TcpClient; $t.Connect('127.0.0.1',%PORT%); $t.Close(); exit 0} catch {exit 1}" >nul 2>&1
 if not errorlevel 1 (
-  echo ERROR: Port %PORT% is already occupied.
-  echo Close the previous preview server window, then run this launcher again.
-  echo This prevents accidentally playing a different extracted version.
-  pause
-  exit /b 1
+  echo Releasing previous server instance on port %PORT%...
+  powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort %PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+  timeout /t 1 /nobreak >nul
 )
 
 echo Starting local preview and performance telemetry server...

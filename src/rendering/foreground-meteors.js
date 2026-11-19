@@ -5,23 +5,21 @@ import * as THREE from 'three';
 // 2. Near-Camera Motion-Blurred Bolides: large out-of-focus bolides plunging close to the camera lens towards the viewer and off-screen.
 
 export function createForegroundMeteors(THREE, scene) {
-  const RAIN_COUNT = 36;
+  // Rain effect removed per user request
+  const RAIN_COUNT = 0;
   const rainGeo = new THREE.CylinderGeometry(0.08, 0.22, 6.0, 5, 1, true);
-  // Point geometry downward along -Y
   rainGeo.rotateX(Math.PI / 2);
 
   const rainMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.88,
+    opacity: 0,
     blending: THREE.AdditiveBlending,
     depthWrite: false
   });
 
-  const rainMesh = new THREE.InstancedMesh(rainGeo, rainMat, RAIN_COUNT);
-  rainMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  rainMesh.frustumCulled = false;
-  scene.add(rainMesh);
+  const rainMesh = new THREE.InstancedMesh(rainGeo, rainMat, 1);
+  rainMesh.visible = false;
 
   const rainParticles = [];
   const dummyMatrix = new THREE.Matrix4();
@@ -166,34 +164,34 @@ export function createForegroundMeteors(THREE, scene) {
   function update(dt, elapsed, onSpark = null) {
     bolideMaterial.uniforms.uTime.value = elapsed;
 
-    // 1. Update White Fire Rain
-    for (let i = 0; i < RAIN_COUNT; i++) {
-      const p = rainParticles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.z += p.vz * dt;
+    // 1. White Fire Rain removed
+    if (RAIN_COUNT > 0) {
+      for (let i = 0; i < RAIN_COUNT; i++) {
+        const p = rainParticles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.z += p.vz * dt;
 
-      if (p.y <= 0.4) {
-        if (onSpark && Math.random() < 0.28) {
-          onSpark(p.x, 0.45, p.z);
+        if (p.y <= 0.4) {
+          if (onSpark && Math.random() < 0.28) {
+            onSpark(p.x, 0.45, p.z);
+          }
+          p.x = (Math.random() - 0.5) * 220;
+          p.y = 75.0 + Math.random() * 25.0;
+          p.z = 22.0 + Math.random() * 18.0;
+          p.vx = (Math.random() - 0.5) * 5.0;
+          p.vy = -72.0 - Math.random() * 26.0;
         }
-        // Respawn high in atmosphere
-        p.x = (Math.random() - 0.5) * 220;
-        p.y = 75.0 + Math.random() * 25.0;
-        p.z = 22.0 + Math.random() * 18.0;
-        p.vx = (Math.random() - 0.5) * 5.0;
-        p.vy = -72.0 - Math.random() * 26.0;
-      }
 
-      dummyPos.set(p.x, p.y, p.z);
-      // Align streak with velocity direction
-      const dir = new THREE.Vector3(p.vx, p.vy, p.vz).normalize();
-      dummyQuat.setFromUnitVectors(forwardAxis, dir);
-      dummyScale.set(p.width, p.width, p.length);
-      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
-      rainMesh.setMatrixAt(i, dummyMatrix);
+        dummyPos.set(p.x, p.y, p.z);
+        const dir = new THREE.Vector3(p.vx, p.vy, p.vz).normalize();
+        dummyQuat.setFromUnitVectors(forwardAxis, dir);
+        dummyScale.set(p.width, p.width, p.length);
+        dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+        rainMesh.setMatrixAt(i, dummyMatrix);
+      }
+      rainMesh.instanceMatrix.needsUpdate = true;
     }
-    rainMesh.instanceMatrix.needsUpdate = true;
 
     // 2. Spawn and update Near-Camera Motion-Blurred Bolides
     spawnTimer -= dt;
