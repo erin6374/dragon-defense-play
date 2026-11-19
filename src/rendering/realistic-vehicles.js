@@ -154,3 +154,38 @@ export function animatePerson(g,t,moving=true,panicked=false){
   }
  });
 }
+
+export function buildChinookHelicopter(T,root,options={}){
+ const {mat,block,oval,rod,part}=kit(T);
+ const olive=mat(0x384736,.25,.65),darkMetal=mat(0x232726,.45,.55),glass=mat(0x28424e,.65,.15),black=mat(0x1a1e1d,.2,.8),white=mat(0xdfdbcb,.2,.4);
+ block(root,olive,0,1.45,0,9.6,2.1,2.1);
+ const nose=block(root,olive,4.95,1.35,0,1.6,1.8,1.8);nose.rotation.z=-0.15;
+ oval(root,glass,5.25,1.55,0,.85,.65,1.6);
+ for(const z of [-1.22,1.22]){
+  block(root,olive,-.4,.85,z,6.8,.85,.55);
+  for(let w=-3;w<=3;w++)oval(root,glass,w*1.05,1.65,z*.92,.22,.22,.08);
+ }
+ block(root,olive,3.8,2.65,0,1.5,.85,1.1);
+ block(root,olive,-4.2,3.15,0,1.9,1.65,1.2);
+ const rampGroup=new T.Group();rampGroup.position.set(-4.8,.55,0);root.add(rampGroup);
+ const rampDoor=block(rampGroup,darkMetal,-.95,.05,0,1.9,.15,1.6);rampDoor.rotation.z=-0.35;
+ for(const x of [-3.2,2.8]){
+  for(const z of [-1.35,1.35]){
+   rod(root,darkMetal,[x,.85,z],[x,.35,z],.08);
+   const wheel=part(root,new T.CylinderGeometry(.32,.32,.22,16),black,x,.32,z);wheel.rotation.x=Math.PI/2;
+  }
+ }
+ const rotorFront=new T.Group();rotorFront.position.set(3.8,3.2,0);root.add(rotorFront);
+ for(let i=0;i<3;i++){
+  const a=(i*Math.PI*2)/3;
+  const blade=block(rotorFront,black,Math.cos(a)*2.3,.02,Math.sin(a)*2.3,4.6,.035,.32);blade.rotation.y=a;
+ }
+ const rotorAft=new T.Group();rotorAft.position.set(-4.2,4.1,0);root.add(rotorAft);
+ for(let i=0;i<3;i++){
+  const a=(i*Math.PI*2)/3;
+  const blade=block(rotorAft,black,Math.cos(a)*2.3,.02,Math.sin(a)*2.3,4.6,.035,.32);blade.rotation.y=a;
+ }
+ const beaconFront=oval(root,new T.MeshBasicMaterial({color:0xff2020}),3.8,3.35,0,.12,.12,.12);
+ const beaconAft=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-4.2,4.25,0,.14,.14,.14);
+ return {root,rotorFront,rotorAft,rampGroup,rampDoor,beaconFront,beaconAft};
+}

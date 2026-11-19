@@ -525,6 +525,62 @@ export function createSoundEngine() {
         break;
       }
 
+      case 'evacuationCrowd': {
+        playSample('whoosh_launch', { volume: 0.22, playbackRate: 0.55, pan, bus: ambientBus });
+        playSample('alarm_warning', { volume: 0.16, playbackRate: 0.95, delay: 0.08, pan, bus: ambientBus });
+        break;
+      }
+
+      case 'evacuationAlert': {
+        playSample('alarm_warning', { volume: 0.45, playbackRate: 0.82, pan });
+        playSample('siren_loop', { volume: 0.28, playbackRate: 0.9, pan, bus: ambientBus });
+        break;
+      }
+
+      case 'babyCry': {
+        if (ctx) {
+          try {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            const bpFilter = ctx.createBiquadFilter();
+            const gain = ctx.createGain();
+            lfo.frequency.setValueAtTime(6.2, now);
+            lfoGain.gain.setValueAtTime(18, now);
+            lfo.connect(lfoGain);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.linearRampToValueAtTime(530, now + 0.35);
+            osc.frequency.linearRampToValueAtTime(390, now + 0.75);
+            lfoGain.connect(osc.frequency);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, now);
+            osc2.frequency.linearRampToValueAtTime(1040, now + 0.35);
+            osc2.frequency.linearRampToValueAtTime(780, now + 0.75);
+            bpFilter.type = 'bandpass';
+            bpFilter.frequency.setValueAtTime(1250, now);
+            bpFilter.Q.setValueAtTime(2.8, now);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.24, now + 0.08);
+            gain.gain.setValueAtTime(0.22, now + 0.35);
+            gain.gain.linearRampToValueAtTime(0.02, now + 0.55);
+            gain.gain.linearRampToValueAtTime(0.26, now + 0.65);
+            gain.gain.linearRampToValueAtTime(0.001, now + 1.15);
+            osc.connect(bpFilter);
+            osc2.connect(bpFilter);
+            bpFilter.connect(gain);
+            gain.connect(ambientBus || sfxBus || ctx.destination);
+            lfo.start(now);osc.start(now);osc2.start(now);
+            lfo.stop(now + 1.2);osc.stop(now + 1.2);osc2.stop(now + 1.2);
+          } catch (e) {
+            console.warn('BabyCry audio synth error', e);
+          }
+        }
+        break;
+      }
+
       default: {
         playSample('rock_fracture_0', { volume: 0.35, pan });
         break;

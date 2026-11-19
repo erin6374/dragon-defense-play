@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc98",
-  "version": "5.5.0-rc.98",
+  "build": "5.5-north-broad-refinement-rc99",
+  "version": "5.5.0-rc.99",
   "gameplay_base": "5.2.3",
-  "scope": "RC98: Full-speed flight meteor buster collision with guttural growl and physical speed hitch; calibrated gradual school destruction gauge (<=5% small meteors, ~15% big meteors) with proportional building chunk collapse; fast-moving foreground atmospheric meteors featuring incandescent white fire rain and near-camera motion-blurred bolides.",
+  "scope": "RC99: Early guided training missions (flight academy, dragon fire breath, ground defense gas, and speed meteor buster); Chapter 1 school defense against initial meteor storm; brand new Mass Evacuation Chapter (background Chinook fleet, foreground tandem-rotor Chinook with crowd boarding and baby crying audio, school protective shield, helicopter escort takeoff runs, spectacular non-fatal crash landings where civilians stream out safely, and fire suppression between choppers); eliminated empty level dead spots with active balanced meteor pacing.",
   "new_gameplay_features": true,
-  "release_status": "RC98 candidate: Flight Meteor Buster Collision & Growl, Calibrated Gradual Building Chunk Destruction, and Foreground White Fire Rain with Motion-Blurred Bolides."
+  "release_status": "RC99 candidate: Early Guided Training Missions, Mass Evacuation Chinook Chapter with Escort & Non-Fatal Crash Mechanics, and Balanced Active Pacing."
 }
