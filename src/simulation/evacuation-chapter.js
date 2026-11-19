@@ -21,6 +21,21 @@ export function createEvacuationChapter({
   onChopperCrashed,
   spawnEscortThreat
 }) {
+  // Dedicated Tactical Alert Notice Box
+  let evacNotice = (typeof document !== 'undefined') ? document.getElementById('dd-evac-notice') : null;
+  if (!evacNotice && typeof document !== 'undefined' && document.body) {
+    evacNotice = document.createElement('div');
+    evacNotice.id = 'dd-evac-notice';
+    evacNotice.style.cssText = 'position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:95;display:none;background:linear-gradient(180deg,rgba(16,28,48,0.96),rgba(8,16,28,0.96));border:2px solid #38bdf8;border-radius:8px;padding:7px 20px;text-align:center;color:#f0f9ff;font-size:14px;font-weight:800;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(0,0,0,0.6),0 0 14px rgba(56,189,248,0.35);pointer-events:none;font-family:system-ui,-apple-system,sans-serif;';
+    document.body.appendChild(evacNotice);
+  }
+  let evacNoticeTimer = 0;
+  function showEvacNotice(html, duration = 4.0) {
+    if (!evacNotice) return;
+    evacNotice.innerHTML = html;
+    evacNotice.style.display = 'block';
+    evacNoticeTimer = duration;
+  }
   let active = false;
   let isSecondary = false;
   let currentRun = 1; // 1 to 6
@@ -158,6 +173,10 @@ export function createEvacuationChapter({
     active = true;
     isSecondary = true;
     currentRun = runNum;
+    sound('warning');
+    sound('evacuationAlert');
+    message(`⚠️ EVACUATION CHOPPER AIRBORNE ON NORTH BROAD — SECURE ASCENT CORRIDOR!`);
+    showEvacNotice('🚁 <b style="color:#fde047">NOTICE:</b> EVACUATION HELICOPTER PREPARING FOR TAKEOFF ON BROAD ST!', 4.5);
     startLoadingRun(runNum, true);
   }
 
@@ -166,12 +185,14 @@ export function createEvacuationChapter({
     phaseTimer = 0;
     foregroundChinook.rampDoor.rotation.z = 0; // close ramp
     rotorSpeed = 24.0; // full power rotors
-    chopperVel.set(dir * 13.5, 3.8, 0);
+    // Slower forward pace with steady climbing vector upward into the sky
+    chopperVel.set(dir * 7.2, 2.4, 0);
     civilianGroup.visible = false; // boarded inside
 
     sound('helicopter');
     sound('bonus');
-    message(`🚁 ESCORT CHOPPER [${currentRun}/${TOTAL_RUNS}]! INTERCEPT INCOMING METEORS IN ITS FLIGHT PATH!`);
+    message(`🚁 ESCORT CHOPPER [${currentRun}/${TOTAL_RUNS}]! INTERCEPT INCOMING METEORS IN ITS CLIMB PATH!`);
+    showEvacNotice(`🚁 <b style="color:#38bdf8">TAKEOFF:</b> EVACUATION HELICOPTER AIRBORNE! ESCORT INTO THE SKY!`, 4.5);
   }
 
   function crashChopper() {
@@ -206,6 +227,7 @@ export function createEvacuationChapter({
         message(`⚠️ SECONDARY TRANSPORT DOWNED! SURVIVORS EVACUATED TO ROWHOUSES (-300 PTS)`);
       } else {
         message(`⚠️ CHOPPER DAMAGED! PASSENGERS EVACUATED SAFELY ON FOOT (-300 PTS)`);
+        showEvacNotice(`⚠️ <b style="color:#f87171">DOWNED:</b> CHOPPER HARD LANDING — CIVILIANS ESCAPING SAFELY (-300 PTS)`, 4.0);
       }
     }, 600);
   }
@@ -223,8 +245,10 @@ export function createEvacuationChapter({
     if (isSecondary) {
       active = false;
       message(`✅ SECONDARY TRANSPORT ESCAPED SAFELY! 45 CITIZENS RESCUED (+500 PTS)`);
+      showEvacNotice(`✅ <b style="color:#4ade80">SAFE ESCAPE:</b> SECONDARY TRANSPORT REACHED SAFE SKY (+500 PTS)`, 3.5);
     } else {
       message(`✅ CHOPPER [${currentRun}/${TOTAL_RUNS}] ESCAPED SAFELY! 45 CITIZENS RESCUED (+500 PTS)`);
+      showEvacNotice(`✅ <b style="color:#4ade80">SAFE ESCAPE:</b> CHOPPER REACHED SAFE SKY (+500 PTS)`, 3.5);
       if (currentRun < TOTAL_RUNS) {
         startFiresPhase();
       } else {
@@ -257,12 +281,26 @@ export function createEvacuationChapter({
   }
 
   function update(dt, elapsed, meteors) {
+    if (evacNoticeTimer > 0) {
+      evacNoticeTimer -= dt;
+      if (evacNoticeTimer <= 0 && evacNotice) evacNotice.style.display = 'none';
+    }
     if (!active) return;
 
-    // 1. Animate Foreground Chinook Tandem Rotors
+    // 1. Animate Foreground Chinook Tandem Rotors & Aviation Lights
     const spinSpeed = (rotorSpeed || 14.0) * dt;
     foregroundChinook.rotorFront.rotation.y += spinSpeed;
     foregroundChinook.rotorAft.rotation.y -= spinSpeed; // Contra-rotating
+
+    // Blinking anti-collision strobe & glowing cockpit illumination
+    if (foregroundChinook.beaconFront) {
+      const strobe = (Math.floor(elapsed * 4.0) % 2 === 0);
+      foregroundChinook.beaconFront.material.opacity = strobe ? 1.0 : 0.2;
+      if (foregroundChinook.beaconAft) foregroundChinook.beaconAft.material.opacity = strobe ? 0.2 : 1.0;
+    }
+    if (foregroundChinook.cockpitGlow) {
+      foregroundChinook.cockpitGlow.material.opacity = 0.72 + Math.sin(elapsed * 3.5) * 0.15;
+    }
 
     // 2. Animate Background Fleet
     bgChinooks.forEach(bg => {
@@ -303,20 +341,25 @@ export function createEvacuationChapter({
     }
     // --- ESCORT FLIGHT PHASE ---
     else if (phase === 'escort') {
-      chopperPos.addScaledVector(chopperVel, dt);
-      // Level off vertical ascent around Y=15
-      if (chopperPos.y > 15.0) chopperVel.y = Math.max(0, chopperVel.y - dt * 2.5);
+      chopperPos.x += chopperVel.x * dt;
+      chopperPos.y += chopperVel.y * dt;
+      // Steadily climb upward into the high sky as it moves along the street, leveling off between Y=38 and Y=46
+      if (chopperPos.y > 38.0) {
+        chopperVel.y = Math.max(0.5, chopperVel.y - dt * 0.35);
+      }
       foregroundRoot.position.copy(chopperPos);
 
       // Bank forward into flight direction
-      foregroundRoot.rotation.z = -dir * 0.12;
+      foregroundRoot.rotation.z = -dir * 0.08;
 
-      // Active threat spawning in flight path
+      // Active threat spawning on intercept course in flight path
       escortThreatTimer -= dt;
       if (escortThreatTimer <= 0 && spawnEscortThreat) {
-        escortThreatTimer = 2.2 + Math.random() * 1.4;
-        const leadDist = dir * (12 + Math.random() * 18);
-        spawnEscortThreat(chopperPos.x + leadDist, Math.max(8, chopperPos.y + (Math.random() - 0.5) * 4), chopperPos.z);
+        escortThreatTimer = 1.6 + Math.random() * 0.9;
+        const leadTime = 2.4 + Math.random() * 1.0;
+        const interceptX = chopperPos.x + chopperVel.x * leadTime;
+        const interceptY = chopperPos.y + chopperVel.y * leadTime;
+        spawnEscortThreat(interceptX, Math.max(10, interceptY), chopperPos.z);
       }
 
       // Check Meteor Collisions vs Escort Chinook
@@ -325,7 +368,7 @@ export function createEvacuationChapter({
           const m = meteors[i];
           if (m.grounded || !m.mesh) continue;
           const dist = m.mesh.position.distanceTo(chopperPos);
-          if (dist < 4.8) {
+          if (dist < 5.2) {
             // Chinook hit by meteor!
             emitImpact(chopperPos.x, chopperPos.y, chopperPos.z, 85, 1.2);
             flashAt(chopperPos.x, chopperPos.y, chopperPos.z, 4.0);
@@ -335,8 +378,8 @@ export function createEvacuationChapter({
         }
       }
 
-      // Check safe escape past board edge
-      if (Math.abs(chopperPos.x) > 220.0) {
+      // Check safe escape past board edge or into upper stratosphere
+      if (Math.abs(chopperPos.x) > 220.0 || (chopperPos.y > 42.0 && Math.abs(chopperPos.x) > 165.0)) {
         safeEscape();
       }
     }
@@ -385,6 +428,8 @@ export function createEvacuationChapter({
   }
 
   function reset() {
+    if (evacNotice) evacNotice.style.display = 'none';
+    evacNoticeTimer = 0;
     active = false;
     isSecondary = false;
     phase = 'idle';

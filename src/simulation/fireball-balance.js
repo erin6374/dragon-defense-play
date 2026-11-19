@@ -1,5 +1,5 @@
 // Deterministic player fireball and shockwave meteor balance.
-export const MAX_PLAYABLE_METEORS=48;
+export const MAX_PLAYABLE_METEORS=24;
 const OPENING_WAVES=[
  {count:6,size:8,kind:'stone'},
  {count:10,size:8,kind:'stone'},
@@ -16,16 +16,16 @@ export function fireballMeteorDamage(m,playerFire=true,ordinaryShockDamage=0){
 }
 export function meteorSplitPlan(m,activeCount=0){
  const room=Math.max(0,MAX_PLAYABLE_METEORS-activeCount);
- if(!room||m.indestructible||m.grounded||m.dragonHunter)return {count:0,size:0};
- if(m.boss)return {count:Math.min(6,room),size:1.52};
+ if(room<=0||m.indestructible||m.grounded||m.dragonHunter)return {count:0,size:0};
+ if(m.boss)return {count:Math.min(4,room),size:1.52};
  if(m.opening){
   const generation=m.generation||0;
   const childSizes=m.kind==='stone'?[2.5,1.45,.65]:[3.2,1.65,.8];
   const size=childSizes[generation]??0;
-  return {count:size?Math.min(generation===0?2:3,room):0,size};
+  return {count:size?Math.min(generation===0?2:2,room):0,size};
  }
- if((m.generation||0)>=3||m.size<1.15)return {count:0,size:0};
- if(m.size>=3.2)return {count:Math.min(3,Math.max(2,room)),size:Math.min(2.35,m.size*0.52)};
- if(m.size>=1.8)return {count:Math.min(3,Math.max(2,room)),size:Math.min(1.45,m.size*0.55)};
- return {count:Math.min(2,room),size:Math.min(.88,.66+Math.max(0,m.size-1.15)*.23)};
+ if((m.generation||0)>=2||m.size<1.25)return {count:0,size:0};
+ if(m.size>=3.2)return {count:Math.min(2,room),size:Math.min(2.1,m.size*0.50)};
+ if(m.size>=1.8)return {count:Math.min(2,room),size:Math.min(1.35,m.size*0.52)};
+ return {count:Math.min(1,room),size:Math.min(.85,.62+Math.max(0,m.size-1.25)*.20)};
 }

@@ -187,5 +187,8 @@ export function buildChinookHelicopter(T,root,options={}){
  }
  const beaconFront=oval(root,new T.MeshBasicMaterial({color:0xff2020}),3.8,3.35,0,.12,.12,.12);
  const beaconAft=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-4.2,4.25,0,.14,.14,.14);
- return {root,rotorFront,rotorAft,rampGroup,rampDoor,beaconFront,beaconAft};
+ const cockpitGlow=oval(root,new T.MeshBasicMaterial({color:0xffe299,transparent:true,opacity:0.85}),4.8,1.45,0,0.55,0.40,0.75);
+ const navPort=oval(root,new T.MeshBasicMaterial({color:0xff1010}),0,1.8,-1.35,0.12,0.12,0.12);
+ const navStarboard=oval(root,new T.MeshBasicMaterial({color:0x10ff10}),0,1.8,1.35,0.12,0.12,0.12);
+ return {root,rotorFront,rotorAft,rampGroup,rampDoor,beaconFront,beaconAft,cockpitGlow,navPort,navStarboard};
 }
