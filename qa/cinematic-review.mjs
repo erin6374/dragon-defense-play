@@ -30,9 +30,12 @@ try{
   await writeFile(`${out}/${name}.png`,Buffer.from(png,'base64'));
   report.views.push({name,...state,...metrics});
  }
- // Controlled same-session smoke A/B captures: identical staged scene, camera,
- // seed and wave. Frame time is not frozen; report this limitation explicitly.
- const smoke=await page.evaluate(async()=>{
+ // Freeze Playwright's page clock after staging, before both synchronous renders.
+ // This pins Date/performance time and suspends rAF/timers across the A/B pair.
+ await page.clock.pauseAt(new Date('2026-11-19T12:00:00.000Z'));
+ let smoke;
+ try{
+ smoke=await page.evaluate(()=>{
   const vfx=window.__DD_FIRE_VFX;
   if(!vfx?.ready)throw Error('Licensed smoke atlas not ready for A/B capture');
   const original=vfx.smokeMirror;
@@ -40,17 +43,18 @@ try{
   try{
    for(const enabled of [false,true]){
     vfx.setSmokeMirror(enabled);
-    // Render both variants in one JS task, without yielding to a new rAF tick.
-    // This reduces simulation drift but does not freeze the simulation clock.
+    // Render synchronously at the same frozen browser clock.
     const capture=window.__DD_CINEMATIC_REVIEW.frame();
     pairs.push({enabled,mode:vfx.smokeMode,mirror:vfx.smokeMirror,png:capture.png});
    }
   }finally{vfx.setSmokeMirror(original);}
-  return pairs;
+  return {pairs,clock:{before:performance.now(),after:performance.now(),date:Date.now()}};
  });
- assert.equal(smoke.length,2);
+ }finally{await page.clock.resume();}
+ assert.equal(smoke.pairs.length,2);
+ assert.equal(smoke.clock.before,smoke.clock.after,'A/B browser clock advanced');
  const smokeEvidence=[];
- for(const pair of smoke){
+ for(const pair of smoke.pairs){
   assert.equal(pair.mirror,pair.enabled,'smoke mirror toggle did not apply');
   assert.equal(pair.mode,'plume','A/B must use licensed plume mode');
   const bytes=Buffer.from(pair.png,'base64');
@@ -59,10 +63,10 @@ try{
   await writeFile(`${out}/${filename}`,bytes);
   smokeEvidence.push({enabled:pair.enabled,filename,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});
  }
- report.smokeComparison={captures:smoke.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),
+ report.smokeComparison={captures:smoke.pairs.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),clock:smoke.clock,
   evidence:smokeEvidence,pngBytesIdentical:smokeEvidence[0].sha256===smokeEvidence[1].sha256,
-  controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; smoke uniform only toggled',
-  limitation:'Captures execute in one JS task without an intervening rAF, but render calls are sequential and the simulation clock is NOT frozen. Visual review required; not art approval.'};
+  controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; Playwright page clock paused for both synchronous renders; smoke uniform only toggled',
+  limitation:'Browser clock is paused but renderer-internal counters may still change between sequential calls. Compare actual images; not art approval or physical FPS evidence.'};
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
  assert.deepEqual(report.errors,[]);
