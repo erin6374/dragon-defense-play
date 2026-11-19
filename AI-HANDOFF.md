@@ -1,3 +1,13 @@
+## November 19 — frozen browser-clock smoke A/B candidate
+
+**Last verified base SHA (not this commit):** `e86618a3ced1aa39786934d229b1e730dd40e111`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base workflows SUCCESS: [browser 44543800201](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800201), [cinematic 44543800239](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800239), [focused fire 44543800191](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800191), [CC0 44543800240](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800240), [motion 44543800297](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800297). CC0 import steps were skipped. Current candidate CI/artifacts are pending; current-run ZIP CRC, image contents, MP4 frames, errors/warnings and source hashes not independently decoded.
+
+**Bounded change:** `qa/cinematic-review.mjs` pauses Playwright's page clock around the two synchronous smoke mirror OFF/ON renders and resumes it in `finally`; records frozen clock evidence. This controls browser time/rAF/timers, but renderer-internal counters may still advance and actual image comparisons are required. No gameplay, meteor ignition, pool, original FBX or production changes.
+
+**Blockers:** Smoke/facade ART FAIL versus `campaign/visual_target.png`; physical Windows heavy-destruction FPS/CPU/RAM unmeasured, severe slideshow unresolved. Google PR #3 older RC30 remains isolated; independent `agent/google-*` draft PR only, never auto-merge.
+
+**One next action:** Verify new exact-HEAD five workflows, decode paired PNGs and long MP4 plus CRC/reports/license hashes; assess frozen A/B and obtain physical Windows telemetry.
+
 ## November 19 — smoke A/B PNG integrity evidence candidate
 
 **Last observed verified base SHA (not this commit):** `24f573675723ce947abbf75e93ed902ba620f85e`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Five exact-base workflows SUCCESS: [browser 44505609492](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609492), [cinematic 44505609525](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609525), [focused fire 44505609658](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609658), [CC0 importer 44505609578](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609578), [motion 44505609628](https://github.com/erin6374/dragon-defense-play/actions/runs/44505609628). Actual CC0 import operations skipped. Five unexpired artifacts listed; new candidate CI and artifact bytes are pending.
