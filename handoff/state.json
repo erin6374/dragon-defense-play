@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+  "observed_parent_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_frozen_browser_clock_smoke_ab_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_smoke_ab_nonidentical_png_guard_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,44 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 44543800201,
-      "source_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+      "run_id": 44565867245,
+      "source_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44543800201"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44565867245"
     },
     {
       "name": "cinematic",
-      "run_id": 44543800239,
-      "source_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+      "run_id": 44565867448,
+      "source_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44543800239"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44565867448"
     },
     {
       "name": "focused fire",
-      "run_id": 44543800191,
-      "source_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+      "run_id": 44565867264,
+      "source_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44543800191"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44565867264"
     },
     {
       "name": "CC0",
-      "run_id": 44543800240,
-      "source_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+      "run_id": 44565867492,
+      "source_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44543800240",
-      "note": "actual import operations skipped"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44565867492"
     },
     {
       "name": "motion",
-      "run_id": 44543800297,
-      "source_sha": "e86618a3ced1aa39786934d229b1e730dd40e111",
+      "run_id": 44565867325,
+      "source_sha": "1431ac89e300552e86e83b3d6659f69bf1efbe15",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44543800297"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44565867325"
     }
   ],
   "critical_user_requirements": [
@@ -91,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify new exact-head CI; decode paired smoke PNGs, 30-second MP4, CRC, report warnings and CC0 hashes; compare clock-frozen A/B; capture physical Windows performance.",
+  "next_task": "Verify five workflows at candidate exact HEAD; inspect actual smoke screenshots for dense smoke and all artifact integrity/report/license evidence; then stage representative smoke and collect 60s physical Windows FPS/CPU/RAM.",
   "implemented": [
+    "2026-11-19: QA-only commit 5b747dce rejects byte-identical smoke mirror OFF/ON PNGs using existing SHA-256 evidence; previous base 1431ac89 all five workflows SUCCESS. Candidate CI pending. Prior artifact verification 280/280 CRC, genuine 600-frame/30s MP4, CC0 hashes, 0.79% A/B pixel difference; still insufficient smoke prominence. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-19: QA frozen-clock candidate 48bc957a: Playwright page.clock.pauseAt around synchronous smoke OFF/ON captures, resume in finally; browser time controlled but renderer counters and art remain unverified. Verified preceding base e86618a3 all five workflows SUCCESS; candidate CI pending. Windows FPS unresolved.",
     "2026-11-19: QA-only smoke PNG evidence commit 6ed71345: validates PNG signature, records per-capture byte length/SHA256 and identical-byte flag. Base 24f57367 all five workflows success; candidate CI/artifacts pending. Same-task renders still not frozen-time. ART FAIL and Windows FPS unresolved.",
     "2026-11-19: QA-only smoke A/B same-task refinement 358793990a: removes intervening requestAnimationFrame between OFF/ON captures, but render calls remain sequential and simulation clock is NOT frozen. Verified preceding base fa6e64ff five workflows SUCCESS; candidate exact-head CI pending. No gameplay/render change; ART FAIL and physical Windows FPS unresolved.",
@@ -153,9 +153,9 @@
     "One-click 60-second exact-window physical Windows telemetry capture launcher and Python analyzer with three synthetic tests."
   ],
   "blockers": [
-    "Physical Windows heavy-destruction FPS/CPU/RAM CSV and analyzer JSON not yet captured",
+    "Physical Windows heavy-destruction FPS/CPU/RAM CSV and analyzer JSON not captured",
     "Cinematic ART FAIL: repeated smoke and stylized facade/house damage",
-    "New analyzer candidate exact-HEAD workflows pending"
+    "New no-op smoke A/B QA guard exact-HEAD CI pending"
   ],
   "windows_preview": {
     "artifact_id": 14122083239,
