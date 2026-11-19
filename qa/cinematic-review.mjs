@@ -39,7 +39,8 @@ try{
   try{
    for(const enabled of [false,true]){
     vfx.setSmokeMirror(enabled);
-    await new Promise(resolve=>requestAnimationFrame(resolve));
+    // Render both variants in one JS task, without yielding to a new rAF tick.
+    // This reduces simulation drift but does not freeze the simulation clock.
     const capture=window.__DD_CINEMATIC_REVIEW.frame();
     pairs.push({enabled,mode:vfx.smokeMode,mirror:vfx.smokeMirror,png:capture.png});
    }
@@ -54,7 +55,7 @@ try{
  }
  report.smokeComparison={captures:smoke.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),
   controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; smoke uniform only toggled',
-  limitation:'Sequential captures are NOT timestamp-locked; scene clock may advance between frames. Visual review required; not art approval.'};
+  limitation:'Captures execute in one JS task without an intervening rAF, but render calls are sequential and the simulation clock is NOT frozen. Visual review required; not art approval.'};
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
  assert.deepEqual(report.errors,[]);
