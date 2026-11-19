@@ -18,15 +18,18 @@ export function createEvacuationChapter({
   emitImpact,
   onComplete,
   onChopperEscaped,
-  onChopperCrashed
+  onChopperCrashed,
+  spawnEscortThreat
 }) {
   let active = false;
+  let isSecondary = false;
   let currentRun = 1; // 1 to 4
   const TOTAL_RUNS = 4;
   let phase = 'idle'; // 'idle', 'loading', 'escort', 'crashed', 'fires', 'complete'
   let phaseTimer = 0;
   let totalEscaped = 0;
   let totalCrashed = 0;
+  let escortThreatTimer = 1.0;
 
   // Foreground Chinook
   const foregroundRoot = new THREE.Group();
@@ -110,10 +113,12 @@ export function createEvacuationChapter({
     });
   }
 
-  function startLoadingRun(runNum) {
+  function startLoadingRun(runNum, isSec = false) {
     currentRun = runNum;
+    isSecondary = isSec;
     phase = 'loading';
     phaseTimer = 0;
+    escortThreatTimer = 1.2;
     chopperHp = 100;
     dir = runNum % 2 === 1 ? 1 : -1;
 
@@ -142,7 +147,19 @@ export function createEvacuationChapter({
     sound('evacuationAlert');
     sound('evacuationCrowd');
     sound('babyCry');
-    message(`🛡️ TECH FREIRE SHIELD ENGAGED! CHOPPER [${currentRun}/${TOTAL_RUNS}] LOADING — SECURE THE LZ!`);
+    if (isSec) {
+      message(`⚠️ CIVILIAN TRANSPORT LOADING ON NORTH BROAD — ESCORT TO SAFETY! (SCHOOL SHIELD OFFLINE)`);
+    } else {
+      message(`🛡️ TECH FREIRE SHIELD ENGAGED! CHOPPER [${currentRun}/${TOTAL_RUNS}] LOADING — SECURE THE LZ!`);
+    }
+  }
+
+  function startSecondaryEscort(runNum = 1) {
+    if (active) return;
+    active = true;
+    isSecondary = true;
+    currentRun = runNum;
+    startLoadingRun(runNum, true);
   }
 
   function startTakeoff() {
@@ -185,8 +202,12 @@ export function createEvacuationChapter({
         c.targetX = (dir > 0 ? -1 : 1) * (25 + Math.random() * 15);
       });
 
-      if (onChopperCrashed) onChopperCrashed(currentRun);
-      message(`⚠️ CHOPPER DAMAGED! PASSENGERS EVACUATED SAFELY ON FOOT (-300 PTS)`);
+      if (onChopperCrashed) onChopperCrashed(currentRun, isSecondary);
+      if (isSecondary) {
+        message(`⚠️ SECONDARY TRANSPORT DOWNED! SURVIVORS EVACUATED TO ROWHOUSES (-300 PTS)`);
+      } else {
+        message(`⚠️ CHOPPER DAMAGED! PASSENGERS EVACUATED SAFELY ON FOOT (-300 PTS)`);
+      }
     }, 600);
   }
 
@@ -198,14 +219,18 @@ export function createEvacuationChapter({
     sound('bonus');
     sound('fanfare');
 
-    if (onChopperEscaped) onChopperEscaped(currentRun);
-    message(`✅ CHOPPER [${currentRun}/${TOTAL_RUNS}] ESCAPED SAFELY! 45 CITIZENS RESCUED (+500 PTS)`);
+    if (onChopperEscaped) onChopperEscaped(currentRun, isSecondary);
 
-    // Advance to fire suppression between choppers or complete
-    if (currentRun < TOTAL_RUNS) {
-      startFiresPhase();
+    if (isSecondary) {
+      active = false;
+      message(`✅ SECONDARY TRANSPORT ESCAPED SAFELY! 45 CITIZENS RESCUED (+500 PTS)`);
     } else {
-      completeChapter();
+      message(`✅ CHOPPER [${currentRun}/${TOTAL_RUNS}] ESCAPED SAFELY! 45 CITIZENS RESCUED (+500 PTS)`);
+      if (currentRun < TOTAL_RUNS) {
+        startFiresPhase();
+      } else {
+        completeChapter();
+      }
     }
   }
 
@@ -290,6 +315,14 @@ export function createEvacuationChapter({
       // Bank forward into flight direction
       foregroundRoot.rotation.z = -dir * 0.12;
 
+      // Active threat spawning in flight path
+      escortThreatTimer -= dt;
+      if (escortThreatTimer <= 0 && spawnEscortThreat) {
+        escortThreatTimer = 2.2 + Math.random() * 1.4;
+        const leadDist = dir * (12 + Math.random() * 18);
+        spawnEscortThreat(chopperPos.x + leadDist, Math.max(8, chopperPos.y + (Math.random() - 0.5) * 4), chopperPos.z);
+      }
+
       // Check Meteor Collisions vs Escort Chinook
       if (meteors) {
         for (let i = meteors.length - 1; i >= 0; i--) {
@@ -336,7 +369,11 @@ export function createEvacuationChapter({
       });
 
       if (phaseTimer >= 5.5) {
-        if (currentRun < TOTAL_RUNS) {
+        if (isSecondary) {
+          active = false;
+          foregroundRoot.visible = false;
+          civilianGroup.visible = false;
+        } else if (currentRun < TOTAL_RUNS) {
           startFiresPhase();
         } else {
           completeChapter();
@@ -353,11 +390,13 @@ export function createEvacuationChapter({
 
   function reset() {
     active = false;
+    isSecondary = false;
     phase = 'idle';
     phaseTimer = 0;
     currentRun = 1;
     totalEscaped = 0;
     totalCrashed = 0;
+    escortThreatTimer = 1.0;
     foregroundRoot.visible = false;
     civilianGroup.visible = false;
     bgChinooks.forEach(bg => {
@@ -369,23 +408,26 @@ export function createEvacuationChapter({
   function getStats() {
     return {
       active,
+      isSecondary,
       phase,
       currentRun,
       TOTAL_RUNS,
       totalEscaped,
       totalCrashed,
       chopperPos: chopperPos.toArray(),
-      isShieldActive: active && (phase === 'loading' || phase === 'escort')
+      isShieldActive: active && !isSecondary && (phase === 'loading' || phase === 'escort')
     };
   }
 
   return {
     start,
+    startSecondaryEscort,
     update,
     crashChopper,
     safeEscape,
     reset,
     isActive: () => active,
+    isSecondaryActive: () => active && isSecondary,
     getStats,
     foregroundRoot,
     bgFleetGroup
