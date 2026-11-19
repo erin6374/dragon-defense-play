@@ -1,6 +1,6 @@
 {
-  "build": "5.5-north-broad-refinement-rc101",
-  "version": "5.5.0-rc.101",
+  "build": "5.5-north-broad-refinement-rc102",
+  "version": "5.5.0-rc.102",
   "gameplay_base": "5.2.3",
   "scope": "RC99: Early guided training missions (flight academy, dragon fire breath, ground defense gas, and speed meteor buster); Chapter 1 school defense against initial meteor storm; brand new Mass Evacuation Chapter (background Chinook fleet, foreground tandem-rotor Chinook with crowd boarding and baby crying audio, school protective shield, helicopter escort takeoff runs, spectacular non-fatal crash landings where civilians stream out safely, and fire suppression between choppers); eliminated empty level dead spots with active balanced meteor pacing.",
   "new_gameplay_features": true,

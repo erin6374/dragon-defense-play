@@ -23,8 +23,8 @@ export function createEvacuationChapter({
 }) {
   let active = false;
   let isSecondary = false;
-  let currentRun = 1; // 1 to 4
-  const TOTAL_RUNS = 4;
+  let currentRun = 1; // 1 to 6
+  const TOTAL_RUNS = 6;
   let phase = 'idle'; // 'idle', 'loading', 'escort', 'crashed', 'fires', 'complete'
   let phaseTimer = 0;
   let totalEscaped = 0;
@@ -146,7 +146,6 @@ export function createEvacuationChapter({
     // Audio & Messages
     sound('evacuationAlert');
     sound('evacuationCrowd');
-    sound('babyCry');
     if (isSec) {
       message(`⚠️ CIVILIAN TRANSPORT LOADING ON NORTH BROAD — ESCORT TO SAFETY! (SCHOOL SHIELD OFFLINE)`);
     } else {
@@ -298,9 +297,6 @@ export function createEvacuationChapter({
         }
       });
 
-      // Periodic audio drama
-      if (phaseTimer > 1.8 && phaseTimer < 2.0) sound('babyCry');
-
       if (phaseTimer >= 4.6) {
         startTakeoff();
       }
@@ -340,7 +336,7 @@ export function createEvacuationChapter({
       }
 
       // Check safe escape past board edge
-      if (Math.abs(chopperPos.x) > 135.0) {
+      if (Math.abs(chopperPos.x) > 220.0) {
         safeEscape();
       }
     }

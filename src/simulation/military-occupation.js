@@ -8,17 +8,17 @@ const shotEligible=shot=>!shot.hostile&&!shot.fireTarget&&shot.life>0;
 const meteorCenter=meteor=>meteor.mesh.position,meteorRadius=meteor=>meteor.size+1;
 export function createMilitaryOccupation({scene,dragon,getWave,onDragonHit,onMeteorHit,onBlast,onMessage,onCollateral,getCollateralStructures}){
  const exhaustGeo=new THREE.SphereGeometry(.32,5,4);
- const exhaustMat=new THREE.MeshBasicMaterial({color:0x879096,transparent:true,opacity:.26,depthWrite:false});
+ const exhaustMat=new THREE.MeshBasicMaterial({color:0x879096,transparent:true,opacity:.22,depthWrite:false});
  const exhaust=[];
  function smokeTrail(position,dt){
-  if(Math.random()<Math.min(1,dt*24)&&exhaust.length<130){
-   const puff=new THREE.Mesh(exhaustGeo,exhaustMat.clone());puff.position.copy(position);puff.scale.setScalar(.55+Math.random()*.7);scene.add(puff);
-   exhaust.push({puff,life:.9+Math.random()*.6,ttl:1.5});
+  if(Math.random()<Math.min(1,dt*18)&&exhaust.length<60){
+   const puff=new THREE.Mesh(exhaustGeo,exhaustMat);puff.position.copy(position);puff.scale.setScalar(.55+Math.random()*.5);scene.add(puff);
+   exhaust.push({puff,life:.7+Math.random()*.5,ttl:1.2});
   }
  }
- function updateExhaust(dt){for(let i=exhaust.length-1;i>=0;i--){const p=exhaust[i];p.life-=dt;p.puff.position.y+=dt*.9;p.puff.scale.multiplyScalar(1+dt*.8);p.puff.material.opacity=Math.max(0,p.life/p.ttl)*.26;
-  if(p.life<=0){scene.remove(p.puff);p.puff.material.dispose();exhaust.splice(i,1);}}}
- function clearExhaust(){for(const p of exhaust){scene.remove(p.puff);p.puff.material.dispose();}exhaust.length=0;}
+ function updateExhaust(dt){for(let i=exhaust.length-1;i>=0;i--){const p=exhaust[i];p.life-=dt;p.puff.position.y+=dt*.9;p.puff.scale.multiplyScalar(1+dt*.7);
+  if(p.life<=0){scene.remove(p.puff);exhaust.splice(i,1);}}}
+ function clearExhaust(){for(const p of exhaust){scene.remove(p.puff);}exhaust.length=0;}
  const vehicles=[],missiles=[];
  const hullMat=new THREE.MeshStandardMaterial({color:0x48533c,roughness:.88,metalness:.12});
  const gasHullMat=hullMat.clone();gasHullMat.color.setHex(0x60b946);
