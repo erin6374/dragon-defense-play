@@ -653,13 +653,14 @@ dragon.scale.set(1.14,1.14,1.14);
 dragon.scale.setScalar(1.20);
 // Legacy mouth socket follows the original visual snout's world transform.
 const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
-let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0,restBlend=1.0,isBoosting=false,lastIntenseRoarElapsed=0;
+let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0,restBlend=1.0,isBoosting=false,lastIntenseRoarElapsed=0,rearUpBlend=0.0;
+const DRAGON_BOUND_X=380;
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
  dragonVelX=0;dragonVelY=0;flightRoll=0;flightYaw=0;diveEnergy=0;
  facing=1;turnTime=0;gasPose=0;dragonGroundImpact=false;recoveryLift=0;windActive=false;gustTime=0;pauloFirePoseUntil=0;flightPitch=0;
  dragon.position.set(0,schoolBounds.max.y+2.4,schoolBounds.max.z-1.8);
- dragon.rotation.x=-0.52;dragon.rotation.y=1.35;dragon.rotation.z=-0.10;
+ dragon.rotation.x=-0.12;dragon.rotation.y=1.52;dragon.rotation.z=0.22;
  for(const wing of wings){wing.pivot.rotation.z=wing.sign*.55;wing.pivot.rotation.x=-wing.sign*.20;}
  pauloPoseDriver?.reset('idle');
  if(dragonStun<=0)invulnerable=Math.max(invulnerable,.55);
@@ -732,7 +733,7 @@ if(new URLSearchParams(location.search).get('qa')==='1')window.__DD_PAULO_PREVIE
   scale:dragon.scale.toArray()
  })
 };
-dragon.position.set(0,2,15);
+dragon.position.set(0,schoolBounds.max.y+2.4,schoolBounds.max.z-1.8);dragon.rotation.set(-0.12,1.52,0.22);
 // High-fidelity synthesized audio engine with noise buffers, FM, and sub-bass celestial rumble.
 const soundEngine=createSoundEngine();
 let audio=null,muted=false;
@@ -924,10 +925,11 @@ const vehicleMaterials=new Map();
 function vehicleMaterial(hex){if(!vehicleMaterials.has(hex))vehicleMaterials.set(hex,material(hex));return vehicleMaterials.get(hex);}
 function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;
- const carCap=chapter===1?28:(chapter===2?24:20);
+ const carCap=chapter<=2?45:(chapter===3?36:28);
  if(cars.length>=carCap&&forcedX===null)return;
  const severeDamage=hp<55||schoolFire.length>=3||neighborhood.targetBuildings.filter(b=>b.damage>.35).length>=5;
- const fireUrgency=schoolFire.length>0&&!cars.some(c=>c.fireTruck)&&Math.random()<.72;
+ const activeFireTrucks=cars.filter(c=>c.fireTruck).length;
+ const fireUrgency=schoolFire.length>0&&activeFireTrucks<Math.min(5,schoolFire.length+1)&&Math.random()<.88;
  const military=chapter===3&&!fireUrgency&&Math.random()<.65;
  const emergency=forcedType==='police'||(!military&&(fireUrgency||Math.random()<(severeDamage?.83:(chapter===2?Math.min(.82,.38+(wave-5)*.08):(chapter===1?.04:.15)))));
  const ambulance=!military&&!fireUrgency&&emergency&&(crowd.some(p=>p.down>0)||severeDamage)&&Math.random()<(severeDamage?.40:.30);
@@ -970,9 +972,12 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
    laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
   }
  }else{
-  if(fireTruck&&Math.random()<0.45){
-   midgroundStreet=true;
-   laneZ=-88;
+  if(fireTruck){
+   const r=Math.random();
+   if(r<0.30){rearStreet=true;laneZ=-37;}
+   else if(r<0.60){midgroundStreet=true;laneZ=-88;}
+   else if(r<0.75){backgroundStreet=true;laneZ=-112;}
+   else{laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];}
   }else{
    laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
   }
@@ -1114,8 +1119,8 @@ function fireTruckService(c,dt){
  if(c.serviceDeparture>0){c.serviceDeparture-=dt;c.serviceStop=c.serviceDeparture>0;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=c.serviceStop;return;}
  if(!c.serviceTarget||!schoolFire.includes(c.serviceTarget)){
   c.serviceTarget=schoolFire.reduce((best,f)=>{
-   if(f.root.position.z>=-20&&(Math.abs(f.root.position.x-c.root.position.x)>48||(f.root.position.x-c.root.position.x)*c.dir< -4))return best;
-   return !best||Math.abs(f.root.position.x-c.root.position.x)<Math.abs(best.root.position.x-c.root.position.x)?f:best;
+   const dx=f.root.position.x-c.root.position.x;
+   return !best||Math.abs(dx)<Math.abs(best.root.position.x-c.root.position.x)?f:best;
   },null);
   c.serviceProgress=0;
  }
@@ -1148,19 +1153,17 @@ function fireTruckService(c,dt){
  const source=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
  cinematicFX.water(source,target,c.ladder?.16:.12);
  if(!dragonNear){
-  c.serviceTarget.suppression+=dt*(c.ladder?.42:.58);
+  c.serviceTarget.suppression+=dt*(c.ladder?.85:1.20);
   c.steamAudioTimer=(c.steamAudioTimer||0)-dt;
   if(c.steamAudioTimer<=0){
-   c.steamAudioTimer=0.55+Math.random()*0.25;
+   c.steamAudioTimer=0.45+Math.random()*0.20;
    sound('steam',{x:pos.x});
   }
-  if(performanceLab.isEnabled('particles')&&Math.random()<0.65){
+  if(performanceLab.isEnabled('particles')&&Math.random()<0.75){
    trailSmokePool.add(new THREE.Vector3(pos.x+(Math.random()-.5)*1.6,pos.y+0.8+Math.random()*1.8,pos.z+(Math.random()-.5)*0.8),0.38);
   }
  }else if(source.distanceTo(dragon.position)<22){if(waterDisable<=0)message('WATER SPRAY — BREATH STEAMING / 50% DAMAGE');waterDisable=Math.max(waterDisable,.8);}
- // Water suppresses fire at a fixed rate. Wait at least four seconds then
- // remain another two seconds at the stop before pulling out.
- if(!dragonNear&&c.serviceProgress>=4.0){
+ if(!dragonNear&&(c.serviceProgress>=2.2||(c.serviceTarget&&c.serviceTarget.suppression>=1.0))){
   if(c.serviceTarget&&schoolFire.includes(c.serviceTarget)){
    sound('steam',{x:pos.x});
    for(let sp=0;sp<6;sp++){
@@ -1169,10 +1172,15 @@ function fireTruckService(c,dt){
    fireGroup.remove(c.serviceTarget.root);
    schoolFire.splice(schoolFire.indexOf(c.serviceTarget),1);
   }
-  c.serviceTarget=null;c.serviceProgress=0;c.serviceDeparture=2.1;
+  const nextFire=schoolFire.find(f=>!cars.some(other=>other!==c&&other.fireTruck&&other.serviceTarget===f));
+  if(nextFire){
+   c.serviceTarget=nextFire;c.serviceProgress=0;c.serviceDeparture=0;
+  }else{
+   c.serviceTarget=null;c.serviceProgress=0;c.serviceDeparture=0.5;
+  }
  }
 }
-function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();carTimer=schoolFire.length&&!cars.some(c=>c.fireTruck)?1.2:(wave<=5?.32+Math.random()*.42:(wave>=5?.65:1.2)+Math.random()*(wave>=5?1.0:2.0));if(hp<55||schoolFire.length>3)carTimer*=.65;}
+function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;const activeFireTrucks=cars.filter(c=>c.fireTruck).length;carTimer=schoolFire.length&&activeFireTrucks<Math.min(5,schoolFire.length)?0.5:(chapter<=2?0.20+Math.random()*0.24:0.55+Math.random()*0.75);if(hp<55||schoolFire.length>3)carTimer*=.65;}
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
@@ -1503,27 +1511,24 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  const blockDamage=1-health/100;
  backgroundDamageTimer-=dt;
  if(backgroundDamageTimer>0)return;
- // Background meteor strikes scale across ALL planes as the neighborhood gauge shrinks
- backgroundDamageTimer=THREE.MathUtils.lerp(3.8,0.95,Math.max(frontDamage*.75,blockDamage));
+ // Rapid continuous background meteor strikes crashing into background rowhouses!
+ backgroundDamageTimer=0.85+random()*0.75;
  const district=neighborhood.longRange;
  const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.damage<1);
- const count=blockDamage>=.55?3:blockDamage>=.25?2:1;
+ const count=2+Math.floor(random()*2);
  for(let i=0;i<count&&distantStreaks.length<65;i++){
-  const near=backs.length&&i===0&&random()<.48?backs[Math.floor(random()*backs.length)]:null;
-  const visible=i<2;
-  // Multi-plane sampling across near, intermediate, deep, and horizon blocks
-  const sampleZ=visible?(-35-random()*140):(-100-random()*720);
-  const far=near?null:district.targetAt(
-   visible?cameraScrollX+(random()-.5)*120:(random()-.5)*520,
-   sampleZ);
+  const near=backs.length&&random()<0.75?backs[Math.floor(random()*backs.length)]:null;
+  const visible=true;
+  const sampleZ=near?near.z:(-35-random()*120);
+  const far=near?null:district.targetAt(cameraScrollX+(random()-.5)*140,sampleZ);
   if(!near&&!far)continue;
   const point=near?new THREE.Vector3(near.x,near.h*.65,near.front-.2):
    district.root.localToWorld(new THREE.Vector3(far.x,far.y,far.z));
   const sprite=new THREE.Sprite(distantVisual.material);
   sprite.position.copy(point).add(new THREE.Vector3(-25,95,0));
-  sprite.scale.set(2.4,10,1);
+  sprite.scale.set(3.2,14,1);
   scene.add(sprite);
-  distantStreaks.push({sprite,life:1.6,landing:{point,near,far,strength:.35+blockDamage*.65}});
+  distantStreaks.push({sprite,life:1.4,landing:{point,near,far,strength:0.45+blockDamage*0.55}});
  }
 }
 
@@ -1845,7 +1850,7 @@ function updateWorld(dt){
      const orbitX=Math.sin(elapsed*0.65+i*1.8)*14.0;
      const orbitZ=Math.cos(elapsed*0.55+i*1.5)*3.5;
      const targetX=THREE.MathUtils.clamp(dragon.position.x-patrolSide*20+orbitX,-70,70);
-     const cruiseCeiling=20.0+(i%2)*3.5;
+     const cruiseCeiling=19.0+(i%3)*5.5;
      const targetY=THREE.MathUtils.clamp(cruiseCeiling+Math.sin(elapsed*0.75+i)*1.6,17,28);
      const targetZ=THREE.MathUtils.clamp(16+orbitZ,11,22);
 
@@ -1912,16 +1917,28 @@ function updateWorld(dt){
       }
      }
     }
-    // Inter-helicopter collision avoidance and sparks bump
+    // Inter-helicopter proactive separation steering avoiding collision loops
     for(let j=i-1;j>=0;j--){
      const h2=helicopters[j];
      if(!h2||h2.crashing)continue;
+     const dx=h.root.position.x-h2.root.position.x;
+     const dz=h.root.position.z-h2.root.position.z;
+     const dist2D=Math.hypot(dx,dz);
+     if(dist2D<14.0){
+      // Proactively navigate around each other laterally and vertically
+      const avoidDir=Math.sign(dx)||(i>j?1:-1);
+      h.vel.x+=avoidDir*16.0*dt;
+      h.root.position.z+=(i>j?1:-1)*8.0*dt;
+     }
      if(h.root.position.distanceTo(h2.root.position)<4.2){
       const sep=h.root.position.clone().sub(h2.root.position).normalize();
-      h.root.position.addScaledVector(sep,dt*6);
-      h.bumpTime=.8;h2.bumpTime=.8;
-      emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,22,.35);
-      sound('impact');
+      h.root.position.addScaledVector(sep,dt*8);
+      if(!h.lastBumpTime||elapsed-h.lastBumpTime>2.5){
+       h.lastBumpTime=elapsed;
+       h.bumpTime=.8;h2.bumpTime=.8;
+       emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,22,.35);
+       sound('impact');
+      }
      }
     }
     if(wave>8&&h.role==='police'&&h.disorientTime<=0){
@@ -3559,7 +3576,6 @@ if(wasOnRoof&&dragonLeavingRoof){
  }
 }
 if(dragonLeavingRoof)dragon.position.z=THREE.MathUtils.lerp(dragon.position.z,15,Math.min(1,dt*9));
-const DRAGON_BOUND_X=230;
 if(gasHolding&&!input.isDown(ACTIONS.GAS)&&(activeMouseButtons&2)===0)cancelGasHold();
 isBoosting=gasHolding&&dragonStun<=0&&active&&!paused;
 if(isBoosting){
@@ -3647,14 +3663,23 @@ dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,BASE_DRAGON_SCALE,Math.min(1,
 dragon.scale.z=BASE_DRAGON_SCALE;
 const targetRoll=-dragonVelX*0.022-move*0.16;
 flightRoll=THREE.MathUtils.lerp(flightRoll,targetRoll,Math.min(1,dt*8.5));
+const atBoardEdge=Math.abs(dragon.position.x)>=DRAGON_BOUND_X-22;
+const isStaticFlight=dragonLeavingRoof&&Math.abs(move)<0.1&&Math.abs(rise)<0.1&&Math.abs(dragonVelX)<1.2&&Math.abs(dragonVelY)<1.2;
+const shouldRearUp=atBoardEdge||isStaticFlight||!dragonLeavingRoof;
+rearUpBlend=THREE.MathUtils.lerp(rearUpBlend,shouldRearUp?1.0:0.0,Math.min(1,dt*5.0));
+
 const targetElevationPitch=(dragonVelY*0.025)*facing+(turning*0.34);
-flightPitch=THREE.MathUtils.lerp(flightPitch,targetElevationPitch,Math.min(1,dt*9.0));
-const isResting=(!dragonLeavingRoof||(Math.abs(dragonVelX)<1.2&&Math.abs(move)<0.1&&Math.abs(dragonVelY)<1.5));
+// Rearing up into standing hover: body pitches upward ~68 degrees
+const uprightPitch=Math.PI*0.38*(facing||1);
+const blendedPitch=THREE.MathUtils.lerp(targetElevationPitch,uprightPitch,rearUpBlend);
+flightPitch=THREE.MathUtils.lerp(flightPitch,blendedPitch,Math.min(1,dt*9.0));
+
+const isResting=(!dragonLeavingRoof||isStaticFlight||(Math.abs(dragonVelX)<1.2&&Math.abs(move)<0.1&&Math.abs(dragonVelY)<1.5));
 restBlend=THREE.MathUtils.lerp(restBlend,isResting?1.0:0.0,Math.min(1,dt*4.5));
 const flightYawDynamic=Math.sin(elapsed*2.2)*0.08+(dragonVelX*0.012)+(turning*0.55*facing);
-// When resting/hovering, turn to face the camera (towards +Z); smoothly transition to profile flight when moving
-const cameraFacingYaw=(facing>0?1:-1)*1.35;
-const targetYaw=THREE.MathUtils.lerp(flightYawDynamic,cameraFacingYaw+Math.sin(elapsed*1.5)*0.06,restBlend);
+// When resting/hovering or standing up, face towards the camera (towards +Z); smoothly transition to profile flight when moving
+const cameraFacingYaw=(facing>0?1:-1)*1.52;
+const targetYaw=THREE.MathUtils.lerp(flightYawDynamic,cameraFacingYaw+Math.sin(elapsed*1.5)*0.06,Math.max(restBlend,rearUpBlend));
 flightYaw=THREE.MathUtils.lerp(flightYaw,targetYaw,Math.min(1,dt*8.0));
 gasPose=Math.max(0,gasPose-dt);recoveryLift=Math.max(0,recoveryLift-dt);
 const shocked=dragonStun>0||helicopters.some(h=>h.role==='ice'&&h.contactTime>.01);
@@ -3662,6 +3687,11 @@ if(dragonLeavingRoof){
  dragon.rotation.x=shocked?Math.sin(elapsed*24)*.24:flightRoll+(gasPose>0?-.22:0)+(gustTime>0?.15:0);
  dragon.rotation.y=flightYaw;
  dragon.rotation.z=flightPitch+(shocked?Math.sin(elapsed*17)*.23:(dragonStun>0?Math.sin(elapsed*35)*.14:Math.sin(elapsed*3.5)*.03));
+}else{
+ // Initial static state at game start: facing towards the camera in standing stance
+ dragon.rotation.x=0;
+ dragon.rotation.y=cameraFacingYaw;
+ dragon.rotation.z=Math.PI*0.18*(facing||1);
 }
 dragon.children.forEach((part,i)=>{
  if(i>=17&&i<=23){
@@ -3734,11 +3764,16 @@ if(isOnPavement){
   emitImpact(dragon.position.x+(facing||1)*1.8,0.5,dragon.position.z,14,0.3);
  }
  for(const c of cars){
-  if(c.life>0&&Math.abs(c.root.position.x-dragon.position.x)<4.6&&Math.abs(c.root.position.z-dragon.position.z)<3.4){
+  if(c.life>0&&Math.abs(c.root.position.x-dragon.position.x)<4.8&&Math.abs(c.root.position.z-dragon.position.z)<3.8){
    const pushDir=Math.sign(c.root.position.x-dragon.position.x)||1;
-   c.root.position.x+=pushDir*3.4;
+   // Shift car into adjacent roadway lane or curb shoulder (different Z plane) so it immediately clears Paulo's path with zero stutter!
+   const planeShift=(c.root.position.z>=dragon.position.z?1:-1)*(6.0+Math.random()*2.0);
+   c.root.position.z+=planeShift;
+   c.laneZ=c.root.position.z;
+   c.root.position.x+=pushDir*2.8;
    c.root.rotation.z+=pushDir*0.22;
-   c.speed*=0.25;
+   c.root.rotation.y+=(Math.random()-.5)*0.35;
+   c.speed*=0.4;
    sound('carCrunch',{x:c.root.position.x});
    shake=Math.max(shake,0.22);
    flashAt(c.root.position.x,1.2,c.root.position.z,1.8);
@@ -3752,6 +3787,20 @@ if(isOnPavement){
  for(const w of wings){
   w.pivot.rotation.x=w.sign*(Math.sin(elapsed*flapFreq)*flapAmp+soarDihedral+(shocked?Math.sin(elapsed*25)*.35:0)+turning*.28+(gasPose>0?-.22:0));
   w.pivot.rotation.z=isDiving?(w.sign*0.42):(w.sign*(0.05+Math.cos(elapsed*flapFreq)*0.08));
+ }
+ if(pauloPreviewRig){
+  const rearFactor=Math.max(restBlend,rearUpBlend);
+  pauloPreviewRig.legs.forEach(({hip,knee,foot,fore})=>{
+   if(fore){
+    hip.rotation.z=THREE.MathUtils.lerp(-0.25,0.45,rearFactor);
+    knee.rotation.z=THREE.MathUtils.lerp(0.35,0.75,rearFactor);
+    foot.rotation.z=THREE.MathUtils.lerp(-0.15,-0.35,rearFactor);
+   }else{
+    hip.rotation.z=THREE.MathUtils.lerp(-0.15,-0.75,rearFactor);
+    knee.rotation.z=THREE.MathUtils.lerp(0.25,0.15,rearFactor);
+    foot.rotation.z=THREE.MathUtils.lerp(-0.10,0.30,rearFactor);
+   }
+  });
  }
 }
 const isHighSpeed=isDiving||isSoaring||Math.abs(dragonVelX)>15.0;
@@ -4295,7 +4344,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),
+ window.__DD_QA={snap,log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
@@ -4903,7 +4952,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   triggerHelicopterCrash:(variant=1)=>run('triggerHelicopterCrash',()=>{spawnHelicopter(variant);const h=helicopters.at(-1);if(h)crashHelicopter(h);return snap()}),
   stageFirefighter:()=>run('stageFirefighter',()=>{ignite(0,3,3);spawnHelicopter(2);const h=helicopters[helicopters.length-1];h.root.position.set(0,16,3);return snap()}),
   start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();if(cinematicActive)closeChapterTransition();return snap()}),
-  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-230,230),THREE.MathUtils.clamp(y,1.35,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
+  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-DRAGON_BOUND_X,DRAGON_BOUND_X),THREE.MathUtils.clamp(y,1.35,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
   advanceOrdinaryWave:()=>run('advanceOrdinaryWave',()=>{if(!active||wave>=15||[5,10,14].includes(wave))throw Error('QA ordinary-wave transition requires active non-chapter boundary wave');const before=snap();wave++;between=0;updateHud();newWave();return {before,after:snap()}}),
   stageRallyLoop:()=>run('stageRallyLoop',()=>{
    remaining=0;

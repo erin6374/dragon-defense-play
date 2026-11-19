@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc95",
-  "version": "5.5.0-rc.95",
+  "build": "5.5-north-broad-refinement-rc96",
+  "version": "5.5.0-rc.96",
   "gameplay_base": "5.2.3",
-  "scope": "RC95: Atmospheric ablation bolide streaks replacing cold white streaks, translucent soft refractive bubble shield with dual-mode Call the Block and Purple Ram protection and elastic blur on impact, 70/30 giant-to-small meteor chunk barrage with full mineral variety across all waves, spatial rock crumble cascade foley, and civilian crowd distress acoustics.",
+  "scope": "RC96: Deep acoustic digital sampled Japanese war drums (sub-bass Ō-daiko & punchy Chū-daiko), sampled visceral multi-phase dragon roar vocalizations, extended board limits (X = ±380) with standing upright hover animation, camera-facing default static stance, car plane shift physics (shoving into adjacent Z lanes without stutter), proactive helicopter collision separation, high-density traffic across North Broad, midground, and background streets (cap 45), municipal multi-unit firefighting response (up to 5 trucks) with continuous retargeting, and high-frequency background neighborhood meteor impacts with visible rowhouse fire and smoke plumes.",
   "new_gameplay_features": true,
-  "release_status": "RC95 candidate: Atmospheric Reentry Ablation, Soft Translucent Bubble Shield, 70/30 Diverse Meteor Barrage, Rock Cascades, and Evacuation Acoustics."
+  "release_status": "RC96 candidate: Deep Digital Sampled War Drums, Visceral Dragon Roars, Extended Board Flight & Standing Stance, Camera-Facing Static Hover, Car Plane Shift Physics, Proactive Helicopter Separation, Multi-Plane Traffic & Municipal Fire Response, and Background Neighborhood Meteor Destruction."
 }

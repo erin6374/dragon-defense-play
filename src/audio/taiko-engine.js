@@ -3,7 +3,7 @@
 // Features physical acoustic synthesis for Ō-daiko, Chū-daiko, Shime-daiko, and Bachi rim clicks.
 // Dynamically modulates tempo (108 -> 132 BPM), syncopation, and intensity with gameplay action.
 
-export function createTaikoEngine(ctx, destinationBus) {
+export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   let isRunning = false;
   let isMuted = false;
   let masterGain = null;
@@ -67,11 +67,11 @@ export function createTaikoEngine(ctx, destinationBus) {
     if (!ctx || masterGain) return;
 
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(isMuted ? 0 : 0.85, ctx.currentTime);
+    masterGain.gain.setValueAtTime(isMuted ? 0 : 1.25, ctx.currentTime);
 
     // Warm analog saturation limiter for cinematic punch without harsh digital clipping
     limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.setValueAtTime(-10.0, ctx.currentTime);
+    limiter.threshold.setValueAtTime(-6.0, ctx.currentTime);
     limiter.knee.setValueAtTime(6.0, ctx.currentTime);
     limiter.ratio.setValueAtTime(5.0, ctx.currentTime);
     limiter.attack.setValueAtTime(0.002, ctx.currentTime);
@@ -174,6 +174,9 @@ export function createTaikoEngine(ctx, destinationBus) {
       osc1.stop(time + 1.45);
       osc2.stop(time + 0.5);
 
+      if (playSampleFn) {
+        playSampleFn('taiko_odaiko_deep', { volume: 1.10 * vel, pan, bus: destinationBus });
+      }
       totalHitsTriggered++;
     } catch (e) {}
   }
@@ -229,6 +232,9 @@ export function createTaikoEngine(ctx, destinationBus) {
       osc.start(time);
       osc.stop(time + 0.45);
 
+      if (playSampleFn) {
+        playSampleFn('taiko_chudaiko_punch', { volume: 0.95 * vel, pan, bus: destinationBus });
+      }
       totalHitsTriggered++;
     } catch (e) {}
   }
@@ -297,7 +303,7 @@ export function createTaikoEngine(ctx, destinationBus) {
       osc.frequency.setValueAtTime(1850.0, time);
       osc.frequency.exponentialRampToValueAtTime(1250.0, time + 0.02);
 
-      gain.gain.setValueAtTime(0.36 * vel, time);
+      gain.gain.setValueAtTime(0.18 * vel, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
 
       // Rim crack noise
@@ -310,7 +316,7 @@ export function createTaikoEngine(ctx, destinationBus) {
         noiseFilter.Q.setValueAtTime(3.5, time);
 
         const noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.48 * vel, time);
+        noiseGain.gain.setValueAtTime(0.20 * vel, time);
         noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
 
         noise.connect(noiseFilter);

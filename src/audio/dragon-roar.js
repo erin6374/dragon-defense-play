@@ -47,10 +47,10 @@ export function createDragonRoarEngine(ctx, destinationBus, playSampleFn) {
       tremoloDepth: 0.28,
       formant1: 340,
       formant2: 980,
-      sampleLayer: 'impact_sub_deep_2',
-      sampleVolume: 0.55,
-      sampleRate: 0.85,
-      gainMaster: 0.82
+      sampleLayer: 'dragon_roar_furious',
+      sampleVolume: 1.05,
+      sampleRate: 1.0,
+      gainMaster: 1.25
     },
 
     // 2. Mournful Defeat Roar (Game Over / Defeat)
@@ -67,10 +67,10 @@ export function createDragonRoarEngine(ctx, destinationBus, playSampleFn) {
       tremoloDepth: 0.48,
       formant1: 195,
       formant2: 540,
-      sampleLayer: 'titan_drone_sub',
-      sampleVolume: 0.45,
-      sampleRate: 0.70,
-      gainMaster: 0.88
+      sampleLayer: 'dragon_roar_mournful',
+      sampleVolume: 1.10,
+      sampleRate: 0.98,
+      gainMaster: 1.30
     },
 
     // 3. Challenge / Apex Roar (Boss Arrival, Mega Fire, Call Block)
@@ -87,30 +87,30 @@ export function createDragonRoarEngine(ctx, destinationBus, playSampleFn) {
       tremoloDepth: 0.22,
       formant1: 320,
       formant2: 1100,
-      sampleLayer: 'warfork_rocket_boom',
-      sampleVolume: 0.60,
-      sampleRate: 0.80,
-      gainMaster: 0.90
+      sampleLayer: 'dragon_roar_challenge',
+      sampleVolume: 1.05,
+      sampleRate: 1.0,
+      gainMaster: 1.25
     },
 
     // 4. Intense Combat Roar (High Threat Swarms, Supersonic Dive)
     intense: {
-      duration: 1.35,
-      cooldown: 3.5, // Generous cooldown so intense roars stay punchy and meaningful
+      duration: 1.8,
+      cooldown: 2.5,
       startPitch: 92,
-      peakPitch: 142,
-      endPitch: 74,
+      peakPitch: 180,
+      endPitch: 64,
       attackTime: 0.04,
       flutterRate: 17.5,
-      flutterDepth: 18.0,
-      tremoloRate: 8.0,
-      tremoloDepth: 0.20,
+      flutterDepth: 28.0,
+      tremoloRate: 8.5,
+      tremoloDepth: 0.32,
       formant1: 360,
-      formant2: 1040,
-      sampleLayer: 'whoosh_launch',
-      sampleVolume: 0.50,
-      sampleRate: 0.90,
-      gainMaster: 0.78
+      formant2: 1100,
+      sampleLayer: 'dragon_roar_furious',
+      sampleVolume: 0.95,
+      sampleRate: 1.12,
+      gainMaster: 1.15
     }
   };
 

@@ -7,6 +7,15 @@ import { createTaikoEngine } from './taiko-engine.js';
 import { createDragonRoarEngine } from './dragon-roar.js';
 
 const AUDIO_MANIFEST = {
+  // Authentic Japanese War Drums (Digital Acoustic Samples)
+  taiko_odaiko_deep: '/assets/audio/taiko_odaiko_deep.wav',
+  taiko_chudaiko_punch: '/assets/audio/taiko_chudaiko_punch.wav',
+
+  // Cinematic Draconic Vocalizations (Sampled Physical Modeling)
+  dragon_roar_furious: '/assets/audio/dragon_roar_furious.wav',
+  dragon_roar_mournful: '/assets/audio/dragon_roar_mournful.wav',
+  dragon_roar_challenge: '/assets/audio/dragon_roar_challenge.wav',
+
   // Deep Impacts & Explosions
   impact_sub_deep: '/assets/audio/impact_sub_deep.ogg',
   impact_sub_deep_2: '/assets/audio/impact_sub_deep_2.ogg',
@@ -123,10 +132,10 @@ export function createSoundEngine() {
       ambientBus.connect(masterGain);
 
       percussionBus = ctx.createGain();
-      percussionBus.gain.setValueAtTime(0.88, ctx.currentTime);
+      percussionBus.gain.setValueAtTime(1.28, ctx.currentTime);
       percussionBus.connect(masterGain);
 
-      taikoEngine = createTaikoEngine(ctx, percussionBus);
+      taikoEngine = createTaikoEngine(ctx, percussionBus, playSample);
       taikoEngine.start();
 
       roarEngine = createDragonRoarEngine(ctx, sfxBus, playSample);
