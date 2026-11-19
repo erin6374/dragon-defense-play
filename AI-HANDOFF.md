@@ -1,3 +1,13 @@
+## November 19 — smoke A/B no-op regression guard
+
+**Last verified base SHA (not this handoff commit):** `1431ac89e300552e86e83b3d6659f69bf1efbe15`, RC59 / `5.5-licensed-smoke-sheet-roll-rc59`. Five exact-base workflows SUCCESS: [browser](https://github.com/erin6374/dragon-defense-play/actions/runs/44565867245), [cinematic](https://github.com/erin6374/dragon-defense-play/actions/runs/44565867448), [focused fire](https://github.com/erin6374/dragon-defense-play/actions/runs/44565867264), [CC0](https://github.com/erin6374/dragon-defense-play/actions/runs/44565867492), [motion](https://github.com/erin6374/dragon-defense-play/actions/runs/44565867325). CC0 import steps previously skipped. Prior artifact inspection reported ZIP CRC 280/280, 600-frame 30s MP4, matched CC0 hashes and 0.79% differing smoke A/B pixels; current candidate artifact verification pending.
+
+**Bounded QA code change:** `5b747dceb45d2e1631460bb6f9eb3fae784d8dda` adds a fail-fast assertion that smoke mirror OFF/ON PNG SHA-256 values must differ. Prevents a wholly ineffective comparison from silently passing; it does **not** establish adequate visible smoke, renderer-internal time lock, art quality, or physical FPS. Gameplay, pool budgets, causal meteor ignition, bilateral damage, school FBX and protected branches unchanged.
+
+**Blockers:** ART FAIL for repetitive smoke and stylized facades/house damage; severe Windows slideshow unresolved without physical 60s FPS/CPU/RAM capture. Google PR #3 older RC30 isolated per review 6827300214; agents only independent `agent/google-*` draft PR, no auto-merge.
+
+**One next action:** Verify five workflows at new HEAD and inspect smoke A/B PNGs for prominent smoke, actual motion/report/CRC/license evidence; then stage representative dense smoke and collect physical Windows telemetry.
+
 ## November 19 — frozen browser-clock smoke A/B candidate
 
 **Last verified base SHA (not this commit):** `e86618a3ced1aa39786934d229b1e730dd40e111`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base workflows SUCCESS: [browser 44543800201](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800201), [cinematic 44543800239](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800239), [focused fire 44543800191](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800191), [CC0 44543800240](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800240), [motion 44543800297](https://github.com/erin6374/dragon-defense-play/actions/runs/44543800297). CC0 import steps were skipped. Current candidate CI/artifacts are pending; current-run ZIP CRC, image contents, MP4 frames, errors/warnings and source hashes not independently decoded.
