@@ -29,6 +29,32 @@ try{
   await writeFile(`${out}/${name}.png`,Buffer.from(png,'base64'));
   report.views.push({name,...state,...metrics});
  }
+ // Controlled same-session smoke A/B captures: identical staged scene, camera,
+ // seed and wave. Frame time is not frozen; report this limitation explicitly.
+ const smoke=await page.evaluate(async()=>{
+  const vfx=window.__DD_FIRE_VFX;
+  if(!vfx?.ready)throw Error('Licensed smoke atlas not ready for A/B capture');
+  const original=vfx.smokeMirror;
+  const pairs=[];
+  try{
+   for(const enabled of [false,true]){
+    vfx.setSmokeMirror(enabled);
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const capture=window.__DD_CINEMATIC_REVIEW.frame();
+    pairs.push({enabled,mode:vfx.smokeMode,mirror:vfx.smokeMirror,png:capture.png});
+   }
+  }finally{vfx.setSmokeMirror(original);}
+  return pairs;
+ });
+ assert.equal(smoke.length,2);
+ for(const pair of smoke){
+  assert.equal(pair.mirror,pair.enabled,'smoke mirror toggle did not apply');
+  assert.equal(pair.mode,'plume','A/B must use licensed plume mode');
+  await writeFile(`${out}/smoke-mirror-${pair.enabled?'on':'off'}.png`,Buffer.from(pair.png,'base64'));
+ }
+ report.smokeComparison={captures:smoke.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),
+  controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; smoke uniform only toggled',
+  limitation:'Sequential captures are NOT timestamp-locked; scene clock may advance between frames. Visual review required; not art approval.'};
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
  assert.deepEqual(report.errors,[]);
