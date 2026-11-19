@@ -1,8 +1,8 @@
 {
-  "build": "5.5-north-broad-refinement-rc96",
-  "version": "5.5.0-rc.96",
+  "build": "5.5-north-broad-refinement-rc97",
+  "version": "5.5.0-rc.97",
   "gameplay_base": "5.2.3",
-  "scope": "RC96: Deep acoustic digital sampled Japanese war drums (sub-bass Ō-daiko & punchy Chū-daiko), sampled visceral multi-phase dragon roar vocalizations, extended board limits (X = ±380) with standing upright hover animation, camera-facing default static stance, car plane shift physics (shoving into adjacent Z lanes without stutter), proactive helicopter collision separation, high-density traffic across North Broad, midground, and background streets (cap 45), municipal multi-unit firefighting response (up to 5 trucks) with continuous retargeting, and high-frequency background neighborhood meteor impacts with visible rowhouse fire and smoke plumes.",
+  "scope": "RC97: Cinematic dynamic camera zooming (opening rooftop close-up on dragon with smooth pull-back as action begins, and wave-end victory zoom-in on dragon), definitive Wave 15 finale win condition on satellite fleet destruction via Mega Fire Breath with exosphere clearing shockwave, and radiant white-gold sparkling asteroid visual model for Mega Fire Breath powerups with solar glitter particle emissions.",
   "new_gameplay_features": true,
-  "release_status": "RC96 candidate: Deep Digital Sampled War Drums, Visceral Dragon Roars, Extended Board Flight & Standing Stance, Camera-Facing Static Hover, Car Plane Shift Physics, Proactive Helicopter Separation, Multi-Plane Traffic & Municipal Fire Response, and Background Neighborhood Meteor Destruction."
+  "release_status": "RC97 candidate: Cinematic Dynamic Camera Zooming (Rooftop Intro & Wave-End Victory), Definitive Satellite Destruction Win Condition, and White-Gold Sparkling Mega Asteroids."
 }

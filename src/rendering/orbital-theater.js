@@ -457,7 +457,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           const ejectX = (Math.random() - 0.5) * 120;
           triggerTitanSurfaceBlast(ejectX, 368, -165, 26);
           onSpawnPowerup?.('mega_fire_breath', ejectX, 350, 5);
-          message?.('⚡ TITAN OVERCHARGE — GOLD-RED MEGA POWERUP EJECTED! DESTROY FOR MEGA FIRE BREATH!');
+          message?.('✨ WHITE-GOLD SPARKLING ASTEROID EJECTED! DESTROY FOR MEGA FIRE BREATH!');
         }
       }
 
