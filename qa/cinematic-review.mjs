@@ -68,6 +68,30 @@ try{
   controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; Playwright page clock paused for both synchronous renders; smoke uniform only toggled',
   limitation:'Browser clock is paused but renderer-internal counters may still change between sequential calls. Compare actual images; not art approval or physical FPS evidence.'};
  assert.notEqual(smokeEvidence[0].sha256,smokeEvidence[1].sha256,'Smoke A/B produced byte-identical PNGs; mirror toggle may be invisible or scene lacks smoke');
+ // Decode both captures in the browser to quantify actual changed pixels, not merely PNG byte changes.
+ // This is evidence of visible variation, NOT a smoke segmentation or art-approval metric.
+ const pixelComparison=await page.evaluate(async pairs=>{
+  const read=async base64=>{
+   const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
+   const bitmap=await createImageBitmap(new Blob([bytes],{type:'image/png'}));
+   const canvas=new OffscreenCanvas(bitmap.width,bitmap.height);
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});
+   ctx.drawImage(bitmap,0,0);bitmap.close();
+   return {width:canvas.width,height:canvas.height,pixels:ctx.getImageData(0,0,canvas.width,canvas.height).data};
+  };
+  const a=await read(pairs[0].png),b=await read(pairs[1].png);
+  if(a.width!==b.width||a.height!==b.height)throw Error('Smoke A/B dimensions differ');
+  let changed=0,channelDelta=0;
+  for(let i=0;i<a.pixels.length;i+=4){
+   const d0=Math.abs(a.pixels[i]-b.pixels[i]),d1=Math.abs(a.pixels[i+1]-b.pixels[i+1]),d2=Math.abs(a.pixels[i+2]-b.pixels[i+2]);
+   if(d0||d1||d2||a.pixels[i+3]!==b.pixels[i+3])changed++;
+   channelDelta+=d0+d1+d2;
+  }
+  const total=a.width*a.height;
+  return {width:a.width,height:a.height,totalPixels:total,changedPixels:changed,changedPixelFraction:changed/total,meanRgbChannelDelta:channelDelta/(total*3)};
+ },smoke.pairs.map(({png})=>({png})));
+ report.smokeComparison.pixelComparison=pixelComparison;
+ assert.ok(pixelComparison.changedPixels>0,'Smoke A/B has different PNG bytes but identical decoded pixels');
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
  assert.deepEqual(report.errors,[]);
