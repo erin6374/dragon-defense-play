@@ -39,13 +39,25 @@ export function batchSchoolSource(source, prepareMaterial) {
   const usePalette=original.name==='__DEFAULT';
   const key=usePalette?role:original.id;
   if(!materials.has(key)){
-   const material=usePalette?new THREE.MeshStandardMaterial({
-    color:palette[role],side:original.side,
-    roughness:role==='glass'?.24:role==='metal'?.48:.9,
-    metalness:role==='glass'?.12:role==='metal'?.45:0,
-    transparent:role==='glass',opacity:role==='glass'?.58:1,
-    depthWrite:role!=='glass'
-   }):original.clone();
+   const isGlass=role==='glass';
+   const isMatte=['brick','roof','stone','spandrel','interior','door'].includes(role);
+   const material=usePalette?(
+    isGlass?new THREE.MeshPhysicalMaterial({
+     color:0x5e8ea8,roughness:.08,metalness:.30,
+     clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.5,
+     transparent:true,opacity:.82,depthWrite:false,side:original.side
+    }):new THREE.MeshStandardMaterial({
+     color:palette[role],side:original.side,
+     roughness:isMatte?.95:role==='metal'?.48:.92,
+     metalness:isMatte?0:role==='metal'?.45:0,
+     envMapIntensity:isMatte?0.02:1.0,
+     transparent:false,opacity:1,depthWrite:true
+    })
+   ):original.clone();
+   if(!usePalette){
+    if(isGlass){material.roughness=.08;material.metalness=.30;material.envMapIntensity=2.5;}
+    else if(isMatte){material.roughness=.95;material.metalness=0;material.envMapIntensity=0.02;}
+   }
    if(usePalette)material.color.setHex(palette[role]);
    material.userData.photoColor=material.color?.getHex();
    material.name='school-'+role;

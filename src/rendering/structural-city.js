@@ -10,11 +10,11 @@ export function createStructuralCity(THREE,scene,bank){
  const materials={
   brick:bank.getBuilding('brick',0x965f4c),brickBrown:bank.getBuilding('brick',0x7a4a3d),brickRed:bank.getBuilding('brick',0x96533f),brickTan:bank.getBuilding('brick',0xa2715c),stone:bank.getBuilding('limestone',0xc9bcaa),stoneGray:bank.getBuilding('limestone',0xb8b2a9),cream:bank.getBuilding('limestone',0xd3c4a8),creamWarm:bank.getBuilding('limestone',0xcbb79b),
   concrete:bank.concrete,roof:bank.roof,frame:bank.blackMetal,
-  plaster:new THREE.MeshStandardMaterial({color:0xc2b7a3,roughness:.94}),wood:new THREE.MeshStandardMaterial({color:0x67503e,roughness:.8}),
-  furniture:new THREE.MeshStandardMaterial({color:0x53606b,roughness:.62}),
-  glass:new THREE.MeshStandardMaterial({color:0x7d9ea9,roughness:.17,metalness:.18,transparent:true,opacity:.37,depthWrite:false,side:THREE.DoubleSide}),
-  room:new THREE.MeshStandardMaterial({color:0xe1d3b1,roughness:.88,emissive:0xf3bd77,emissiveIntensity:.05}),
-  red:new THREE.MeshStandardMaterial({color:0x874232,roughness:.8})};
+  plaster:new THREE.MeshStandardMaterial({color:0xc2b7a3,roughness:.95,metalness:0,envMapIntensity:0.02}),wood:new THREE.MeshStandardMaterial({color:0x67503e,roughness:.85,metalness:0,envMapIntensity:0.02}),
+  furniture:new THREE.MeshStandardMaterial({color:0x53606b,roughness:.72,metalness:0.05}),
+  glass:new THREE.MeshPhysicalMaterial({color:0x6295ad,roughness:.08,metalness:.32,clearcoat:1.0,clearcoatRoughness:.08,envMapIntensity:2.4,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide}),
+  room:new THREE.MeshStandardMaterial({color:0xe1d3b1,roughness:.90,metalness:0,emissive:0xf3bd77,emissiveIntensity:.05}),
+  red:new THREE.MeshStandardMaterial({color:0x874232,roughness:.88,metalness:0})};
  // World-sized texture projection keeps brick courses coherent across many wall pieces.
  for(const key of ['brick','brickBrown','brickRed','brickTan','stone','stoneGray','cream','creamWarm']){
   const material=materials[key];material.onBeforeCompile=shader=>{

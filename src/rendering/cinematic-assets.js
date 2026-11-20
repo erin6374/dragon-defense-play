@@ -110,10 +110,14 @@ export function createVisualMaterials(THREE){
   cache.set(key,t);return t;
  }
  function pbr(name,repeat=[2,2],options={}){
+  const isMasonryOrRoof=['brick','limestone','concrete','roof'].includes(name);
   const material=new THREE.MeshStandardMaterial({
    map:tex(name+'-albedo.jpg',repeat,true),
    normalMap:tex(name+'-normal.png',repeat),normalScale:new THREE.Vector2(.45,.45),
-   roughnessMap:tex(name+'-rough.png',repeat),roughness:.96,metalness:options.metalness??0,
+   roughnessMap:isMasonryOrRoof?null:tex(name+'-rough.png',repeat),
+   roughness:isMasonryOrRoof?.95:(options.roughness??.96),
+   metalness:options.metalness??0,
+   envMapIntensity:isMasonryOrRoof?0.02:1.0,
    color:options.tint??0xffffff,side:THREE.FrontSide,
   });
   material.userData.pbrType=name;return material;
@@ -125,14 +129,14 @@ export function createVisualMaterials(THREE){
   asphalt:pbr('asphalt',[9,3]),asphaltCross:pbr('asphalt',[3,3]),
   meteor:pbr('meteor',[1.5,1.5]),
   sidewalk:pbr('limestone',[10,3],{tint:0xd4d1ca}),
-  window:new THREE.MeshPhysicalMaterial({color:0x5e8294,roughness:.07,metalness:.22,transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide}),
+  window:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:.06,metalness:.32,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.5,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide}),
   blackMetal:new THREE.MeshStandardMaterial({color:0x29323b,roughness:.4,metalness:.70}),
   copper:new THREE.MeshStandardMaterial({color:0x88725b,roughness:.41,metalness:.57}),
   luminous:new THREE.MeshBasicMaterial({color:0xf0deb1}),
   roadStripe:new THREE.MeshBasicMaterial({color:0xe6e2d1,transparent:true,opacity:.86,depthWrite:false}),
   yellowStripe:new THREE.MeshBasicMaterial({color:0xd5aa51,transparent:true,opacity:.9,depthWrite:false})
  };
- bank.asphalt.roughness=.38;bank.asphaltCross.roughness=.38;bank.asphalt.metalness=.18;bank.asphaltCross.metalness=.18;
+ bank.asphalt.roughness=.88;bank.asphaltCross.roughness=.88;bank.asphalt.metalness=.02;bank.asphaltCross.metalness=.02;bank.roof.roughness=.96;bank.roof.metalness=0;bank.roof.envMapIntensity=0;
  const fluidFire=createFluidCombustionAtlases(THREE);
  bank.images={flame:fluidFire.flame,smoke:fluidFire.smoke,dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
  bank.advanceFireVisuals=fluidFire.update;

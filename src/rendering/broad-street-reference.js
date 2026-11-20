@@ -12,12 +12,13 @@ import * as THREE from 'three';
 export function createBroadStreetReferenceFacades(scene, buildings){
  const root=new THREE.Group();root.name='BROAD-STREET-REFERENCE-2026';scene.add(root);
  const boxGeometry=new THREE.BoxGeometry(1,1,1),planeGeometry=new THREE.PlaneGeometry(1,1);
- const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.84,metalness:.05});
- const brickTrim=mat(0x4a302b),warmStone=mat(0xc9b9a0),ivory=mat(0xe6dfcf),alum=mat(0x8aa2a8),red=mat(0xb93f3d),dark=mat(0x2a2e31),gold=mat(0xb69a61),brownstoneSill=mat(0xb58f74),glass=mat(0x5c8793),shadow=mat(0x1b232b),green=mat(0x1a6a4b),blue=mat(0x1f4574),cream=mat(0xd5c7b1),black=mat(0x16181b),tan=mat(0x9e7454),slate=mat(0x38414a);
+ const mat=(c,r=.95,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m,envMapIntensity:0.02});
+ const brickTrim=mat(0x4a302b),warmStone=mat(0xc9b9a0),ivory=mat(0xe6dfcf),alum=mat(0x8aa2a8,.92,.02),red=mat(0xb93f3d),dark=mat(0x2a2e31),gold=mat(0xb69a61,.92,.02),brownstoneSill=mat(0xb58f74),shadow=mat(0x1b232b),green=mat(0x1a6a4b),blue=mat(0x1f4574),cream=mat(0xd5c7b1),black=mat(0x16181b),tan=mat(0x9e7454),slate=mat(0x38414a,.96,0);
+ const glass=new THREE.MeshPhysicalMaterial({name:'window-glass',color:0x4a7c94,roughness:.08,metalness:.32,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.4,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide});
  const objects=[];
  const illuminatedSigns=[];
- function bx(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(boxGeometry,m);o.scale.set(w,h,d);o.position.set(x,y,z);parent.add(o);objects.push(o);return o;}
- function plane(parent,x,y,z,w,h,m){const o=new THREE.Mesh(planeGeometry,m);o.position.set(x,y,z);o.scale.set(w,h,1);parent.add(o);objects.push(o);return o;}
+ function bx(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(boxGeometry,m);o.scale.set(w,h,d);o.position.set(x,y,z);if(m?.isMeshPhysicalMaterial||m?.name?.includes('glass')||(m?.roughness??1)<=0.15){o.name='window';}parent.add(o);objects.push(o);return o;}
+ function plane(parent,x,y,z,w,h,m){const o=new THREE.Mesh(planeGeometry,m);o.position.set(x,y,z);o.scale.set(w,h,1);if(m?.isMeshPhysicalMaterial||m?.name?.includes('glass')||(m?.roughness??1)<=0.15){o.name='window';}parent.add(o);objects.push(o);return o;}
  function signTexture(lines,bg,fg){const canvas=document.createElement('canvas');canvas.width=768;canvas.height=160;const c=canvas.getContext('2d');c.fillStyle=bg;c.fillRect(0,0,768,160);c.fillStyle=fg;c.font=lines.length>1?'bold 52px sans-serif':'bold 72px sans-serif';c.textAlign='center';c.textBaseline='middle';lines.forEach((line,i)=>c.fillText(line,384,lines.length>1?48+i*54:80,728));const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;return t;}
  function makeSign(parent,b,text,bg,fg,y=2.5,wScale=.88,h=.95){const g=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(b.w*wScale,10),h),new THREE.MeshBasicMaterial({map:signTexture(text,bg,fg),side:THREE.DoubleSide,transparent:true}));g.position.set(b.x,y,b.front+.25);parent.add(g);objects.push(g);illuminatedSigns.push(g);return g;}
  function stoop(parent,b,offsetX,width=1.5,depth=1.8,steps=3){for(let i=0;i<steps;i++)bx(parent,b.x+offsetX,.10+i*.10,b.front+.75+depth*.2*(steps-i),width+.2*i,.10,depth*.38,warmStone);}
@@ -67,7 +68,7 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const rows=[{y:2.15,h:4.1},{y:7.4,h:3.3},{y:12.3,h:3.15},{y:17.1,h:3.15},{y:21.8,h:2.75}];
    for(const row of rows)for(const x of [-b.w*.34,-b.w*.08,b.w*.18])bx(group,b.x+x,row.y,z+.08,b.w*.22,row.h,.05,glass);
    bx(group,b.x-b.w*.28,1.9,z+.11,b.w*.20,3.7,.06,glass);
-   bx(group,b.x+b.w*.29,1.55,z+.48,b.w*.28,2.95,1.55,new THREE.MeshStandardMaterial({color:0x88a8ad,roughness:.15,metalness:.1,transparent:true,opacity:.42,depthWrite:false}));
+   bx(group,b.x+b.w*.29,1.55,z+.48,b.w*.28,2.95,1.55,new THREE.MeshPhysicalMaterial({color:0x88a8ad,roughness:.08,metalness:.30,clearcoat:1.0,envMapIntensity:2.2,transparent:true,opacity:.75,depthWrite:false}));
    bx(group,b.x+b.w*.29,.18,z+1.12,b.w*.32,.16,2.35,warmStone);
    // Tech Freire Charter School central projecting entrance canopy and illuminated signage
    bx(group,b.x,3.45,b.front+1.05,b.w*.38,.20,1.85,ivory);
@@ -96,8 +97,8 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    // SEPTA Transit Bus Shelter directly in front of Tech Freire (Google Earth Images 5 & 10)
    const shelterX=b.x-7.5,shelterZ=b.front+1.85;
    for(const sx of [-1.8,1.8])for(const sz of [-.75,.75])bx(group,shelterX+sx,1.4,shelterZ+sz,.10,2.6,.10,alum);
-   bx(group,shelterX,2.75,shelterZ,4.2,.12,1.85,new THREE.MeshStandardMaterial({color:0x7a9ea6,roughness:.15,metalness:.2,transparent:true,opacity:.45,depthWrite:false}));
-   bx(group,shelterX,1.4,shelterZ-.72,3.8,2.2,.04,new THREE.MeshStandardMaterial({color:0x6b8d96,roughness:.2,metalness:.1,transparent:true,opacity:.38,depthWrite:false}));
+   bx(group,shelterX,2.75,shelterZ,4.2,.12,1.85,new THREE.MeshPhysicalMaterial({color:0x7a9ea6,roughness:.08,metalness:.30,clearcoat:1.0,envMapIntensity:2.2,transparent:true,opacity:.75,depthWrite:false}));
+   bx(group,shelterX,1.4,shelterZ-.72,3.8,2.2,.04,new THREE.MeshPhysicalMaterial({color:0x6b8d96,roughness:.08,metalness:.30,clearcoat:1.0,envMapIntensity:2.2,transparent:true,opacity:.75,depthWrite:false}));
    bx(group,shelterX,.48,shelterZ-.35,2.8,.08,.48,dark);
    for(const bxLeg of [-1.2,1.2])bx(group,shelterX+bxLeg,.24,shelterZ-.35,.08,.46,.44,dark);
    const busSign=makeSign(group,{...b,x:shelterX-2.1,w:1.8},['SEPTA ROUTE 4','BROAD ST BUS'],'#1a4574','#fff5d0',2.9,.9,.52);

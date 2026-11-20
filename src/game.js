@@ -331,7 +331,7 @@ function updateNight(dt){
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
-const material=(c,emissive=0)=>new THREE.MeshLambertMaterial({color:c,emissive});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:material(0x4b7897,0x0a1926),glassLit:material(0xe5b67d,0x5b3110),frame:material(0x283b4b),roof:material(0x3d4751),gold:material(0xe6a93d),road:material(0x2b3344),sidewalk:material(0x92918e),grass:material(0x395e4d),tree:material(0x327b5b),trunk:material(0x72523e),purple:material(0x683ba5),purpleLight:material(0x9860cb),purpleDark:material(0x43266d),wing:material(0xe6a63c),fire:new THREE.MeshBasicMaterial({color:0xffac2c}),blueFire:new THREE.MeshBasicMaterial({color:0x00d4ff}),greenFire:new THREE.MeshBasicMaterial({color:0x22ff66}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c)};
+const material=(c,emissive=0,roughness=0.95,metalness=0)=>new THREE.MeshStandardMaterial({color:c,emissive,roughness,metalness,envMapIntensity:0.02});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:0.08,metalness:0.32,clearcoat:1.0,clearcoatRoughness:0.06,envMapIntensity:2.4,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide}),glassLit:new THREE.MeshStandardMaterial({color:0xe5b67d,emissive:0x5b3110,roughness:0.18,metalness:0.15}),frame:material(0x283b4b,0,0.52,0.45),roof:new THREE.MeshStandardMaterial({color:0x3d4751,roughness:0.96,metalness:0,envMapIntensity:0}),gold:material(0xe6a93d,0,0.45,0.4),road:material(0x2b3344,0,0.92,0),sidewalk:material(0x92918e,0,0.95,0),grass:material(0x395e4d,0,0.96,0),tree:material(0x327b5b,0,0.95,0),trunk:material(0x72523e,0,0.92,0),purple:material(0x683ba5,0,0.55,0.1),purpleLight:material(0x9860cb,0,0.55,0.1),purpleDark:material(0x43266d,0,0.55,0.1),wing:material(0xe6a63c,0,0.55,0.05),fire:new THREE.MeshBasicMaterial({color:0xffac2c}),blueFire:new THREE.MeshBasicMaterial({color:0x00d4ff}),greenFire:new THREE.MeshBasicMaterial({color:0x22ff66}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c,0,0.94,0.035)};
 const cube=new THREE.BoxGeometry(1,1,1),ico=new THREE.IcosahedronGeometry(1,1);const staticGroup=new THREE.Group();scene.add(staticGroup);
 function block(parent,x,y,z,w,h,d,m,cast=false){const mesh=new THREE.Mesh(cube,m);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh}
 function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296)}const rand=seeded(44122);
@@ -2035,28 +2035,47 @@ function updateWorld(dt){
       }
      }
     }
-    // Inter-helicopter proactive separation steering avoiding collision loops
+    // Anti-locking 3D helicopter separation steering (RC106):
+    // Prevents firefighting and ICE/police helicopters from colliding or locking together.
     for(let j=i-1;j>=0;j--){
      const h2=helicopters[j];
      if(!h2||h2.crashing)continue;
      const dx=h.root.position.x-h2.root.position.x;
+     const dy=h.root.position.y-h2.root.position.y;
      const dz=h.root.position.z-h2.root.position.z;
+     const dist3D=Math.hypot(dx,dy,dz);
      const dist2D=Math.hypot(dx,dz);
-     if(dist2D<14.0){
-      // Proactively navigate around each other laterally and vertically
+
+     if(dist2D<18.0){
+      // 1. Altitude Corridor Separation: fly up and around each other
+      const verticalAvoid=dy>=0?1:-1;
+      h.root.position.y+=verticalAvoid*9.5*dt;
+      h2.root.position.y-=verticalAvoid*4.5*dt;
+      h.pitch=THREE.MathUtils.lerp(h.pitch||0,-verticalAvoid*0.22,dt*4);
+
+      // 2. Lateral Avoidance Repulsion
       const avoidDir=Math.sign(dx)||(i>j?1:-1);
-      h.vel.x+=avoidDir*16.0*dt;
-      h.root.position.z+=(i>j?1:-1)*8.0*dt;
+      h.vel.x+=avoidDir*18.0*dt;
+      h.root.position.z+=(dz>=0?1:-1)*9.0*dt;
      }
-     if(h.root.position.distanceTo(h2.root.position)<4.2){
+
+     // 3. Anti-locking watchdog: if two helicopters get close, strongly separate them
+     if(dist3D<5.8){
+      h.lockTime=(h.lockTime||0)+dt;
       const sep=h.root.position.clone().sub(h2.root.position).normalize();
-      h.root.position.addScaledVector(sep,dt*8);
-      if(!h.lastBumpTime||elapsed-h.lastBumpTime>2.5){
+      // Vertical boost over the lower aircraft to unlock
+      sep.y=Math.max(sep.y,0.65);
+      h.root.position.addScaledVector(sep,dt*14.0);
+      h.vel.x+=Math.sign(sep.x||1)*18.0*dt;
+
+      if(!h.lastBumpTime||elapsed-h.lastBumpTime>2.2){
        h.lastBumpTime=elapsed;
-       h.bumpTime=.8;h2.bumpTime=.8;
-       emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,22,.35);
+       h.bumpTime=.6;h2.bumpTime=.6;
+       emitImpact(h.root.position.x,h.root.position.y,h.root.position.z,18,.30);
        sound('impact');
       }
+     }else{
+      h.lockTime=Math.max(0,(h.lockTime||0)-dt*2);
      }
     }
     if(wave>8&&h.role==='police'&&h.disorientTime<=0){
@@ -3217,7 +3236,12 @@ function traceOpeningMeteorImpact(m,start){
  m.target.copy(start).lerp(end,earliest);
  return true;
 }
-function damage(x,z,y=7,meteor=null){const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
+function damage(x,z,y=7,meteor=null){
+ if(meteor&&(meteor.harmless||(meteor.size&&meteor.size<1.35))){
+  emitMeteorShrapnel(new THREE.Vector3(x,y,z),0.6);
+  return;
+ }
+ const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
@@ -3646,29 +3670,19 @@ function newWave(){waveClearZoomBlend=0.0;const chapterIndex=(wave<=5?1:wave<=10
  if(wave>1&&(!rallyLoop||waveStats.length>1)){const saved=neighborhood.targetBuildings.filter(b=>b.damage<.05&&(!rallyLoop||!b.background)).length;
   const bonus=saved*75;score+=bonus;message('BLOCK SAVED BONUS +'+bonus.toLocaleString());sound('bonus');updateHud();}
  stormTimer=0;waveBlueMeteorsRemaining=wave===15?6:2;waveGreenMeteorRemaining=wave===15?3:1;waveFireStreamRemaining=wave===15?4:2;wavePurpleRemaining=wave>=4?2:0;orbitalTheater?.setBattery(1.0);remaining=wave>=15?(wave===15?26:0):openingMeteorWave(wave)?.count??waveBudget(wave,document.getElementById('difficulty')?.value).regular; if(wave===15)spawnFinalBoss(); spawnTimer=easyMode()?2:(wave===15?0.95:.7);if(wave===1){
-  if(playTrainingMode){
-   perchDragon(false);
-   introZoomProgress=0.0;
-   skipChapterIntroCinematic=true;
-   paused=false;
-   remaining=0;
-   spawnTimer=99999;
-   trainingMissions?.start();
-  }else{
-   perchDragon(true);
-   introZoomProgress=1.0;
-   skipChapterIntroCinematic=true;
-   paused=false;
-   for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1);}
-   wave1SpawnIndex=0;
-   remaining=openingMeteorWave(1)?.count??8;
-   message('🚨 CHAPTER 1: THE INITIAL METEOR STORM — DEFEND TECH FREIRE SCHOOL!');
-   sound('siren');
-   sound('dragonRoar',{variant:'challenge'});
-   spawnMeteor(Math.random,openingMeteorWave(1));
-   remaining--;
-   spawnTimer=4.5;
-  }
+  perchDragon(true);
+  introZoomProgress=0.0;
+  skipChapterIntroCinematic=true;
+  paused=false;
+  for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1);}
+  wave1SpawnIndex=0;
+  remaining=openingMeteorWave(1)?.count??6;
+  message('🚨 CHAPTER 1: THE INITIAL METEOR STORM — DEFEND TECH FREIRE SCHOOL!');
+  sound('siren');
+  sound('dragonRoar',{variant:'challenge'});
+  spawnMeteor(Math.random,openingMeteorWave(1));
+  remaining--;
+  spawnTimer=4.5;
  }
  if(wave===3){message('WAVE 3: MASS EVACUATION — PROTECT CHINOOK CHOPPERS!');evacuationChapter?.start();schoolShieldUntil=elapsed+9999;shieldMesh.visible=true;} if(wave===7||wave===9||wave===12||wave===13){secondaryEscortTimer=5.5;} if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave>=6&&!schoolFire.some(f=>Math.abs(f.root.position.x-20.2)<2&&Math.abs(f.root.position.y-8.8)<2))ignite(20.2,8.8,-1.0);if(wave>=6&&!craters.some(cr=>Math.abs(cr.x)<6&&Math.abs(cr.z-18)<6))addCrater(0,18,4.4);if(wave>=6)addStorefrontSpiderwebCrack();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
@@ -4507,43 +4521,28 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  const pavementPitch=isNearPavement?0.75:0;
  const pavementFollow=isNearPavement?-0.95:0;
  const pitchLift=skyAscent*16.2-Math.pow(altRatio,1.25)*10.0+pavementPitch;
- const verticalVelocityLead=dragonVelY<-6.0?Math.max(-6.5,dragonVelY*0.24):(dragonVelY>10.0?Math.min(6.5,(dragonVelY-10.0)*0.20):0);
- // Cinematic Dynamic Zoom:
- // 1. Intro close-up on dragon on Tech Freire roof at game start, smoothly zooming out to wide battlefield as action begins
- const isIntroZoom=wave===1&&!dragonLeavingRoof&&elapsed<3.5&&active&&!paused;
- introZoomProgress=THREE.MathUtils.lerp(introZoomProgress,isIntroZoom?1.0:0.0,Math.min(1,dt*(isIntroZoom?3.0:2.0)));
-
- // 2. Wave-end close-up zoom on dragon when wave completes, indicating secure status and level clear
+ // RC106 Camera Movement: Gentle, smoothed, damped without extreme tilts, shifts, or zoom-ins
+ const verticalVelocityLead=THREE.MathUtils.clamp(dragonVelY*0.06,-1.6,1.6);
  const isWaveClearing=(between>0||chapterSettlement.active)&&active&&!paused&&wave<15;
- waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,Math.min(1,dt*2.8));
+ waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,Math.min(1,dt*1.8));
 
- const cinematicZoomBonus=introZoomProgress*1.45+waveClearZoomBlend*1.25;
- let targetZoom=(wave===15?.88:1.0)+cinematicZoomBonus;
- if(isNearPavement)targetZoom+=0.12;
- if(dragonVelY<-8.0)targetZoom+=0.08;
- if(isBoosting)targetZoom+=0.05;
- if(altRatio>0.20)targetZoom-=altRatio*0.14;
+ const cinematicZoomBonus=waveClearZoomBlend*0.06;
+ let targetZoom=THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
 
- const cameraZ=streetView.z+Math.pow(altRatio,1.1)*32.0;
- const introCamY=THREE.MathUtils.lerp(streetView.y+follow+pavementFollow,dragon.position.y+1.5,introZoomProgress*0.45);
- const introCamZ=THREE.MathUtils.lerp(cameraZ,cameraZ-14.0,introZoomProgress*0.55);
- camera.position.set(streetView.x+cameraScrollX+jitter,introCamY,introCamZ);
+ const cameraZ=streetView.z+Math.pow(altRatio,1.1)*24.0;
+ camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow+pavementFollow*0.4,cameraZ);
 
- const heroBlend=Math.max(introZoomProgress*0.82,waveClearZoomBlend*0.85);
- const heroLookX=THREE.MathUtils.lerp(cameraScrollX,dragon.position.x,heroBlend);
- const baseLookY=streetView.targetY+follow+pavementFollow+pitchLift+verticalVelocityLead;
- const heroLookY=THREE.MathUtils.lerp(baseLookY,dragon.position.y+0.6,heroBlend);
+ const heroBlend=waveClearZoomBlend*0.25;
+ const heroLookX=THREE.MathUtils.lerp(cameraScrollX,dragon.position.x*0.35,heroBlend);
+ const baseLookY=streetView.targetY+follow+pavementFollow*0.4+pitchLift*0.5+verticalVelocityLead;
+ const heroLookY=THREE.MathUtils.lerp(baseLookY,dragon.position.y*0.25+baseLookY*0.75,heroBlend);
  const heroLookZ=THREE.MathUtils.lerp(streetView.targetZ,dragon.position.z,heroBlend);
- const trainFocus=trainingMissions?.getCameraFocus?.();
- if(trainingMissions?.isActive()&&trainFocus&&trainFocus.active){
-  targetZoom=trainFocus.zoom||1.35;
-  camera.lookAt(trainFocus.x,trainFocus.y,trainFocus.z);
- }else{
-  camera.lookAt(heroLookX,heroLookY,heroLookZ);
- }
 
- const targetDutchTilt=THREE.MathUtils.clamp(-flightRoll*0.045-(dragonVelX*0.0016),-0.055,0.055);
- camera.rotation.z+=targetDutchTilt*(1.0-heroBlend*0.75);
+ camera.lookAt(heroLookX,heroLookY,heroLookZ);
+
+ // Softened, non-disorienting Dutch tilt (clamped to [-0.012, 0.012])
+ const targetDutchTilt=THREE.MathUtils.clamp(-flightRoll*0.008-(dragonVelX*0.0003),-0.012,0.012);
+ camera.rotation.z+=targetDutchTilt;
 
  const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}

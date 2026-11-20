@@ -310,7 +310,7 @@ export function createEvacuationChapter({
       bg.pos.addScaledVector(bg.vel, dt);
       bg.root.position.copy(bg.pos);
       // Recycle once far off screen
-      if (bg.pos.y > 90 || Math.abs(bg.pos.x) > 180) {
+      if (bg.pos.y > 95 || Math.abs(bg.pos.x) > 275) {
         bg.pos.y = 22 + Math.random() * 10;
         bg.pos.x = (Math.random() - 0.5) * 120;
       }
@@ -378,8 +378,8 @@ export function createEvacuationChapter({
         }
       }
 
-      // Check safe escape past board edge or into upper stratosphere
-      if (Math.abs(chopperPos.x) > 220.0 || (chopperPos.y > 42.0 && Math.abs(chopperPos.x) > 165.0)) {
+      // Check safe escape past board edge or into upper stratosphere (completely off-screen)
+      if (Math.abs(chopperPos.x) > 275.0 || chopperPos.y > 95.0) {
         safeEscape();
       }
     }

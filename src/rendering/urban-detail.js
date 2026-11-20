@@ -5,11 +5,11 @@
 // their actual facade section, so destroyed windows cannot float in the air.
 export function enhanceStreetArchitecture(THREE,buildings,root){
  const mats={
-  glass:new THREE.MeshStandardMaterial({color:0x436c82,metalness:.12,roughness:.17,transparent:true,opacity:.84,depthWrite:false,side:THREE.DoubleSide}),
+  glass:new THREE.MeshPhysicalMaterial({color:0x436c82,metalness:.30,roughness:.08,clearcoat:1.0,clearcoatRoughness:.08,envMapIntensity:2.4,transparent:true,opacity:.84,depthWrite:false,side:THREE.DoubleSide}),
   lit:new THREE.MeshStandardMaterial({color:0xb1a080,emissive:0x4e3320,emissiveIntensity:.50,roughness:.64}),
   frame:new THREE.MeshStandardMaterial({color:0x333c43,metalness:.48,roughness:.39}),
-  stone:new THREE.MeshStandardMaterial({color:0xb7a99b,roughness:.85}),
-  dark:new THREE.MeshStandardMaterial({color:0x232a31,roughness:.92})
+  stone:new THREE.MeshStandardMaterial({color:0xb7a99b,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  dark:new THREE.MeshStandardMaterial({color:0x232a31,roughness:.95,metalness:0,envMapIntensity:0})
  };
  const box=new THREE.BoxGeometry(1,1,1),batches=Object.fromEntries(Object.keys(mats).map(k=>[k,[]]));
  let assemblies=0;

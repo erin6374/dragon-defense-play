@@ -130,8 +130,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
- const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
- const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
+ const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.02,roughness:.94});
+ const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.95});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
  const ambientBuildings=[
   // Center City core frame ($x \in [-90, 110]$) with authentic Philadelphia urban profile
@@ -146,8 +146,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  ];
  // Distant intermediate city is part of the geometry, not a photo pasted behind a cutout.
  const farTex=makeFacade(9291,'office');
- const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,side:THREE.DoubleSide});
- const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,side:THREE.DoubleSide});
+ const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.95,metalness:.01,side:THREE.DoubleSide});
+ const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.95,metalness:.01,side:THREE.DoubleSide});
  for(let i=0;i<ambientBuildings.length;i++){
   const [x,h,w]=ambientBuildings[i];
   // Sharper perspective plane: outer buildings recede in depth rather than forming a flat wall
@@ -206,9 +206,9 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   const g=new THREE.Group();g.name='landmark-'+d.id;
   const depthBias=d.id==='city-hall'?-14:d.id==='comcast-technology'?-6:d.id==='comcast-center'?-10:d.id==='one-liberty-place'?-8:d.id==='two-liberty-place'?-12:d.id==='bny-mellon'?-15:-12-(i%3)*2.5;
   g.position.set(d.x,0,depthBias);group.add(g);
-  const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
+  const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.94,metalness:0.02,side:THREE.DoubleSide});
   const facadeDamage=attachFacadeFireDamage(facade,SECONDARY_BURN_SITES_PER_TOWER);
-  const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});
+  const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.95,metalness:0.01,side:THREE.DoubleSide});
   const poly=polygonMesh(profile(d.w,d.h,d.roof),d.depth,facade,side);g.add(poly.front,poly.sides);
   if(d.id.includes('liberty')){
    // Silver zigzag gable ribs are an important recognizable Liberty Place silhouette.

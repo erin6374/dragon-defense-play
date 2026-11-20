@@ -37,11 +37,11 @@ export function createDistantNeighborhood({root,flameTexture}){
  ];
  const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
-  main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
-  roof:new THREE.MeshStandardMaterial({color:0xcbd1d5,roughness:.88,metalness:.08}),
-  cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.85}),
-  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.82,metalness:.14}),
-  window:new THREE.MeshStandardMaterial({color:0x567383,roughness:.45,metalness:.06}),
+  main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  roof:new THREE.MeshStandardMaterial({color:0xcbd1d5,roughness:.95,metalness:0,envMapIntensity:0}),
+  cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.95,metalness:0,envMapIntensity:0}),
+  window:new THREE.MeshPhysicalMaterial({color:0x567383,roughness:.08,metalness:.30,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.2}),
   road:new THREE.MeshLambertMaterial({color:0x484b4d}),
   walk:new THREE.MeshLambertMaterial({color:0xaaa49a}),
   green:new THREE.MeshLambertMaterial({color:0x67785b}),

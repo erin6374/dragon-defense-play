@@ -11,13 +11,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
  const levels=Array.from({length:6},(_,i)=>min.y+height*i/5);
  const atriumBack=front-Math.min(17,depth*.31);
  const materials=[
-  new THREE.MeshStandardMaterial({color:0x8f4b3d,roughness:.94}), // brick
-  new THREE.MeshStandardMaterial({color:0xb2afa5,roughness:.88}), // concrete
-  new THREE.MeshStandardMaterial({color:0x3e5b68,roughness:.08,metalness:.22,envMapIntensity:2.4,transparent:true,opacity:.68,depthWrite:false}), // glass
+  new THREE.MeshStandardMaterial({color:0x8f4b3d,roughness:.95,metalness:0,envMapIntensity:0.02}), // brick
+  new THREE.MeshStandardMaterial({color:0xb2afa5,roughness:.95,metalness:0,envMapIntensity:0.02}), // concrete
+  new THREE.MeshPhysicalMaterial({color:0x3e5b68,roughness:.08,metalness:.32,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.4,transparent:true,opacity:.82,depthWrite:false}), // glass
   new THREE.MeshStandardMaterial({color:0x353a3b,roughness:.53,metalness:.38}), // steel
-  new THREE.MeshStandardMaterial({color:0xebd5a8,roughness:.62,emissive:0xd4a055,emissiveIntensity:.65}), // interior
-  new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95}), // masonry backer
-  new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96}) // industrial dark roof
+  new THREE.MeshStandardMaterial({color:0xebd5a8,roughness:.72,metalness:0,emissive:0xd4a055,emissiveIntensity:.65}), // interior
+  new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95,metalness:0,envMapIntensity:0.02}), // masonry backer
+  new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96,metalness:0,envMapIntensity:0}) // industrial dark roof
  ];
  const MAX=1200;
  const unitBox=new THREE.BoxGeometry(1,1,1);
