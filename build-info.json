@@ -1,8 +1,5 @@
 {
-  "build": "5.5-north-broad-refinement-rc103",
-  "version": "5.5.0-rc.103",
-  "gameplay_base": "5.2.3",
-  "scope": "RC103: Significant stutter and freezing resolution via pairwise meteor collision recursion fix and entity pooling; integrated seamless AAA training prologue into Wave 1 (perched Paulo on Tech Freire, dynamic camera zoom-out, 5 guided objectives, [TAB] skip); evacuation helicopter flight overhaul with slower pace, gradual stratosphere ascent, non-fatal crash landings with safe civilian escape into rowhouses, -300 pt penalty, and tactical takeoff HUD alerts; active fire engines and firefighting helicopters operating map-wide starting in Waves 1 & 2; upgraded Paulo dragon model standardized as locked default; capped meteor entity budget for locked 60 FPS performance.",
-  "new_gameplay_features": true,
-  "release_status": "RC103 candidate: Stutter & Freeze Elimination, Integrated Training Prologue, Chinook Stratosphere Ascent & Non-Fatal Crash Polish, and Active Map-Wide First Responders."
+  "version": "5.5.0-rc.104",
+  "build": "5.5-north-broad-refinement-rc104",
+  "date": "2026-11-20"
 }
