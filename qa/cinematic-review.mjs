@@ -38,8 +38,9 @@ try{
   const impacts=[];
   for(let i=0;i<4;i++){
    const impact=window.__DD_QA.stageSkylineStrike();
-   if(!impact?.ok)throw Error('QA skyline impact fixture failed: '+JSON.stringify(impact));
-   impacts.push({landmark:impact.landmark,beforeDamage:impact.beforeDamage,afterDamage:impact.afterDamage,smokeVisible:impact.smokeVisible});
+   if(!impact?.ok||!impact.result)throw Error('QA skyline impact fixture failed: '+JSON.stringify(impact));
+   const hit=impact.result;
+   impacts.push({landmark:hit.landmark,beforeDamage:hit.beforeDamage,afterDamage:hit.afterDamage,smokeVisible:hit.smokeVisible,smokeVisibleImmediately:hit.smokeVisibleImmediately});
   }
   for(let i=0;i<8;i++)window.__DD_CINEMATIC_REVIEW.frame();
   return {stage,impacts,renderWarmupFrames:8,kind:'qa_only_skyline_impact',artApproved:false};
