@@ -36,17 +36,20 @@ try{
  const denseFixture=await page.evaluate(()=>{
   const stage=window.__DD_CINEMATIC_REVIEW.stage(7,0);
   const impacts=[];
-  for(let i=0;i<4;i++){
-   const impact=window.__DD_QA.stageSkylineStrike();
+  const landmarks=['comcast-technology','comcast-center','one-liberty-place','city-hall'];
+  for(const landmark of landmarks){
+   const impact=window.__DD_QA.stageSkylineStrike(landmark);
    if(!impact?.ok||!impact.result)throw Error('QA skyline impact fixture failed: '+JSON.stringify(impact));
    const hit=impact.result;
+   if(hit.landmark!==landmark)throw Error('QA skyline target mismatch: '+landmark+' / '+hit.landmark);
    impacts.push({landmark:hit.landmark,beforeDamage:hit.beforeDamage,afterDamage:hit.afterDamage,smokeVisible:hit.smokeVisible,smokeVisibleImmediately:hit.smokeVisibleImmediately});
   }
   for(let i=0;i<8;i++)window.__DD_CINEMATIC_REVIEW.frame();
   return {stage,impacts,renderWarmupFrames:8,kind:'qa_only_skyline_impact',artApproved:false};
  });
  report.denseSmokeFixture=denseFixture;
- assert.ok(denseFixture.impacts.some(hit=>hit.smokeVisible),'Dense smoke fixture has no active skyline smoke');
+ assert.equal(new Set(denseFixture.impacts.map(hit=>hit.landmark)).size,4,'Smoke fixture must strike four distinct landmarks');
+ assert.ok(denseFixture.impacts.every(hit=>hit.smokeVisible),'Dense smoke fixture has inactive skyline smoke');
  // Freeze Playwright's page clock after staging, before both synchronous renders.
  // This pins Date/performance time and suspends rAF/timers across the A/B pair.
  await page.clock.pauseAt(new Date('2026-11-19T12:00:00.000Z'));

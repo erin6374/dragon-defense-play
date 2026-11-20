@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
+  "observed_parent_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_cinematic_fixture_wrapper_fix_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_distinct_skyline_qa_target_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -24,44 +24,44 @@
   },
   "tests_at_snapshot": [
     {
-      "name": "Dragon Defense browser QA",
-      "run_id": 44735763709,
-      "source_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
+      "name": "browser",
+      "run_id": 44743308770,
+      "source_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44735763709"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44743308770"
     },
     {
-      "name": "Dragon Defense cinematic scene review",
-      "run_id": 44735763932,
-      "source_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
-      "status": "completed",
-      "conclusion": "failure",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44735763932"
-    },
-    {
-      "name": "Dragon Defense focused fire review",
-      "run_id": 44735763523,
-      "source_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
+      "name": "cinematic",
+      "run_id": 44743308781,
+      "source_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44735763523"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44743308781"
     },
     {
-      "name": "Import licensed CC0 flame and smoke flipbooks",
-      "run_id": 44735763744,
-      "source_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
+      "name": "focused",
+      "run_id": 44743308818,
+      "source_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44735763744"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44743308818"
     },
     {
-      "name": "Dragon Defense motion review",
-      "run_id": 44735763540,
-      "source_sha": "ec7d6925eb5db4e4edb2b83411826e73f9bfa693",
+      "name": "CC0",
+      "run_id": 44743308760,
+      "source_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44735763540"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44743308760"
+    },
+    {
+      "name": "motion",
+      "run_id": 44743308778,
+      "source_sha": "ea88904901d519ff845d8e90cbd9ce341290a059",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44743308778"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five exact-head workflows after unwrapping QA skyline strike {ok,result}; inspect cinematic report/paired smoke PNGs and visibility; obtain physical Windows 60-second FPS/CPU/RAM.",
+  "next_task": "Verify exact-head five workflows and actual cinematic distinct-landmark diagnostics, smoke coverage and artifact CRC/MP4/license hashes; physical Windows FPS remains unmeasured.",
   "implemented": [
+    "2026-11-20: Candidate QA-only distinct skyline landmark strike targeting, preserving default Comcast target; fixture asserts four unique landmarks and active smoke. Base ea889049 five workflows SUCCESS, prior cinematic A/B 0.551% change. Candidate CI pending; ART FAIL and Windows FPS unresolved.",
     "2026-11-20: Candidate QA fix unwraps __DD_QA.stageSkylineStrike().result in cinematic smoke fixture. Base ec7d6925 cinematic run 44735763932 FAILED: artifact report had four empty impact objects and no active smoke; browser 44735763709, focused 44735763523, CC0 44735763744, motion 44735763540 SUCCESS. Cinematic artifact 14627838843 ZIP CRC PASS. Corrected candidate CI pending; ART FAIL and physical Windows FPS unresolved.",
     "2026-11-20 candidate: QA-only wave-7 four-strike skyline smoke fixture with eight render warmup frames; assert at least one active smoke source, report strike evidence, preserve frozen-clock A/B spatial metrics. Base 7206bfc five workflows SUCCESS; candidate CI and artifacts pending. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-20: Candidate QA spatial A/B change map: changed-pixel bounds and 8x6 tile histogram plus explicit 2% proxy classification (NOT smoke segmentation or art acceptance). Base ce5a0807 five workflows SUCCESS; prior independent ZIP CRC 280/280 and MP4/hash checks. Candidate CI pending. ART FAIL and physical Windows FPS unresolved.",

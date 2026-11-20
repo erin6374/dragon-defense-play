@@ -2504,8 +2504,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
    }finally{skylineBackdrop.update(elapsed,displayedDarkness,0);}
    return samples;
   }),
-  stageSkylineStrike:()=>run('stageSkylineStrike',()=>{
-   const index=skylineBackdrop.towers.findIndex(t=>t.def.id==='comcast-technology');
+  stageSkylineStrike:(landmarkId='comcast-technology')=>run('stageSkylineStrike',()=>{
+   const index=skylineBackdrop.towers.findIndex(t=>t.def.id===landmarkId);
    if(index<0)throw Error('Expected landmark missing');
    const t=skylineBackdrop.towers[index],before=t.strikeDamage;
    // Once the first impact has established its local contact coordinates,
