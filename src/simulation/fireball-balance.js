@@ -88,29 +88,30 @@ export function fireballMeteorDamage(m, playerFire = true, ordinaryShockDamage =
 // Tier 4: Small (size < 1.4) -> Harmless particles/dust/shrapnel rain (0 rock spawns)
 // Tier 5: Harmless particle shower rains harmlessly down onto ground (0 damage)
 export function meteorSplitPlan(m, activeCount = 0) {
-  const room = Math.max(0, MAX_PLAYABLE_METEORS - activeCount);
-  if (room <= 0 || m.indestructible || m.grounded || m.dragonHunter) {
+  // Free 1 slot for parent being destroyed, guaranteeing room for fragments
+  const room = Math.max(1, MAX_PLAYABLE_METEORS - Math.max(0, activeCount - 1));
+  if (m.indestructible || m.grounded || m.dragonHunter) {
     return { count: 0, size: 0, tier: 'particles', harmless: true };
   }
   if (m.boss) {
-    return { count: Math.min(4, room), size: 2.2, tier: 'medium', harmless: false };
+    return { count: Math.min(3, Math.max(1, room)), size: 2.0, tier: 'medium', harmless: false };
   }
 
-  // Tier 1: Giant / Colossal / Extra Large -> 2 Large
+  // Tier 1: Giant / Colossal / Extra Large (size >= 5.5) -> 2 Large (size ~4.0)
   if (m.isMassive || m.colossus || (m.size && m.size >= 5.5)) {
-    return { count: Math.min(2, room), size: 4.2, tier: 'large', isLargeSplitter: true, harmless: false };
+    return { count: Math.min(2, Math.max(1, room)), size: 4.0, tier: 'large', isLargeSplitter: true, harmless: false };
   }
 
-  // Tier 2: Large -> 2 Medium
-  if (m.size && m.size >= 2.8) {
-    return { count: Math.min(2, room), size: 2.2, tier: 'medium', harmless: false };
+  // Tier 2: Large (size >= 2.6) -> 2 Medium (size ~2.0)
+  if (m.size && m.size >= 2.6) {
+    return { count: Math.min(2, Math.max(1, room)), size: 2.0, tier: 'medium', harmless: false };
   }
 
-  // Tier 3: Medium -> 2 Small
-  if (m.size && m.size >= 1.4) {
-    return { count: Math.min(2, room), size: 1.05, tier: 'small', harmless: false };
+  // Tier 3: Medium (size >= 1.3) -> 2 Small (size ~0.95)
+  if (m.size && m.size >= 1.3) {
+    return { count: Math.min(2, Math.max(1, room)), size: 0.95, tier: 'small', harmless: false };
   }
 
-  // Tier 4: Small -> Breaks into harmless particles
+  // Tier 4: Small (< 1.3) -> Breaks into harmless dust/particles, 0 rock spawns
   return { count: 0, size: 0, tier: 'particles', harmless: true };
 }

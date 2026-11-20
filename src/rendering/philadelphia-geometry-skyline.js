@@ -533,7 +533,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    h.group.position.x=h.x0+(orbit<0?orbit+170:orbit)-82;
    h.group.position.y=h.y0+Math.sin(elapsed*.48+h.seed)*2.1;
    h.rotor.rotation.y=elapsed*17;
-   h.group.scale.x=h.speed;
+   h.group.rotation.y=h.speed<0?Math.PI:0;
+   h.group.scale.set(1,1,1);
    h.nav.material.opacity=.28+.67*(.5+.5*Math.sin(elapsed*4.1+h.seed));
   }
   combustion.update(elapsed);

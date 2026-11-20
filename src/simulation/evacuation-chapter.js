@@ -124,6 +124,7 @@ export function createEvacuationChapter({
         -2.0 - Math.random() * 2.0
       );
       bg.root.position.copy(bg.pos);
+      bg.root.rotation.set(0, bg.vel.x >= 0 ? 0 : Math.PI, 0);
       bg.spool = 14 + Math.random() * 6;
     });
   }
@@ -349,8 +350,9 @@ export function createEvacuationChapter({
       }
       foregroundRoot.position.copy(chopperPos);
 
-      // Bank forward into flight direction
-      foregroundRoot.rotation.z = -dir * 0.08;
+      // Bank forward into flight direction (pitch nose down gently, upright rotors)
+      foregroundRoot.rotation.order = 'YXZ';
+      foregroundRoot.rotation.set(0, dir > 0 ? 0 : Math.PI, -dir * 0.05);
 
       // Active threat spawning on intercept course in flight path
       escortThreatTimer -= dt;
