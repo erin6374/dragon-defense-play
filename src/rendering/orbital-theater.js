@@ -11,7 +11,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
   // The bottom curve skims along y = 368 across the top of the sky (x from -560 to +560).
   // Rotated 90 deg along X to position equator at bottom rim (zero UV pole distortion).
   // =========================================================================
-  const titanRadius = 420;
+  const titanRadius = 1450;
   const titanGeo = new THREE.SphereGeometry(titanRadius, 72, 54);
   titanGeo.rotateX(Math.PI * 0.5); // Orient equator at bottom rim to eliminate pole pinch!
 
@@ -99,8 +99,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
 
   const titanMesh = new THREE.Mesh(titanGeo, titanMat);
   // Positioned at the very ceiling of the vertical map: bottom contour at y = 368
-  const TITAN_BASE_Y = titanRadius + 86;
-  const TITAN_BASE_Z = -55;
+  const TITAN_BASE_Y = titanRadius + 368;
+  const TITAN_BASE_Z = -180;
   titanMesh.position.set(0, TITAN_BASE_Y, TITAN_BASE_Z);
   group.add(titanMesh);
 
@@ -209,11 +209,11 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     satGroup.scale.setScalar(1.35);
     const row = Math.floor(s / SATS_PER_ROW);
     const col = s % SATS_PER_ROW;
-    const satSpacing = 38;
-    const baseX = (col - (SATS_PER_ROW - 1) / 2) * satSpacing + (row * 18);
-    // High-altitude orbital constellation positioned directly below the giant meteor's lower rim
-    const baseY = (row === 0 ? 73 : 78) + Math.sin(col * 1.3 + row) * 2.5;
-    const baseZ = (row === 0 ? -42 : -50) + (col % 2) * 3;
+    const satSpacing = 48;
+    const baseX = (col - (SATS_PER_ROW - 1) / 2) * satSpacing + (row * 24);
+    // Row 0: Front tier at y ~ 320, z ~ 4; Row 1: Upper tier at y ~ 338, z ~ -18
+    const baseY = (row === 0 ? 320 : 338) + Math.sin(col * 1.3 + row) * 8;
+    const baseZ = (row === 0 ? 4 : -18) + (col % 2) * 8;
     satGroup.position.set(baseX, baseY, baseZ);
 
     const busMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 3.0), satStealthMat);
@@ -327,8 +327,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
 
     // 3D Volumetric High-Energy Orbital Laser Cannon (outer additive plasma shell + inner white-hot core)
     const laserGroup = new THREE.Group();
-    const laserBeamGeo = new THREE.CylinderGeometry(0.24, 0.38, 22, 8);
-    laserBeamGeo.translate(0, 11, 0.4);
+    const laserBeamGeo = new THREE.CylinderGeometry(0.24, 0.38, 54, 8);
+    laserBeamGeo.translate(0, 27, 0.4);
     const laserMat = new THREE.MeshBasicMaterial({
       color: 0x44ff88,
       transparent: true,
@@ -339,8 +339,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     const laserBeam = new THREE.Mesh(laserBeamGeo, laserMat);
     laserGroup.add(laserBeam);
 
-    const laserCoreGeo = new THREE.CylinderGeometry(0.10, 0.16, 22, 8);
-    laserCoreGeo.translate(0, 11, 0.4);
+    const laserCoreGeo = new THREE.CylinderGeometry(0.10, 0.16, 54, 8);
+    laserCoreGeo.translate(0, 27, 0.4);
     const laserCoreMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
@@ -407,7 +407,7 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
     group,
     satellites,
     titanMesh,
-    blastLaserAt(x, y = 86, z = -55) {
+    blastLaserAt(x, y = 368, z = -165) {
       let nearestSat = null, minDist = 9999;
       for (const s of satellites) {
         if (s.destroyed) continue;
@@ -459,8 +459,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
         if (meteorEjectTimer <= 0) {
           meteorEjectTimer = 2.8 + Math.random() * 2.6;
           const ejectX = (Math.random() - 0.5) * 180;
-          triggerTitanSurfaceBlast(ejectX, 86, -55, 20);
-          onSpawnMeteor?.(ejectX, 84, -5);
+          triggerTitanSurfaceBlast(ejectX, 368, -165, 20);
+          onSpawnMeteor?.(ejectX, 355, -5);
         }
       }
 
@@ -471,8 +471,8 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
           goldRedPowerupSpawned = true;
           goldRedPowerupTimer = 11.0;
           const ejectX = (Math.random() - 0.5) * 120;
-          triggerTitanSurfaceBlast(ejectX, 86, -55, 26);
-          onSpawnPowerup?.('mega_fire_breath', ejectX, 82, 5);
+          triggerTitanSurfaceBlast(ejectX, 368, -165, 26);
+          onSpawnPowerup?.('mega_fire_breath', ejectX, 350, 5);
           message?.('✨ WHITE-GOLD SPARKLING ASTEROID EJECTED! DESTROY FOR MEGA FIRE BREATH!');
         }
       }

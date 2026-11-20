@@ -93,14 +93,14 @@ function skyCameraLift(altitude){
  const original=Math.max(0,Math.min(44,altitude)-25)*.62;
  return original+Math.max(0,altitude-44);
 }
-function meteorEntryHeight(z,size,minimum=null){
- // Top of screen entry right under the giant meteor blasted by SpaceX satellites
+function meteorEntryHeight(z,size,minimum=148){
+ // The top frustum plane is independent of aspect ratio. Allow for the
+ // horizontal camera pan, finale zoom and the rock's irregular silhouette.
  const pitch=Math.atan2(streetView.y-streetView.targetY,streetView.z-streetView.targetZ);
  const halfFov=Math.atan(Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5))/.86);
  const depth=streetView.z-z+40;
  const skyTop=streetView.y+skyCameraLift(dragon.position.y)+depth*Math.tan(halfFov-pitch);
- if(minimum===null)return THREE.MathUtils.clamp(skyTop-size*0.4,80,88);
- return THREE.MathUtils.clamp(Math.min(minimum,skyTop-size*0.4),80,88);
+ return Math.max(minimum,skyTop+size*1.6+14);
 }
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
@@ -2943,7 +2943,7 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
  else if(isPowerup==='mega_fire_breath'){message('✨ WHITE-GOLD SPARKLING METEOR INCOMING! DESTROY FOR MEGA FIRE BREATH!');sound('bonus');}
  else if(isPowerup==='purple_ram'){message('💜 PURPLE METEOR-BUSTER POWERUP INCOMING! DESTROY FOR 10s INVULNERABLE RAM SHIELD!');sound('bonus');purpleShieldImpact=1.0;}
- mesh.position.set(x,meteorEntryHeight(target.z-3,size),target.z-3);scene.add(mesh);if(orbitalTheater&&typeof orbitalTheater.blastLaserAt==='function'){orbitalTheater.blastLaserAt(x,86,-55);}
+ mesh.position.set(x,meteorEntryHeight(target.z-3,size),target.z-3);scene.add(mesh);if(orbitalTheater&&typeof orbitalTheater.blastLaserAt==='function'){orbitalTheater.blastLaserAt(x,368,-165);}
  const speed=opening?(isMassive?10.5:15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
  const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
  const meteorHp=isMassive?(colossus?7:5):(size>=3.2?Math.max(3,Math.ceil(size*(easyMode()?0.75:1.35))):Math.max(1,Math.ceil(size*(easyMode()?0.6:1.0))));
