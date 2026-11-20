@@ -30,6 +30,22 @@ try{
   await writeFile(`${out}/${name}.png`,Buffer.from(png,'base64'));
   report.views.push({name,...state,...metrics});
  }
+ // QA-only impact fixture: stage the skyline landmark and apply deterministic
+ // contact damage before A/B capture. This does not run during gameplay.
+ // Record fixture details so weak smoke coverage cannot masquerade as art approval.
+ const denseFixture=await page.evaluate(()=>{
+  const stage=window.__DD_CINEMATIC_REVIEW.stage(7,0);
+  const impacts=[];
+  for(let i=0;i<4;i++){
+   const impact=window.__DD_QA.stageSkylineStrike();
+   if(!impact?.ok)throw Error('QA skyline impact fixture failed: '+JSON.stringify(impact));
+   impacts.push({landmark:impact.landmark,beforeDamage:impact.beforeDamage,afterDamage:impact.afterDamage,smokeVisible:impact.smokeVisible});
+  }
+  for(let i=0;i<8;i++)window.__DD_CINEMATIC_REVIEW.frame();
+  return {stage,impacts,renderWarmupFrames:8,kind:'qa_only_skyline_impact',artApproved:false};
+ });
+ report.denseSmokeFixture=denseFixture;
+ assert.ok(denseFixture.impacts.some(hit=>hit.smokeVisible),'Dense smoke fixture has no active skyline smoke');
  // Freeze Playwright's page clock after staging, before both synchronous renders.
  // This pins Date/performance time and suspends rAF/timers across the A/B pair.
  await page.clock.pauseAt(new Date('2026-11-19T12:00:00.000Z'));
@@ -65,7 +81,7 @@ try{
  }
  report.smokeComparison={captures:smoke.pairs.map(({enabled,mode,mirror})=>({enabled,mode,mirror})),clock:smoke.clock,
   evidence:smokeEvidence,pngBytesIdentical:smokeEvidence[0].sha256===smokeEvidence[1].sha256,
-  controls:'Same browser, seeded Math.random, staged right-side wave-4 scene and camera; Playwright page clock paused for both synchronous renders; smoke uniform only toggled',
+  controls:'Same browser, seeded Math.random, QA-only wave-7 four-impact skyline fixture and camera; Playwright page clock paused for both synchronous renders; smoke uniform only toggled',
   limitation:'Browser clock is paused but renderer-internal counters may still change between sequential calls. Compare actual images; not art approval or physical FPS evidence.'};
  assert.notEqual(smokeEvidence[0].sha256,smokeEvidence[1].sha256,'Smoke A/B produced byte-identical PNGs; mirror toggle may be invisible or scene lacks smoke');
  // Decode both captures in the browser to quantify actual changed pixels, not merely PNG byte changes.
