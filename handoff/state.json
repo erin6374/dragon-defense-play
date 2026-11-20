@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "kind": "tech-freire-dragon-defense-ai-handoff",
-  "snapshot_date": "2026-11-19",
+  "snapshot_date": "2026-11-20",
   "snapshot_is_live": false,
   "resolve_current_sha_from_branch": true,
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+  "observed_parent_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_decoded_smoke_ab_pixel_comparison_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_spatial_smoke_ab_evidence_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -24,44 +24,44 @@
   },
   "tests_at_snapshot": [
     {
-      "name": "browser",
-      "run_id": 44597268124,
-      "source_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+      "name": "Dragon Defense browser QA",
+      "run_id": 44667860620,
+      "source_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44597268124"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44667860620"
     },
     {
-      "name": "cinematic",
-      "run_id": 44597268131,
-      "source_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+      "name": "Dragon Defense motion review",
+      "run_id": 44667860718,
+      "source_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44597268131"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44667860718"
     },
     {
-      "name": "focused fire",
-      "run_id": 44597267777,
-      "source_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+      "name": "Import licensed CC0 flame and smoke flipbooks",
+      "run_id": 44667860713,
+      "source_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44597267777"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44667860713"
     },
     {
-      "name": "CC0",
-      "run_id": 44597274086,
-      "source_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+      "name": "Dragon Defense cinematic scene review",
+      "run_id": 44667860630,
+      "source_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44597274086"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44667860630"
     },
     {
-      "name": "motion",
-      "run_id": 44597270217,
-      "source_sha": "8e2f3ef561ddc319a98588d85ed92bde4c16cda2",
+      "name": "Dragon Defense focused fire review",
+      "run_id": 44667860714,
+      "source_sha": "ce5a0807f49a8315742de23f4888521d3aa2744c",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44597270217"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44667860714"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five workflows at new exact HEAD, decode smoke A/B pixelComparison and report/CRC/MP4/license evidence; then stage dense smoke and collect physical Windows 60s FPS/CPU/RAM.",
+  "next_task": "Verify spatial smoke A/B metrics on candidate exact HEAD and actual artifacts; stage deterministic dense smoke; obtain physical Windows 60s FPS/CPU/RAM.",
   "implemented": [
+    "2026-11-20: Candidate QA spatial A/B change map: changed-pixel bounds and 8x6 tile histogram plus explicit 2% proxy classification (NOT smoke segmentation or art acceptance). Base ce5a0807 five workflows SUCCESS; prior independent ZIP CRC 280/280 and MP4/hash checks. Candidate CI pending. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-19: QA code 27b0b386 decodes smoke A/B PNGs in browser, reports changed pixel count/fraction and mean RGB channel delta, rejects metadata-only PNG byte changes. Verified preceding base 8e2f3ef all five workflows SUCCESS; new candidate CI/artifacts pending. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-19: QA-only commit 5b747dce rejects byte-identical smoke mirror OFF/ON PNGs using existing SHA-256 evidence; previous base 1431ac89 all five workflows SUCCESS. Candidate CI pending. Prior artifact verification 280/280 CRC, genuine 600-frame/30s MP4, CC0 hashes, 0.79% A/B pixel difference; still insufficient smoke prominence. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-19: QA frozen-clock candidate 48bc957a: Playwright page.clock.pauseAt around synchronous smoke OFF/ON captures, resume in finally; browser time controlled but renderer counters and art remain unverified. Verified preceding base e86618a3 all five workflows SUCCESS; candidate CI pending. Windows FPS unresolved.",

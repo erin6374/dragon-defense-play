@@ -81,16 +81,16 @@ try{
   };
   const a=await read(pairs[0].png),b=await read(pairs[1].png);
   if(a.width!==b.width||a.height!==b.height)throw Error('Smoke A/B dimensions differ');
-  let changed=0,channelDelta=0;
+  let changed=0,channelDelta=0;\n  let minX=a.width,minY=a.height,maxX=-1,maxY=-1;\n  const tilesX=8,tilesY=6,changedByTile=Array(tilesX*tilesY).fill(0);
   for(let i=0;i<a.pixels.length;i+=4){
    const d0=Math.abs(a.pixels[i]-b.pixels[i]),d1=Math.abs(a.pixels[i+1]-b.pixels[i+1]),d2=Math.abs(a.pixels[i+2]-b.pixels[i+2]);
-   if(d0||d1||d2||a.pixels[i+3]!==b.pixels[i+3])changed++;
+   if(d0||d1||d2||a.pixels[i+3]!==b.pixels[i+3]){\n    changed++;const pixel=i/4,x=pixel%a.width,y=Math.floor(pixel/a.width);\n    minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);\n    changedByTile[Math.min(tilesY-1,Math.floor(y*tilesY/a.height))*tilesX+Math.min(tilesX-1,Math.floor(x*tilesX/a.width))]++;\n   }
    channelDelta+=d0+d1+d2;
   }
   const total=a.width*a.height;
-  return {width:a.width,height:a.height,totalPixels:total,changedPixels:changed,changedPixelFraction:changed/total,meanRgbChannelDelta:channelDelta/(total*3)};
+  return {width:a.width,height:a.height,totalPixels:total,changedPixels:changed,changedPixelFraction:changed/total,meanRgbChannelDelta:channelDelta/(total*3),changedBounds:changed?{minX,minY,maxX,maxY}:null,changedByTile:{columns:tilesX,rows:tilesY,counts:changedByTile}};
  },smoke.pairs.map(({png})=>({png})));
- report.smokeComparison.pixelComparison=pixelComparison;
+ report.smokeComparison.pixelComparison=pixelComparison;\n report.smokeComparison.visualCoverageAssessment={status:pixelComparison.changedPixelFraction>=0.02?'comparison_has_material_change_not_art_approved':'insufficient_visible_ab_change_for_art_review',minimumProxyFraction:0.02,notes:'A/B pixel change is only a visibility proxy, NOT smoke segmentation; spatial tile counts and bounds help reviewers locate actual differences. Artistic acceptance remains manual.'};
  assert.ok(pixelComparison.changedPixels>0,'Smoke A/B has different PNG bytes but identical decoded pixels');
  const day=report.views.find(v=>v.name==='day'),night=report.views.find(v=>v.name==='night');
  assert.ok(night.sun<day.sun*.3&&night.ambient<day.ambient*.65,'night illumination is materially darker than daylight');
