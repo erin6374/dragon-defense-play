@@ -161,10 +161,10 @@ export function createReflectionController(scene,width=256,height=128){
        if(!m.envMap&&scene.environment){m.envMap=scene.environment;m.needsUpdate=true;}
        m.envMapIntensity=0.80;
       }else{
-       // Masonry, walls, concrete, asphalt: strictly matte, zero mirror sky glare
-       m.envMapIntensity=0.0;
-       m.roughness=Math.max(m.roughness??0.92,0.90);
-       m.metalness=0.0;
+       // Masonry, walls, concrete, asphalt: soft ambient bounce without sky glare, preventing crushed darks
+       m.envMapIntensity=0.18;
+       m.roughness=Math.max(m.roughness??0.84,0.82);
+       m.metalness=0.02;
       }
      }
     });

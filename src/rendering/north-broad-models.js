@@ -357,11 +357,11 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
                 entry.signMeshes.push(node);
                 signMaterials.push(mat);
               } else {
-                // Masonry, stone, roofs, floor slabs
+                // Masonry, stone, roofs, floor slabs: lift darks naturally with soft ambient bounce
                 const isRoof = /roof/.test(name) || matName.includes('roof');
-                mat.roughness = 0.95;
-                mat.metalness = 0.0;
-                mat.envMapIntensity = isRoof ? 0.0 : 0.02;
+                mat.roughness = isRoof ? 0.98 : 0.84;
+                mat.metalness = 0.02;
+                mat.envMapIntensity = isRoof ? 0.0 : 0.25;
 
                 if (/room|floor/.test(name)) {
                   roomMaterials.push(mat);

@@ -77,7 +77,7 @@ function applyVisualPreset(){
  if(typeof renderer==='undefined')return;
  renderer.setPixelRatio(renderPixelRatio(innerWidth,innerHeight,window.devicePixelRatio||1,visualPreset,adaptiveResolution));
  renderer.shadowMap.enabled=visualPreset==='cinematic'&&performanceLab.isEnabled('shadows');
- renderer.toneMappingExposure=visualPreset==='cinematic'?1.24:visualPreset==='balanced'?1.18:1.12;
+ renderer.toneMappingExposure=visualPreset==='cinematic'?1.30:visualPreset==='balanced'?1.24:1.18;
 }
 // All on-screen build stamps use one canonical source; visible in browser captures.
 const buildStamp=`v${GAME_VERSION} · ${BUILD_ID}`;
@@ -103,8 +103,8 @@ function meteorEntryHeight(z,size,minimum=82){
  return Math.max(minimum,Math.min(88,skyTop+size*0.45));
 }
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
-scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.AgXToneMapping;renderer.toneMappingExposure=1.24;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
+scene.add(new THREE.HemisphereLight(0xfff8ee,0x8a847d,1.32));const sun=new THREE.DirectionalLight(0xfff3da,2.40);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
 const moonLight=new THREE.DirectionalLight(0xa5c6f5,0);moonLight.position.set(45,62,28);scene.add(moonLight);
 const dragonFireLight=new THREE.PointLight(0xff8a24,0,48,1.8);dragonFireLight.name='dragon-fire-light';scene.add(dragonFireLight);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
@@ -328,7 +328,7 @@ function updateNight(dt){
  const titanDistToSun=Math.abs(titanX-(-22));
  const eclipseDim=Math.max(0,1.0-Math.min(1.0,Math.max(0,(titanDistToSun-18)/110)))*0.22;
  sun.intensity=Math.max(.20,(2.35-darkness*2.1)*(1.0-eclipseDim));moonLight.intensity=darkness*1.65;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
- if(ambience){ambience.intensity=1.06-darkness*.35;ambience.color.setHex(0xe9f2ff).lerp(nightAmbientColor,darkness)}
+ if(ambience){ambience.intensity=1.32-darkness*.42;ambience.color.setHex(0xfff8ee).lerp(nightAmbientColor,darkness)}
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
@@ -961,16 +961,46 @@ function updateSkylineDamage(dt){
 // Four-lane traffic; red lights hold civilian vehicles, responders bypass signals.
 let trafficLightRed=false;
 const trafficSignals=[];const trafficGreen=new THREE.MeshBasicMaterial({color:0x22ed62}),trafficRed=new THREE.MeshBasicMaterial({color:0xf34135}),trafficOff=new THREE.MeshBasicMaterial({color:0x222a30});
-for(const x of [-60.1,-45.9,45.9,60.1])for(const z of [12.5,35.7]){
- const pole=block(scene,x,3.2,z,.23,6.4,.23,material(0x34383c));
- const housing=block(scene,x,6.2,z,.75,1.65,.75,material(0x191c22));
- const red=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficOff),green=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficGreen);
- red.position.set(x,6.55,z+.42);green.position.set(x,5.95,z+.42);scene.add(red,green);trafficSignals.push({red,green});
+const CROSS_STREET_CONFIG=[
+ {name:'W YORK ST',x:-160},
+ {name:'W DAUPHIN ST',x:-53},
+ {name:'W SUSQUEHANNA AVE',x:53},
+ {name:'W DIAMOND ST',x:214}
+];
+const streetSignBladeMaterial=(text)=>{
+ const canvas=document.createElement('canvas');canvas.width=384;canvas.height=96;
+ const ctx=canvas.getContext('2d');
+ ctx.fillStyle='#014828';ctx.fillRect(0,0,384,96);
+ ctx.strokeStyle='#ffffff';ctx.lineWidth=4;ctx.strokeRect(5,5,374,86);
+ ctx.fillStyle='#ffffff';ctx.font='bold 38px "Franklin Gothic Medium", Arial, sans-serif';
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,192,49);
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ return new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide});
+};
+const broadSignMat=streetSignBladeMaterial('N BROAD ST');
+for(const street of CROSS_STREET_CONFIG){
+ const streetSignMat=streetSignBladeMaterial(street.name);
+ for(const sx of [-7.1, 7.1]){
+  const px=street.x+sx;
+  for(const z of [12.5,35.7]){
+   const pole=block(scene,px,3.2,z,.23,6.4,.23,material(0x34383c));
+   const housing=block(scene,px,6.2,z,.75,1.65,.75,material(0x191c22));
+   const red=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficOff),green=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficGreen);
+   red.position.set(px,6.55,z+.42);green.position.set(px,5.95,z+.42);scene.add(red,green);trafficSignals.push({red,green});
+   if(z===12.5){
+    const crossBlade=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.58),streetSignMat);
+    crossBlade.position.set(px,5.35,z+.18);scene.add(crossBlade);
+    const broadBlade=new THREE.Mesh(new THREE.PlaneGeometry(2.1,.58),broadSignMat);
+    broadBlade.position.set(px+(sx<0?.18:-.18),5.75,z);
+    broadBlade.rotation.y=Math.PI/2;scene.add(broadBlade);
+   }
+  }
+ }
 }
 function updateSignals(){trafficLightRed=(elapsed%18)>11;for(const s of trafficSignals){s.red.material=trafficLightRed?trafficRed:trafficOff;s.green.material=trafficLightRed?trafficOff:trafficGreen;}}
 const policeBlockadeGroup=new THREE.Group();policeBlockadeGroup.name='police-intersections-blockade';policeBlockadeGroup.visible=false;scene.add(policeBlockadeGroup);
 const policeBlockades=[];
-for(const crossX of [-53, 53]){
+for(const crossX of [-160, -53, 53, 214]){
  for(const z of [11.5, 36.5]){
   const cruiser=new THREE.Group();cruiser.position.set(crossX+(crossX>0?3.2:-3.2),-.36,z);
   cruiser.rotation.y=(crossX>0?-1:1)*0.55;
@@ -1081,7 +1111,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const streetScale=backgroundStreet?.52:(midgroundStreet?.66:(rearStreet?.82:1.0));
  const spawnDist=260+Math.random()*40;
  if(crossStreet){
-  const crossX=forcedX??(Math.random()<.5?-53:53);
+  const crossX=forcedX??[-160,-53,53,214][Math.floor(Math.random()*4)];
   root.position.set(crossX,-.36,laneZ);
   root.rotation.set(0,crossDir<0?-Math.PI/2:Math.PI/2,0);
  }else{
@@ -1106,7 +1136,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  }
  beacon=root.userData.vehicleBeacon||null;
  const isCorridor=!emergency&&!rearStreet&&!midgroundStreet&&!backgroundStreet&&!crossStreet;
- const turnAt=isCorridor&&Math.random()<.23?(dir>0?[-53,53][Math.floor(Math.random()*2)]:[53,-53][Math.floor(Math.random()*2)]):null;
+ const turnAt=isCorridor&&Math.random()<.25?(dir>0?[-160,-53,53,214][Math.floor(Math.random()*4)]:[214,53,-53,-160][Math.floor(Math.random()*4)]):null;
  const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
  cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
  if(bike&&!scooter&&wave<=10&&cars.length<carCap-2&&Math.random()<.68&&forcedX===null){
@@ -1229,7 +1259,7 @@ function fireTruckService(c,dt){
   }
   const home=c.originalLane||c.laneZ;
   if(Math.abs(c.root.position.z-home)>.3){
-   if(!c.returning){const turn=c.root.position.x>0?53:-53;c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
+   if(!c.returning){const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
    const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();
    if(distance<.3)c.route.shift();else{c.root.position.addScaledVector(delta,Math.min(distance,dt*6.5)/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);}
    c.routing=true;c.serviceStop=true;c.speed=6.5;
@@ -1239,8 +1269,8 @@ function fireTruckService(c,dt){
  }
  c.returning=false;
  const pos=c.serviceTarget.root.position;
- if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=c.root.position.x>0?53:-53;c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
- if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=c.dir>0?53:-53;c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
+ if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
+ if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
  if(c.route?.length){const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();if(distance<.3)c.route.shift();else{const step=Math.min(distance,dt*6.5);c.root.position.addScaledVector(delta,step/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);c.speed=6.5}c.routing=!!c.route.length;c.serviceStop=true;if(c.routing)return;c.laneZ=c.routeLane;c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}
  const near=Math.abs(c.root.position.x-pos.x)<5.5;
  if(!near){if(c.laneZ===-37){c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}c.serviceStop=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;}
@@ -1285,7 +1315,7 @@ function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wa
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>Math.abs(q.x-c.root.position.x)<q.radius+5&&Math.abs(q.z-c.root.position.z)<5);
-  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&((c.dir>0&&c.root.position.x>-66&&c.root.position.x<-46)||(c.dir<0&&c.root.position.x<66&&c.root.position.x>46));
+  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&[-160,-53,53,214].some(cx=>Math.abs(c.root.position.x-cx)<13);
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,streetStop>0||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
@@ -1356,8 +1386,8 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    c.blink=0;
   }
   if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
-   if(Math.abs(c.root.position.x-53)<22)c.turnAt=53;
-   else if(Math.abs(c.root.position.x-(-53))<22)c.turnAt=-53;
+   const exitCross=[-160,-53,53,214].find(x=>Math.abs(c.root.position.x-x)<22);
+   if(exitCross!==undefined)c.turnAt=exitCross;
   }
   if(!c.frozen&&(Math.abs(c.root.position.x)>280||(c.crossStreet&&(c.crossDir<0?c.root.position.z<-135:c.root.position.z>135))||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
  }
@@ -1457,7 +1487,7 @@ function spawnCrowd(forcedX=null,forcedZ=null){
   }else if(isRear){
    x=(Math.random()-.5)*130;z=Math.random()<.5?-34:-40;
   }else if(crossing&&!jaywalker){
-   x=Math.random()<.5?-53:53;z=fromFar?38:11;
+   x=[-160,-53,53,214][Math.floor(Math.random()*4)];z=fromFar?38:11;
   }else{
    x=(Math.random()-.5)*150;z=Math.random()<.55?10.5:44.5;
   }
@@ -1489,7 +1519,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
   const isRear=Math.random()<.24;
   const isCross=!isRear&&Math.random()<.16;
   const laneZ=isCross?(dir>0?46:8):isRear?-37:(dir>0?(Math.random()<.5?17:20):(Math.random()<.5?27:30));
-  const posX=isCross?(Math.random()<.5?-53:53):(Math.random()-.5)*220;
+  const posX=isCross?[-160,-53,53,214][Math.floor(Math.random()*4)]:(Math.random()-.5)*220;
   spawnCar(posX,laneZ,dir);
  }
  const crowdTarget=chapterNum===1?38:chapterNum===2?32:chapterNum===3?28:36;
@@ -1497,7 +1527,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
   const isRear=Math.random()<.20;
   const isCross=!isRear&&Math.random()<.25;
   const z=isRear?(Math.random()<.5?-34:-40):isCross?(Math.random()<.5?11:38):(Math.random()<.55?10.5:44.5);
-  const x=isCross?(Math.random()<.5?-53:53):(Math.random()-.5)*150;
+  const x=isCross?[-160,-53,53,214][Math.floor(Math.random()*4)]:(Math.random()-.5)*150;
   spawnCrowd(x,z);
  }
 }

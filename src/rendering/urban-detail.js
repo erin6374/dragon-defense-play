@@ -98,9 +98,9 @@ export function addStreetSetDressing(THREE,root){
   add(x+1.5,.46,z,.18,.86,.18,steel);
   if(i%3===1){add(x-1.4,.24,z,.78,.44,.62,orange);add(x-1.4,.51,z,.86,.10,.70,accent);}
  }
- // Two crosswalk approaches: broad, restrained pavement markings.
+ // Crosswalk approaches across York, Dauphin, Susquehanna, and Diamond: broad, restrained pavement markings.
  const paint=new THREE.MeshBasicMaterial({color:0xd5d3c8,transparent:true,opacity:.82,depthWrite:false});
- for(const cx of [-53,53])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+ for(const cx of [-160,-53,53,214])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
  return set;
 }
 
@@ -115,8 +115,8 @@ export function addForegroundPlanting(THREE,root){
  const colors=[0x24331b,0x2e3f22,0x3d522c,0x4a6336,0x354727,0x56723e];
  for(let i=0;i<bed.count;i++){
   const x=-130+i*1.22;
-  // Keep both crosswalk approaches open.
-  if(Math.abs(Math.abs(x)-53)<5.5){
+  // Keep all 4 crosswalk approaches open.
+  if([-160,-53,53,214].some(cx=>Math.abs(x-cx)<6.5)){
    leaf.scale.setScalar(0);
   }else{
    const spread=(i*7%13)/13;
