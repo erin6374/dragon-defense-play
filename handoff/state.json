@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "kind": "tech-freire-dragon-defense-ai-handoff",
-  "snapshot_date": "2026-11-20",
+  "snapshot_date": "2026-11-21",
   "snapshot_is_live": false,
   "resolve_current_sha_from_branch": true,
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+  "observed_parent_sha": "8958ef51a3146b4608773e3f875cde7ef54d2140",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_qa_smoke_opacity_ab_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_smoke_opacity_timestamp_assertions_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify all five candidate exact-head workflows and smoke opacity screenshots/decoded pixels, CRC, MP4, CC0/FBX hashes; physical Windows FPS still needed",
+  "next_task": "Verify five candidate exact-head workflows and smoke opacity reports, CRC, 5+30-second MP4, CC0/FBX hashes; add GPU/source-state equality assertions",
   "implemented": [
+    "2026-11-21: QA-only smoke opacity A/B now asserts equal paused browser timestamps and unchanged smoke mode/mirror, opacity restored; base 8958ef51 all five workflows success (44855705648/44855705637/44855705684/44855705621/44855705718). New candidate CI/artifacts pending. GPU clock/source buffers still unverified; ART FAIL and physical Windows FPS unresolved.",
     "2026-11-20: QA-only smoke opacity 0/1 capture candidate; default 1, restoration and decoded pixel metrics; preceding base 567e6278 five workflows success, candidate CI pending. ART FAIL, physical Windows FPS unmeasured.",
     "2026-11-20: Candidate QA-only distinct skyline landmark strike targeting, preserving default Comcast target; fixture asserts four unique landmarks and active smoke. Base ea889049 five workflows SUCCESS, prior cinematic A/B 0.551% change. Candidate CI pending; ART FAIL and Windows FPS unresolved.",
     "2026-11-20: Candidate QA fix unwraps __DD_QA.stageSkylineStrike().result in cinematic smoke fixture. Base ec7d6925 cinematic run 44735763932 FAILED: artifact report had four empty impact objects and no active smoke; browser 44735763709, focused 44735763523, CC0 44735763744, motion 44735763540 SUCCESS. Cinematic artifact 14627838843 ZIP CRC PASS. Corrected candidate CI pending; ART FAIL and physical Windows FPS unresolved.",
