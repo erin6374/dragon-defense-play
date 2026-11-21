@@ -1,0 +1,154 @@
+{
+  "units": "meters",
+  "up": "+Y",
+  "streetFacing": "+Z",
+  "pivot": "center of street-facing wall at grade",
+  "models": [
+    {
+      "id": "1005656",
+      "address": "2101-07 N BROAD ST",
+      "file": "models/1005656.glb",
+      "placement": [
+        -28.405,
+        0,
+        -21.21
+      ],
+      "frontWidthMeters": 20.289999999999996,
+      "mode": "replacement"
+    },
+    {
+      "id": "1007134",
+      "address": "2217 N BROAD ST",
+      "file": "models/1007134.glb",
+      "placement": [
+        -236.08999999999997,
+        0,
+        -22.41
+      ],
+      "frontWidthMeters": 6.159999999999997,
+      "mode": "replacement"
+    },
+    {
+      "id": "1007133",
+      "address": "2219 N BROAD ST",
+      "file": "models/1007133.glb",
+      "placement": [
+        -242.19,
+        0,
+        -22.45
+      ],
+      "frontWidthMeters": 6.0400000000000205,
+      "mode": "replacement"
+    },
+    {
+      "id": "1007132",
+      "address": "2227 N BROAD ST",
+      "file": "models/1007132.glb",
+      "placement": [
+        -269.44,
+        0,
+        -22.2
+      ],
+      "frontWidthMeters": 5.740000000000009,
+      "mode": "replacement",
+      "sign": "United Fund of Pennsylvania, Inc."
+    },
+    {
+      "id": "1003388",
+      "address": "2231 N BROAD ST",
+      "file": "models/1003388.glb",
+      "placement": [
+        -279.705,
+        0,
+        -21.59
+      ],
+      "frontWidthMeters": 5.1299999999999955,
+      "mode": "replacement",
+      "sign": "Black United Fund Conference Center"
+    },
+    {
+      "id": "1525758",
+      "address": "2233 N BROAD ST",
+      "file": "models/1525758.glb",
+      "placement": [
+        -285.39,
+        0,
+        -21.63
+      ],
+      "frontWidthMeters": 6.240000000000009,
+      "mode": "replacement",
+      "sign": "blues babe FOUNDATION"
+    },
+    {
+      "id": "1536711",
+      "address": "2239 N BROAD ST",
+      "file": "models/1536711.glb",
+      "placement": [
+        -302.845,
+        0,
+        -21.66
+      ],
+      "frontWidthMeters": 5.7900000000000205,
+      "mode": "replacement"
+    },
+    {
+      "id": "1508518",
+      "address": "2241 N BROAD ST",
+      "file": "models/1508518.glb",
+      "placement": [
+        -308.58000000000004,
+        0,
+        -21.69
+      ],
+      "frontWidthMeters": 5.680000000000007,
+      "mode": "replacement"
+    },
+    {
+      "id": "1542243",
+      "address": "2253 N BROAD ST",
+      "file": "models/1542243.glb",
+      "placement": [
+        -342.22,
+        0,
+        -21.73
+      ],
+      "frontWidthMeters": 6.479999999999961,
+      "mode": "replacement",
+      "sign": "PHILADELPHIA DOLL MUSEUM"
+    },
+    {
+      "id": "1536713",
+      "address": "2251 N BROAD ST",
+      "file": "models/1536713.glb",
+      "placement": [
+        -336.19500000000005,
+        0,
+        -21.72
+      ],
+      "frontWidthMeters": 5.569999999999993,
+      "mode": "replacement",
+      "sign": "PCs for People"
+    },
+    {
+      "id": "1051326",
+      "address": "2309-13 N BROAD ST",
+      "file": "models/1051326.glb",
+      "placement": [
+        -404.315,
+        0,
+        -22.49
+      ],
+      "frontWidthMeters": 20.450000000000045,
+      "mode": "replacement",
+      "sign": "PHILADELPHIA ELECTRIC COMPANY"
+    },
+    {
+      "id": "watts-example",
+      "address": "Watts rear elevation study",
+      "file": "models/watts-example.glb",
+      "placement": null,
+      "frontWidthMeters": 5.6,
+      "mode": "unplaced-reference"
+    }
+  ]
+}
