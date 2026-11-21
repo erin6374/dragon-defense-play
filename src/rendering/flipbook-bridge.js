@@ -194,7 +194,7 @@ ${anchor}`);
    float sideBias=(fract(vSeed*.611)-.5)*.20*(q.y-.2);
    feather=1.-smoothstep(.56,.99,abs((q.x-.5)*2.+edgeWarp+sideBias));
    ageFade=smoothstep(0.,.11,vAge)*(1.-smoothstep(.78,1.,vAge));
-   if(ageFade*feather*.94<.005)discard;
+   if(ageFade*feather*1.0<.005)discard;
   }
   // Alternate horizontal atlas orientation per source to break repeated
   // plume silhouettes. One UV transform, no new sheets or texture reads;
