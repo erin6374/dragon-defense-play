@@ -1267,17 +1267,17 @@ function fireTruckService(c,dt){
  const source=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
  cinematicFX.water(source,target,c.ladder?.16:.12);
  if(!dragonNear){
-  c.serviceTarget.suppression+=dt*(c.ladder?.85:1.20);
+  c.serviceTarget.suppression+=dt*(c.ladder?1.45:1.75);
   c.steamAudioTimer=(c.steamAudioTimer||0)-dt;
   if(c.steamAudioTimer<=0){
-   c.steamAudioTimer=0.45+Math.random()*0.20;
+   c.steamAudioTimer=0.40+Math.random()*0.15;
    sound('steam',{x:pos.x});
   }
   if(performanceLab.isEnabled('particles')&&Math.random()<0.75){
    trailSmokePool.add(new THREE.Vector3(pos.x+(Math.random()-.5)*1.6,pos.y+0.8+Math.random()*1.8,pos.z+(Math.random()-.5)*0.8),0.38);
   }
  }else if(source.distanceTo(dragon.position)<22){if(waterDisable<=0)message('WATER SPRAY — BREATH STEAMING / 50% DAMAGE');waterDisable=Math.max(waterDisable,.8);}
- if(!dragonNear&&(c.serviceProgress>=2.2||(c.serviceTarget&&c.serviceTarget.suppression>=1.0))){
+ if(!dragonNear&&(c.serviceProgress>=1.8||(c.serviceTarget&&c.serviceTarget.suppression>=1.0))){
   if(c.serviceTarget&&schoolFire.includes(c.serviceTarget)){
    sound('steam',{x:pos.x});
    for(let sp=0;sp<6;sp++){
@@ -1285,6 +1285,9 @@ function fireTruckService(c,dt){
    }
    fireGroup.remove(c.serviceTarget.root);
    schoolFire.splice(schoolFire.indexOf(c.serviceTarget),1);
+   score+=50;
+   message('🚒 PHILLY FIREFIGHTERS SUPPRESSED BUILDING FIRE! +50 PTS');
+   sound('bonus');
   }
   const nextFire=schoolFire.find(f=>!cars.some(other=>other!==c&&other.fireTruck&&other.serviceTarget===f));
   if(nextFire){
@@ -4335,17 +4338,17 @@ if(m.grounded){
    if(isFullSpeedFlight||elapsed<purpleRamUntil){
     sound('impact',{x:dragon.position.x});
     sound('dragonRoar',{variant:'growl',x:dragon.position.x});
-    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.4);
-    cinematicFX.shock(m.mesh.position,7.5);
+    flashAt(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,5.0);
+    cinematicFX.shock(m.mesh.position,8.5);
     score+=m.isMassive?500:250;
     message(m.isMassive?'💥 SUPERSONIC BUSTER SHATTERS MASSIVE METEOR! +500 PTS':'💥 SUPERSONIC BUSTER! PAULO CRUSHES METEOR +250 PTS');
     busterRamCollided=true;
-    emitMeteorShrapnel(m.mesh.position,Math.min(4,m.size*1.6));
-    blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(3.8,m.size*2.2),true);
+    emitMeteorShrapnel(m.mesh.position,Math.min(6,m.size*1.8));
+    blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(4.2,m.size*2.4),true);
     // Physical speed hitch on collision
     dragonVelX*=0.62;
     dragonVelY*=0.65;
-    shake=Math.max(shake,0.32);
+    shake=Math.max(shake,0.38);
     registerIntercept(m);
     fragmentMeteor(m);
     remove(meteors,i);
