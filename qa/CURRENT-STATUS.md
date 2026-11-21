@@ -1,3 +1,7 @@
+## 2026-11-21 — RC59 combustion state identity QA candidate
+
+2026-11-21 RC59 candidate: read-only combustion QA snapshots and smoke ON/OFF equality assertions for CPU-side shader clock, source arrays/attribute versions, pool counters and instance counts. Verified base bca9368e168b7019cdfb0a7bcfee2ace431b1c84 had five successful exact-head workflows: browser 44880130362, cinematic 44880130359, focused 44880130310, CC0 44880130377, motion 44880130309. Candidate new-head CI/artifacts PENDING. This does not freeze physical GPU execution, approve cinematic art or measure Windows FPS. ART FAIL and slideshow unresolved. Next: verify five new-head workflows, inspect reports/PNG/MP4/CRC/CC0/FBX hashes, then tune one smoke art issue. Google PR #3 isolated.
+
 ## November 21 — RC59 smoke opacity timestamp/control assertions (candidate)
 
 **Last verified base SHA (not this commit):** `8958ef51a3146b4608773e3f875cde7ef54d2140`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base workflows: [browser SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705648), [cinematic SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705637), [focused SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705684), [CC0 SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705621), [motion SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705718). **New-head CI and artifacts PENDING**; do not infer pass.
