@@ -211,7 +211,7 @@ ${anchor}`);
    float densityShade=mix(1.10,.73,smoothstep(.24,.84,frame.a));
    color=mix(vec3(.033,.032,.031),vec3(.088,.099,.109),ashBlend)*
     sootVariation*densityShade*(.78+.22*frame.rgb);
-   alpha=frame.a*min(1.,vPower)*(.78+.16*fract(vSeed*.271))*feather*ageFade;
+   alpha=frame.a*min(1.,vPower)*(.90+.10*fract(vSeed*.271))*feather*ageFade;
   }else{
    // Retain RC17 licensed smoke for controlled motion A/B.
    float soot=smoothstep(.19,.88,q.y);
