@@ -1,3 +1,13 @@
+## November 21 — RC59 smoke opacity timestamp/control assertions (candidate)
+
+**Last verified base SHA (not this commit):** `8958ef51a3146b4608773e3f875cde7ef54d2140`; build `5.5.0-rc.59` / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base workflows: [browser SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705648), [cinematic SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705637), [focused SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705684), [CC0 SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705621), [motion SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44855705718). **New-head CI and artifacts PENDING**; do not infer pass.
+
+**Bounded QA change:** `qa/cinematic-review.mjs` now asserts both smoke opacity captures share the identical paused browser timestamp and retain the original smoke mode/mirroring, with opacity restored to 1. This strengthens deterministic fixture controls but **does not yet prove GPU uniform-clock, source-buffer, instance-count or simulation-state identity**. Prior verified opacity ON/OFF decoded difference 16,660/921,600 pixels (1.8077%) is smoke contribution, not art approval. No gameplay/rendering or protected assets changed.
+
+**Blockers:** `campaign/visual_target.png` ART FAIL for repetitive smoke and stylized facade/house damage. Physical Windows 60-second FPS/CPU/RAM unmeasured; slideshow unresolved. Google PR #3 older RC30 isolated per review 6827300214; Google agents use independent `agent/google-*` draft PRs only, never auto-merge.
+
+**One next action:** Verify all five candidate exact-head workflows and actual report errors/warnings, screenshots, 5+30-second MP4, ZIP CRC, CC0 and original FBX hashes; then implement read-only GPU/source-state equality diagnostics before art tuning.
+
 ## November 20 — QA-only smoke opacity A/B candidate
 
 **Last observed verified base SHA (not this commit):** `567e6278a460e23d0c592cb3da60bd6010d085e3`; RC59 / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base CI: [browser SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870245), [cinematic SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870185), [focused SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870187), [CC0 SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870204), [motion SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870079). Candidate new-head CI and artifacts PENDING.
