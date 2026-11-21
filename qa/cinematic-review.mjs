@@ -78,17 +78,23 @@ try{
   opacityPair=await page.evaluate(()=>{
    const vfx=window.__DD_FIRE_VFX, captures=[];
    if(vfx.smokeQaOpacity!==1)throw Error('Smoke QA opacity default must be 1');
+   const originalMirror=vfx.smokeMirror, originalMode=vfx.smokeMode;
+   const before=performance.now();
    try{
     for(const opacity of [0,1]){
      vfx.setSmokeQaOpacity(opacity);
-     captures.push({opacity,png:window.__DD_CINEMATIC_REVIEW.frame().png});
+     const capture=window.__DD_CINEMATIC_REVIEW.frame();
+     captures.push({opacity,png:capture.png,clock:performance.now(),mode:vfx.smokeMode,mirror:vfx.smokeMirror});
     }
    }finally{vfx.setSmokeQaOpacity(1);}
-   return {captures,restored:vfx.smokeQaOpacity};
+   return {captures,restored:vfx.smokeQaOpacity,clock:{before,after:performance.now()},originalMirror,originalMode};
   });
  }finally{await page.clock.resume();}
  assert.equal(opacityPair.restored,1);
- report.smokeOpacityComparison={captures:[],controls:'QA-only smoke fragment alpha 0/1, frozen browser clock, original opacity restored',limitation:'Sequential GPU frames may advance internal clocks; pixel delta is not art approval or Windows FPS'};
+ assert.equal(opacityPair.clock.before,opacityPair.clock.after,'Smoke opacity A/B browser clock advanced');
+ assert.ok(opacityPair.captures.every(c=>c.clock===opacityPair.clock.before),'Smoke opacity captures have unequal browser timestamps');
+ assert.ok(opacityPair.captures.every(c=>c.mode===opacityPair.originalMode&&c.mirror===opacityPair.originalMirror),'Smoke opacity comparison changed plume mode or mirroring');
+ report.smokeOpacityComparison={captures:[],controls:'QA-only smoke fragment alpha 0/1, verified identical browser timestamps and plume mode/mirror, original opacity restored',limitation:'Sequential GPU frames may advance internal clocks; pixel delta is not art approval or Windows FPS'};
  for(const c of opacityPair.captures){
   const filename='smoke-opacity-'+(c.opacity?'on':'off')+'.png',bytes=Buffer.from(c.png,'base64');
   await writeFile(`${out}/${filename}`,bytes);
