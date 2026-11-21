@@ -2716,25 +2716,21 @@ for(let i=0;i<rockStats.materialVariants;i++){
  rockMaterialVariants.push(mat);
 }
 const moltenMaterial=rockMaterialVariants[5].clone();
-moltenMaterial.color.setHex(0xff5511);
-moltenMaterial.emissive.setHex(0xff3300);
-moltenMaterial.emissiveIntensity=4.0;
+moltenMaterial.emissive.setHex(0xff3b05);
+moltenMaterial.emissiveIntensity=2.5;
 moltenMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
  shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*3.5+sin(rockPoint.y*4.)*.8)*sin(rockPoint.z*4.5+rockPoint.y*2.7));
- float lava=1.-smoothstep(.035,.15,veins);
- vec3 crust=vec3(0.95,0.25,0.04)*1.8;
- vec3 magma=vec3(3.2,1.6,0.3)*(lava*5.0);
- totalEmissiveRadiance=crust+magma;
- diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.38,.07,.01),lava*.5);`);
+ float lava=1.-smoothstep(.035,.13,veins);
+ totalEmissiveRadiance*=lava;
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.22,.035,.006),lava*.6);`);
 };
 const flamingMaterial=rockMaterialVariants[5].clone();
-flamingMaterial.color.setHex(0xff7a22);
 flamingMaterial.emissive.setHex(0xff4500);
-flamingMaterial.emissiveIntensity=4.5;
+flamingMaterial.emissiveIntensity=2.8;
 flamingMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
@@ -2742,10 +2738,8 @@ flamingMaterial.onBeforeCompile=shader=>{
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*4.2+sin(rockPoint.y*4.8)*.9)*sin(rockPoint.z*4.6+rockPoint.y*3.0));
  float fire=1.-smoothstep(.03,.16,veins);
- vec3 crust=vec3(1.0,0.32,0.06)*2.2;
- vec3 blaze=vec3(3.2,1.8,0.35)*(fire*5.5);
- totalEmissiveRadiance=crust+blaze;
- diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.6,0.18),0.55+fire*0.45);`);
+ totalEmissiveRadiance*=fire;
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.24,.04,.008),fire*.6);`);
 };
 const fastImpactMaterial=rockMaterialVariants[5].clone();
 fastImpactMaterial.emissive.setHex(0xff621c);
@@ -2795,8 +2789,7 @@ greenPlasmaMaterial.onBeforeCompile=shader=>{
  float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance=vec3(.08,.85,.25)*1.5+energy*vec3(.3,1.6,.6)*3.5;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.08,.92,.32),energy*.8);`);
 };
 let blueFireballUntil=0,greenBreathUntil=0,waveBlueMeteorsRemaining=2,waveGreenMeteorRemaining=1;
-const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6611,transparent:true,opacity:.45,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
-const threatCoreCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xffea60,transparent:true,opacity:.38,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
+const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6b18,transparent:true,opacity:.72,depthWrite:false,blending:THREE.AdditiveBlending});
 const dragonFireCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff7711,transparent:true,opacity:.52,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
 const dragonFireCoreMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xfff088,transparent:true,opacity:.46,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
 const steamyFireCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xa0d8ef,transparent:true,opacity:.35,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
@@ -2901,15 +2894,11 @@ function createPlayableRock(size=1,variant=-1){
  mesh.userData.sharedRockAsset=true;rockStats.meshCreations++;
  mesh.scale.set(size*(.87+Math.random()*.25),size*(.88+Math.random()*.24),size*(.87+Math.random()*.28));
  mesh.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
- // Dual-layer luminous atmospheric plasma threat corona: radiant self-illuminating entry aura
+ // Luminous threat corona: visually distinguishes interceptable threats on Paulo's combat plane from background streaks
  const corona=new THREE.Sprite(threatCoronaMat);
- corona.scale.setScalar(size*1.35);
+ corona.scale.setScalar(size*2.6);
  corona.name='threat-corona';
  mesh.add(corona);
- const coreCorona=new THREE.Sprite(threatCoreCoronaMat);
- coreCorona.scale.setScalar(size*1.05);
- coreCorona.name='threat-core-corona';
- mesh.add(coreCorona);
  return mesh;
 }
 function spawnMeteor(random=Math.random,opening=null){
@@ -2997,7 +2986,6 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(kind==='flaming'||opening?.kind==='flaming')mesh.material=flamingMaterial;
  else if(fastImpact)mesh.material=fastImpactMaterial;
  else if(kind==='molten'||isMassive)mesh.material=moltenMaterial;
- else {mesh.material=moltenMaterial;}
  if(isPowerup==='fire_stream'){message('🔥 FIZZING FLAME POWERUP INCOMING! DESTROY FOR CONTINUOUS FIRE BREATH!');sound('bonus');}
  else if(isPowerup==='green_breath'){message('🌪️ GREEN TEMPEST METEOR INCOMING — GALE BREATH POWERUP!');sound('bonus');}
  else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
@@ -4449,19 +4437,13 @@ if(m.grounded){
   }
   const inStratosphere=m.mesh.position.y>58;
   m.mesh.rotation.x+=dt*2;m.mesh.rotation.y+=dt*1.5;
-  const pulse=1.0+Math.sin(elapsed*12+m.mesh.position.x*2.5)*0.14;
   const corona=m.mesh.getObjectByName('threat-corona');
   if(corona){
-   const targetScale=m.size*(inStratosphere?4.5:3.2)*pulse;
-   corona.scale.setScalar(THREE.MathUtils.lerp(corona.scale.x,targetScale,Math.min(1,dt*8)));
-  }
-  const coreCorona=m.mesh.getObjectByName('threat-core-corona');
-  if(coreCorona){
-   const targetScale=m.size*(inStratosphere?2.6:1.8)*pulse;
-   coreCorona.scale.setScalar(THREE.MathUtils.lerp(coreCorona.scale.x,targetScale,Math.min(1,dt*8)));
+   const targetScale=m.size*(inStratosphere?4.0:2.6);
+   corona.scale.setScalar(THREE.MathUtils.lerp(corona.scale.x,targetScale,Math.min(1,dt*6)));
   }
   if(m.burning||inStratosphere||m.isMassive){
-   const burnScale=inStratosphere?Math.max(m.size*1.2,1.9):m.size*.75;
+   const burnScale=inStratosphere?Math.max(m.size*1.15,1.8):m.size*.65;
    cinematicFX.fire(m.mesh.position,elapsed,burnScale,0,'meteor');
    if(performanceLab.isEnabled('particles')&&Math.random()<0.65){
     trailEmberPool.add(m.mesh.position.clone().add(new THREE.Vector3((Math.random()-.5)*m.size*.8,(Math.random()-.5)*m.size*.8,(Math.random()-.5)*m.size*.8)),Math.max(0.8,m.size*.45));
