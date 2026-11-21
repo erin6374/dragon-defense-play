@@ -185,6 +185,26 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
    a.needsUpdate=b.needsUpdate=geometry.attributes.surface.needsUpdate=true;
   });
  }
+ // Read-only deterministic QA evidence; never mutate source buffers or GPU time.
+ // Exclude the intentionally toggled smoke opacity uniform from comparisons.
+ function qaSnapshot(){
+  return {name,capacity,activeCount,lastActive,visible:group.visible,
+   clock:uniforms.clock.value,sourceBufferWrites,unchangedSetSkips,unchangedActiveSkips,
+   sources:sources.map(s=>[s.active,s.x,s.y,s.z,s.w,s.h,s.seed,s.power,s.lod,s.surface]),
+   batches:batches.map(({geometry,count})=>({
+    count,instanceCount:geometry.instanceCount,
+    sourceVersion:geometry.attributes.source.version,
+    settingsVersion:geometry.attributes.settings.version,
+    surfaceVersion:geometry.attributes.surface.version,
+    source:Array.from(geometry.attributes.source.array),
+    settings:Array.from(geometry.attributes.settings.array),
+    surface:Array.from(geometry.attributes.surface.array)
+   }))};
+ }
+ if(typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('qa')==='1'){
+  const registry=window.__DD_COMBUSTION_QA||(window.__DD_COMBUSTION_QA=[]);
+  registry.push({name,snapshot:qaSnapshot});
+ }
  function clear(index){set(index,0,0,0,0,0,0,0);}
  return {group,sources,set,clear,update(time){uniforms.clock.value=time;},
   reset(){for(let i=0;i<capacity;i++)clear(i);uniforms.clock.value=0;
