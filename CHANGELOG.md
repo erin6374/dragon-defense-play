@@ -1,3 +1,7 @@
+## 2026-11-21 — RC59 combustion state identity QA candidate
+
+2026-11-21 RC59 candidate: read-only combustion QA snapshots and smoke ON/OFF equality assertions for CPU-side shader clock, source arrays/attribute versions, pool counters and instance counts. Verified base bca9368e168b7019cdfb0a7bcfee2ace431b1c84 had five successful exact-head workflows: browser 44880130362, cinematic 44880130359, focused 44880130310, CC0 44880130377, motion 44880130309. Candidate new-head CI/artifacts PENDING. This does not freeze physical GPU execution, approve cinematic art or measure Windows FPS. ART FAIL and slideshow unresolved. Next: verify five new-head workflows, inspect reports/PNG/MP4/CRC/CC0/FBX hashes, then tune one smoke art issue. Google PR #3 isolated.
+
 ## 2026-11-21 — RC59 smoke opacity QA timestamp and control assertions
 
 - Cinematic smoke opacity A/B now rejects unequal paused browser timestamps or changes to smoke mode/mirror; restores opacity to 1. Base `8958ef51` had five successful workflows; candidate exact-head CI/artifacts pending.
