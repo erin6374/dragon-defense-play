@@ -1,0 +1,169 @@
+name: Dragon Defense - Downloadable Playable Preview
+# Source-specific development packages. Never deploy or merge into main.
+on:
+  push:
+    branches:
+      - 'agent/google-lead-*'
+      - 'feature/north-broad-graphics'
+    paths:
+      - '.github/workflows/downloadable-preview.yml'
+      - 'build-info.json'
+      - 'index.html'
+      - 'PLAY-PREVIEW.cmd'
+      - 'src/**'
+      - 'assets/**'
+      - 'vendor/**'
+      - 'campaign/**'
+      - 'dragon-lab/**'
+      - 'tools/windows-preview-server.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Verify and package source-exact Windows/browser preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact push or dispatch SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Check release identity and required game files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert sha == os.environ['GITHUB_SHA'], f'Wrong source checkout: {sha}'
+          info = json.loads(pathlib.Path('build-info.json').read_text(encoding='utf-8'))
+          assert info.get('version') and info.get('build'), 'Missing release version/build'
+          required = [
+              'index.html', 'PLAY-PREVIEW.cmd', 'build-info.json',
+              'tools/windows-preview-server.py', 'src/game.js',
+              'src/dragon/paulo-rig.js', 'vendor/three/build/three.module.js',
+          ]
+          missing = [f for f in required if not pathlib.Path(f).is_file()]
+          assert not missing, f'Incomplete playable source: {missing}'
+          print(f"Packaging {info['version']} / {info['build']} at {sha}")
+          PY
+
+      - name: Build self-contained Windows development preview
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, shutil, subprocess
+          source = pathlib.Path('.')
+          dest = pathlib.Path('dist/DragonDefense_Development_Preview')
+          dest.mkdir(parents=True, exist_ok=True)
+          excluded = {
+              '.git', '.github', '.vscode', 'qa', 'qa-output', 'dist',
+              'node_modules', '__pycache__',
+          }
+          for entry in source.iterdir():
+              if entry.name in excluded:
+                  continue
+              out = dest / entry.name
+              if entry.is_dir():
+                  shutil.copytree(entry, out, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+              elif entry.is_file():
+                  shutil.copy2(entry, out)
+          info = json.loads((dest / 'build-info.json').read_text(encoding='utf-8'))
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+          (dest / 'PREVIEW-BUILD.txt').write_text(
+              f"Source commit: {sha}\nTested commit: {sha}\n"
+              f"Version: {info['version']}\nBuild: {info['build']}\n"
+              f"Packaged UTC: {timestamp}\n"
+              "Validation: file checks, local HTTP server smoke, ZIP CRC.\n"
+              "Full browser gameplay QA and physical Windows FPS: NOT VERIFIED by this workflow.\n"
+              f"GitHub Actions run: https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}\n",
+              encoding='utf-8',
+          )
+          files = sorted(p for p in dest.rglob('*') if p.is_file())
+          hashes = [
+              f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(dest).as_posix()}"
+              for p in files
+          ]
+          (dest / 'PREVIEW-SHA256.txt').write_text('\n'.join(hashes) + '\n', encoding='utf-8')
+          print(f'Packaged {len(files) + 1} files; created PREVIEW-BUILD.txt and PREVIEW-SHA256.txt')
+          PY
+
+      - name: Smoke-test actual packaged preview server and asset responses
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, subprocess, sys, time, urllib.request
+          root = pathlib.Path('dist/DragonDefense_Development_Preview')
+          server = subprocess.Popen(
+              [sys.executable, 'tools/windows-preview-server.py', '--port', '8859'],
+              cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+          )
+          try:
+              base = 'http://127.0.0.1:8859'
+              for attempt in range(40):
+                  if server.poll() is not None:
+                      raise RuntimeError('Packaged preview server exited before startup')
+                  try:
+                      urllib.request.urlopen(base + '/__build', timeout=2).close()
+                      break
+                  except OSError:
+                      time.sleep(.25)
+              else:
+                  raise RuntimeError('Packaged preview server did not start')
+              expected = json.loads((root / 'build-info.json').read_text())
+              with urllib.request.urlopen(base + '/__build', timeout=3) as response:
+                  served = json.load(response)
+              assert served['version'] == expected['version'], 'Served game version mismatch'
+              assert served['build'] == expected['build'], 'Served game build mismatch'
+              for path in (
+                  '/index.html', '/build-info.json', '/src/game.js',
+                  '/src/dragon/paulo-rig.js', '/vendor/three/build/three.module.js',
+              ):
+                  with urllib.request.urlopen(base + path, timeout=5) as response:
+                      body = response.read()
+                      assert response.status == 200 and body, f'Missing HTTP content {path}'
+              print('PASS: packaged server launches, version/build match, required game HTTP assets load')
+              print('NOTE: HTTP smoke is not browser gameplay QA or measured Windows GPU performance')
+          finally:
+              server.terminate()
+              try:
+                  server.wait(timeout=5)
+              except subprocess.TimeoutExpired:
+                  server.kill()
+          PY
+
+      - name: Check ZIP integrity and packaged content before upload
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib, zipfile
+          root = pathlib.Path('dist/DragonDefense_Development_Preview')
+          archive = pathlib.Path('dist/preview-integrity-check.zip')
+          with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              for file in root.rglob('*'):
+                  if file.is_file():
+                      z.write(file, file.relative_to(root).as_posix())
+          with zipfile.ZipFile(archive, 'r') as z:
+              error = z.testzip()
+              assert error is None, f'ZIP CRC failure: {error}'
+              names = set(z.namelist())
+              assert all(n in names for n in ('index.html', 'PLAY-PREVIEW.cmd',
+                                             'PREVIEW-BUILD.txt', 'PREVIEW-SHA256.txt',
+                                             'build-info.json', 'src/game.js'))
+              print(f'PASS: ZIP CRC and required files ({len(names)} entries)')
+          archive.unlink()
+          PY
+
+      - name: Publish source-exact playable Windows preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DragonDefense_Development_Preview
+          path: dist/DragonDefense_Development_Preview/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6

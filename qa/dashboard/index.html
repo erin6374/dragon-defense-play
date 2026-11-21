@@ -55,7 +55,7 @@ stat('Partial image difference',r.partialChangedFraction==null?'n/a':(r.partialC
 stat('Settled rubble parts',r.settled?.schoolReconstruction?.rubble);
 for(const view of comparisonViews)for(const [suffix,label] of [['source-school','FBX source'],['game','Game model']])image('comparison','school-'+view+'-'+suffix,view+' · '+label);
 for(const phase of ['intact','partial','total-collapse'])for(const view of damageViews)image('damage','school-'+phase+'-'+view+'-damage',phase+' · '+view);
-for(const [name,label] of [['01-startup','Startup'],['02-playing','Playing'],['03-pan-right','Pan right'],['04-pan-left','Pan left'],['05-school-impact','Meteor impact']])image('gameplay',name,label);
+for(const [name,label] of [['01-startup','Startup'],['02-playing','Playing'],['03-pan-right','Pan right'],['04-pan-left','Pan left'],['05-school-impact','Meteor impact'],['06-north-broad-dusk','North Broad at dusk']])image('gameplay',name,label);
 $('diagnostics').textContent=JSON.stringify({failure:r.failure,errors:r.errors,warnings:r.warnings,performance:r.performance,exterior:r.exterior,impact:r.impact,collapse:r.collapse,settled:r.settled},null,2);
 }catch(e){$('status').textContent='QA data unavailable: '+e.message+' — inspect the latest GitHub Actions run.'}
 }

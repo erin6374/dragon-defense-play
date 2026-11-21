@@ -1,0 +1,2675 @@
+{
+  "url": "http://127.0.0.1:8767/",
+  "expected": {
+    "build": "5.3-north-broad-01",
+    "version": "5.3.0",
+    "gameplay_base": "5.2.3",
+    "scope": "North Broad Street perspective, world-space neighborhood, and Philadelphia skyline",
+    "new_gameplay_features": false
+  },
+  "errors": [],
+  "warnings": [],
+  "startup": {
+    "version": "5.3.0",
+    "build": "5.3-north-broad-01",
+    "active": false,
+    "paused": false,
+    "wave": 1,
+    "score": 0,
+    "hp": 100,
+    "dragon": {
+      "x": 0,
+      "y": 2,
+      "z": 15,
+      "lives": 3
+    },
+    "chapterTransition": {
+      "active": false,
+      "phase": "idle",
+      "timer": 0,
+      "nextWave": null,
+      "fromChapter": null,
+      "postCutsceneWave": null,
+      "stagingMode": "chapter",
+      "fadeOpacity": "0"
+    },
+    "camera": {
+      "x": 19,
+      "scroll": 0,
+      "skylineOffset": 0,
+      "perspective": true,
+      "foregroundOffset": 0,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "schoolReconstruction": {
+      "parts": 1382,
+      "drawBatches": 8,
+      "detached": 0,
+      "falling": 0,
+      "rubble": 0,
+      "damaged": 0,
+      "lastImpact": {
+        "x": 0,
+        "y": 14,
+        "z": 0.28
+      },
+      "structuralMembers": 314,
+      "doubleHeightAtrium": true,
+      "atriumY": [
+        0,
+        11.2
+      ],
+      "atriumFrontZ": 0.28,
+      "atriumBackZ": -16.72,
+      "attached": 1382,
+      "byMaterial": {
+        "glass": 0,
+        "structure": 0,
+        "facade": 0
+      },
+      "fullFiveStoryShell": true,
+      "collapsing": false
+    },
+    "sourceSchool": {
+      "visible": true,
+      "strikes": 0
+    },
+    "realBlockReferences": {
+      "facadeCount": 9,
+      "drawObjects": 97,
+      "facades": [
+        {
+          "building": "united-fund-cream",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-cream-rowhouse",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-tan-brick",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-modern-red-gray",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-dolmuseum-across-dauphin",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-brownstone",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-modern-white-red",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-red-brick-shop",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "susquehanna-crown-chicken",
+          "damage": 0,
+          "visible": true
+        }
+      ]
+    },
+    "renderVisibility": {
+      "schoolEnabled": true,
+      "schoolVisible": true,
+      "actualSchoolOverlayReady": true,
+      "fbxRowhouses": {
+        "left": false,
+        "right": false
+      },
+      "schoolModelCalibration": {
+        "scale": 0.37533512064343166,
+        "translation": {
+          "x": -3.180965147453084,
+          "y": 0,
+          "z": -16.351206434316357
+        },
+        "facadeWidth": 26.524932975871316,
+        "aboveGroundHeight": 28,
+        "frontZ": 0.4,
+        "basementBelowStreet": 5.751260053619304,
+        "roofHeight": 28,
+        "maxSourceDepth": 58.7887399463807,
+        "aspect": 0.947319034852547,
+        "isUniform": true,
+        "source": {
+          "frontPlaneZ": 44.63,
+          "roofY": 74.6,
+          "groundY": 0,
+          "facadeMinX": -26.86,
+          "facadeMaxX": 43.81,
+          "keepMinX": -30.5,
+          "keepMaxX": 47,
+          "keepMinZ": -112,
+          "keepMaxZ": 52.4,
+          "originalBounds": {
+            "min": [
+              -44.859,
+              -15.323,
+              -145.998
+            ],
+            "max": [
+              78.85,
+              89.288,
+              52.392
+            ]
+          },
+          "reference": "Original FBX measured façade; side masses are independent rowhouses"
+        },
+        "target": {
+          "aboveGroundRoofHeight": 28,
+          "streetFrontZ": 0.4,
+          "centerX": 0
+        }
+      },
+      "skylineEnabled": true,
+      "skylineVisible": true,
+      "backgroundEnabled": true,
+      "particlesEnabled": true,
+      "fireEnabled": true,
+      "renderFPSCap": 45,
+      "preset": "balanced",
+      "pixelRatio": 0.96,
+      "shadows": false
+    },
+    "atmosphere": {
+      "phase": 0,
+      "darkness": 0
+    },
+    "structure": {
+      "buildings": 48,
+      "components": 15582,
+      "drawBatches": 103,
+      "activeFragments": 0,
+      "smallDebris": 0,
+      "collapsed": 0,
+      "attached": 15582,
+      "types": {
+        "slab": 2240,
+        "partition": 1204,
+        "stair": 1080,
+        "furniture": 1824,
+        "window": 374
+      }
+    },
+    "vehicleLighting": [],
+    "neighborhood": {
+      "damaged": 0,
+      "damageSum": 0,
+      "targets": [
+        {
+          "name": "united-fund-cream",
+          "x": -18.8,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 5.8,
+          "damage": 0
+        },
+        {
+          "name": "south-cream-rowhouse",
+          "x": -25.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7,
+          "damage": 0
+        },
+        {
+          "name": "south-tan-brick",
+          "x": -33,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.2,
+          "damage": 0
+        },
+        {
+          "name": "south-modern-red-gray",
+          "x": -41.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7.5,
+          "damage": 0
+        },
+        {
+          "name": "south-dolmuseum-across-dauphin",
+          "x": -68.2,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 10.2,
+          "damage": 0
+        },
+        {
+          "name": "south-dauphin-historic",
+          "x": -77.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 11,
+          "damage": 0
+        },
+        {
+          "name": "north-brownstone",
+          "x": 19.6,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.9,
+          "damage": 0
+        },
+        {
+          "name": "north-modern-white-red",
+          "x": 32,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 9.6,
+          "damage": 0
+        },
+        {
+          "name": "north-red-brick-shop",
+          "x": 39.1,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        },
+        {
+          "name": "susquehanna-crown-chicken",
+          "x": 43.2,
+          "y": 5.4,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        }
+      ]
+    },
+    "schoolDamage": 0,
+    "scene": {
+      "meshes": 248,
+      "textures": 49,
+      "drawCalls": 714,
+      "triangles": 1012474,
+      "renderScale": 1
+    },
+    "lighting": {
+      "explosionSlots": 5,
+      "activeExplosions": 0,
+      "helicopterSlots": 3,
+      "activeHelicopters": 0
+    },
+    "finalSquadron": {
+      "fighters": 0,
+      "missiles": 0,
+      "active": false
+    },
+    "counts": {
+      "meteors": 0,
+      "fragmentMeteors": 0,
+      "bossMeteors": 0,
+      "shots": 0,
+      "blasts": 0,
+      "debris": 0,
+      "cars": 0,
+      "helicopters": 0,
+      "skylineFires": 0
+    },
+    "meteors": [],
+    "lastErrors": [],
+    "elapsed": 0,
+    "frameTimes": {
+      "frames": 6,
+      "seconds": 7.936799999997019
+    }
+  },
+  "comparison": [
+    {
+      "name": "front-original-fbx",
+      "metrics": {
+        "upperPixels": 75395,
+        "min": [
+          -20.018049306588264,
+          -5.751228895008408,
+          -71.14927497434233
+        ],
+        "max": [
+          26.414033864202835,
+          33.51300318822785,
+          3.3132646576009535
+        ],
+        "drawCalls": 5577,
+        "triangles": 6815507
+      }
+    },
+    {
+      "name": "front-source-school",
+      "metrics": {
+        "upperPixels": 67699,
+        "min": [
+          -13.262016419111564,
+          -5.751228895008408,
+          -56.707092088980566
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822785,
+          3.1952293334633666
+        ],
+        "drawCalls": 3445,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "front-game",
+      "metrics": {
+        "upperPixels": 67669,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "corner-original-fbx",
+      "metrics": {
+        "upperPixels": 61114,
+        "min": [
+          -20.018049306588264,
+          -5.751228895008408,
+          -71.14927497434233
+        ],
+        "max": [
+          26.414033864202835,
+          33.51300318822785,
+          3.3132646576009535
+        ],
+        "drawCalls": 5577,
+        "triangles": 6815507
+      }
+    },
+    {
+      "name": "corner-source-school",
+      "metrics": {
+        "upperPixels": 60473,
+        "min": [
+          -13.262016419111564,
+          -5.751228895008408,
+          -56.707092088980566
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822785,
+          3.1952293334633666
+        ],
+        "drawCalls": 3445,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "corner-game",
+      "metrics": {
+        "upperPixels": 60473,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "roof-original-fbx",
+      "metrics": {
+        "upperPixels": 69331,
+        "min": [
+          -20.018049306588264,
+          -5.751228895008408,
+          -71.14927497434233
+        ],
+        "max": [
+          26.414033864202835,
+          33.51300318822785,
+          3.3132646576009535
+        ],
+        "drawCalls": 5577,
+        "triangles": 6815507
+      }
+    },
+    {
+      "name": "roof-source-school",
+      "metrics": {
+        "upperPixels": 35754,
+        "min": [
+          -13.262016419111564,
+          -5.751228895008408,
+          -56.707092088980566
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822785,
+          3.1952293334633666
+        ],
+        "drawCalls": 3445,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "roof-game",
+      "metrics": {
+        "upperPixels": 35754,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "left-side-original-fbx",
+      "metrics": {
+        "upperPixels": 125727,
+        "min": [
+          -20.018049306588264,
+          -5.751228895008408,
+          -71.14927497434233
+        ],
+        "max": [
+          26.414033864202835,
+          33.51300318822785,
+          3.3132646576009535
+        ],
+        "drawCalls": 5577,
+        "triangles": 6815507
+      }
+    },
+    {
+      "name": "left-side-source-school",
+      "metrics": {
+        "upperPixels": 125643,
+        "min": [
+          -13.262016419111564,
+          -5.751228895008408,
+          -56.707092088980566
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822785,
+          3.1952293334633666
+        ],
+        "drawCalls": 3445,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "left-side-game",
+      "metrics": {
+        "upperPixels": 125643,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "right-side-original-fbx",
+      "metrics": {
+        "upperPixels": 125731,
+        "min": [
+          -20.018049306588264,
+          -5.751228895008408,
+          -71.14927497434233
+        ],
+        "max": [
+          26.414033864202835,
+          33.51300318822785,
+          3.3132646576009535
+        ],
+        "drawCalls": 5577,
+        "triangles": 6815507
+      }
+    },
+    {
+      "name": "right-side-source-school",
+      "metrics": {
+        "upperPixels": 125648,
+        "min": [
+          -13.262016419111564,
+          -5.751228895008408,
+          -56.707092088980566
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822785,
+          3.1952293334633666
+        ],
+        "drawCalls": 3445,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "right-side-game",
+      "metrics": {
+        "upperPixels": 125637,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    }
+  ],
+  "exterior": [
+    "school-brick",
+    "school-brick",
+    "school-brick",
+    "school-brick",
+    null
+  ],
+  "browser": "156.0.4314.58",
+  "movement": {
+    "before": {
+      "x": 0,
+      "y": 30.2,
+      "z": -2.2,
+      "lives": 3
+    },
+    "right": {
+      "x": 41,
+      "scroll": 22,
+      "skylineOffset": 13.64,
+      "perspective": true,
+      "foregroundOffset": -0.77,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "left": {
+      "x": -3,
+      "scroll": -22,
+      "skylineOffset": -13.64,
+      "perspective": true,
+      "foregroundOffset": 0.77,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "performance": {
+    "live": {
+      "wave": 1,
+      "fps": 1,
+      "drawCalls": 723,
+      "frameMs": 984.7,
+      "recording": false,
+      "stallCount": 30
+    },
+    "frameHealth": {
+      "totalLongFrames": 32,
+      "classificationCounts": {
+        "unattributed-raf-gap": 32
+      },
+      "recent": [
+        {
+          "at": 39183,
+          "wave": 1,
+          "frameMs": 1036.8,
+          "simMs": 0.4,
+          "renderMs": 6.9,
+          "outsideMeasuredCodeMs": 1029.5,
+          "drawCalls": 693,
+          "triangles": 1013230,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 40206,
+          "wave": 1,
+          "frameMs": 1023.9,
+          "simMs": 0.9,
+          "renderMs": 5.8,
+          "outsideMeasuredCodeMs": 1017.2,
+          "drawCalls": 693,
+          "triangles": 1013234,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 41218,
+          "wave": 1,
+          "frameMs": 1008.7,
+          "simMs": 0.3,
+          "renderMs": 10.1,
+          "outsideMeasuredCodeMs": 998.3,
+          "drawCalls": 759,
+          "triangles": 1031546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 42219,
+          "wave": 1,
+          "frameMs": 1006.2,
+          "simMs": 0.7,
+          "renderMs": 4.6,
+          "outsideMeasuredCodeMs": 1000.9,
+          "drawCalls": 759,
+          "triangles": 1031550,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 43255,
+          "wave": 1,
+          "frameMs": 1036.3,
+          "simMs": 0.3,
+          "renderMs": 4.8,
+          "outsideMeasuredCodeMs": 1031.2,
+          "drawCalls": 715,
+          "triangles": 1025306,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 44309,
+          "wave": 1,
+          "frameMs": 1053.7,
+          "simMs": 0.3,
+          "renderMs": 4.2,
+          "outsideMeasuredCodeMs": 1049.2,
+          "drawCalls": 715,
+          "triangles": 1025306,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 45587,
+          "wave": 1,
+          "frameMs": 1271.6,
+          "simMs": 0.5,
+          "renderMs": 11,
+          "outsideMeasuredCodeMs": 1260.1,
+          "drawCalls": 715,
+          "triangles": 1025306,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 46876,
+          "wave": 1,
+          "frameMs": 1295.1,
+          "simMs": 0.2,
+          "renderMs": 5.1,
+          "outsideMeasuredCodeMs": 1289.8,
+          "drawCalls": 715,
+          "triangles": 1025306,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 48190,
+          "wave": 1,
+          "frameMs": 1305,
+          "simMs": 0.8,
+          "renderMs": 13.1,
+          "outsideMeasuredCodeMs": 1291.1,
+          "drawCalls": 723,
+          "triangles": 1030546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 49506,
+          "wave": 1,
+          "frameMs": 1326.5,
+          "simMs": 0.3,
+          "renderMs": 3.5,
+          "outsideMeasuredCodeMs": 1322.7,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 50553,
+          "wave": 1,
+          "frameMs": 1046.8,
+          "simMs": 0.5,
+          "renderMs": 3.6,
+          "outsideMeasuredCodeMs": 1042.7,
+          "drawCalls": 723,
+          "triangles": 1030546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 51589,
+          "wave": 1,
+          "frameMs": 1036,
+          "simMs": 0.3,
+          "renderMs": 3.4,
+          "outsideMeasuredCodeMs": 1032.3,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 52637,
+          "wave": 1,
+          "frameMs": 1047.6,
+          "simMs": 0.4,
+          "renderMs": 3.8,
+          "outsideMeasuredCodeMs": 1043.4,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 53706,
+          "wave": 1,
+          "frameMs": 1064.9,
+          "simMs": 0.9,
+          "renderMs": 7.5,
+          "outsideMeasuredCodeMs": 1056.5,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 54758,
+          "wave": 1,
+          "frameMs": 1054.7,
+          "simMs": 0.3,
+          "renderMs": 5.5,
+          "outsideMeasuredCodeMs": 1048.9,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 55757,
+          "wave": 1,
+          "frameMs": 995.2,
+          "simMs": 0.5,
+          "renderMs": 8.8,
+          "outsideMeasuredCodeMs": 985.9,
+          "drawCalls": 723,
+          "triangles": 1030546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 56756,
+          "wave": 1,
+          "frameMs": 1001.1,
+          "simMs": 0.3,
+          "renderMs": 7.6,
+          "outsideMeasuredCodeMs": 993.2,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 57752,
+          "wave": 1,
+          "frameMs": 995.3,
+          "simMs": 1,
+          "renderMs": 7.1,
+          "outsideMeasuredCodeMs": 987.2,
+          "drawCalls": 723,
+          "triangles": 1030546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 58748,
+          "wave": 1,
+          "frameMs": 993.4,
+          "simMs": 0.2,
+          "renderMs": 10.3,
+          "outsideMeasuredCodeMs": 982.9,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 59738,
+          "wave": 1,
+          "frameMs": 991.9,
+          "simMs": 0.4,
+          "renderMs": 8.8,
+          "outsideMeasuredCodeMs": 982.7,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 60739,
+          "wave": 1,
+          "frameMs": 1007.6,
+          "simMs": 0.2,
+          "renderMs": 2.3,
+          "outsideMeasuredCodeMs": 1005.1,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 61735,
+          "wave": 1,
+          "frameMs": 993.5,
+          "simMs": 0.6,
+          "renderMs": 4.3,
+          "outsideMeasuredCodeMs": 988.6,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 62723,
+          "wave": 1,
+          "frameMs": 984.7,
+          "simMs": 0.5,
+          "renderMs": 7.7,
+          "outsideMeasuredCodeMs": 976.5,
+          "drawCalls": 723,
+          "triangles": 1030546,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        },
+        {
+          "at": 63684,
+          "wave": 1,
+          "frameMs": 959.8,
+          "simMs": 0.4,
+          "renderMs": 9.3,
+          "outsideMeasuredCodeMs": 950.1,
+          "drawCalls": 723,
+          "triangles": 1030542,
+          "recording": false,
+          "hidden": false,
+          "focused": true,
+          "longTaskMs": 0,
+          "classification": "unattributed-raf-gap"
+        }
+      ],
+      "longTasksObserved": 0,
+      "recording": false,
+      "hidden": false,
+      "focused": true,
+      "warning": "RAF intervals can include browser scheduling, driver stalls, GC and capture work outside instrumented functions. Classifications are diagnostic, not definitive root causes."
+    },
+    "scene": {
+      "meshes": 3205,
+      "textures": 49,
+      "drawCalls": 723,
+      "triangles": 1030542,
+      "renderScale": 1
+    }
+  },
+  "intact": [
+    {
+      "name": "front-damage",
+      "metrics": {
+        "upperPixels": 50570,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "corner-damage",
+      "metrics": {
+        "upperPixels": 45364,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    },
+    {
+      "name": "right-side-damage",
+      "metrics": {
+        "upperPixels": 94529,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 8,
+        "triangles": 593158
+      }
+    }
+  ],
+  "impact": {
+    "version": "5.3.0",
+    "build": "5.3-north-broad-01",
+    "active": true,
+    "paused": false,
+    "wave": 1,
+    "score": 0,
+    "hp": 91,
+    "dragon": {
+      "x": 0,
+      "y": 12,
+      "z": 15,
+      "lives": 3
+    },
+    "chapterTransition": {
+      "active": false,
+      "phase": "idle",
+      "timer": 0,
+      "nextWave": null,
+      "fromChapter": null,
+      "postCutsceneWave": null,
+      "stagingMode": "chapter",
+      "fadeOpacity": "0"
+    },
+    "camera": {
+      "x": 19.6357403491844,
+      "scroll": 0,
+      "skylineOffset": 0,
+      "perspective": true,
+      "foregroundOffset": 0,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "schoolReconstruction": {
+      "parts": 1382,
+      "drawBatches": 8,
+      "detached": 14,
+      "falling": 14,
+      "rubble": 0,
+      "damaged": 43,
+      "lastImpact": {
+        "x": 0,
+        "y": 11,
+        "z": 0.28
+      },
+      "structuralMembers": 314,
+      "doubleHeightAtrium": true,
+      "atriumY": [
+        0,
+        11.2
+      ],
+      "atriumFrontZ": 0.28,
+      "atriumBackZ": -16.72,
+      "attached": 1368,
+      "byMaterial": {
+        "glass": 6,
+        "structure": 4,
+        "facade": 4
+      },
+      "fullFiveStoryShell": true,
+      "collapsing": false
+    },
+    "sourceSchool": {
+      "visible": true,
+      "strikes": 1
+    },
+    "realBlockReferences": {
+      "facadeCount": 9,
+      "drawObjects": 97,
+      "facades": [
+        {
+          "building": "united-fund-cream",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-cream-rowhouse",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-tan-brick",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-modern-red-gray",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-dolmuseum-across-dauphin",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-brownstone",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-modern-white-red",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-red-brick-shop",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "susquehanna-crown-chicken",
+          "damage": 0,
+          "visible": true
+        }
+      ]
+    },
+    "renderVisibility": {
+      "schoolEnabled": true,
+      "schoolVisible": true,
+      "actualSchoolOverlayReady": true,
+      "fbxRowhouses": {
+        "left": false,
+        "right": false
+      },
+      "schoolModelCalibration": {
+        "scale": 0.37533512064343166,
+        "translation": {
+          "x": -3.180965147453084,
+          "y": 0,
+          "z": -16.351206434316357
+        },
+        "facadeWidth": 26.524932975871316,
+        "aboveGroundHeight": 28,
+        "frontZ": 0.4,
+        "basementBelowStreet": 5.751260053619304,
+        "roofHeight": 28,
+        "maxSourceDepth": 58.7887399463807,
+        "aspect": 0.947319034852547,
+        "isUniform": true,
+        "source": {
+          "frontPlaneZ": 44.63,
+          "roofY": 74.6,
+          "groundY": 0,
+          "facadeMinX": -26.86,
+          "facadeMaxX": 43.81,
+          "keepMinX": -30.5,
+          "keepMaxX": 47,
+          "keepMinZ": -112,
+          "keepMaxZ": 52.4,
+          "originalBounds": {
+            "min": [
+              -44.859,
+              -15.323,
+              -145.998
+            ],
+            "max": [
+              78.85,
+              89.288,
+              52.392
+            ]
+          },
+          "reference": "Original FBX measured façade; side masses are independent rowhouses"
+        },
+        "target": {
+          "aboveGroundRoofHeight": 28,
+          "streetFrontZ": 0.4,
+          "centerX": 0
+        }
+      },
+      "skylineEnabled": true,
+      "skylineVisible": true,
+      "backgroundEnabled": true,
+      "particlesEnabled": true,
+      "fireEnabled": true,
+      "renderFPSCap": 45,
+      "preset": "mobile",
+      "pixelRatio": 0.83,
+      "shadows": false
+    },
+    "atmosphere": {
+      "phase": 0,
+      "darkness": 0
+    },
+    "structure": {
+      "buildings": 48,
+      "components": 15582,
+      "drawBatches": 103,
+      "activeFragments": 84,
+      "smallDebris": 278,
+      "collapsed": 0,
+      "attached": 15494,
+      "types": {
+        "slab": 2240,
+        "partition": 1204,
+        "stair": 1080,
+        "furniture": 1824,
+        "window": 374
+      }
+    },
+    "vehicleLighting": [
+      {
+        "visible": false,
+        "strength": 0,
+        "emissive": 0.15
+      }
+    ],
+    "neighborhood": {
+      "damaged": 0,
+      "damageSum": 0,
+      "targets": [
+        {
+          "name": "united-fund-cream",
+          "x": -18.8,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 5.8,
+          "damage": 0
+        },
+        {
+          "name": "south-cream-rowhouse",
+          "x": -25.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7,
+          "damage": 0
+        },
+        {
+          "name": "south-tan-brick",
+          "x": -33,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.2,
+          "damage": 0
+        },
+        {
+          "name": "south-modern-red-gray",
+          "x": -41.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7.5,
+          "damage": 0
+        },
+        {
+          "name": "south-dolmuseum-across-dauphin",
+          "x": -68.2,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 10.2,
+          "damage": 0
+        },
+        {
+          "name": "south-dauphin-historic",
+          "x": -77.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 11,
+          "damage": 0
+        },
+        {
+          "name": "north-brownstone",
+          "x": 19.6,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.9,
+          "damage": 0
+        },
+        {
+          "name": "north-modern-white-red",
+          "x": 32,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 9.6,
+          "damage": 0
+        },
+        {
+          "name": "north-red-brick-shop",
+          "x": 39.1,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        },
+        {
+          "name": "susquehanna-crown-chicken",
+          "x": 43.2,
+          "y": 5.4,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        }
+      ]
+    },
+    "schoolDamage": 0.092,
+    "scene": {
+      "meshes": 3210,
+      "textures": 52,
+      "drawCalls": 809,
+      "triangles": 1032804,
+      "renderScale": 1
+    },
+    "lighting": {
+      "explosionSlots": 5,
+      "activeExplosions": 3,
+      "helicopterSlots": 3,
+      "activeHelicopters": 0
+    },
+    "finalSquadron": {
+      "fighters": 0,
+      "missiles": 0,
+      "active": false
+    },
+    "counts": {
+      "meteors": 1,
+      "fragmentMeteors": 0,
+      "bossMeteors": 0,
+      "shots": 0,
+      "blasts": 3,
+      "debris": 22,
+      "cars": 1,
+      "helicopters": 0,
+      "skylineFires": 0
+    },
+    "meteors": [
+      {
+        "x": -50.96896604895925,
+        "y": 60.907436229259794,
+        "z": -2.580030588860895,
+        "size": 0.62,
+        "hp": 1,
+        "fragment": false,
+        "boss": false,
+        "generation": 0,
+        "grace": 0
+      }
+    ],
+    "lastErrors": [
+      {
+        "seq": 1,
+        "name": "schoolComparison",
+        "ok": true
+      },
+      {
+        "seq": 2,
+        "name": "schoolExterior",
+        "ok": true
+      },
+      {
+        "seq": 3,
+        "name": "cinematicStage",
+        "ok": true
+      },
+      {
+        "seq": 4,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 5,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 6,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 7,
+        "name": "schoolDamageView",
+        "ok": true
+      },
+      {
+        "seq": 8,
+        "name": "stageSchoolMeteor",
+        "ok": true
+      }
+    ],
+    "elapsed": 1.7833333333333319,
+    "frameTimes": {
+      "frames": 39,
+      "seconds": 40.370799999997026
+    }
+  },
+  "partial": [
+    {
+      "name": "front-damage",
+      "metrics": {
+        "upperPixels": 50570,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 13,
+        "triangles": 593290
+      }
+    },
+    {
+      "name": "corner-damage",
+      "metrics": {
+        "upperPixels": 45364,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 13,
+        "triangles": 593290
+      }
+    },
+    {
+      "name": "right-side-damage",
+      "metrics": {
+        "upperPixels": 94534,
+        "min": [
+          -13.262016419111564,
+          -5.7512288950084045,
+          -56.7070913033575
+        ],
+        "max": [
+          13.261665201059298,
+          33.51300318822784,
+          3.1952293334633666
+        ],
+        "drawCalls": 13,
+        "triangles": 593290
+      }
+    }
+  ],
+  "partialChangedFraction": 0.011581432253549585,
+  "collapse": {
+    "version": "5.3.0",
+    "build": "5.3-north-broad-01",
+    "active": false,
+    "paused": false,
+    "wave": 1,
+    "score": 0,
+    "hp": 0,
+    "dragon": {
+      "x": 0,
+      "y": 12,
+      "z": 15,
+      "lives": 3
+    },
+    "chapterTransition": {
+      "active": false,
+      "phase": "idle",
+      "timer": 0,
+      "nextWave": null,
+      "fromChapter": null,
+      "postCutsceneWave": null,
+      "stagingMode": "chapter",
+      "fadeOpacity": "0"
+    },
+    "camera": {
+      "x": 18.880351211190312,
+      "scroll": 0,
+      "skylineOffset": 0,
+      "perspective": true,
+      "foregroundOffset": 0,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "schoolReconstruction": {
+      "parts": 1382,
+      "drawBatches": 8,
+      "detached": 1382,
+      "falling": 1382,
+      "rubble": 0,
+      "damaged": 1382,
+      "lastImpact": {
+        "x": 0,
+        "y": 11,
+        "z": 0.28
+      },
+      "structuralMembers": 314,
+      "doubleHeightAtrium": true,
+      "atriumY": [
+        0,
+        11.2
+      ],
+      "atriumFrontZ": 0.28,
+      "atriumBackZ": -16.72,
+      "attached": 0,
+      "byMaterial": {
+        "glass": 150,
+        "structure": 827,
+        "facade": 405
+      },
+      "fullFiveStoryShell": false,
+      "collapsing": true
+    },
+    "sourceSchool": {
+      "visible": false,
+      "strikes": 1
+    },
+    "realBlockReferences": {
+      "facadeCount": 9,
+      "drawObjects": 97,
+      "facades": [
+        {
+          "building": "united-fund-cream",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-cream-rowhouse",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-tan-brick",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-modern-red-gray",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-dolmuseum-across-dauphin",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-brownstone",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-modern-white-red",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-red-brick-shop",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "susquehanna-crown-chicken",
+          "damage": 0,
+          "visible": true
+        }
+      ]
+    },
+    "renderVisibility": {
+      "schoolEnabled": true,
+      "schoolVisible": false,
+      "actualSchoolOverlayReady": true,
+      "fbxRowhouses": {
+        "left": false,
+        "right": false
+      },
+      "schoolModelCalibration": {
+        "scale": 0.37533512064343166,
+        "translation": {
+          "x": -3.180965147453084,
+          "y": 0,
+          "z": -16.351206434316357
+        },
+        "facadeWidth": 26.524932975871316,
+        "aboveGroundHeight": 28,
+        "frontZ": 0.4,
+        "basementBelowStreet": 5.751260053619304,
+        "roofHeight": 28,
+        "maxSourceDepth": 58.7887399463807,
+        "aspect": 0.947319034852547,
+        "isUniform": true,
+        "source": {
+          "frontPlaneZ": 44.63,
+          "roofY": 74.6,
+          "groundY": 0,
+          "facadeMinX": -26.86,
+          "facadeMaxX": 43.81,
+          "keepMinX": -30.5,
+          "keepMaxX": 47,
+          "keepMinZ": -112,
+          "keepMaxZ": 52.4,
+          "originalBounds": {
+            "min": [
+              -44.859,
+              -15.323,
+              -145.998
+            ],
+            "max": [
+              78.85,
+              89.288,
+              52.392
+            ]
+          },
+          "reference": "Original FBX measured façade; side masses are independent rowhouses"
+        },
+        "target": {
+          "aboveGroundRoofHeight": 28,
+          "streetFrontZ": 0.4,
+          "centerX": 0
+        }
+      },
+      "skylineEnabled": true,
+      "skylineVisible": true,
+      "backgroundEnabled": true,
+      "particlesEnabled": true,
+      "fireEnabled": true,
+      "renderFPSCap": 45,
+      "preset": "mobile",
+      "pixelRatio": 0.83,
+      "shadows": false
+    },
+    "atmosphere": {
+      "phase": 0,
+      "darkness": 0
+    },
+    "structure": {
+      "buildings": 48,
+      "components": 15582,
+      "drawBatches": 103,
+      "activeFragments": 1225,
+      "smallDebris": 2118,
+      "collapsed": 1,
+      "attached": 14327,
+      "types": {
+        "slab": 2240,
+        "partition": 1204,
+        "stair": 1080,
+        "furniture": 1824,
+        "window": 374
+      }
+    },
+    "vehicleLighting": [
+      {
+        "visible": false,
+        "strength": 0,
+        "emissive": 0.15
+      }
+    ],
+    "neighborhood": {
+      "damaged": 0,
+      "damageSum": 0,
+      "targets": [
+        {
+          "name": "united-fund-cream",
+          "x": -18.8,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 5.8,
+          "damage": 0
+        },
+        {
+          "name": "south-cream-rowhouse",
+          "x": -25.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7,
+          "damage": 0
+        },
+        {
+          "name": "south-tan-brick",
+          "x": -33,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.2,
+          "damage": 0
+        },
+        {
+          "name": "south-modern-red-gray",
+          "x": -41.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7.5,
+          "damage": 0
+        },
+        {
+          "name": "south-dolmuseum-across-dauphin",
+          "x": -68.2,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 10.2,
+          "damage": 0
+        },
+        {
+          "name": "south-dauphin-historic",
+          "x": -77.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 11,
+          "damage": 0
+        },
+        {
+          "name": "north-brownstone",
+          "x": 19.6,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.9,
+          "damage": 0
+        },
+        {
+          "name": "north-modern-white-red",
+          "x": 32,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 9.6,
+          "damage": 0
+        },
+        {
+          "name": "north-red-brick-shop",
+          "x": 39.1,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        },
+        {
+          "name": "susquehanna-crown-chicken",
+          "x": 43.2,
+          "y": 5.4,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        }
+      ]
+    },
+    "schoolDamage": 1,
+    "scene": {
+      "meshes": 3210,
+      "textures": 52,
+      "drawCalls": 814,
+      "triangles": 1032932,
+      "renderScale": 1
+    },
+    "lighting": {
+      "explosionSlots": 5,
+      "activeExplosions": 3,
+      "helicopterSlots": 3,
+      "activeHelicopters": 0
+    },
+    "finalSquadron": {
+      "fighters": 0,
+      "missiles": 0,
+      "active": false
+    },
+    "counts": {
+      "meteors": 1,
+      "fragmentMeteors": 0,
+      "bossMeteors": 0,
+      "shots": 0,
+      "blasts": 3,
+      "debris": 22,
+      "cars": 1,
+      "helicopters": 0,
+      "skylineFires": 0
+    },
+    "meteors": [
+      {
+        "x": -51.63838280211356,
+        "y": 59.504442778474875,
+        "z": -2.5161087857424906,
+        "size": 0.62,
+        "hp": 1,
+        "fragment": false,
+        "boss": false,
+        "generation": 0,
+        "grace": 0
+      }
+    ],
+    "lastErrors": [
+      {
+        "seq": 1,
+        "name": "schoolComparison",
+        "ok": true
+      },
+      {
+        "seq": 2,
+        "name": "schoolExterior",
+        "ok": true
+      },
+      {
+        "seq": 3,
+        "name": "cinematicStage",
+        "ok": true
+      },
+      {
+        "seq": 4,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 5,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 6,
+        "name": "move",
+        "ok": true
+      },
+      {
+        "seq": 7,
+        "name": "schoolDamageView",
+        "ok": true
+      },
+      {
+        "seq": 8,
+        "name": "stageSchoolMeteor",
+        "ok": true
+      },
+      {
+        "seq": 9,
+        "name": "schoolDamageView",
+        "ok": true
+      }
+    ],
+    "elapsed": 1.9833333333333312,
+    "frameTimes": {
+      "frames": 43,
+      "seconds": 46.46609999999405
+    }
+  },
+  "settled": {
+    "version": "5.3.0",
+    "build": "5.3-north-broad-01",
+    "active": false,
+    "paused": false,
+    "wave": 1,
+    "score": 0,
+    "hp": 0,
+    "dragon": {
+      "x": 0,
+      "y": 12,
+      "z": 15,
+      "lives": 3
+    },
+    "chapterTransition": {
+      "active": false,
+      "phase": "idle",
+      "timer": 0,
+      "nextWave": null,
+      "fromChapter": null,
+      "postCutsceneWave": null,
+      "stagingMode": "chapter",
+      "fadeOpacity": "0"
+    },
+    "camera": {
+      "x": 19.361523221827383,
+      "scroll": 0,
+      "skylineOffset": 0,
+      "perspective": true,
+      "foregroundOffset": 0,
+      "streetOrigins": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "schoolReconstruction": {
+      "parts": 1382,
+      "drawBatches": 8,
+      "detached": 1382,
+      "falling": 0,
+      "rubble": 1382,
+      "damaged": 1382,
+      "lastImpact": {
+        "x": 0,
+        "y": 11,
+        "z": 0.28
+      },
+      "structuralMembers": 314,
+      "doubleHeightAtrium": true,
+      "atriumY": [
+        0,
+        11.2
+      ],
+      "atriumFrontZ": 0.28,
+      "atriumBackZ": -16.72,
+      "attached": 0,
+      "byMaterial": {
+        "glass": 150,
+        "structure": 827,
+        "facade": 405
+      },
+      "fullFiveStoryShell": false,
+      "collapsing": true
+    },
+    "sourceSchool": {
+      "visible": false,
+      "strikes": 1
+    },
+    "realBlockReferences": {
+      "facadeCount": 9,
+      "drawObjects": 97,
+      "facades": [
+        {
+          "building": "united-fund-cream",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-cream-rowhouse",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-tan-brick",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-modern-red-gray",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "south-dolmuseum-across-dauphin",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-brownstone",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-modern-white-red",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "north-red-brick-shop",
+          "damage": 0,
+          "visible": true
+        },
+        {
+          "building": "susquehanna-crown-chicken",
+          "damage": 0,
+          "visible": true
+        }
+      ]
+    },
+    "renderVisibility": {
+      "schoolEnabled": true,
+      "schoolVisible": false,
+      "actualSchoolOverlayReady": true,
+      "fbxRowhouses": {
+        "left": false,
+        "right": false
+      },
+      "schoolModelCalibration": {
+        "scale": 0.37533512064343166,
+        "translation": {
+          "x": -3.180965147453084,
+          "y": 0,
+          "z": -16.351206434316357
+        },
+        "facadeWidth": 26.524932975871316,
+        "aboveGroundHeight": 28,
+        "frontZ": 0.4,
+        "basementBelowStreet": 5.751260053619304,
+        "roofHeight": 28,
+        "maxSourceDepth": 58.7887399463807,
+        "aspect": 0.947319034852547,
+        "isUniform": true,
+        "source": {
+          "frontPlaneZ": 44.63,
+          "roofY": 74.6,
+          "groundY": 0,
+          "facadeMinX": -26.86,
+          "facadeMaxX": 43.81,
+          "keepMinX": -30.5,
+          "keepMaxX": 47,
+          "keepMinZ": -112,
+          "keepMaxZ": 52.4,
+          "originalBounds": {
+            "min": [
+              -44.859,
+              -15.323,
+              -145.998
+            ],
+            "max": [
+              78.85,
+              89.288,
+              52.392
+            ]
+          },
+          "reference": "Original FBX measured façade; side masses are independent rowhouses"
+        },
+        "target": {
+          "aboveGroundRoofHeight": 28,
+          "streetFrontZ": 0.4,
+          "centerX": 0
+        }
+      },
+      "skylineEnabled": true,
+      "skylineVisible": true,
+      "backgroundEnabled": true,
+      "particlesEnabled": true,
+      "fireEnabled": true,
+      "renderFPSCap": 45,
+      "preset": "mobile",
+      "pixelRatio": 0.83,
+      "shadows": false
+    },
+    "atmosphere": {
+      "phase": 0,
+      "darkness": 0
+    },
+    "structure": {
+      "buildings": 48,
+      "components": 15582,
+      "drawBatches": 103,
+      "activeFragments": 0,
+      "smallDebris": 2813,
+      "collapsed": 1,
+      "attached": 14327,
+      "types": {
+        "slab": 2240,
+        "partition": 1204,
+        "stair": 1080,
+        "furniture": 1824,
+        "window": 374
+      }
+    },
+    "vehicleLighting": [
+      {
+        "visible": false,
+        "strength": 0,
+        "emissive": 0.15
+      }
+    ],
+    "neighborhood": {
+      "damaged": 0,
+      "damageSum": 0,
+      "targets": [
+        {
+          "name": "united-fund-cream",
+          "x": -18.8,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 5.8,
+          "damage": 0
+        },
+        {
+          "name": "south-cream-rowhouse",
+          "x": -25.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7,
+          "damage": 0
+        },
+        {
+          "name": "south-tan-brick",
+          "x": -33,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.2,
+          "damage": 0
+        },
+        {
+          "name": "south-modern-red-gray",
+          "x": -41.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 7.5,
+          "damage": 0
+        },
+        {
+          "name": "south-dolmuseum-across-dauphin",
+          "x": -68.2,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 10.2,
+          "damage": 0
+        },
+        {
+          "name": "south-dauphin-historic",
+          "x": -77.5,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 11,
+          "damage": 0
+        },
+        {
+          "name": "north-brownstone",
+          "x": 19.6,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 8.9,
+          "damage": 0
+        },
+        {
+          "name": "north-modern-white-red",
+          "x": 32,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 9.6,
+          "damage": 0
+        },
+        {
+          "name": "north-red-brick-shop",
+          "x": 39.1,
+          "y": 7,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        },
+        {
+          "name": "susquehanna-crown-chicken",
+          "x": 43.2,
+          "y": 5.4,
+          "front": -0.15000000000000036,
+          "w": 3.5,
+          "damage": 0
+        }
+      ]
+    },
+    "schoolDamage": 1,
+    "scene": {
+      "meshes": 3216,
+      "textures": 52,
+      "drawCalls": 796,
+      "triangles": 460050,
+      "renderScale": 1
+    },
+    "lighting": {
+      "explosionSlots": 5,
+      "activeExplosions": 3,
+      "helicopterSlots": 3,
+      "activeHelicopters": 0
+    },
+    "finalSquadron": {
+      "fighters": 0,
+      "missiles": 0,
+      "active": false
+    },
+    "counts": {
+      "meteors": 1,
+      "fragmentMeteors": 0,
+      "bossMeteors": 0,
+      "shots": 0,
+      "blasts": 3,
+      "debris": 22,
+      "cars": 1,
+      "helicopters": 0,
+      "skylineFires": 0
+    },
+    "meteors": [
+      {
+        "x": -51.63838280211356,
+        "y": 59.504442778474875,
+        "z": -2.5161087857424906,
+        "size": 0.62,
+        "hp": 1,
+        "fragment": false,
+        "boss": false,
+        "generation": 0,
+        "grace": 0
+      }
+    ],
+    "lastErrors": [
+      {
+        "seq": 16,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 17,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 18,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 19,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 20,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 21,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 22,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 23,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 24,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 25,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 26,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 27,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 28,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 29,
+        "name": "motionStep",
+        "ok": true
+      },
+      {
+        "seq": 30,
+        "name": "motionStep",
+        "ok": true
+      }
+    ],
+    "elapsed": 1.9833333333333312,
+    "frameTimes": {
+      "frames": 44,
+      "seconds": 47.58569999998809
+    }
+  },
+  "total-collapse": [
+    {
+      "name": "front-damage",
+      "metrics": {
+        "upperPixels": 0,
+        "min": [
+          -18.045396239004276,
+          0,
+          -58.3270894177258
+        ],
+        "max": [
+          18.19207104912164,
+          0.9099510908126831,
+          9.496551506008748
+        ],
+        "drawCalls": 8,
+        "triangles": 15684
+      }
+    },
+    {
+      "name": "corner-damage",
+      "metrics": {
+        "upperPixels": 0,
+        "min": [
+          -18.045396239004276,
+          0,
+          -58.3270894177258
+        ],
+        "max": [
+          18.19207104912164,
+          0.9099510908126831,
+          9.496551506008748
+        ],
+        "drawCalls": 8,
+        "triangles": 15684
+      }
+    },
+    {
+      "name": "right-side-damage",
+      "metrics": {
+        "upperPixels": 0,
+        "min": [
+          -18.045396239004276,
+          0,
+          -58.3270894177258
+        ],
+        "max": [
+          18.19207104912164,
+          0.9099510908126831,
+          9.496551506008748
+        ],
+        "drawCalls": 8,
+        "triangles": 15684
+      }
+    }
+  ],
+  "dusk": {
+    "wave": 4,
+    "phase": 0.30000000000000004,
+    "darkness": 0.06249999999999988,
+    "expectedDarkness": 0.06249999999999988
+  },
+  "vehicleLighting": {
+    "dayVisible": false,
+    "nightVisible": true,
+    "strength": 0.24
+  }
+}

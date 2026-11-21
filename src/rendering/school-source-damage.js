@@ -34,6 +34,7 @@ export function createSchoolSourceDamage() {
  };
  const patch=material=>{
   const glass=material.name==='school-glass';
+  const brick=material.name==='school-brick';
   material.onBeforeCompile=shader=>{
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
@@ -53,10 +54,46 @@ export function createSchoolSourceDamage() {
      damage=texture(schoolDamageMap,damageUv).r;
     }
     if(damage>${glass?'.24':'.53'})discard;`);
+   if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
+    #include <color_fragment>
+    vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));
+    float horizontal=surfaceNormal.x>surfaceNormal.z?schoolDamagePosition.z:schoolDamagePosition.x;
+    vec2 course=vec2(horizontal/.235,schoolDamagePosition.y/.083);
+    course.x+=mod(floor(course.y),2.0)*.5;
+    vec2 joint=abs(fract(course)-.5);
+    vec2 footprint=fwidth(course);
+    float mortar=max(smoothstep(.46-footprint.x,.46+footprint.x,joint.x),
+     smoothstep(.44-footprint.y,.44+footprint.y,joint.y));
+    float variation=fract(sin(dot(floor(course),vec2(31.74,17.16)))*43758.54);
+    float detail=1.0-smoothstep(.60,1.65,max(footprint.x,footprint.y));
+    vec3 masonry=mix(diffuseColor.rgb*mix(.76,1.23,variation),vec3(.19,.155,.13),mortar*.70);
+    diffuseColor.rgb=mix(diffuseColor.rgb,masonry,detail*(1.0-surfaceNormal.y));
+    // Broad weathering survives gameplay distance when individual brick
+    // courses are subpixel. It stays anchored to the original model surface.
+    float weather=.5+.22*sin(horizontal*3.1+sin(schoolDamagePosition.y*2.4))+
+     .16*sin(horizontal*8.7-schoolDamagePosition.y*5.3);
+    float runoff=pow(.5+.5*sin(horizontal*9.2),5.)*.07;
+    diffuseColor.rgb*=.88+.22*weather-runoff;
+
+   `);
+   // Light the existing interior surfaces by classroom bay, rather than
+   // making every retained surface an equally bright beige rectangle.
+   // Stable building coordinates keep light variation fixed during camera motion.
+   if(material.name==='school-interior')shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`
+    #include <emissivemap_fragment>
+    vec3 roomCoord=(schoolDamagePosition-schoolDamageMin)/max(schoolDamageSize,vec3(.001));
+    vec2 roomCell=floor(vec2(clamp(roomCoord.x,0.0,.999)*4.0,clamp(roomCoord.y,0.0,.999)*5.0));
+    float roomSeed=fract(sin(dot(roomCell,vec2(17.17,91.73)))*43758.54);
+    float roomHeight=fract(clamp(roomCoord.y,0.0,.999)*5.0);
+    float ceilingBounce=smoothstep(.50,.88,roomHeight);
+    float occupied=mix(.18,1.0,step(.24,roomSeed));
+    totalEmissiveRadiance*=occupied*(.30+.70*ceilingBounce);
+    totalEmissiveRadiance*=mix(vec3(1.0,.84,.66),vec3(.94,.98,1.0),roomSeed);
+   `);
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-'+glass;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v2-'+material.name;
  };
  return {stamp,patch,strikes:()=>strikes,reset:()=>{
   pixels.fill(0);

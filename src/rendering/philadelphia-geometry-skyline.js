@@ -3,6 +3,8 @@
 // One mesh per architectural face plus shared low-detail roof ornament; diffuse and
 // emissive maps are baked once so lighting changes don't allocate geometry/textures.
 import * as THREE from 'three';
+import {attachFacadeFireDamage} from './facade-fire-damage.js';
+import {createBuildingCombustion} from './building-combustion.js';
 
 function seeded(n){let x=n>>>0;return ()=>((x=(Math.imul(1664525,x)+1013904223)>>>0)/4294967296);}
 function makeFacade(seed,style='glass'){
@@ -13,17 +15,38 @@ function makeFacade(seed,style='glass'){
  const grad=c.createLinearGradient(0,0,256,1024);grad.addColorStop(0,palette[2]);grad.addColorStop(.3,palette[0]);grad.addColorStop(.9,palette[1]);grad.addColorStop(1,'#1e303d');c.fillStyle=grad;c.fillRect(0,0,256,1024);
  e.fillStyle='#000';e.fillRect(0,0,256,1024);
  const cols=style==='civic'?7:11,rows=style==='civic'?30:56,dx=256/cols,dy=1024/rows;
+ const curtain=style==='glass'||style==='comcast'||style==='liberty';
  for(let row=0;row<rows;row++){
   for(let col=0;col<cols;col++){
-   const x=col*dx+dx*.18,y=row*dy+dy*.16,w=dx*.62,h=dy*.61;
-   const isLit=rnd()>.72;
+   const inset=curtain?.035:.18;
+   const x=col*dx+dx*inset,y=row*dy+dy*(curtain?.045:.16),w=dx*(1-2*inset),h=dy*(curtain?.88:.61);
+   const isLit=rnd()>.79+(row%11===0?.09:0);
    c.fillStyle='rgba(8,23,36,.52)';c.fillRect(x-1,y-1,w+2,h+2);
-   c.fillStyle=rnd()>.22?palette[0]:palette[2];c.fillRect(x,y,w,h);
+   c.globalAlpha=curtain?.10+rnd()*.16:.20+rnd()*.57;
+   c.fillStyle=rnd()>.31?palette[0]:palette[2];c.fillRect(x,y,w,h);
+   c.globalAlpha=1;
    c.fillStyle='rgba(195,232,247,.23)';c.fillRect(x+1,y+1,Math.max(1,w*.15),h*.85);
    c.fillStyle='rgba(4,15,24,.34)';c.fillRect(x+w*.52,y,1.2,h);
-   if(isLit){e.fillStyle=rnd()>.45?'#ffcf8d':'#ffebbb';e.fillRect(x+.7,y+1,w-1.4,h-2);}
+   if(isLit){
+    e.fillStyle=rnd()>.45?'#c89c60':'#dfc391';
+    e.fillRect(x+w*.12,y+h*.12,w*.76,h*.71);
+    // Retain dark mullions and office divisions inside illuminated bays.
+    e.fillStyle='#080c12';e.fillRect(x+w*.47,y,w*.07,h);
+    if(curtain)e.fillRect(x,y+h*.48,w,h*.08);
+   }
   }
   c.fillStyle='rgba(11,27,37,.33)';c.fillRect(0,(row+1)*dy-1.7,256,1.7);
+ }
+ if(curtain){
+  // Broad reflected sky bands unify the glazing; narrow mullions retain scale.
+  // Baked once into the existing atlas, with no extra draw calls or textures.
+  const reflection=c.createLinearGradient(0,0,256,0);
+  reflection.addColorStop(0,'rgba(185,211,224,.04)');
+  reflection.addColorStop(.28,'rgba(185,211,224,.24)');
+  reflection.addColorStop(.46,'rgba(185,211,224,.06)');
+  reflection.addColorStop(.73,'rgba(18,40,57,.18)');
+  reflection.addColorStop(1,'rgba(185,211,224,.11)');
+  c.fillStyle=reflection;c.fillRect(0,0,256,1024);
  }
  c.fillStyle=style==='civic'?'rgba(229,220,199,.25)':'rgba(211,232,243,.17)';
  for(let x=0;x<256;x+=style==='civic'?42:23)c.fillRect(x,0,2.3,1024);
@@ -66,9 +89,47 @@ function profile(w,h,roof){
 }
 function addLine(parent,x1,y1,x2,y2,mat,r=.065,z=1.2){const a=new THREE.Vector3(x1,y1,z),b=new THREE.Vector3(x2,y2,z),v=b.clone().sub(a);
  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,v.length(),5),mat);mesh.position.copy(a).addScaledVector(v,.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());parent.add(mesh);return mesh;}
-export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
+export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture=null,smokeAtlas=null}={}){
  const group=new THREE.Group();group.name='PHILADELPHIA-ORIGINAL-3D-SKYLINE';parent.add(group);
  const towers=[],beacons=[],distantHelis=[],clockMat=new THREE.MeshBasicMaterial({color:0xd8c6a3});
+ // A shared atlas and one dormant sprite per landmark. Impact effects never
+ // allocate new GPU resources while meteor waves are running.
+ const impactCanvas=document.createElement('canvas');
+ impactCanvas.width=64;impactCanvas.height=64;
+ const impactContext=impactCanvas.getContext('2d');
+ const impactGlow=impactContext.createRadialGradient(32,32,1,32,32,31);
+ impactGlow.addColorStop(0,'rgba(255,251,216,1)');
+ impactGlow.addColorStop(.21,'rgba(255,181,74,.94)');
+ impactGlow.addColorStop(.55,'rgba(249,81,28,.45)');
+ impactGlow.addColorStop(1,'rgba(244,50,12,0)');
+ impactContext.fillStyle=impactGlow;impactContext.fillRect(0,0,64,64);
+ // One shared scorch/debris atlas, placed as a local damage decal on each tower.
+ // Drawn at initialization rather than creating marks every time a meteor lands.
+ const scorchCanvas=document.createElement('canvas');
+ scorchCanvas.width=128;scorchCanvas.height=128;
+ const scorchContext=scorchCanvas.getContext('2d');
+ const scorchGlow=scorchContext.createRadialGradient(64,64,5,64,64,60);
+ scorchGlow.addColorStop(0,'rgba(12,13,17,.90)');
+ scorchGlow.addColorStop(.33,'rgba(29,30,34,.74)');
+ scorchGlow.addColorStop(.65,'rgba(55,55,57,.35)');
+ scorchGlow.addColorStop(1,'rgba(80,78,73,0)');
+ scorchContext.fillStyle=scorchGlow;scorchContext.fillRect(0,0,128,128);
+ scorchContext.lineWidth=2.2;scorchContext.strokeStyle='rgba(23,23,26,.78)';
+ // Asymmetric glass fractures are static in the atlas; no live randomization.
+ for(let i=0;i<10;i++){
+  const angle=i*Math.PI*.2+.23*Math.sin(i*3);
+  const radius=24+(i%3)*11;
+  scorchContext.beginPath();scorchContext.moveTo(64,64);
+  scorchContext.lineTo(64+Math.cos(angle)*radius*.48,64+Math.sin(angle)*radius*.48);
+  scorchContext.lineTo(64+Math.cos(angle+.15)*radius,64+Math.sin(angle+.15)*radius);
+  scorchContext.stroke();
+ }
+ const scorchTexture=new THREE.CanvasTexture(scorchCanvas);
+ scorchTexture.colorSpace=THREE.SRGBColorSpace;
+ const scorchMaterial=new THREE.SpriteMaterial({map:scorchTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true});
+ const impactTexture=new THREE.CanvasTexture(impactCanvas);
+ impactTexture.colorSpace=THREE.SRGBColorSpace;
+ const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
  const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
  const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
@@ -77,8 +138,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  ];
  // Distant intermediate city is part of the geometry, not a photo pasted behind a cutout.
  const farTex=makeFacade(9291,'office');
- const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,transparent:true,opacity:.87,side:THREE.DoubleSide});
- const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,transparent:true,opacity:.89,side:THREE.DoubleSide});
+ const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,side:THREE.DoubleSide});
+ const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,side:THREE.DoubleSide});
  for(let i=0;i<ambientBuildings.length;i++){
   const [x,h,w]=ambientBuildings[i];const g=new THREE.Group();g.position.set(x,0,-9-i%3*2);group.add(g);
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
@@ -86,24 +147,54 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
  }
  const defs=[
   // Positions are artistically scaled for the view from North Broad, not a surveyed panorama.
-  {id:'city-hall',x:-68,w:11,h:66,roof:'cityhall',style:'civic',depth:3.2},
-  {id:'comcast-technology',x:-45,w:14,h:103,roof:'comcastTech',style:'comcast',depth:4.8},
-  {id:'comcast-center',x:-26,w:15,h:79,roof:'comcast',style:'comcast',depth:4.0},
-  {id:'one-liberty-place',x:7,w:14,h:94,roof:'liberty',style:'liberty',depth:4.7},
-  {id:'two-liberty-place',x:23,w:12,h:83,roof:'liberty',style:'liberty',depth:4.1},
-  {id:'bny-mellon',x:41,w:11,h:65,roof:'setback',style:'office',depth:4.1},
-  {id:'center-city-office',x:56,w:11,h:59,roof:'flat',style:'office',depth:4.0},
-  {id:'other-center-city',x:73,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
+  {id:'city-hall',x:66,w:11,h:70,roof:'cityhall',style:'civic',depth:3.2},
+  {id:'comcast-technology',x:19,w:13,h:103,roof:'comcastTech',style:'comcast',depth:4.8},
+  {id:'comcast-center',x:38,w:15,h:89,roof:'comcast',style:'comcast',depth:4.0},
+  {id:'one-liberty-place',x:-38,w:13,h:90,roof:'liberty',style:'liberty',depth:4.7},
+  {id:'two-liberty-place',x:-23,w:12,h:80,roof:'liberty',style:'liberty',depth:4.1},
+  {id:'bny-mellon',x:51,w:12,h:69,roof:'setback',style:'office',depth:4.1},
+  {id:'center-city-office',x:83,w:11,h:63,roof:'flat',style:'office',depth:4.0},
+  {id:'other-center-city',x:-62,w:12,h:58,roof:'setback',style:'glass',depth:4.5},
   {id:'city-east',x:-8,w:11,h:54,roof:'setback',style:'office',depth:3.5}
  ];
+ const SECONDARY_BURN_SITES_PER_TOWER=9; // Five staggered glass floors (three civic), nine fixed openings.
+ // Fixed architectural spread order, not a synchronized impact-time flare.
+ // Five nearby bays ignite first; four peripheral windows catch progressively
+ // over the following twenty seconds. This array is allocated once at setup.
+ const BURN_IGNITION_DELAYS=[6.0,.55,10.5,.95,0,1.55,15.5,2.4,21.0];
+ // Nine fixed, UV-snapped architectural openings; intentionally not a 3x3 grid.
+ const BURN_WINDOW_PATTERN=[[-1,-2],[0,0],[1,-1],[-2,1],[0,-1],[1,2],[-1,1],[2,-2],[2,0]];
+ const combustion=createBuildingCombustion(group,defs.length*SECONDARY_BURN_SITES_PER_TOWER,'skyline-combustion');
  // Warning beacons are tiny emissive meshes (no expensive shadow-casting lights).
+ // One geometry shared by all fallen facade panels. A stock BoxGeometry has
+ // six material groups (one draw for every face). The only distinct finish is
+ // the camera-facing +Z facade. Reorder its indexed triangles into five side
+ // faces then one front face, reducing six groups/draws to two per panel.
+ const collapsedSlabGeo=new THREE.BoxGeometry(1,1,1);
+ const slabIndices=collapsedSlabGeo.index.array;
+ const groupedIndices=new Uint16Array(slabIndices.length);
+ const faceOrder=[0,1,2,3,5,4];
+ for(let face=0;face<faceOrder.length;face++){
+  const at=faceOrder[face]*6;
+  groupedIndices.set(slabIndices.slice(at,at+6),face*6);
+ }
+ collapsedSlabGeo.setIndex(new THREE.BufferAttribute(groupedIndices,1));
+ collapsedSlabGeo.clearGroups();
+ collapsedSlabGeo.addGroup(0,30,0); // shared opaque side finish
+ collapsedSlabGeo.addGroup(30,6,1); // original textured front facade
  const beaconGeo=new THREE.SphereGeometry(.23,6,4);
  const beaconMat=new THREE.MeshBasicMaterial({color:0xff3a2c,transparent:true,opacity:.85,depthWrite:false});
- const crownMat=new THREE.MeshBasicMaterial({color:0xc6e9ff,transparent:true,opacity:.10,depthWrite:false});
+ const lanternCanvas=document.createElement('canvas');lanternCanvas.width=64;lanternCanvas.height=128;
+ const lc=lanternCanvas.getContext('2d');lc.fillStyle='#172631';lc.fillRect(0,0,64,128);
+ for(let y=3;y<128;y+=7){lc.fillStyle=y%3?'#96b8c7':'#bed1ce';lc.fillRect(4,y,56,2);}
+ for(const x of [16,32,48]){lc.fillStyle='#263b46';lc.fillRect(x,0,2,128);}
+ const lanternMap=new THREE.CanvasTexture(lanternCanvas);lanternMap.colorSpace=THREE.SRGBColorSpace;
+ const crownMat=new THREE.MeshBasicMaterial({map:lanternMap,color:0x9eb5c2,transparent:true,opacity:.22,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
-  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3));group.add(g);
+  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
   const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
+  const facadeDamage=attachFacadeFireDamage(facade,SECONDARY_BURN_SITES_PER_TOWER);
   const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});
   const poly=polygonMesh(profile(d.w,d.h,d.roof),d.depth,facade,side);g.add(poly.front,poly.sides);
   if(d.id.includes('liberty')){
@@ -149,10 +240,58 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
     addLine(crown,0,y+3.5,w,y,trimMat,.10,d.depth/2+.25);
    }
   }
-  const ruin=new THREE.Group();ruin.name='landmark-collapse-rubble';ruin.visible=false;g.add(ruin);
+  // Rubble is a sibling of the tower, not its child. Collapse animation scales
+  // and moves the tower group; debris must remain fixed at street elevation.
+  const ruin=new THREE.Group();
+  ruin.name='landmark-collapse-rubble-'+d.id;
+  ruin.position.set(g.position.x,0,g.position.z);
+  ruin.visible=false;
+  group.add(ruin);
   const stoneRubble=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.7,0),side,32),o=new THREE.Object3D();
   for(let j=0;j<32;j++){const r=seeded(480+i*31+j)();o.position.set((r-.5)*d.w*1.6,.35+(j%4)*.4,(j%5-2)*1.3);o.scale.set(.5+(j%6)*.1,.23,.35);o.rotation.set(0,j*.37,0);o.updateMatrix();stoneRubble.setMatrixAt(j,o.matrix);}stoneRubble.instanceMatrix.needsUpdate=true;ruin.add(stoneRubble);
-  towers.push({def:d,group:g,facade,side,ruin,damage:0,collapse:0});
+  // Three larger fallen facade sections suggest recognizable structural
+  // fragments without simulating individual glass panes or allocating debris
+  // on every impact. Their transforms are derived from collapse severity.
+  const slabs=[];
+  for(let j=0;j<3;j++){
+   const slab=new THREE.Mesh(collapsedSlabGeo,[side,facade]);
+   slab.name='fallen-facade-'+d.id+'-'+j;
+   slab.scale.set(d.w*(.23+j*.045),d.h*(.09+j*.015),.24+j*.08);
+   slab.position.set((j-1)*d.w*.28,.3+j*.18,((j%2)*2-1)*d.depth*.18);
+   slab.rotation.set(.11*j,.17*j,.09*(j-1));
+   // Each slab has a fixed fall start height and a staggered release time.
+   // Reuse these meshes throughout the collapse and reset their poses on restart.
+   slab.userData.fallStartY=d.h*(.39+j*.15);
+   slab.userData.fallDelay=j*.21;
+   slab.userData.groundY=slab.scale.y*.5+.02;
+   // The rubble group is hidden until collapse; position slabs at the actual
+   // fracture release height before their first visible frame. Otherwise they
+   // teleport from the ground to the sky when update() runs.
+   slab.position.y=slab.userData.fallStartY;
+   ruin.add(slab);slabs.push(slab);
+  }
+  const impactSprite=new THREE.Sprite(impactMaterial.clone());
+  impactSprite.name='landmark-meteor-impact-'+d.id;
+  impactSprite.visible=false;
+  impactSprite.position.set(g.position.x,d.h*.68,g.position.z+d.depth/2+.5);
+  impactSprite.scale.set(7,7,1);
+  // The meteor flash is a short-lived world-space explosion, not an element
+  // of the facade that should shrink or tilt during structural collapse.
+  group.add(impactSprite);
+  const scorchSprite=new THREE.Sprite(scorchMaterial.clone());
+  scorchSprite.name='landmark-facade-scorch-'+d.id;
+  scorchSprite.visible=false;
+  scorchSprite.position.set(0,d.h*.68,d.depth/2+.60);
+  scorchSprite.scale.set(5,5,1);
+  g.add(scorchSprite);
+  const smokeOrigin=new THREE.Vector3(g.position.x,d.h*.73,g.position.z+d.depth/2+.65);
+  const burnSites=Array.from({length:SECONDARY_BURN_SITES_PER_TOWER},(_,j)=>({index:i*SECONDARY_BURN_SITES_PER_TOWER+j,
+   active:false,origin:new THREE.Vector3(),width:0,height:0,renderWidth:0,
+   renderHeight:0,ignitedAt:0,seed:i*1.71+j*2.43}));
+  towers.push({def:d,group:g,facade,facadeDamage,side,ruin,slabs,fallActive:false,fallSettled:false,fallElapsed:0,
+   impactSprite,impactLocal:new THREE.Vector3(),smokeOrigin,scorchSprite,
+   burnSites,siteCursor:0,
+   impactAge:0,impactEnergy:0,strikeDamage:0,damage:0,collapse:0});
  });
  // Three low-poly helicopters travel only within the distant skyline plane.
  // They are purely atmospheric, cannot block or collide with gameplay projectiles.
@@ -172,13 +311,139 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   distantHelis.push({group:h,rotor,nav,seed:i*13.1,x0:-82+i*55,y0:45+(i%2)*18,speed:i===1?-1:1});
  }
  let time=-1,lastPhase=-1,damage=0;
+ let renderClock=0,lastCombustionRefresh=-Infinity;
+ // Fixed nine-sites-per-tower pool: update propagating window fires only at ~6Hz,
+ // preventing hit-time meshes/textures and unnecessary per-frame buffer uploads.
+ // Retain stable, vertically separated facade contact points between strikes.
+ // Coordinates are skyline-local and do not inherit any tower damage transform.
+ // Keep the complete five-floor fire cluster on full-width wall glazing,
+ // never on narrow setback crowns or an arbitrary 60%-height cutoff.
+ function fullWidthFacadeTop(d){
+  switch(d.roof){
+   case 'liberty':return .765;
+   case 'cityhall':return .62;
+   case 'comcastTech':return .79;
+   case 'comcast':return .92;
+   case 'setback':return .74;
+   default:return .97;
+  }
+ }
+ function facadeRows(d){return d.style==='civic'?30:56;}
+ function highestSafeCenterRow(d){
+  return Math.max(5,Math.floor(facadeRows(d)*fullWidthFacadeTop(d))-3);
+ }
+ function placeBurnSite(tower,site,offsetX,offsetY,width){
+  const d=tower.def;
+  // Snap to the same UV window grid used by makeFacade; stay below setbacks.
+  const cols=d.style==='civic'?7:11,rows=facadeRows(d);
+  const col=Math.max(1,Math.min(cols-2,Math.round((offsetX/d.w+.5)*cols-.5)));
+  // Reserve two additional rows above center for five-floor glass fire spread.
+  // This also prevents distinct windows merging at a roof setback.
+  const centerRow=Math.max(5,Math.min(highestSafeCenterRow(d),
+   Math.round(tower.impactLocal.y/d.h*rows)));
+  const topWallRow=Math.floor(rows*fullWidthFacadeTop(d))-1;
+  const row=Math.max(3,Math.min(topWallRow,Math.round(centerRow+offsetY/d.h*rows)));
+  const w=Math.min(1.92,d.w/cols*1.07),h=d.h/rows*.88;
+  site.origin.set(tower.group.position.x+((col+.5)/cols-.5)*d.w,
+   (row+.08)/rows*d.h,tower.group.position.z+d.depth/2+.025);
+  site.width=w;site.height=h;site.active=true;
+  // Three separated hero, three medium and three small CC0 Flame03 window fires.
+  // Fixed atlas and four draw batches; avoids RC14 ribbon and RC14b candles.
+  const localSite=site.index%SECONDARY_BURN_SITES_PER_TOWER;
+  const hero=localSite===4||localSite===6||localSite===8;
+  const medium=localSite===1||localSite===3||localSite===5;
+  const variation=Math.abs(Math.sin(site.seed*.81));
+  site.renderWidth=w*(hero?1.88+.28*variation:medium?1.49+.19*variation:1.18+.16*variation);
+  site.renderHeight=h*(hero?2.20+.42*variation:medium?1.65+.34*variation:1.20+.33*variation);
+  site.ignitedAt=renderClock;
+  combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+   site.renderWidth*.66,site.renderHeight*.67,site.seed,.30,1);
+
+ }
+ function resolveStrike(localX){
+  let selected=towers[0],distance=Infinity;
+  for(const tower of towers){
+   const delta=Math.abs(tower.group.position.x-localX);
+   if(delta<distance){selected=tower;distance=delta;}
+  }
+  if(!selected)return null;
+  const tower=selected;
+  // Distant strikes favor upper occupied floors; the roof profile still caps contact.
+  const proposedHeight=.62+((Math.floor(Math.abs(localX)*7)%5)*.055);
+  // Impact/scorch and burning windows must contact the same physical wall.
+  const heightFraction=Math.min(proposedHeight,
+   highestSafeCenterRow(tower.def)/facadeRows(tower.def));
+  return {tower,point:new THREE.Vector3(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55)};
+ }
+ function targetPoint(localX){const hit=resolveStrike(localX);return hit?hit.tower.group.localToWorld(hit.point):null;}
+ function strikeNearest(localX,intensity=0){
+  intensity=Math.max(0,Math.min(1,intensity));
+  const hit=resolveStrike(localX);if(!hit)return null;
+  const tower=hit.tower,impact=tower.impactSprite;
+  tower.impactLocal.copy(hit.point);
+  // Resolve the contact before the new strike can shrink/tilt the facade.
+  // The explosion sprite stays in skyline space at this exact contact point.
+  const impactWorld=tower.group.localToWorld(tower.impactLocal.clone());
+  impact.position.copy(group.worldToLocal(impactWorld.clone()));
+  // Resolve the strike into stable skyline-local coordinates once. Persistent
+  // smoke must not move or scale with later structural collapse.
+  tower.smokeOrigin.set(tower.impactLocal.x,Math.min(tower.def.h*.91,tower.impactLocal.y+3),tower.def.depth/2+.65);
+  tower.group.localToWorld(tower.smokeOrigin);
+  group.worldToLocal(tower.smokeOrigin);
+
+  tower.scorchSprite.position.set(tower.impactLocal.x,tower.impactLocal.y,tower.def.depth/2+.62);
+  // A new meteor burst must begin at its initial radius, even if the
+  // previous burst was partway through fading or had fully expanded.
+  impact.scale.setScalar(5);
+  tower.impactAge=1.15;
+  tower.impactEnergy=1;
+  // This is deliberately a small distant damage contribution: foreground
+  // school and neighborhood health continue to use their existing simulation.
+  // Repeated strikes scar and burn towers without deforming or collapsing them.
+  tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07+intensity*.04);
+  // Repeated strikes refresh one window, preserving the others' continuity.
+  // An irregular five-floor glass fire rather than four isolated stationary
+  // torches. Each cell maps to a different real window-grid contact. No
+  // hit-time objects: all nine sites exist in the fixed instance buffer.
+  const ignite=(j)=>{
+   const [bay,floor]=BURN_WINDOW_PATTERN[j];
+   // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
+   // Each final contact is snapped to its physical facade window grid.
+   const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
+   const offsetY=floor*tower.def.h*.022;
+   const site=tower.burnSites[j];
+   placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
+   // Damage accelerates lateral spread, while fixed ignition times let the
+   // 30-second recording show a genuine evolving multi-window blaze.
+   // Additional meteor strikes still re-ignite a single existing window.
+   const delay=BURN_IGNITION_DELAYS[j]/(1+tower.strikeDamage*.7);
+   site.ignitedAt=renderClock+delay;
+   if(delay>0)combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+     site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
+  };
+  if(!tower.burnSites[0].active){
+   for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++)ignite(j);
+  }else{
+   const j=tower.siteCursor;
+   ignite(j);
+   tower.siteCursor=(j+1)%SECONDARY_BURN_SITES_PER_TOWER;
+  }
+  setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
+  tower.scorchSprite.visible=true;
+  const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
+  tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
+  tower.scorchSprite.material.opacity=Math.min(.87,.40+tower.strikeDamage*2.3);
+  impact.visible=true;
+  impact.material.opacity=.93;
+  return impactWorld;
+ }
  function setTime(phase,darkness){
   const desired=Math.max(0,Math.min(1,darkness));
   if(Math.abs(desired-time)<.01&&Math.abs(phase-lastPhase)<.01)return;
   time=desired;lastPhase=phase;
   const twilight=Math.min(1,Math.exp(-Math.pow((phase-.33)*9,2))+Math.exp(-Math.pow((phase-.84)*11,2)));
   for(const t of towers){
-   t.facade.emissiveIntensity=desired*1.25;
+   t.facade.emissiveIntensity=desired*1.25*(1-t.collapse*.84);
    t.facade.color.setRGB(1-desired*.60,
     Math.min(1,1-desired*.56-twilight*.035),Math.min(1,1-desired*.47-twilight*.10));
    const civic=t.def.style==='civic';
@@ -189,33 +454,123 @@ export function createPhiladelphiaSkyline(parent,{detail='standard'}={}){
   farMat.color.setRGB(.91+twilight*.09,.95-twilight*.035,1-twilight*.12);
  }
  function setDamage(value){
+  // Artistic rule: Philadelphia's distant skyscrapers never collapse.
+  // Neighborhood health still changes explosion frequency, flames and smoke,
+  // but landmark height, transform and silhouette are always preserved.
   damage=Math.max(damage,Math.max(0,Math.min(1,value)));
-  towers.forEach((t,i)=>{
-   const threshold=.24+i*.077;
-   const collapse=Math.max(0,Math.min(1,(damage-threshold)/.23));
-   if(Math.abs(t.collapse-collapse)<.02)return;
-   t.collapse=collapse;
-   // Variable shear/pancake collapse, with persistent rubble, without per-frame geometry allocation.
-   if(i%3===0){t.group.rotation.z=collapse*.10*(i%2?1:-1);t.group.position.y=-collapse*t.def.h*.26;}
-   else {t.group.scale.y=1-collapse*.86;t.group.position.y=-collapse*t.def.h*.08;}
-   t.ruin.visible=collapse>.18;
-   t.facade.emissiveIntensity*=1-collapse*.84;
-  });
+  for(const t of towers){
+   t.collapse=0;
+   t.group.scale.y=1;
+   t.group.rotation.z=0;
+   t.group.position.y=0;
+   t.ruin.visible=false;
+   t.fallActive=false;
+  }
  }
- function update(elapsed,darkness=0){
+ function update(elapsed,darkness=0,dt=1/60){
+  renderClock=elapsed;
+  if(elapsed<lastCombustionRefresh||elapsed-lastCombustionRefresh>=.16){
+   lastCombustionRefresh=elapsed;
+   for(const tower of towers)for(const site of tower.burnSites){
+    if(!site.active)continue;
+    const signedAge=elapsed-site.ignitedAt;
+    const age=Math.max(0,signedAge);
+    const spread=Math.min(1,age/(1.8+.65*Math.abs(Math.sin(site.seed))));
+    const pulse=.85+.13*Math.sin(elapsed*1.73+site.seed*2.4)+
+     .07*Math.sin(elapsed*3.97+site.seed*.84);
+    tower.facadeDamage.set(site.index%SECONDARY_BURN_SITES_PER_TOWER,
+     (site.origin.x-tower.group.position.x)/tower.def.w+.5,
+     (site.origin.y+site.height*.5)/tower.def.h,
+     site.width/tower.def.w,site.height/tower.def.h,
+     signedAge<0?0:spread*pulse*(
+       [4,6,8].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.82:
+       [1,3,5].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.65:.42));
+    combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+     site.renderWidth*(.66+.34*spread),
+     site.renderHeight*(.67+.33*spread),site.seed,
+     (signedAge<0?0:(.12+.78*spread)*pulse),1);
+   }
+  }
   for(let i=0;i<beacons.length;i++){
    const b=beacons[i];b.material.opacity=(.13+.83*Math.pow(Math.max(0,Math.sin(elapsed*3.8+b.userData.phase)),9))*(.55+.45*darkness);
   }
   for(const h of distantHelis){
    const p=(h.seed+elapsed*(1.3+h.seed*.018)*h.speed);
-   h.group.position.x=h.x0+((p+420)%170)-82;
+   // JS remainder keeps the dividend's sign: a left-moving helicopter
+   // otherwise escapes the 170-unit patrol after several minutes of play.
+   const orbit=(p+420)%170;
+   h.group.position.x=h.x0+(orbit<0?orbit+170:orbit)-82;
    h.group.position.y=h.y0+Math.sin(elapsed*.48+h.seed)*2.1;
    h.rotor.rotation.y=elapsed*17;
    h.group.scale.x=h.speed;
    h.nav.material.opacity=.28+.67*(.5+.5*Math.sin(elapsed*4.1+h.seed));
   }
-  for(const t of towers)if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.08+darkness*.82;
+  combustion.update(elapsed);
+  for(let i=0;i<towers.length;i++){
+   const t=towers[i];
+   if(t.group.userData.lantern)t.group.userData.lantern.material.opacity=.12+darkness*.20;
+   if(t.fallActive&&!t.fallSettled){
+    t.fallElapsed+=Math.max(0,Math.min(.1,dt));
+    // Once every facade slab has landed and finished rotating, its pose is
+    // static until reset. Avoid repeated matrix updates for settled rubble.
+    let allGrounded=true;
+    for(let j=0;j<t.slabs.length;j++){
+     const slab=t.slabs[j],fallTime=Math.max(0,t.fallElapsed-slab.userData.fallDelay);
+     // Gravity-like descent with a hard ground clamp keeps all facade sections
+     // supported, even if simulation frames arrive irregularly.
+     const turn=Math.min(1,fallTime/1.8);
+     slab.rotation.z=(j-1)*.09+turn*(j%2?-.36:.28);
+     slab.rotation.x=.11*j+turn*(Math.PI/2-.11*j);
+     slab.updateMatrix();
+     // Box support height includes the rotated panel, not only its thickness.
+     // Matrix columns already include scale, so this keeps every corner above ground.
+     const e=slab.matrix.elements;
+     slab.userData.groundY=(Math.abs(e[1])+Math.abs(e[5])+Math.abs(e[9]))*.5+.02;
+     slab.position.y=Math.max(slab.userData.groundY,slab.userData.fallStartY-14*fallTime*fallTime);
+     if(turn<1||slab.position.y>slab.userData.groundY+.001)allGrounded=false;
+    }
+    if(allGrounded)t.fallSettled=true;
+   }
+   if(t.impactAge>0){
+    t.impactAge=Math.max(0,t.impactAge-Math.max(0,Math.min(.1,dt)));
+    const fade=t.impactAge/1.15;
+    t.impactSprite.material.opacity=.93*fade*fade;
+    t.impactSprite.scale.setScalar(5+(1-fade)*7);
+    t.impactSprite.visible=t.impactAge>0;
+   }
+   // Sustained, irregular electrical flicker signals damage across the distant
+   // city without dynamic lights, added meshes, or per-frame allocations.
+   const broken=Math.min(1,t.strikeDamage*2.5);
+   // Intact towers cannot flicker: skip the expensive sine/power pulse
+   // until collapse begins. Damaged towers retain the exact prior formula.
+   let unstable=1;
+   if(broken>0){
+    const pulse=Math.pow(Math.max(0,Math.sin(elapsed*(7.3+i*.31)+i*2.17)),12);
+    unstable=1-broken*(.50+.46*pulse);
+   }
+   t.facade.emissiveIntensity=Math.max(0,time)*1.25*(1-t.strikeDamage*.30)*unstable;
+  }
  }
- function reset(){damage=0;time=-1;lastPhase=-1;for(const t of towers){t.group.rotation.z=0;t.group.scale.y=1;t.group.position.y=0;t.ruin.visible=false;t.collapse=0;}setTime(0,0);}
- return {group,towers,setTime,setDamage,reset,update,getStats:()=>({landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],distantHelicopters:distantHelis.length,beacons:beacons.length,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
+
+ function reset(){
+  combustion.reset();damage=0;time=-1;lastPhase=-1;
+  renderClock=0;lastCombustionRefresh=-Infinity;
+  for(const t of towers){
+   t.facadeDamage.reset();
+   t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;
+   t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;t.siteCursor=0;
+   for(const site of t.burnSites){site.active=false;site.width=0;
+    site.height=0;site.renderWidth=0;site.renderHeight=0;site.ignitedAt=0;}
+  }
+  setTime(0,0);
+ }
+ function fireState(t){
+  const sites=t.burnSites.filter(s=>s.active),s=sites[0];
+  return {active:sites.length>0,position:s?s.origin.clone():t.smokeOrigin.clone(),
+   parentStable:combustion.group.parent===group,width:s?.width??0,height:s?.height??0,clock:combustion.stats().clock};
+ }
+ return {group,towers,setTime,setDamage,strikeNearest,targetPoint,reset,update,fireState,getStats:()=>({
+  landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],
+  distantHelicopters:distantHelis.length,beacons:beacons.length,combustion:combustion.stats(),
+  activeBurnSites:combustion.stats().active,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }

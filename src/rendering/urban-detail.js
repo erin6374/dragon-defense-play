@@ -103,3 +103,30 @@ export function addStreetSetDressing(THREE,root){
  for(const cx of [-53,53])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
  return set;
 }
+
+// Low planting at the camera-side edge, inspired by the cinematic mockup.
+export function addForegroundPlanting(THREE,root){
+ const geometry=new THREE.IcosahedronGeometry(1,1);
+ const material=new THREE.MeshLambertMaterial({color:0xffffff});
+ const bed=new THREE.InstancedMesh(geometry,material,108);
+ bed.name='West sidewalk foreground planting';
+ const leaf=new THREE.Object3D();
+ const colors=[0x333b28,0x414b2a,0x56613b,0x4a552f];
+ for(let i=0;i<bed.count;i++){
+  const x=-122+i*2.3;
+  // Keep both crosswalk approaches open.
+  if(Math.abs(Math.abs(x)-53)<9){
+   leaf.scale.setScalar(0);
+  }else{
+   const spread=(i*7%11)/11;
+   leaf.position.set(x,.25+spread*.38,47.7+(i*17%9)*.22);
+   leaf.scale.set(1.8+spread,.67+spread*.72,.93+spread);
+   leaf.rotation.set(spread,i*1.22,spread*.31);
+  }
+  leaf.updateMatrix();
+  bed.setMatrixAt(i,leaf.matrix);
+  bed.setColorAt(i,new THREE.Color(colors[i%colors.length]));
+ }
+ root.add(bed);
+ return bed;
+}

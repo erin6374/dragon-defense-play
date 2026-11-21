@@ -4,6 +4,18 @@ Open **Actions → Dragon Defense browser QA → Run workflow** for an on-demand
 
 The artifact contains startup and gameplay PNGs, camera pans, both school side elevations, and matched front, corner, and side views before impact, after a localized impact, and after total collapse. The comparison PNGs use the same orthographic camera and lighting per view for the full raw FBX, the unbatched school selection, and the model rendered by the game. `report.json` records camera offsets, draw calls, triangle counts, bounds, damage, browser messages, and software-rendered frame timings.
 
+## Motion review
+
+The motion recordings now run under the **separate [Dragon Defense motion review](../.github/workflows/motion-qa.yml) workflow**, instead of sharing the main browser QA's cancel-on-new-commit setting. This is essential: hourly development commits previously cancelled motion runs after their recordings finished. The motion workflow permits an active recording to complete and queues subsequent exact-head captures. Pull requests trigger it automatically; manual workflow dispatch is available once GitHub recognizes the workflow on the selected branch.
+
+Download **dragon-defense-motion-qa**, extract it and open `index.html` to play five 960 × 540 MP4s, including a newly added close-up Paulo flight sequence. The artifact contains three reference PNGs per clip, `review-guide.md` and a JSON report with the exact commit, seed, timeline and per-frame scene counters.
+
+Each five-second clip uses a fresh seeded browser context and 100 rendered frames, with three production simulation steps per frame. `skyfall.mp4` records the wide meteor split and dragon movement. `dragon.mp4` tracks Paulo closely through wing beats and direction reversals so the flight animations can actually be judged. `houses.mp4` and `skyline.mp4` capture multiple real impacts from diagnostic cameras. `traffic.mp4` now uses a closer road camera for visible wheel/vehicle roll and gust recovery. Video playback cadence is simulation time, **not measured real-time GPU FPS**.
+
+A time-coded, manually inspected baseline is maintained at [MOTION-VISUAL-REVIEW.md](MOTION-VISUAL-REVIEW.md). The recorder validates events and produces MP4s; it does not automatically certify physical plausibility. Review the motion itself before claiming graphical quality.
+
+To reproduce locally, serve the repo over HTTP, install Playwright Core and FFmpeg with libx264, set `PLAYWRIGHT_MODULE` to Playwright Core's absolute `index.mjs` path, and set `QA_BROWSER_CHANNEL=chrome` or `QA_BROWSER_EXECUTABLE` to a compatible Chromium binary. Run `node qa/motion.mjs http://127.0.0.1:8765/`. Outputs go to `qa-output/motion/`. Software rendering and browser versions can affect pixels across machines.
+
 ## v5.2.2 source fidelity
 
 The three matched views each reported 592,298 triangles for the source school and the game model. The axis-aligned bounds differed by less than 0.001 game units. Batching reduced the school from 3,420 draw calls to 8 in isolation. The v5.2.1 matched renders showed a reconstructed grid of window bays and a simplified flat roof, while v5.2.2 shows the source's two main window banks, front doors and rails, and rooftop volumes.
@@ -20,3 +32,18 @@ Rollback point: [v5.2.1](https://github.com/erin6374/dragon-defense-play/tree/ro
 The side checks probe the restored exterior masonry at four locations and verify that the rear stair opening stays clear. The staged iron meteor must change a limited area of the front render and detach glass and façade pieces while the main structure remains standing. The total-loss check waits for all parts to settle, verifies that the front and side silhouettes have no standing shell, checks that the rubble stays below one game unit and persists, then restarts the game.
 
 Rollback point for this release is [v5.2.2](https://github.com/erin6374/dragon-defense-play/tree/rollback/v5.2.2).
+
+## RC39 Windows preview telemetry contract
+
+The packaged `PLAY-PREVIEW.cmd` must run `tools/windows-preview-server.py`, not bare `python -m http.server`: the existing Performance Lab uses `GET /__build`, `GET /__system_metrics`, `POST /__game_telemetry` and `GET /__system_csv`. A bare static server returns HTML/404 and silently disables capture. `qa/windows-preview-server-test.py` exercises all four endpoints, rejects malformed/foreign telemetry, and runs in browser workflow preflight. The server binds loopback only, uses Python stdlib and writes CSV outside the served game directory. FPS is the game's browser metric, not GPU utilization or GPU timing. Windows CPU/RAM are sampled with native OS counters; GPU percent remains `null`. Exact-head browser and actual Windows hardware capture are separate acceptance gates.
+
+## Windows Performance Lab CSV triage (development only)
+
+Run the Windows preview's Performance Lab during 30–60 seconds of active meteor/fire/destruction, export `dragon-defense-performance.csv`, then from the unpacked preview folder run:
+
+```powershell
+python tools/analyze-windows-performance.py dragon-defense-performance.csv
+python tools/analyze-windows-performance.py dragon-defense-performance.csv --json
+```
+
+The analyzer uses **browser rows only** for FPS and frame-time statistics; host rows repeat the last known browser values and continue independently during browser freezes. It counts stale render frames only when the tab is explicitly visible and focused, separating fresh JS heartbeats from stalled requestAnimationFrame. Missing CPU/RAM is reported as unavailable, never zero. Whole-system CPU/RAM cannot identify which process or GPU is responsible; the analyzer is not a GPU benchmark. Save the original CSV and report together. Six synthetic tests run in browser QA preflight.
