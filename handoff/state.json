@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
+  "observed_parent_sha": "a55364e91e87206f1a48b68e13769708c708ab81",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_combustion_state_equality_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_smoke_render_only_fix_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify exact-head five workflows and actual artifact contents; inspect smoke state equality and visual quality before bounded smoke art adjustment",
+  "next_task": "Verify five exact-head workflows and artifact contents after simulation-free smoke-opacity redraw",
   "implemented": [
+    "2026-11-21 RC59: Fixed cinematic smoke opacity state regression by adding QA-only renderOnly() that redraws without renderFrame() simulation, visualBank.advanceFireVisuals, or combustion buffer writes. Smoke opacity 0/1 now calls renderOnly(), retaining strict CPU-side GPU-clock, source-array, attribute-version, active-count and buffer-counter equality assertions. Verified failing base a55364e91e87206f1a48b68e13769708c708ab81: cinematic run 44899357351 FAILURE (sources 4→8; GPU attribute versions 77→85); browser 44899357357, focused 44899357265, CC0 44899357288, motion 44899357247 SUCCESS. New candidate exact-head CI/artifact validation PENDING. No physical Windows FPS; slideshow unresolved; campaign visual target ART FAIL. Google PR #3 isolated. NEXT: verify all five candidate workflows and inspect cinematic report/PNG, long MP4, ZIP CRC, CC0 and original FBX hashes.",
     "2026-11-21 RC59 candidate: read-only combustion QA snapshots and smoke ON/OFF equality assertions for CPU-side shader clock, source arrays/attribute versions, pool counters and instance counts. Verified base bca9368e168b7019cdfb0a7bcfee2ace431b1c84 had five successful exact-head workflows: browser 44880130362, cinematic 44880130359, focused 44880130310, CC0 44880130377, motion 44880130309. Candidate new-head CI/artifacts PENDING. This does not freeze physical GPU execution, approve cinematic art or measure Windows FPS. ART FAIL and slideshow unresolved. Next: verify five new-head workflows, inspect reports/PNG/MP4/CRC/CC0/FBX hashes, then tune one smoke art issue. Google PR #3 isolated.",
     "2026-11-21: QA-only smoke opacity A/B now asserts equal paused browser timestamps and unchanged smoke mode/mirror, opacity restored; base 8958ef51 all five workflows success (44855705648/44855705637/44855705684/44855705621/44855705718). New candidate CI/artifacts pending. GPU clock/source buffers still unverified; ART FAIL and physical Windows FPS unresolved.",
     "2026-11-20: QA-only smoke opacity 0/1 capture candidate; default 1, restoration and decoded pixel metrics; preceding base 567e6278 five workflows success, candidate CI pending. ART FAIL, physical Windows FPS unmeasured.",
