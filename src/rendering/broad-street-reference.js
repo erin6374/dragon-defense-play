@@ -9,6 +9,16 @@
 //   Philadelphia Military Academy / Makkah Mosque institutional campus.
 import * as THREE from 'three';
 
+export const REPLACED_BY_NORTH_BROAD = new Set([
+  'united-fund-cream',
+  'south-cream-rowhouse',
+  'south-tan-brick',
+  'north-doll-museum',
+  'north-brownstone',
+  'north-2300-corner-commercial',
+  'south-diamond-corner'
+]);
+
 export function createBroadStreetReferenceFacades(scene, buildings){
  const root=new THREE.Group();root.name='BROAD-STREET-REFERENCE-2026';scene.add(root);
  const boxGeometry=new THREE.BoxGeometry(1,1,1),planeGeometry=new THREE.PlaneGeometry(1,1);
@@ -51,8 +61,9 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    'south-diamond-corner':{type:'dauphinCorner',label:['BROAD & DIAMOND','COMMUNITY BANK'],bg:'#183226',fg:'#fff6d8'},
  };
 
- const mapping=[];const externalFacadeNames=new Set();
+ const mapping=[];const externalFacadeNames=new Set(REPLACED_BY_NORTH_BROAD);
  for(const b of buildings){
+  if(REPLACED_BY_NORTH_BROAD.has(b.name))continue;
   const spec=specs[b.name];if(!spec)continue;
   const group=new THREE.Group();group.name='reference-facade-'+b.name;root.add(group);
   mapping.push({group,building:b});

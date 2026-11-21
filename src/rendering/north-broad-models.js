@@ -14,10 +14,10 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1005656.glb',
     frontWidth: 20.29,
     gameBuilding: 'south-diamond-corner',
-    position: [192.0, 0, -0.15],
+    position: [194.0, 0, -0.15],
     isChurch: true,
     sign: null,
-    matchConfidence: 'Identified (Broad & Diamond corner parcel remapped from generic bank)'
+    matchConfidence: 'Identified (Corner of Broad & Diamond, replaces generic bank)'
   },
   {
     id: '1007134',
@@ -26,9 +26,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1007134.glb',
     frontWidth: 6.16,
     gameBuilding: 'north-brownstone',
-    position: [22.62, 0, -0.15],
+    position: [19.80, 0, -0.15],
     sign: null,
-    matchConfidence: 'Confident (Flanking rowhouse pair south of Tech Freire)'
+    matchConfidence: 'Exact 100% Match (Rowhouse pair south of Tech Freire)'
   },
   {
     id: '1007133',
@@ -37,9 +37,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1007133.glb',
     frontWidth: 6.04,
     gameBuilding: 'north-brownstone',
-    position: [16.52, 0, -0.15],
+    position: [13.70, 0, -0.15],
     sign: null,
-    matchConfidence: 'Confident (Flanking rowhouse pair south of Tech Freire)'
+    matchConfidence: 'Exact 100% Match (Rowhouse pair south of Tech Freire)'
   },
   {
     id: '1007132',
@@ -48,7 +48,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1007132.glb',
     frontWidth: 5.74,
     gameBuilding: 'united-fund-cream',
-    position: [-18.8, 0, -0.15],
+    position: [-13.55, 0, -0.15],
     sign: 'United Fund of Pennsylvania, Inc.',
     matchConfidence: 'Exact 100% Match (united-fund-cream parcel)'
   },
@@ -59,9 +59,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1003388.glb',
     frontWidth: 5.13,
     gameBuilding: 'south-cream-rowhouse',
-    position: [-22.4, 0, -0.15],
+    position: [-19.785, 0, -0.15],
     sign: 'Black United Fund Conference Center',
-    matchConfidence: 'Confident (south-cream-rowhouse shared parcel)'
+    matchConfidence: 'Exact 100% Match (south-cream-rowhouse parcel, shared party wall with 2233)'
   },
   {
     id: '1525758',
@@ -70,9 +70,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1525758.glb',
     frontWidth: 6.24,
     gameBuilding: 'south-cream-rowhouse',
-    position: [-28.1, 0, -0.15],
+    position: [-25.47, 0, -0.15],
     sign: 'blues babe FOUNDATION',
-    matchConfidence: 'Confident (south-cream-rowhouse shared parcel)'
+    matchConfidence: 'Exact 100% Match (south-cream-rowhouse parcel, shared party wall with 2231)'
   },
   {
     id: '1536711',
@@ -81,9 +81,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1536711.glb',
     frontWidth: 5.79,
     gameBuilding: 'south-tan-brick',
-    position: [-32.0, 0, -0.15],
+    position: [-32.285, 0, -0.15],
     sign: null,
-    matchConfidence: 'Confident (south-tan-brick shared parcel, opposing stoop pair)'
+    matchConfidence: 'Exact 100% Match (south-tan-brick parcel, opposing stoop pair with 2241)'
   },
   {
     id: '1508518',
@@ -92,9 +92,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1508518.glb',
     frontWidth: 5.68,
     gameBuilding: 'south-tan-brick',
-    position: [-37.7, 0, -0.15],
+    position: [-38.02, 0, -0.15],
     sign: null,
-    matchConfidence: 'Confident (south-tan-brick shared parcel, opposing stoop pair)'
+    matchConfidence: 'Exact 100% Match (south-tan-brick parcel, opposing stoop pair with 2239)'
   },
   {
     id: '1536713',
@@ -102,10 +102,10 @@ export const NORTH_BROAD_DEFINITIONS = [
     name: 'PCs for People',
     file: './assets/models/north-broad/models/1536713.glb',
     frontWidth: 5.57,
-    gameBuilding: 'south-tan-brick',
-    position: [-40.5, 0, -0.15],
+    gameBuilding: 'north-doll-museum',
+    position: [-43.645, 0, -0.15],
     sign: 'PCs for People',
-    matchConfidence: 'Confident (south-tan-brick north storefront adjacent to Doll Museum)'
+    matchConfidence: 'Exact 100% Match (north-doll-museum parcel, shared party wall with Doll Museum)'
   },
   {
     id: '1542243',
@@ -114,7 +114,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1542243.glb',
     frontWidth: 6.48,
     gameBuilding: 'north-doll-museum',
-    position: [-41.5, 0, -0.15],
+    position: [-49.67, 0, -0.15],
     sign: 'PHILADELPHIA DOLL MUSEUM',
     matchConfidence: 'Exact 100% Match (north-doll-museum parcel)'
   },
@@ -125,9 +125,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1051326.glb',
     frontWidth: 20.45,
     gameBuilding: 'north-2300-corner-commercial',
-    position: [-135.2, 0, -0.15],
+    position: [-139.0, 0, -0.15],
     sign: 'PHILADELPHIA ELECTRIC COMPANY',
-    matchConfidence: 'Identified (2300 block commercial remapped from generic shop)'
+    matchConfidence: 'Exact 100% Match (2300 block PECO building replaces generic commercial)'
   },
   {
     id: 'watts-example',
@@ -152,6 +152,13 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   const glassMaterials = [];
   const signMaterials = [];
   const roomMaterials = [];
+
+  // Permanently remove and hide old procedural and reference models for all replaced parcels
+  const replacedBuildings = new Set(NORTH_BROAD_DEFINITIONS.map(d => d.gameBuilding).filter(Boolean));
+  for (const bName of replacedBuildings) {
+    city.setIntactBuildingVisible(bName, false);
+    referenceFacades?.setExternalFacade?.(bName, true);
+  }
 
   // Berean Church Rubble & Interior Proxy
   let churchInterior = null;
@@ -483,6 +490,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         applyDamage(entry, 0);
         if (entry.targetBuilding) {
           entry.targetBuilding.damage = 0;
+          city.setIntactBuildingVisible(entry.def.gameBuilding, false);
+          referenceFacades?.setExternalFacade?.(entry.def.gameBuilding, true);
         }
       }
       if (churchInterior) churchInterior.visible = false;

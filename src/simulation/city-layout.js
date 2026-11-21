@@ -7,13 +7,14 @@ import {occupiesCrossStreet} from './road-corridors.js';
 export function populateCity(city){
  const house=o=>city.addBuilding({d:14.5,z:-7.4,stories:3,bays:2,...o});
  // Frontage on the east side of Broad, ordered north-to-south in the reference image.
- house({name:'united-fund-cream',historicSash:true,x:-18.8,w:5.8,h:12.3,kind:'creamWarm',stories:3,bays:2});
- house({name:'south-cream-rowhouse',historicSash:true,x:-25.5,w:7.0,h:12.9,kind:'stoneGray',stories:3,bays:2});
- house({name:'south-tan-brick',historicSash:true,x:-33.0,w:8.2,h:13.6,kind:'brickTan',stories:3,bays:2});
- house({name:'north-doll-museum',historicSash:true,x:-41.5,w:7.8,h:14.8,stories:4,bays:3,kind:'brickRed'});
+ // Parcels replaced by North Broad photogrammetric model pack have calibrated footprints.
+ house({name:'united-fund-cream',historicSash:true,x:-13.55,w:5.74,h:12.3,kind:'creamWarm',stories:3,bays:2});
+ house({name:'south-cream-rowhouse',historicSash:true,x:-22.9,w:11.4,h:12.9,kind:'stoneGray',stories:3,bays:4});
+ house({name:'south-tan-brick',historicSash:true,x:-35.1,w:11.5,h:13.6,kind:'brickTan',stories:3,bays:4});
+ house({name:'north-doll-museum',historicSash:true,x:-46.9,w:12.0,h:14.8,stories:4,bays:4,kind:'brickRed'});
  house({name:'north-dauphin-historic-corner',historicSash:true,x:-68.2,w:9.8,h:16.2,stories:4,bays:3,kind:'stone',projectingBays:true,ornateRoofline:true});
  house({name:'south-dauphin-historic',historicSash:true,x:-77.5,w:10.5,h:15.8,stories:4,bays:3,kind:'stone',projectingBays:true});
- house({name:'north-brownstone',historicSash:true,x:19.6,w:8.9,h:14.1,stories:3,bays:2,kind:'brickBrown'});
+ house({name:'north-brownstone',historicSash:true,x:16.8,w:12.2,h:14.1,stories:3,bays:4,kind:'brickBrown'});
  // Alley immediately east of brownstone intentionally left open.
  house({name:'north-modern-white-red',x:32.0,w:9.6,h:18.8,stories:5,bays:4,kind:'creamWarm'});
  house({name:'north-red-brick-shop',historicSash:true,x:39.1,w:3.5,h:11.4,stories:3,bays:2,kind:'brickRed'});
@@ -26,9 +27,9 @@ export function populateCity(city){
  house({name:'north-2300-historic-shop-2',historicSash:true,x:-107.5,w:9.2,h:13.8,kind:'stone',stories:3,bays:3,ornateRoofline:true,exteriorOnly:true});
  // Authentic 2300-2400 blocks of North Broad extending 1 full screen left toward York Street
  house({name:'north-2300-historic-shop-3',historicSash:true,x:-116.8,w:8.5,h:13.0,kind:'brickTan',stories:3,bays:3,exteriorOnly:true});
- house({name:'north-2300-historic-residence',historicSash:true,x:-125.8,w:8.8,h:13.4,kind:'stone',stories:3,bays:3,exteriorOnly:true});
- house({name:'north-2300-corner-commercial',historicSash:true,x:-135.2,w:9.4,h:14.5,kind:'brickRed',stories:4,bays:3,projectingBays:true,exteriorOnly:true});
- house({name:'north-2400-broad-station',historicSash:true,x:-155.0,w:9.2,h:13.8,kind:'stone',stories:3,bays:3,exteriorOnly:true});
+ house({name:'north-2300-historic-residence',historicSash:true,x:-123.5,w:8.8,h:13.4,kind:'stone',stories:3,bays:3,exteriorOnly:true});
+ house({name:'north-2300-corner-commercial',historicSash:true,x:-139.0,w:20.45,h:14.5,kind:'brickRed',stories:4,bays:6,projectingBays:true,exteriorOnly:true});
+ house({name:'north-2400-broad-station',historicSash:true,x:-156.0,w:9.2,h:13.8,kind:'stone',stories:3,bays:3,exteriorOnly:true});
  house({name:'north-2400-commercial-1',historicSash:true,x:-165.0,w:9.8,h:14.2,kind:'creamWarm',stories:3,bays:3,exteriorOnly:true});
  house({name:'north-2400-commercial-2',historicSash:true,x:-175.5,w:10.2,h:14.0,kind:'brickBrown',stories:3,bays:3,exteriorOnly:true});
  house({name:'north-2400-historic-corner',historicSash:true,x:-186.5,w:10.5,h:15.0,kind:'stoneGray',stories:4,bays:4,projectingBays:true,exteriorOnly:true});
@@ -44,8 +45,8 @@ export function populateCity(city){
  house({name:'south-temple-campus-hall',x:150.0,w:12.0,h:16.5,kind:'brickTan',stories:4,bays:4,exteriorOnly:true});
  house({name:'south-2100-broad-apartments',x:163.5,w:13.0,h:17.2,kind:'creamWarm',stories:5,bays:4,exteriorOnly:true});
  house({name:'south-2100-broad-commercial',historicSash:true,x:177.5,w:13.5,h:15.0,kind:'stone',stories:4,bays:4,exteriorOnly:true});
- house({name:'south-diamond-corner',historicSash:true,x:192.0,w:14.0,h:16.0,kind:'brickRed',stories:4,bays:4,exteriorOnly:true});
- house({name:'south-diamond-mixed-use',historicSash:true,x:207.5,w:14.5,h:15.5,kind:'stoneGray',stories:4,bays:4,exteriorOnly:true});
+ house({name:'south-diamond-corner',historicSash:true,x:194.0,w:20.29,h:16.0,kind:'brickRed',stories:4,bays:6,exteriorOnly:true});
+ house({name:'south-diamond-mixed-use',historicSash:true,x:213.5,w:14.5,h:15.5,kind:'stoneGray',stories:4,bays:4,exteriorOnly:true});
  // Detailed collision-enabled near neighborhood. Farther blocks use instanced LOD.
  const palette=['brick','cream','stone','brickBrown','brickTan'];
  const depthRows=[-25,-41,-57,-73];

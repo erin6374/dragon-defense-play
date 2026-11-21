@@ -562,15 +562,8 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,r/range.x,r/range.y);
 }
 function setRowhouseSourceVisible(role,on){
- const houseName=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';
- const model=actualRowhouseOverlays[role];
- if(!model)return false;
- model.visible=!!on&&sourceArchitectureVisible&&performanceLab.isEnabled('schoolModel');
- // Keep the independent structural simulations for demolition/debris, but
- // hide intact generated façades behind the actual neighboring FBX masses.
- neighborhood.city.setIntactBuildingVisible(houseName,!model.visible);
- referenceFacades.setExternalFacade(houseName,model.visible);
- return model.visible;
+ // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
+ return false;
 }
 const schoolQA=new URLSearchParams(location.search).get('qa')==='1';
 let sourceComparison=null;
@@ -650,25 +643,12 @@ function loadActualSchoolOverlay(){
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
     axisCorrectionDeg:-90,originUpAxis:'Z+',worldUpAxis:'Y+',
     fitPolicy:'central school source meshes, uniformly scaled; flanking masses handled separately'};
-   // Independent FBX masses preserve the source's original left/right location.
-   // Do not hide the generated rowhouse unless the matching batch succeeds.
+   // Flanking Revit FBX masses are replaced by authentic North Broad model pack.
+   // Preserve Tech Freire school in place; do not build or render flanking FBX masses.
    for(const role of ['leftRowhouse','rightRowhouse']){
-    // The original Revit FBX may contain only a thin slab or no side-building
-    // meshes. Never allow such incomplete geometry to hide the intact generated
-    // rowhouse (which still supplies the damage and demolition simulation).
-    const count=roleMeshCounts[role];
-    if(count<8){
-     actualRowhouseStats[role]={loaded:false,sourceMeshes:count,processed:0,batches:0,
-      fallback:'generated-rowhouse',reason:'insufficient-component-count'};
-     continue;
-    }
-    const built=buildRole(role);
-    const assessment=assessRowhouseSource(count,built.stats);
-    if(built.model&&!assessment.usable){scene.remove(built.model);}
-    const useSource=!!built.model&&assessment.usable;
-    actualRowhouseStats[role]={loaded:useSource,sourceMeshes:count,...built.stats,
-     assessment,fallback:useSource?null:'generated-rowhouse'};
-    if(useSource){actualRowhouseOverlays[role]=built.model;setRowhouseSourceVisible(role,true);}
+    actualRowhouseStats[role]={loaded:false,sourceMeshes:roleMeshCounts[role],processed:0,batches:0,
+     fallback:'north-broad-model-pack',reason:'replaced-by-photogrammetric-models'};
+    actualRowhouseOverlays[role]=null;
    }
    actualSchoolOverlayStats.sourcePartition=roleMeshCounts;
    actualSchoolOverlayStats.rowhouses=actualRowhouseStats;
@@ -687,7 +667,6 @@ function setMode(mode){
  const showSchool=performanceLab.isEnabled('schoolModel');
  const useActual=actualSchoolOverlayReady&&actualSchoolOverlay;
  syncSchoolVisibility();
- for(const role of ['leftRowhouse','rightRowhouse'])if(actualRowhouseOverlays[role])setRowhouseSourceVisible(role,showSchool);
  architecture.group.visible=false;
  for(const m of Object.values(meshes))m.visible=!architecturalReady&&schoolDamage<1&&showSchool&&!useActual;
  modeButton.textContent=mode==='real'?'ARCADE COLORS':'PHOTO COLORS';
@@ -3837,7 +3816,7 @@ function update(dt){if(!paused){schoolReconstruction?.update(dt);chapterStaging.
  scene.add(mesh);
  const hp=isGiant?Math.max(4,Math.ceil(size*1.3)):Math.max(2,Math.ceil(size*1.1));
  meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
-},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();for(const role of ['leftRowhouse','rightRowhouse']){const group=actualRowhouseOverlays[role];if(group){const name=role==='leftRowhouse'?'united-fund-cream':'north-brownstone';const house=neighborhood.buildings.find(b=>b.name===name);const show=!!house&&house.damage<.98&&performanceLab.isEnabled('schoolModel');if(group.visible!==show)setRowhouseSourceVisible(role,show);}}if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
+},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
  if(trainingMissions?.isActive()){hp=100;schoolDamage=0;remaining=0;spawnTimer=9999;} trainingMissions?.update(dt,{dragonPos:dragon.position,dragonVelX,dragonVelY,dragonSpeed:Math.hypot(dragonVelX,dragonVelY),isGasDeployed:gasPose>0,hasBusterCollided:busterRamCollided,meteorsList:meteors,schoolFiresCount:schoolFire.length,carsList:cars});
  if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
 if(active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}

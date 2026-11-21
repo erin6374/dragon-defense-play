@@ -1,6 +1,16 @@
 import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '../simulation/structural-dynamics.js';
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
+const REPLACED_BY_NORTH_BROAD = new Set([
+  'united-fund-cream',
+  'south-cream-rowhouse',
+  'south-tan-brick',
+  'north-doll-museum',
+  'north-brownstone',
+  'north-2300-corner-commercial',
+  'south-diamond-corner'
+]);
+
 export function createStructuralCity(THREE,scene,bank){
  const groups={front:new THREE.Group(),backNear:new THREE.Group(),backMid:new THREE.Group(),backFar:new THREE.Group(),school:new THREE.Group()};
  for(const [name,g] of Object.entries(groups)){g.name='structural-'+name;scene.add(g)}
@@ -42,6 +52,7 @@ export function createStructuralCity(THREE,scene,bank){
  function addBuilding(o){
   if(finalized)throw Error('Buildings must be registered before finalize');
   const b={...o,damage:0,pressure:0,parts:[],sections:[],windows:[],collapseClock:0,stories:o.stories||3};b.front=o.z+o.d*.5;
+  if(REPLACED_BY_NORTH_BROAD.has(o.name)) b.hideIntactGeometry=true;
   if(o.school)b.layer='school';
   else if(o.background)b.layer=(o.z<-95?'backFar':o.z<-63?'backMid':'backNear');
   else b.layer='front';
@@ -217,11 +228,13 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;if(REPLACED_BY_NORTH_BROAD.has(b.name))b.hideIntactGeometry=true;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
-  b.hideIntactGeometry=!visible;for(const p of b.parts)write(p);
+  if(REPLACED_BY_NORTH_BROAD.has(buildingName)){b.hideIntactGeometry=true;}
+  else{b.hideIntactGeometry=!visible;}
+  for(const p of b.parts)write(p);
   for(const bucket of dirty){bucket.mesh.instanceMatrix.needsUpdate=true;}dirty.clear();return true;
  }
  return {fireAnchorHeight,buildings,groups,addBuilding,finalize,impact,forceDamage,update,restore,fragmentBurst,setIntactBuildingVisible,
