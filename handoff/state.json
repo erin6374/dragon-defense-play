@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "8958ef51a3146b4608773e3f875cde7ef54d2140",
+  "observed_parent_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_smoke_opacity_timestamp_assertions_candidate_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_combustion_state_equality_candidate_ci_pending_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 44792870245,
-      "source_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+      "run_id": 44880130362,
+      "source_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44792870245"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44880130362"
     },
     {
       "name": "cinematic",
-      "run_id": 44792870185,
-      "source_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+      "run_id": 44880130359,
+      "source_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44792870185"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44880130359"
     },
     {
       "name": "focused",
-      "run_id": 44792870187,
-      "source_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+      "run_id": 44880130310,
+      "source_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44792870187"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44880130310"
     },
     {
       "name": "CC0",
-      "run_id": 44792870204,
-      "source_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+      "run_id": 44880130377,
+      "source_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44792870204"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44880130377"
     },
     {
       "name": "motion",
-      "run_id": 44792870079,
-      "source_sha": "567e6278a460e23d0c592cb3da60bd6010d085e3",
+      "run_id": 44880130309,
+      "source_sha": "bca9368e168b7019cdfb0a7bcfee2ace431b1c84",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44792870079"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44880130309"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five candidate exact-head workflows and smoke opacity reports, CRC, 5+30-second MP4, CC0/FBX hashes; add GPU/source-state equality assertions",
+  "next_task": "Verify exact-head five workflows and actual artifact contents; inspect smoke state equality and visual quality before bounded smoke art adjustment",
   "implemented": [
+    "2026-11-21 RC59 candidate: read-only combustion QA snapshots and smoke ON/OFF equality assertions for CPU-side shader clock, source arrays/attribute versions, pool counters and instance counts. Verified base bca9368e168b7019cdfb0a7bcfee2ace431b1c84 had five successful exact-head workflows: browser 44880130362, cinematic 44880130359, focused 44880130310, CC0 44880130377, motion 44880130309. Candidate new-head CI/artifacts PENDING. This does not freeze physical GPU execution, approve cinematic art or measure Windows FPS. ART FAIL and slideshow unresolved. Next: verify five new-head workflows, inspect reports/PNG/MP4/CRC/CC0/FBX hashes, then tune one smoke art issue. Google PR #3 isolated.",
     "2026-11-21: QA-only smoke opacity A/B now asserts equal paused browser timestamps and unchanged smoke mode/mirror, opacity restored; base 8958ef51 all five workflows success (44855705648/44855705637/44855705684/44855705621/44855705718). New candidate CI/artifacts pending. GPU clock/source buffers still unverified; ART FAIL and physical Windows FPS unresolved.",
     "2026-11-20: QA-only smoke opacity 0/1 capture candidate; default 1, restoration and decoded pixel metrics; preceding base 567e6278 five workflows success, candidate CI pending. ART FAIL, physical Windows FPS unmeasured.",
     "2026-11-20: Candidate QA-only distinct skyline landmark strike targeting, preserving default Comcast target; fixture asserts four unique landmarks and active smoke. Base ea889049 five workflows SUCCESS, prior cinematic A/B 0.551% change. Candidate CI pending; ART FAIL and Windows FPS unresolved.",
