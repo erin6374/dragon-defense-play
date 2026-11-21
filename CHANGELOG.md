@@ -1,3 +1,8 @@
+## 2026-11-21 — RC59 smoke opacity QA timestamp and control assertions
+
+- Cinematic smoke opacity A/B now rejects unequal paused browser timestamps or changes to smoke mode/mirror; restores opacity to 1. Base `8958ef51` had five successful workflows; candidate exact-head CI/artifacts pending.
+- Does **not** establish GPU clock/source-buffer identity, cinematic art approval, or physical Windows FPS. ART FAIL and slideshow complaint remain open. No gameplay, original FBX, protected branches or Google PR #3 changes.
+
 ## November 20 — QA-only smoke opacity A/B candidate
 
 **Last observed verified base SHA (not this commit):** `567e6278a460e23d0c592cb3da60bd6010d085e3`; RC59 / `5.5-licensed-smoke-sheet-roll-rc59`. Exact-base CI: [browser SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870245), [cinematic SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870185), [focused SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870187), [CC0 SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870204), [motion SUCCESS](https://github.com/erin6374/dragon-defense-play/actions/runs/44792870079). Candidate new-head CI and artifacts PENDING.
