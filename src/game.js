@@ -3195,6 +3195,12 @@ if(motionQA){
    window.__DD_CINEMA_HUD?.setEnabled(true);
    return {wave,phase:displayedPhase,darkness:displayedDarkness};
   },
+  // QA-only redraw: no simulation step, visual-bank advance, or source-buffer writes.
+  // Used for controlled smoke-opacity A/B captures after one settled frame.
+  renderOnly:()=>{
+   renderer.render(scene,camera);
+   return {png:renderer.domElement.toDataURL('image/png').split(',')[1]};
+  },
   frame:()=>{
    renderFrame();
    return {png:renderer.domElement.toDataURL('image/png').split(',')[1],
