@@ -76,7 +76,7 @@ function applyVisualPreset(){
  if(typeof renderer==='undefined')return;
  renderer.setPixelRatio(renderPixelRatio(innerWidth,innerHeight,window.devicePixelRatio||1,visualPreset,adaptiveResolution));
  renderer.shadowMap.enabled=visualPreset==='cinematic'&&performanceLab.isEnabled('shadows');
- renderer.toneMappingExposure=visualPreset==='cinematic'?1.24:visualPreset==='balanced'?1.18:1.12;
+ renderer.toneMappingExposure=visualPreset==='cinematic'?1.48:visualPreset==='balanced'?1.42:1.36;
 }
 // All on-screen build stamps use one canonical source; visible in browser captures.
 const buildStamp=`v${GAME_VERSION} · ${BUILD_ID}`;
@@ -103,10 +103,10 @@ function meteorEntryHeight(z,size,minimum=148){
  return Math.max(minimum,skyTop+size*1.6+14);
 }
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
-scene.add(new THREE.HemisphereLight(0xe9f2ff,0x6d6871,1.06));const sun=new THREE.DirectionalLight(0xfff3da,2.20);sun.position.set(-22,36,24);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
+scene.add(new THREE.HemisphereLight(0xfff6ec,0x6e7888,1.35));const sun=new THREE.DirectionalLight(0xfff3da,2.85);sun.position.set(-22,38,26);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;Object.assign(sun.shadow.camera,{left:-140,right:140,top:75,bottom:-55,near:1,far:160});scene.add(sun);
 const moonLight=new THREE.DirectionalLight(0xa5c6f5,0);moonLight.position.set(45,62,28);scene.add(moonLight);
-const dragonFireLight=new THREE.PointLight(0xff8a24,0,36,1.8);scene.add(dragonFireLight);
+const dragonFireLight=new THREE.PointLight(0xff8a24,0,48,1.8);dragonFireLight.name='dragon-fire-light';scene.add(dragonFireLight);
 // Cyclic daylight palette: dawn -> afternoon -> dusk -> night -> dawn.
 const skySteps=[0xadcde0,0xa5cce8,0x8dbde1,0xf2a278,0x985878,0x242244,0x14182e,0x222845,0xa86e88,0xadcde0];
 // Low-draw-call atmospheric sky, with time-of-day gradient and wispy cloud detail.
@@ -326,12 +326,12 @@ function updateNight(dt){
  const titanX=orbitalTheater?.titanMesh?.position?.x??999;
  const titanDistToSun=Math.abs(titanX-(-22));
  const eclipseDim=Math.max(0,1.0-Math.min(1.0,Math.max(0,(titanDistToSun-18)/110)))*0.22;
- sun.intensity=Math.max(.10,(2.45-darkness*2.15)*(1.0-eclipseDim));moonLight.intensity=darkness*1.65;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
- if(ambience){ambience.intensity=.86-darkness*.34;ambience.color.setHex(0xe9f2ff).lerp(nightAmbientColor,darkness)}
+ sun.intensity=Math.max(.22,(3.20-darkness*2.6)*(1.0-eclipseDim));moonLight.intensity=darkness*1.85;const sunset=Math.exp(-Math.pow((displayedPhase-.34)*9,2))+Math.exp(-Math.pow((displayedPhase-.84)*9,2));sun.color.setHex(0xfff1db).lerp(sunsetSunColor,Math.min(1,sunset)).lerp(nightSunColor,darkness);
+ if(ambience){ambience.intensity=1.35-darkness*.45;ambience.color.setHex(0xfff6ec).lerp(nightAmbientColor,darkness)}
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
-const material=(c,emissive=0,roughness=0.95,metalness=0)=>new THREE.MeshStandardMaterial({color:c,emissive,roughness,metalness,envMapIntensity:0.02});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:0.08,metalness:0.32,clearcoat:1.0,clearcoatRoughness:0.06,envMapIntensity:2.4,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide}),glassLit:new THREE.MeshStandardMaterial({color:0xe5b67d,emissive:0x5b3110,roughness:0.18,metalness:0.15}),frame:material(0x283b4b,0,0.52,0.45),roof:new THREE.MeshStandardMaterial({color:0x3d4751,roughness:0.96,metalness:0,envMapIntensity:0}),gold:material(0xe6a93d,0,0.45,0.4),road:material(0x2b3344,0,0.92,0),sidewalk:material(0x92918e,0,0.95,0),grass:material(0x395e4d,0,0.96,0),tree:material(0x327b5b,0,0.95,0),trunk:material(0x72523e,0,0.92,0),purple:material(0x683ba5,0,0.55,0.1),purpleLight:material(0x9860cb,0,0.55,0.1),purpleDark:material(0x43266d,0,0.55,0.1),wing:material(0xe6a63c,0,0.55,0.05),fire:new THREE.MeshBasicMaterial({color:0xffac2c}),blueFire:new THREE.MeshBasicMaterial({color:0x00d4ff}),greenFire:new THREE.MeshBasicMaterial({color:0x22ff66}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c,0,0.94,0.035)};
+const material=(c,emissive=0,roughness=0.88,metalness=0)=>new THREE.MeshStandardMaterial({color:c,emissive,roughness,metalness,envMapIntensity:0.35});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:0.06,metalness:0.32,clearcoat:1.0,clearcoatRoughness:0.06,envMapIntensity:3.2,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide}),glassLit:new THREE.MeshStandardMaterial({color:0xe5b67d,emissive:0x5b3110,roughness:0.18,metalness:0.15}),frame:material(0x283b4b,0,0.52,0.45),roof:new THREE.MeshStandardMaterial({color:0x3d4751,roughness:0.96,metalness:0,envMapIntensity:0.25}),gold:material(0xe6a93d,0,0.35,0.6),road:material(0x2b3344,0,0.90,0),sidewalk:material(0x92918e,0,0.92,0),grass:material(0x395e4d,0,0.95,0),tree:material(0x327b5b,0,0.95,0),trunk:material(0x72523e,0,0.92,0),purple:material(0x683ba5,0,0.45,0.2),purpleLight:material(0x9860cb,0,0.45,0.2),purpleDark:material(0x43266d,0,0.45,0.2),wing:material(0xe6a63c,0,0.45,0.1),fire:new THREE.MeshBasicMaterial({color:0xfff0aa,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),blueFire:new THREE.MeshBasicMaterial({color:0x99e8ff,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),greenFire:new THREE.MeshBasicMaterial({color:0xaaffbb,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c,0,0.94,0.035)};
 const cube=new THREE.BoxGeometry(1,1,1),ico=new THREE.IcosahedronGeometry(1,1);const staticGroup=new THREE.Group();scene.add(staticGroup);
 function block(parent,x,y,z,w,h,d,m,cast=false){const mesh=new THREE.Mesh(cube,m);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh}
 function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296)}const rand=seeded(44122);
@@ -2579,17 +2579,30 @@ const shotSpeed=isWet?45:(isMega?120:(isStream?78:(isBlue?84:64)));
 const mesh=new THREE.Mesh(sharedShotGeometry,isWet?mats.steamyFire:(isMega?goldRedPlasmaMaterial:(isStream?fizzingFireMaterial:(isBlue?mats.blueFire:mats.fire))));
 if(shotSize!==1.0)mesh.scale.set(shotSize,shotSize,shotSize);
 mesh.position.copy(start);
-if(isStream||isMega){
- const flameMat=isMega?goldRedPowerupCoronaMat:fizzingPowerupCoronaMat;
- const s1=new THREE.Sprite(flameMat),s2=new THREE.Sprite(flameMat);
- s1.scale.setScalar(shotSize*1.8);s2.scale.setScalar(shotSize*1.5);
- s2.position.set(0,.2,-.2);mesh.add(s1,s2);
- dragonFireLight.position.copy(start);
- dragonFireLight.intensity=isMega?9.5:5.5;
- dragonFireLight.color.setHex(isMega?0xffcc33:0xff6611);
- flashAt(start.x,start.y,start.z,isMega?2.8:1.6);
- shake=Math.max(shake,isMega?.20:.08);
+
+// Radiant multi-layered additive flame corona & trailing tongues on EVERY dragon shot!
+const mainCoronaMat=isWet?steamyFireCoronaMat:(isMega?goldRedPowerupCoronaMat:(isBlue?bluePowerupCoronaMat:(isStream?fizzingPowerupCoronaMat:dragonFireCoronaMat)));
+const s1=new THREE.Sprite(mainCoronaMat);
+s1.scale.setScalar(shotSize*(isMega?3.4:(isBlue?2.8:(isStream?2.4:2.5))));
+mesh.add(s1);
+if(!isWet){
+ const s2=new THREE.Sprite(mainCoronaMat);
+ s2.scale.setScalar(shotSize*(isMega?2.5:(isBlue?2.0:1.8)));
+ s2.position.set(0,.15,-.35);
+ mesh.add(s2);
+ const s3=new THREE.Sprite(isMega?goldRedPowerupCoronaMat:(isBlue?bluePowerupCoronaMat:dragonFireCoreMat));
+ s3.scale.setScalar(shotSize*1.5);
+ mesh.add(s3);
 }
+
+// Flash & dynamic projectile light on EVERY shot!
+dragonFireLight.position.copy(start);
+dragonFireLight.distance=isMega?65:(isBlue?55:(isStream?52:48));
+dragonFireLight.intensity=isMega?12.0:(isBlue?9.5:(isStream?8.5:8.0));
+dragonFireLight.color.setHex(isMega?0xffea70:(isBlue?0x00d4ff:(isStream?0xff6611:0xff7722)));
+flashAt(start.x,start.y,start.z,isMega?3.0:(isBlue?2.2:(isStream?1.8:1.6)));
+shake=Math.max(shake,isMega?.20:.08);
+
 scene.add(mesh);
 const life=isStream?.75:(isMega?1.2:3.8);
 shots.push({mesh,vel:dir.multiplyScalar(shotSpeed),target,life,maxLife:life,baseSize:shotSize,blue:isBlue,mega:isMega,isStream,wet:isWet,damageMult:isWet?0.5:(isMega?15.0:(isBlue?3.0:(isStream?2.2:1.0)))});
@@ -2693,34 +2706,65 @@ for(let i=0;i<rockStats.materialVariants;i++){
   roughness:.94,metalness:.035,flatShading:false});
  rockMaterialVariants.push(mat);
 }
-const moltenMaterial=rockMaterialVariants[5].clone();moltenMaterial.emissive.setHex(0xff3b05);moltenMaterial.emissiveIntensity=2.5;
+const moltenMaterial=rockMaterialVariants[5].clone();
+moltenMaterial.color.setHex(0xff5511);
+moltenMaterial.emissive.setHex(0xff3300);
+moltenMaterial.emissiveIntensity=4.0;
+moltenMaterial.onBeforeCompile=shader=>{
+ shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
+ shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
+ shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
+ shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+ float veins=abs(sin(rockPoint.x*3.5+sin(rockPoint.y*4.)*.8)*sin(rockPoint.z*4.5+rockPoint.y*2.7));
+ float lava=1.-smoothstep(.035,.15,veins);
+ vec3 crust=vec3(0.95,0.25,0.04)*1.8;
+ vec3 magma=vec3(3.2,1.6,0.3)*(lava*5.0);
+ totalEmissiveRadiance=crust+magma;
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.38,.07,.01),lava*.5);`);
+};
+const flamingMaterial=rockMaterialVariants[5].clone();
+flamingMaterial.color.setHex(0xff7a22);
+flamingMaterial.emissive.setHex(0xff4500);
+flamingMaterial.emissiveIntensity=4.5;
+flamingMaterial.onBeforeCompile=shader=>{
+ shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
+ shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
+ shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
+ shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+ float veins=abs(sin(rockPoint.x*4.2+sin(rockPoint.y*4.8)*.9)*sin(rockPoint.z*4.6+rockPoint.y*3.0));
+ float fire=1.-smoothstep(.03,.16,veins);
+ vec3 crust=vec3(1.0,0.32,0.06)*2.2;
+ vec3 blaze=vec3(3.2,1.8,0.35)*(fire*5.5);
+ totalEmissiveRadiance=crust+blaze;
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.6,0.18),0.55+fire*0.45);`);
+};
 const fastImpactMaterial=rockMaterialVariants[5].clone();
 fastImpactMaterial.emissive.setHex(0xff621c);
-fastImpactMaterial.emissiveIntensity=2.8;
+fastImpactMaterial.emissiveIntensity=3.6;
 const bluePlasmaMaterial=rockMaterialVariants[5].clone();
-bluePlasmaMaterial.emissive.setHex(0x0099ff);bluePlasmaMaterial.emissiveIntensity=3.2;bluePlasmaMaterial.color.setHex(0x1a4570);
+bluePlasmaMaterial.emissive.setHex(0x0099ff);bluePlasmaMaterial.emissiveIntensity=3.8;bluePlasmaMaterial.color.setHex(0x1a4570);
 bluePlasmaMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
  shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*4.5+sin(rockPoint.y*5.)*.9)*sin(rockPoint.z*5.5+rockPoint.y*3.2));
- float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance*=energy*1.4;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.05,.45,.95),energy*.8);`);
+ float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance=vec3(.05,.45,.95)*1.5+energy*vec3(.2,.7,1.5)*3.5;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.05,.45,.95),energy*.8);`);
 };
 const greenPlasmaMaterial=rockMaterialVariants[5].clone();
-const fizzingFireMaterial=rockMaterialVariants[5].clone();fizzingFireMaterial.emissive.setHex(0xff5500);fizzingFireMaterial.emissiveIntensity=4.2;fizzingFireMaterial.color.setHex(0x902500);
+const fizzingFireMaterial=rockMaterialVariants[5].clone();fizzingFireMaterial.emissive.setHex(0xff5500);fizzingFireMaterial.emissiveIntensity=4.6;fizzingFireMaterial.color.setHex(0x902500);
 fizzingFireMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
  shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*6.0+sin(rockPoint.y*6.5)*1.2)*sin(rockPoint.z*6.0+rockPoint.y*4.0));
- float energy=1.-smoothstep(.02,.18,veins);totalEmissiveRadiance*=energy*1.8;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,.45,.05),energy*.85);`);
+ float energy=1.-smoothstep(.02,.18,veins);totalEmissiveRadiance=vec3(1.0,.35,.05)*2.0+energy*vec3(2.5,1.5,.3)*4.2;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,.45,.05),energy*.85);`);
 };
 const goldRedPlasmaMaterial=rockMaterialVariants[5].clone();
 goldRedPlasmaMaterial.color.setHex(0xfffaea); // Radiant ivory white-gold crust
 goldRedPlasmaMaterial.emissive.setHex(0xffea70); // Brilliant sparkling solar gold-white emissive glow
-goldRedPlasmaMaterial.emissiveIntensity=5.8;
+goldRedPlasmaMaterial.emissiveIntensity=6.2;
 goldRedPlasmaMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
@@ -2729,35 +2773,37 @@ goldRedPlasmaMaterial.onBeforeCompile=shader=>{
  float sparkle=pow(abs(sin(rockPoint.x*24.0)*sin(rockPoint.y*24.0)*sin(rockPoint.z*24.0)),5.0);
  float veins=abs(sin(rockPoint.x*5.8+sin(rockPoint.y*6.2)*1.2)*sin(rockPoint.z*5.8+rockPoint.y*4.2));
  float energy=1.-smoothstep(.018,.16,veins);
- totalEmissiveRadiance+=(energy*3.2+sparkle*8.5)*vec3(1.0,0.96,0.72);
+ totalEmissiveRadiance+=(energy*4.0+sparkle*12.0)*vec3(1.0,0.96,0.72);
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.98,0.92),energy*.95);`);
 };
-greenPlasmaMaterial.emissive.setHex(0x00ff55);greenPlasmaMaterial.emissiveIntensity=3.2;greenPlasmaMaterial.color.setHex(0x185528);
+greenPlasmaMaterial.emissive.setHex(0x00ff55);greenPlasmaMaterial.emissiveIntensity=3.8;greenPlasmaMaterial.color.setHex(0x185528);
 greenPlasmaMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
  shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*4.5+sin(rockPoint.y*5.)*.9)*sin(rockPoint.z*5.5+rockPoint.y*3.2));
- float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance*=energy*1.4;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.08,.92,.32),energy*.8);`);
+ float energy=1.-smoothstep(.03,.16,veins);totalEmissiveRadiance=vec3(.08,.85,.25)*1.5+energy*vec3(.3,1.6,.6)*3.5;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.08,.92,.32),energy*.8);`);
 };
 let blueFireballUntil=0,greenBreathUntil=0,waveBlueMeteorsRemaining=2,waveGreenMeteorRemaining=1;
-moltenMaterial.onBeforeCompile=shader=>{shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
- float veins=abs(sin(rockPoint.x*3.5+sin(rockPoint.y*4.)*.8)*sin(rockPoint.z*4.5+rockPoint.y*2.7));float lava=1.-smoothstep(.035,.13,veins);totalEmissiveRadiance*=lava;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.22,.035,.006),lava*.6);`)};
-const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6b18,transparent:true,opacity:.72,depthWrite:false,blending:THREE.AdditiveBlending});
-const fizzingPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff5500,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
+const threatCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff6611,transparent:true,opacity:.95,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+const threatCoreCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xffea60,transparent:true,opacity:.90,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+const dragonFireCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff7711,transparent:true,opacity:.96,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+const dragonFireCoreMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xfff088,transparent:true,opacity:.94,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+const steamyFireCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xa0d8ef,transparent:true,opacity:.70,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+const fizzingPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xff5500,transparent:true,opacity:.95,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
 const goldRedPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xfff5b8,transparent:true,opacity:.98,depthWrite:false,blending:THREE.AdditiveBlending});
 const bluePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00bfff,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
 const greenPowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0x00ff66,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
 const purpleCrystalMaterial=rockMaterialVariants[5].clone();
-purpleCrystalMaterial.emissive.setHex(0xa855f7);purpleCrystalMaterial.emissiveIntensity=4.6;purpleCrystalMaterial.color.setHex(0x581c87);
+purpleCrystalMaterial.emissive.setHex(0xa855f7);purpleCrystalMaterial.emissiveIntensity=5.2;purpleCrystalMaterial.color.setHex(0x581c87);
 purpleCrystalMaterial.onBeforeCompile=shader=>{
  shader.vertexShader='varying vec3 rockPoint;\n'+shader.vertexShader;
  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrockPoint=position;');
  shader.fragmentShader='varying vec3 rockPoint;\n'+shader.fragmentShader;
  shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  float veins=abs(sin(rockPoint.x*5.8+sin(rockPoint.y*6.2)*1.1)*sin(rockPoint.z*5.8+rockPoint.y*4.1));
- float energy=1.-smoothstep(.02,.17,veins);totalEmissiveRadiance*=energy*2.2;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.75,.35,1.0),energy*.9);`);
+ float energy=1.-smoothstep(.02,.17,veins);totalEmissiveRadiance=vec3(.65,.25,1.0)*1.8+energy*vec3(1.2,.5,1.8)*4.5;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.75,.35,1.0),energy*.9);`);
 };
 const purplePowerupCoronaMat=new THREE.SpriteMaterial({map:visualBank.images.flash,color:0xc084fc,transparent:true,opacity:.96,depthWrite:false,blending:THREE.AdditiveBlending});
 
@@ -2846,11 +2892,15 @@ function createPlayableRock(size=1,variant=-1){
  mesh.userData.sharedRockAsset=true;rockStats.meshCreations++;
  mesh.scale.set(size*(.87+Math.random()*.25),size*(.88+Math.random()*.24),size*(.87+Math.random()*.28));
  mesh.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
- // Luminous threat corona: visually distinguishes interceptable threats on Paulo's combat plane from background streaks
+ // Dual-layer luminous atmospheric plasma threat corona: radiant self-illuminating entry aura
  const corona=new THREE.Sprite(threatCoronaMat);
- corona.scale.setScalar(size*2.6);
+ corona.scale.setScalar(size*3.2);
  corona.name='threat-corona';
  mesh.add(corona);
+ const coreCorona=new THREE.Sprite(threatCoreCoronaMat);
+ coreCorona.scale.setScalar(size*1.8);
+ coreCorona.name='threat-core-corona';
+ mesh.add(coreCorona);
  return mesh;
 }
 function spawnMeteor(random=Math.random,opening=null){
@@ -2930,14 +2980,15 @@ function spawnMeteor(random=Math.random,opening=null){
   else if(isMassive)x=(wave1SpawnIndex%2===0?-42:42);
  }
  const mesh=createPlayableRock(size);
- if(kind==='blue_plasma'){mesh.material=bluePlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=bluePowerupCoronaMat;c.scale.setScalar(size*3.4);}}
- else if(kind==='green_plasma'){mesh.material=greenPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=greenPowerupCoronaMat;c.scale.setScalar(size*3.4);}}
+ if(kind==='blue_plasma'){mesh.material=bluePlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=bluePowerupCoronaMat;c.scale.setScalar(size*3.6);}}
+ else if(kind==='green_plasma'){mesh.material=greenPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=greenPowerupCoronaMat;c.scale.setScalar(size*3.6);}}
  else if(kind==='fizzing_flame'){mesh.material=fizzingFireMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=fizzingPowerupCoronaMat;c.scale.setScalar(size*4.2);}}
  else if(kind==='mega_fire_breath'){mesh.material=goldRedPlasmaMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=goldRedPowerupCoronaMat;c.scale.setScalar(size*4.8);}}
  else if(kind==='purple_crystal'){mesh.material=purpleCrystalMaterial;const c=mesh.getObjectByName('threat-corona');if(c){c.material=purplePowerupCoronaMat;c.scale.setScalar(size*4.5);}}
- else if(opening?.kind==='flaming')mesh.material=moltenMaterial;
+ else if(kind==='flaming'||opening?.kind==='flaming')mesh.material=flamingMaterial;
  else if(fastImpact)mesh.material=fastImpactMaterial;
- else if(kind==='molten')mesh.material=moltenMaterial;
+ else if(kind==='molten'||isMassive)mesh.material=moltenMaterial;
+ else {mesh.material=moltenMaterial;}
  if(isPowerup==='fire_stream'){message('🔥 FIZZING FLAME POWERUP INCOMING! DESTROY FOR CONTINUOUS FIRE BREATH!');sound('bonus');}
  else if(isPowerup==='green_breath'){message('🌪️ GREEN TEMPEST METEOR INCOMING — GALE BREATH POWERUP!');sound('bonus');}
  else if(isPowerup==='blue_fireball'){message('⚡ BLUE PLASMA METEOR INCOMING — BLUE FIREBALL POWERUP!');sound('bonus');}
@@ -4116,12 +4167,13 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
   const progress=Math.max(0,1-(s.life/(s.maxLife||1)));
   const expand=1.0+progress*(s.mega?3.8:2.6);
   s.mesh.scale.setScalar(s.baseSize*expand);
-  s.mesh.rotation.z+=dt*6.5;
-  s.mesh.rotation.x+=dt*3.5;
-  if(performanceLab.isEnabled('particles')){
-   trailEmberPool.add(s.mesh.position,(s.mega?1.85:.95)*expand);
-   if(Math.random()<0.40)trailSmokePool.add(s.mesh.position,(s.mega?2.2:1.2)*expand);
-  }
+ }
+ s.mesh.rotation.z+=dt*(s.isStream?6.5:4.5);
+ s.mesh.rotation.x+=dt*3.5;
+ if(!s.wet&&performanceLab.isEnabled('particles')){
+  const emberScale=s.mega?1.85:(s.blue?1.4:(s.isStream?1.2:.95));
+  trailEmberPool.add(s.mesh.position,emberScale);
+  if(Math.random()<0.40)trailSmokePool.add(s.mesh.position,emberScale*1.15);
  }
  if(!s.hostile&&orbitalTheater){
   for(const sat of (orbitalTheater.satellites||[])){
@@ -4388,21 +4440,30 @@ if(m.grounded){
   }
   const inStratosphere=m.mesh.position.y>58;
   m.mesh.rotation.x+=dt*2;m.mesh.rotation.y+=dt*1.5;
+  const pulse=1.0+Math.sin(elapsed*12+m.mesh.position.x*2.5)*0.14;
   const corona=m.mesh.getObjectByName('threat-corona');
   if(corona){
-   const targetScale=m.size*(inStratosphere?4.0:2.6);
-   corona.scale.setScalar(THREE.MathUtils.lerp(corona.scale.x,targetScale,Math.min(1,dt*6)));
+   const targetScale=m.size*(inStratosphere?4.5:3.2)*pulse;
+   corona.scale.setScalar(THREE.MathUtils.lerp(corona.scale.x,targetScale,Math.min(1,dt*8)));
   }
-  if(m.burning||inStratosphere){
-   const burnScale=inStratosphere?Math.max(m.size*1.15,1.8):m.size*.6;
+  const coreCorona=m.mesh.getObjectByName('threat-core-corona');
+  if(coreCorona){
+   const targetScale=m.size*(inStratosphere?2.6:1.8)*pulse;
+   coreCorona.scale.setScalar(THREE.MathUtils.lerp(coreCorona.scale.x,targetScale,Math.min(1,dt*8)));
+  }
+  if(m.burning||inStratosphere||m.isMassive){
+   const burnScale=inStratosphere?Math.max(m.size*1.2,1.9):m.size*.75;
    cinematicFX.fire(m.mesh.position,elapsed,burnScale,0,'meteor');
+   if(performanceLab.isEnabled('particles')&&Math.random()<0.65){
+    trailEmberPool.add(m.mesh.position.clone().add(new THREE.Vector3((Math.random()-.5)*m.size*.8,(Math.random()-.5)*m.size*.8,(Math.random()-.5)*m.size*.8)),Math.max(0.8,m.size*.45));
+   }
   }
   m.trail-=dt;
   if(m.trail<=0){
-   m.trail=inStratosphere?.025:(m.fastImpact?.035:.11);
+   m.trail=inStratosphere?.025:(m.fastImpact?.035:.09);
    if(quality.allowTrail(trailParticles.length)){
-    emitTrail(m.mesh.position,!inStratosphere&&!m.fastImpact&&(!m.burning||Math.random()<.73));
-    if(inStratosphere&&Math.random()<.45)emitTrail(m.mesh.position,false);
+    emitTrail(m.mesh.position,!inStratosphere&&!m.fastImpact&&(!m.burning||Math.random()<.65));
+    if(inStratosphere&&Math.random()<.55)emitTrail(m.mesh.position,false);
    }
   }
   if(!m.nearMissTriggered&&!m.grounded&&!m.dragonHunter&&m.vel&&m.vel.y<-2.0){
