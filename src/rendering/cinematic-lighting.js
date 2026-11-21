@@ -135,10 +135,16 @@ export function createReflectionController(scene,width=256,height=128){
      for(const m of mats){
       if(!m)continue;
       const name=((m.name||'')+' '+(o.name||'')+' '+(o.parent?.name||'')).toLowerCase();
-      const isWindow=m.isMeshPhysicalMaterial||name.includes('glass')||name.includes('window')||name.includes('glazing')||m.name==='window-glass'||(m.roughness??1)<=0.15;
+      const isRoof=name.includes('roof')||name.includes('tar')||name.includes('parapet')||name.includes('top')||m.name==='roof';
+      const isWindow=!isRoof&&(m.isMeshPhysicalMaterial||name.includes('glass')||name.includes('window')||name.includes('glazing')||m.name==='window-glass'||(m.roughness??1)<=0.15);
       const isVehicle=name.includes('car')||name.includes('heli')||name.includes('truck')||name.includes('van')||name.includes('vehicle')||name.includes('police')||name.includes('chinook')||name.includes('blade')||name.includes('rotor');
       const isDragon=name.includes('dragon')||name.includes('paulo')||name.includes('wing')||name.includes('scale')||name.includes('horn');
-      if(isWindow){
+      if(isRoof){
+       // Horizontal roofs: strictly matte with ZERO envMap reflection, preventing sky glare
+       m.envMapIntensity=0.0;
+       m.roughness=0.98;
+       m.metalness=0.0;
+      }else if(isWindow){
        if(!m.envMap&&scene.environment){
         m.envMap=scene.environment;
         m.needsUpdate=true;
@@ -146,6 +152,7 @@ export function createReflectionController(scene,width=256,height=128){
        m.envMapIntensity=3.2;
        m.clearcoat=1.0;
        m.clearcoatRoughness=0.06;
+       m.roughness=0.05;
        materials.add(m);
       }else if(isVehicle){
        if(!m.envMap&&scene.environment){m.envMap=scene.environment;m.needsUpdate=true;}
@@ -154,10 +161,10 @@ export function createReflectionController(scene,width=256,height=128){
        if(!m.envMap&&scene.environment){m.envMap=scene.environment;m.needsUpdate=true;}
        m.envMapIntensity=0.80;
       }else{
-       // Masonry, roofs, concrete, asphalt: natural ambient diffuse bounce without mirror glare
-       m.envMapIntensity=0.35;
-       m.roughness=Math.max(m.roughness??0.88,0.85);
-       m.metalness=Math.min(m.metalness??0,0.05);
+       // Masonry, walls, concrete, asphalt: strictly matte, zero mirror sky glare
+       m.envMapIntensity=0.0;
+       m.roughness=Math.max(m.roughness??0.92,0.90);
+       m.metalness=0.0;
       }
      }
     });

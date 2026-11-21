@@ -3,7 +3,7 @@
 export function disasterSkyIntensity(wave=1,skylineDamage=0){
  const chapter=Number.isFinite(wave)?Math.max(0,Math.min(1,(wave-1)/14)):0;
  const damage=Number.isFinite(skylineDamage)?Math.max(0,Math.min(1,skylineDamage)):0;
- return .12+chapter*.35+damage*.5;
+ return (chapter*0.35+damage*0.55);
 }
 
 // v4.2 cinematic sky and street surface treatment.
@@ -47,7 +47,7 @@ export function createCinematicSky(THREE,scene){
  col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
  float highStar=(1.-smoothstep(.025,.18,length(st)))*step(.994,chance);
  col+=vec3(.85,.9,.98)*highStar*(smoothstep(.70,1.,vUv.y)+altFactor*.75)*(1.-sheet)*(.15+.85*night+altFactor*.75);
- float sun=exp(-length((vUv-vec2(.22,.52))*vec2(aspect,1.))*30.);col+=vec3(1.0,.68,.34)*sun*(1.-night)*(.35+dusk*1.2);
+ float sun=exp(-length((vUv-vec2(.18,.82))*vec2(aspect,1.))*38.);col+=vec3(1.0,.78,.52)*sun*(1.-night)*(.24+dusk*0.65);
  // Distant skyline impact glows extend above the roofline instead of
  // disappearing behind the foreground. Restrained radiance, no extra draw calls.
  float impactWest=exp(-pow((vUv.x-.31)*9.5,2.)-pow((vUv.y-.49)*7.8,2.));
