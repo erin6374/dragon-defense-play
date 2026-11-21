@@ -58,7 +58,7 @@ let skipped=0;
 for(let i=0;i<=1000;i++)for(let j=0;j<=100;j++){
  const age=i/1000,feather=j/100;
  const fade=smooth(0,.11,age)*(1-smooth(.78,1,age));
- if(fade*feather*.94<.005){
+ if(fade*feather*1.0<.005){
   skipped++;
   for(const sourceSeed of [0,.17,.51,.99]){
    const maxAlpha=(.90+.10*sourceSeed)*feather*fade;
