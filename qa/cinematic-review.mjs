@@ -71,6 +71,30 @@ try{
   return {pairs,clock:{before:performance.now(),after:performance.now(),date:Date.now()}};
  });
  }finally{await page.clock.resume();}
+ // Independent smoke OFF/ON comparison; mirror variation is not smoke coverage.
+ let opacityPair;
+ await page.clock.pauseAt(new Date('2026-11-19T12:00:00.000Z'));
+ try{
+  opacityPair=await page.evaluate(()=>{
+   const vfx=window.__DD_FIRE_VFX, captures=[];
+   if(vfx.smokeQaOpacity!==1)throw Error('Smoke QA opacity default must be 1');
+   try{
+    for(const opacity of [0,1]){
+     vfx.setSmokeQaOpacity(opacity);
+     captures.push({opacity,png:window.__DD_CINEMATIC_REVIEW.frame().png});
+    }
+   }finally{vfx.setSmokeQaOpacity(1);}
+   return {captures,restored:vfx.smokeQaOpacity};
+  });
+ }finally{await page.clock.resume();}
+ assert.equal(opacityPair.restored,1);
+ report.smokeOpacityComparison={captures:[],controls:'QA-only smoke fragment alpha 0/1, frozen browser clock, original opacity restored',limitation:'Sequential GPU frames may advance internal clocks; pixel delta is not art approval or Windows FPS'};
+ for(const c of opacityPair.captures){
+  const filename='smoke-opacity-'+(c.opacity?'on':'off')+'.png',bytes=Buffer.from(c.png,'base64');
+  await writeFile(`${out}/${filename}`,bytes);
+  report.smokeOpacityComparison.captures.push({opacity:c.opacity,filename,sha256:createHash('sha256').update(bytes).digest('hex')});
+ }
+ assert.notEqual(report.smokeOpacityComparison.captures[0].sha256,report.smokeOpacityComparison.captures[1].sha256,'Smoke opacity images are identical');
  assert.equal(smoke.pairs.length,2);
  assert.equal(smoke.clock.before,smoke.clock.after,'A/B browser clock advanced');
  const smokeEvidence=[];
@@ -90,7 +114,7 @@ try{
  assert.notEqual(smokeEvidence[0].sha256,smokeEvidence[1].sha256,'Smoke A/B produced byte-identical PNGs; mirror toggle may be invisible or scene lacks smoke');
  // Decode both captures in the browser to quantify actual changed pixels, not merely PNG byte changes.
  // This is evidence of visible variation, NOT a smoke segmentation or art-approval metric.
- const pixelComparison=await page.evaluate(async pairs=>{
+ const comparePixels=async pairs=>page.evaluate(async pairs=>{
   const read=async base64=>{
    const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
    const bitmap=await createImageBitmap(new Blob([bytes],{type:'image/png'}));
@@ -115,7 +139,11 @@ try{
   }
   const total=a.width*a.height;
   return {width:a.width,height:a.height,totalPixels:total,changedPixels:changed,changedPixelFraction:changed/total,meanRgbChannelDelta:channelDelta/(total*3),changedBounds:changed?{minX,minY,maxX,maxY}:null,changedByTile:{columns:tilesX,rows:tilesY,counts:changedByTile}};
- },smoke.pairs.map(({png})=>({png})));
+ },pairs.map(({png})=>({png})));
+ const pixelComparison=await comparePixels(smoke.pairs);
+ const opacityPixels=await comparePixels(opacityPair.captures);
+ report.smokeOpacityComparison.pixelComparison=opacityPixels;
+ assert.ok(opacityPixels.changedPixels>0,'Smoke opacity decoded pixels are identical');
  report.smokeComparison.pixelComparison=pixelComparison;
  report.smokeComparison.visualCoverageAssessment={status:pixelComparison.changedPixelFraction>=0.02?'comparison_has_material_change_not_art_approved':'insufficient_visible_ab_change_for_art_review',minimumProxyFraction:0.02,notes:'A/B pixel change is only a visibility proxy, NOT smoke segmentation; spatial tile counts and bounds help reviewers locate actual differences. Artistic acceptance remains manual.'};
  assert.ok(pixelComparison.changedPixels>0,'Smoke A/B has different PNG bytes but identical decoded pixels');

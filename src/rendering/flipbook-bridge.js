@@ -9,6 +9,9 @@ let mode='flipbook';
 let smokeMode='plume';
 // Default-on RC59 mirror; disable for same-source matched A/B captures.
 let smokeMirror=true;
+// QA-only opacity isolation; normal rendering is always 1.
+let smokeQaOpacity=1;
+const qaSmokeControl=typeof location!=='undefined'&&new URLSearchParams(location.search).get('qa')==='1';
 try{const params=new URLSearchParams(location.search);
  if(params.get('firevfx')==='procedural')mode='procedural';
  if(params.get('smokevfx')==='legacy')smokeMode='legacy';
@@ -19,6 +22,7 @@ function apply(){
   u.useFlipbook.value=state.ready&&mode==='flipbook'?1:0;
   if(u.plumeMode)u.plumeMode.value=smokeMode==='plume'?1:0;
   if(u.smokeMirror)u.smokeMirror.value=smokeMirror?1:0;
+  if(u.smokeQaOpacity)u.smokeQaOpacity.value=smokeQaOpacity;
   if(state.ready){u.flameAtlas.value=state.fire;u.smokeAtlas.value=state.smoke;}
  }
 }
@@ -38,13 +42,16 @@ function start(){
 }
 if(typeof window!=='undefined')window.__DD_FIRE_VFX={
  get packaged(){return PACKAGED_FLIPBOOKS;},get ready(){return state.ready;},
- get mode(){return state.ready?mode:'procedural';},get smokeMode(){return smokeMode;},get smokeMirror(){return smokeMirror;},get error(){return state.error;},
+ get mode(){return state.ready?mode:'procedural';},get smokeMode(){return smokeMode;},get smokeMirror(){return smokeMirror;},get smokeQaOpacity(){return smokeQaOpacity;},get error(){return state.error;},
  setMode(next){if(next!=='procedural'&&next!=='flipbook')throw Error('Invalid fire mode');
  mode=next;apply();return this.mode;},
  setSmokeMode(next){if(next!=='legacy'&&next!=='plume')throw Error('Invalid smoke mode');
  smokeMode=next;apply();return this.smokeMode;},
  setSmokeMirror(next){if(typeof next!=='boolean')throw Error('Invalid smoke mirror flag');
- smokeMirror=next;apply();return this.smokeMirror;}
+ smokeMirror=next;apply();return this.smokeMirror;},
+ setSmokeQaOpacity(next){if(!qaSmokeControl)throw Error('QA-only smoke control');
+ if(next!==0&&next!==1)throw Error('Smoke QA opacity must be 0 or 1');
+ smokeQaOpacity=next;apply();return this.smokeQaOpacity;}
 };
 const helper=`
 uniform sampler2D flameAtlas;
@@ -65,6 +72,7 @@ export function prepareFlipbookMaterial(material,kind){
  if(!u.useFlipbook){u.useFlipbook={value:0};u.flameAtlas={value:null};u.smokeAtlas={value:null};registry.add(u);}
  if(kind===1&&!u.plumeMode)u.plumeMode={value:smokeMode==='plume'?1:0};
  if(kind===1&&!u.smokeMirror)u.smokeMirror={value:smokeMirror?1:0};
+ if(kind===1&&!u.smokeQaOpacity)u.smokeQaOpacity={value:1};
  if(kind===3){
   const marker='color=mix(color,vec3(.025,.013,.008),opening*.85);';
   if(!material.fragmentShader.includes(marker))throw Error('Opening shader changed; review flipbook contact glow');
@@ -215,8 +223,12 @@ ${anchor}`);
  }
 ${anchor}`);
  }
+ if(kind===1){
+  if(!patched.includes('if(alpha<.005)discard;'))throw Error('Smoke alpha guard changed');
+  patched=patched.replace('if(alpha<.005)discard;', 'alpha*=smokeQaOpacity; if(alpha<.005)discard;');
+ }
  material.fragmentShader=patched.replace('void main(){',
-  (kind===1?'uniform float plumeMode;\nuniform float smokeMirror;\n':'')+helper+'\nvoid main(){');
+  (kind===1?'uniform float plumeMode;\nuniform float smokeMirror;\nuniform float smokeQaOpacity;\n':'')+helper+'\nvoid main(){');
  start();apply();
 }
 export function flipbookStatus(){return {packaged:PACKAGED_FLIPBOOKS,ready:state.ready,
