@@ -72,6 +72,7 @@ try{
  });
  }finally{await page.clock.resume();}
  // Independent smoke OFF/ON comparison; mirror variation is not smoke coverage.
+ // The opacity pair must redraw the existing scene, not advance the simulation.
  let opacityPair;
  await page.clock.pauseAt(new Date('2026-11-19T12:00:00.000Z'));
  try{
@@ -83,7 +84,7 @@ try{
    try{
     for(const opacity of [0,1]){
      vfx.setSmokeQaOpacity(opacity);
-     const capture=window.__DD_CINEMATIC_REVIEW.frame();
+     const capture=window.__DD_CINEMATIC_REVIEW.renderOnly();
      const pools=window.__DD_COMBUSTION_QA;
      if(!Array.isArray(pools)||pools.length===0)throw Error('No combustion QA pools registered');
      captures.push({opacity,png:capture.png,clock:performance.now(),mode:vfx.smokeMode,mirror:vfx.smokeMirror,
