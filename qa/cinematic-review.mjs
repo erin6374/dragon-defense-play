@@ -84,7 +84,10 @@ try{
     for(const opacity of [0,1]){
      vfx.setSmokeQaOpacity(opacity);
      const capture=window.__DD_CINEMATIC_REVIEW.frame();
-     captures.push({opacity,png:capture.png,clock:performance.now(),mode:vfx.smokeMode,mirror:vfx.smokeMirror});
+     const pools=window.__DD_COMBUSTION_QA;
+     if(!Array.isArray(pools)||pools.length===0)throw Error('No combustion QA pools registered');
+     captures.push({opacity,png:capture.png,clock:performance.now(),mode:vfx.smokeMode,mirror:vfx.smokeMirror,
+      combustion:pools.map(pool=>pool.snapshot())});
     }
    }finally{vfx.setSmokeQaOpacity(1);}
    return {captures,restored:vfx.smokeQaOpacity,clock:{before,after:performance.now()},originalMirror,originalMode};
@@ -94,7 +97,11 @@ try{
  assert.equal(opacityPair.clock.before,opacityPair.clock.after,'Smoke opacity A/B browser clock advanced');
  assert.ok(opacityPair.captures.every(c=>c.clock===opacityPair.clock.before),'Smoke opacity captures have unequal browser timestamps');
  assert.ok(opacityPair.captures.every(c=>c.mode===opacityPair.originalMode&&c.mirror===opacityPair.originalMirror),'Smoke opacity comparison changed plume mode or mirroring');
- report.smokeOpacityComparison={captures:[],controls:'QA-only smoke fragment alpha 0/1, verified identical browser timestamps and plume mode/mirror, original opacity restored',limitation:'Sequential GPU frames may advance internal clocks; pixel delta is not art approval or Windows FPS'};
+ assert.deepEqual(opacityPair.captures[0].combustion,opacityPair.captures[1].combustion,
+  'Smoke opacity comparison advanced GPU clock, source buffers, pool counters or instance counts');
+ assert.ok(opacityPair.captures[0].combustion.some(pool=>pool.activeCount>0),
+  'Smoke opacity comparison lacks active combustion sources');
+ report.smokeOpacityComparison={captures:[],controls:'QA-only smoke fragment alpha 0/1, verified identical browser timestamps, GPU clock, source buffers, pool counters, instance counts and plume mode/mirror; original opacity restored',limitation:'Read-only CPU-side GPU uniform and source-buffer snapshots match; actual GPU execution is not independently frozen. Pixel delta is not art approval or Windows FPS'};
  for(const c of opacityPair.captures){
   const filename='smoke-opacity-'+(c.opacity?'on':'off')+'.png',bytes=Buffer.from(c.png,'base64');
   await writeFile(`${out}/${filename}`,bytes);
