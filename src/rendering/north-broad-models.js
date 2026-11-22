@@ -15,7 +15,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1005656.glb',
     frontWidth: 20.29,
     gameBuilding: 'south-diamond-corner',
-    position: [224.0, 0, -0.15],
+    position: [215.2, 0, -0.15],
     isChurch: true,
     sign: null,
     matchConfidence: 'Exact Corner Match (Corner of Broad & Diamond, 2101-07 N Broad)'
@@ -425,16 +425,24 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       }
     } else {
       // Rowhouse / Storefront Damage Stages
-      if (entry.groups.cornice) entry.groups.cornice.visible = entry.damage < 0.15;
-      if (entry.groups.sign) entry.groups.sign.visible = entry.damage < 0.20;
-      if (entry.groups.roof) entry.groups.roof.visible = entry.damage < 0.35;
-      if (entry.groups.facade2) entry.groups.facade2.visible = entry.damage < 0.45;
-      if (entry.groups.floor2) entry.groups.floor2.visible = entry.damage < 0.55;
-      if (entry.groups.facade1) entry.groups.facade1.visible = entry.damage < 0.65;
-      if (entry.groups.floor1) entry.groups.floor1.visible = entry.damage < 0.75;
-      if (entry.groups.facade0) entry.groups.facade0.visible = entry.damage < 0.85;
-      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.90;
-      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.95;
+      // Realistic procedural damage: mid-level facade blows out as big chunks,
+      // exposing interior floor slabs while the roof and top level stay perched overhead!
+      if (entry.glassMeshes) {
+        for (const g of entry.glassMeshes) g.visible = entry.damage < 0.15;
+      }
+      if (entry.groups.sign) entry.groups.sign.visible = entry.damage < 0.25;
+      if (entry.groups.cornice) entry.groups.cornice.visible = entry.damage < 0.35;
+      // Mid-level facade breaches first, creating a huge cavity through the middle
+      if (entry.groups.facade1) entry.groups.facade1.visible = entry.damage < 0.45;
+      if (entry.groups.floor1) entry.groups.floor1.visible = entry.damage < 0.65;
+      // Upper facade breaches next, but roof and floor2 stay intact
+      if (entry.groups.facade2) entry.groups.facade2.visible = entry.damage < 0.70;
+      if (entry.groups.facade0) entry.groups.facade0.visible = entry.damage < 0.80;
+      // Roof and top level (floor2) remain standing overhead until severe damage!
+      if (entry.groups.roof) entry.groups.roof.visible = entry.damage < 0.85;
+      if (entry.groups.floor2) entry.groups.floor2.visible = entry.damage < 0.88;
+      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.92;
+      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.96;
 
       // Complete collapse
       if (entry.damage >= 0.99) {

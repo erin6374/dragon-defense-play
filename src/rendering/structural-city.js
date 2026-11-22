@@ -234,7 +234,28 @@ export function createStructuralCity(THREE,scene,bank){
   // follow the same hit. Do not strip the tallest 5–15% of ALL school pieces
   // every time syncStructuralDamage() reconciles the health indicator.
   if(b.school&&target<1)return;
-  const count=Math.floor(b.structuralParts.length*target);const ordered=[...b.structuralParts].sort((a,b)=>b.original.position.y-a.original.position.y);for(let i=0;i<count;i++)detach(ordered[i],ordered[i].position,.5);
+  const count=Math.floor(b.structuralParts.length*target);
+  // Procedural 3D chunk damage: detach in organic volumetric clusters,
+  // leaving upper floor sections and roofs partially intact over blown-out cavities.
+  const bSeed = Math.abs(Math.sin(b.x * 12.9898 + b.z * 78.233)) * 43758.5453;
+  const chunks = [
+    new THREE.Vector3(b.x + (bSeed % 1 - 0.5) * b.w * 0.6, b.h * 0.35, b.z + ((bSeed * 1.3) % 1 - 0.5) * b.d * 0.6),
+    new THREE.Vector3(b.x + ((bSeed * 2.7) % 1 - 0.5) * b.w * 0.7, b.h * 0.65, b.z + ((bSeed * 3.1) % 1 - 0.5) * b.d * 0.5),
+    new THREE.Vector3(b.x + ((bSeed * 4.9) % 1 - 0.5) * b.w * 0.5, b.h * 0.45, b.z + ((bSeed * 5.3) % 1 - 0.5) * b.d * 0.7),
+  ];
+  const partScores = b.structuralParts.map(p => {
+    let minDist = Infinity;
+    for (const c of chunks) {
+      const d = p.original.position.distanceTo(c);
+      if (d < minDist) minDist = d;
+    }
+    const isTopRoof = p.type === 'roof' || p.original.position.y > b.h * 0.82;
+    const roofBias = isTopRoof ? 8.0 : 0.0;
+    const noise = Math.sin(p.original.position.x * 2.1 + p.original.position.y * 1.7 + p.original.position.z * 3.3) * 1.5;
+    return { part: p, score: minDist + roofBias + noise };
+  });
+  partScores.sort((a, b) => a.score - b.score);
+  for (let i = 0; i < count; i++) detach(partScores[i].part, partScores[i].part.position, 0.5);
   if(target>=1)for(const p of b.parts)detach(p,p.position,.6);
  }
  function update(dt){time+=dt;

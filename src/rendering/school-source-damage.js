@@ -57,10 +57,36 @@ export function createSchoolSourceDamage() {
      damage=texture(schoolDamageMap,damageUv).r;
     }
     if(damage>${glass?'.24':'.53'})discard;
-    float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
-    float chunkJagged=sin(schoolDamagePosition.x*0.85+1.2)*0.11+cos(schoolDamagePosition.x*2.3+schoolDamagePosition.z*1.7)*0.07+sin(schoolDamagePosition.z*0.6)*0.05;
-    float collapseCeiling=mix(1.15,0.08,schoolDestructionRatio)+chunkJagged*(0.12+0.20*schoolDestructionRatio);
-    if(normH>collapseCeiling)discard;`);
+     // Procedural volumetric 3D chunk damage:
+     // Large irregular chunks/craters carve out the lower and middle storeys
+     // while leaving upper floors and roof parapets intact overhead!
+     if(schoolDestructionRatio > 0.04){
+       float noise3D = sin(schoolDamagePosition.x*1.35 + schoolDamagePosition.y*1.85)*0.24 +
+                       cos(schoolDamagePosition.z*1.95 - schoolDamagePosition.y*1.15)*0.18 +
+                       sin(schoolDamagePosition.x*2.71 - schoolDamagePosition.z*2.33)*0.12;
+       // Chunk 1: Middle-East facade breach (X ≈ 6.5, Y ≈ 10.5, Z ≈ -1.0)
+       vec3 c1 = vec3(6.5, 10.5, -1.0);
+       float r1 = max(0.0, (schoolDestructionRatio - 0.06) * 11.5) * (1.0 + noise3D);
+       if(length(schoolDamagePosition - c1) < r1) discard;
+       // Chunk 2: Mid-Level Entrance & Atrium cavity (X ≈ -4.0, Y ≈ 7.0, Z ≈ -2.0)
+       vec3 c2 = vec3(-4.0, 7.0, -2.0);
+       float r2 = max(0.0, (schoolDestructionRatio - 0.20) * 12.0) * (1.0 + noise3D);
+       if(length(schoolDamagePosition - c2) < r2) discard;
+       // Chunk 3: West wing 3rd-floor structural bite (X ≈ -8.5, Y ≈ 14.0, Z ≈ -3.5)
+       vec3 c3 = vec3(-8.5, 14.0, -3.5);
+       float r3 = max(0.0, (schoolDestructionRatio - 0.38) * 10.5) * (1.0 + noise3D);
+       if(length(schoolDamagePosition - c3) < r3) discard;
+       // Chunk 4: Rear-East Classroom blast punch (X ≈ 5.0, Y ≈ 12.0, Z ≈ -12.0)
+       vec3 c4 = vec3(5.0, 12.0, -12.0);
+       float r4 = max(0.0, (schoolDestructionRatio - 0.55) * 12.5) * (1.0 + noise3D);
+       if(length(schoolDamagePosition - c4) < r4) discard;
+       // Catastrophic collapse only when building reaches 96%+ destruction
+       if(schoolDestructionRatio >= 0.96){
+         float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
+         float endCollapse = mix(1.0, 0.05, clamp((schoolDestructionRatio - 0.96) / 0.04, 0.0, 1.0));
+         if(normH > endCollapse) discard;
+       }
+     }`);
    if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
     #include <color_fragment>
     vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));

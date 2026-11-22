@@ -111,7 +111,7 @@ export function populateCity(city){
  house({name:'mcdonalds-2109-broad',x:173.0,w:22.0,h:6.2,d:18.0,z:-10.0,kind:'brickBrown',stories:1,bays:5,exteriorOnly:true});
 
  // Berean Presbyterian Church (2101-07 N Broad St) sits on the North corner of Diamond Street — GLB 1005656
- house({name:'south-diamond-corner',historicSash:true,x:224.0,w:20.29,h:16.0,d:50.0,z:-25.0,kind:'brickRed',stories:4,bays:6,exteriorOnly:true});
+ house({name:'south-diamond-corner',historicSash:true,x:220.5,w:31.0,h:16.0,d:50.0,z:-25.0,kind:'brickRed',stories:4,bays:6,exteriorOnly:true});
 
  // [W DIAMOND ST (2100 N) cross street intersection is 100% CLEAR from x = 237.0 to 253.0 (centerline x = 245)]
 
@@ -154,10 +154,10 @@ export function populateCity(city){
   if (right > 78 && left < 105 && bz > -35) return true;
   // 2100 Mid-block rowhouses & apartments (x = 105 to 162, z > -25)
   if (right > 105 && left < 162 && bz > -25) return true;
-  // McDonald's restaurant & parking lot (x = 162 to 214, z > -40)
-  if (right > 162 && left < 214 && bz > -40) return true;
-  // Berean Presbyterian Church lot (x = 214 to 237, z > -55)
-  if (right > 214 && left < 237 && bz > -55) return true;
+  // McDonald's restaurant & parking lot (x = 162 to 205, z > -40)
+  if (right > 162 && left < 205 && bz > -40) return true;
+  // Berean Presbyterian Church lot (x = 205 to 237, z > -55)
+  if (right > 205 && left < 237 && bz > -55) return true;
   // Diamond St cross street (x = 237 to 253 across ALL depths)
   if (right > 237 && left < 253) return true;
   return false;
