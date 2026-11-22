@@ -100,7 +100,7 @@ export function addStreetSetDressing(THREE,root){
  }
  // Crosswalk approaches across York, Dauphin, Susquehanna, and Diamond: broad, restrained pavement markings.
  const paint=new THREE.MeshBasicMaterial({color:0xd5d3c8,transparent:true,opacity:.82,depthWrite:false});
- for(const cx of [-167,-98,53,245])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+ for(const cx of [-167,-98,70,245])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
 
  // Authentic Philadelphia municipal green street-name blade signs at the four cross-street corners.
  function makeSignMaterial(text){
@@ -118,7 +118,7 @@ export function addStreetSetDressing(THREE,root){
  const crossSigns=[
   {name:'W YORK ST',x:-167},
   {name:'W DAUPHIN ST',x:-98},
-  {name:'W SUSQUEHANNA AVE',x:53},
+  {name:'W SUSQUEHANNA AVE',x:70},
   {name:'W DIAMOND ST',x:245}
  ];
  for(const cs of crossSigns){
@@ -149,7 +149,7 @@ export function addForegroundPlanting(THREE,root){
  for(let i=0;i<bed.count;i++){
   const x=-130+i*1.22;
   // Keep all 4 crosswalk approaches open.
-  if([-167,-98,53,245].some(cx=>Math.abs(x-cx)<7.5)){
+  if([-167,-98,70,245].some(cx=>Math.abs(x-cx)<7.5)){
    leaf.scale.setScalar(0);
   }else{
    const spread=(i*7%13)/13;

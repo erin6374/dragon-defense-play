@@ -2,12 +2,18 @@ import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '..
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
 const REPLACED_BY_NORTH_BROAD = new Set([
-  'united-fund-cream',
-  'south-cream-rowhouse',
-  'south-tan-brick',
-  'north-doll-museum',
-  'north-brownstone',
+  // 2200-block north (GLB replacements from manifest):
+  'united-fund-cream',          // 2227 N Broad — GLB 1007132
+  'south-cream-rowhouse',       // 2229-33 N Broad — GLB 1003388 / 1525758
+  'maximus-cares-brownstone',   // 2235-37 N Broad — GLB 1536711
+  'south-tan-brick',            // 2241 N Broad — GLB 1508518
+  'historic-tan-rowhouses',     // 2243-49 N Broad — GLB fill (hide to avoid Z-fight)
+  'north-doll-museum',          // 2251-53 N Broad — GLB 1536713 / 1542243
+  // 2200-block south (GLB models 1007133 & 1007134):
+  'north-brownstone',           // 2217-19 N Broad — GLB 1007133 / 1007134
+  // 2300-block corner (GLB 1051326 PECO):
   'north-2300-corner-commercial',
+  // 2101-07 N Broad (GLB 1005656 Berean Church):
   'south-diamond-corner'
 ]);
 
@@ -195,9 +201,9 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
-  const resistance=b.school?5.0:2.0;
+  const resistance=b.school?14.0:3.8;
   let singleHitDetached=0;
-  const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.06:0.15)));
+  const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.025:0.06)));
   for(const p of b.parts){
    if(p.state!=='attached'||p.type==='foundation')continue;
    const distance=distanceToBox(point,p);
@@ -232,11 +238,11 @@ export function createStructuralCity(THREE,scene,bank){
    b.collapseClock=0.25;
    const support=supportedFloors(b.parts,b.stories);
    const lostRatio=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
-   const catastrophic=b.pressure>=0.95&&lostRatio>0.88;
+   const catastrophic=!b.school&&b.pressure>=0.98&&lostRatio>0.92;
    let shed=0;
    for(const p of b.parts){
     if(p.state!=='attached'||p.type==='foundation')continue;
-    if(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached')){
+    if(!b.school&&(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached'))){
      p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
      if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}
     }

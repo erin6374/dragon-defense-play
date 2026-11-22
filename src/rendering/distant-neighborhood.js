@@ -179,8 +179,10 @@ export function createDistantNeighborhood({root,flameTexture}){
  for(const side of [-1,1]){
   for(const z of [-31,-53,-75]){
    for(let i=0;i<22;i++){
-    const x=side*(70+i*9.4);
-    if(occupiesCrossStreet(x,8.2,5.0))continue; // strictly keep all 4 cross streets 100% open
+     const x=side*(70+i*9.4);
+     if(occupiesCrossStreet(x,8.2,5.0))continue;
+     // Strict exclusion for deep frontage models and parcels
+     if((x>-162&&x<-136&&z>-55) || (x>-92&&x<-74&&z>-55) || (x>-75&&x<-10&&z>-38) || (Math.abs(x)<18&&z>-45) || (x>10&&x<60&&z>-38) || (x>58&&x<82) || (x>78&&x<134&&z>-40) || (x>170&&x<220&&z>-40) || (x>216&&x<238&&z>-55))continue; // strictly keep all 4 cross streets 100% open
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);

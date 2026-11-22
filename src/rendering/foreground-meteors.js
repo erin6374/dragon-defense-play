@@ -31,7 +31,7 @@ export function createForegroundMeteors(THREE, scene) {
   for (let i = 0; i < RAIN_COUNT; i++) {
     rainParticles.push({
       x: (Math.random() - 0.5) * 220,
-      y: 5 + Math.random() * 80,
+      y: 330.0 + Math.random() * 35.0,
       z: 22 + Math.random() * 18,
       vx: (Math.random() - 0.5) * 5.0,
       vy: -72.0 - Math.random() * 26.0,
@@ -177,7 +177,7 @@ export function createForegroundMeteors(THREE, scene) {
             onSpark(p.x, 0.45, p.z);
           }
           p.x = (Math.random() - 0.5) * 220;
-          p.y = 75.0 + Math.random() * 25.0;
+          p.y = 330.0 + Math.random() * 35.0;
           p.z = 22.0 + Math.random() * 18.0;
           p.vx = (Math.random() - 0.5) * 5.0;
           p.vy = -72.0 - Math.random() * 26.0;

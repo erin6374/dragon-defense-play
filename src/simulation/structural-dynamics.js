@@ -9,8 +9,8 @@ export function supportedFloors(parts,stories){
  for(let f=0;f<stories;f++){
   const ratio=total[f]>0?live[f]/total[f]:1.0;
   // Gradual structural response: a floor remains self-supporting unless >75% of columns on that floor are destroyed
-  below=below&&(ratio>=0.25);
-  supported.push(below||ratio>=0.45);
+  below=below&&(ratio>=0.12);
+  supported.push(below||ratio>=0.20);
  }
  return supported;
 }

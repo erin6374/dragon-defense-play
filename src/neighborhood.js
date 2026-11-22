@@ -19,8 +19,8 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  for(let z=52;z<=132;z+=12)b(nearStatic,0,-.359,z,2400,.012,.11,westJoint);
  b(nearStatic,0,-.43,-88,2400,.13,8.5,asphalt); // rear street beyond the last playable row
  b(nearStatic,0,-.35,11.8,2400,.16,4,walk);
- // Cross streets at York (x=-167), Dauphin (x=-98), Susquehanna (x=53), and Diamond (x=245)
- for(const x of [-167,-98,53,245]){
+ // Cross streets at York (x=-167), Dauphin (x=-98), Susquehanna (x=70), and Diamond (x=245)
+ for(const x of [-167,-98,70,245]){
   b(nearStatic,x,-.43,-22.5,14,.16,133,asphalt);
   for(const side of [-1,1]){
    b(nearStatic,x+side*8.2,-.31,-38,2.0,.18,100,walk);
@@ -28,8 +28,8 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  }
  // Broad Street's double yellow center markings and white lane dividers.
  const yellow=mat(0xb88d41);
- const crossings=[-167,-98,53,245];
- for(const [left,right] of [[-1150,-175],[-159,-106],[-90,45],[61,237],[253,1150]]){
+ const crossings=[-167,-98,70,245];
+ for(const [left,right] of [[-1150,-175],[-159,-106],[-90,62],[78,237],[253,1150]]){
   for(const z of [23.7,24.3])b(nearStatic,(left+right)/2,-.352,z,right-left,.015,.13,yellow);
  }
  for(let x=-1150;x<=1150;x+=8){

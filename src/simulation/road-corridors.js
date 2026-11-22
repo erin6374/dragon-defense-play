@@ -2,14 +2,14 @@
 // Intersecting East-West cross streets accurately calibrated to the North Broad photogrammetric survey:
 // - W York St (2400 N, x = -167, north of 2309-13 PECO corner)
 // - W Dauphin St (2300 N, x = -98, north of 2253 Doll Museum corner)
-// - W Susquehanna Ave (2200 N, x = 53, south of 2200 Crown Chicken / deli corner)
+// - W Susquehanna Ave (2200 N, x = 70, south of 2200 Crown Chicken / deli corner)
 // - W Diamond St (2100 N, x = 245, south of 2101-07 Berean Presbyterian Church corner)
 // East-west street direction is the negative world Z axis; their road
 // centerlines remain fixed through all distant-parallax blocks.
 export const CROSS_STREETS = Object.freeze([
   { name: 'W York St', x: -167, roadHalfWidth: 8.0 },
   { name: 'W Dauphin St', x: -98, roadHalfWidth: 8.0 },
-  { name: 'W Susquehanna Ave', x: 53, roadHalfWidth: 8.0 },
+  { name: 'W Susquehanna Ave', x: 70, roadHalfWidth: 8.0 },
   { name: 'W Diamond St', x: 245, roadHalfWidth: 8.0 }
 ]);
 
