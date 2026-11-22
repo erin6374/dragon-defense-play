@@ -61,6 +61,16 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  for(let px=94.0;px<=114.0;px+=2.8){
   b(nearStatic,px,-.31,3.5,.12,.02,4.8,yellow);
  }
+ // Parked customer cars on McDonald's & CVS aprons (subtle static set-dressing)
+ const carColors=[mat(0x8f3331),mat(0xc6c8c1),mat(0x3d586c),mat(0x23272a),mat(0x7a8582)];
+ const darkGlass=mat(0x2d3a42);
+ const addParkedCar=(x,z)=>{
+  const color=carColors[Math.abs(Math.round(x*7))%carColors.length];
+  b(nearStatic,x,.28,z,1.8,.62,4.0,color);
+  b(nearStatic,x,.72,z-.15,1.5,.42,2.2,darkGlass);
+ };
+ for(const cx of [182.8,188.4,194.0,199.6])addParkedCar(cx,3.0);
+ for(const cx of [96.8,102.4,108.0,113.6])addParkedCar(cx,3.5);
  // The vacant lot between the brownstone and the modern apartments is visible from Broad.
  b(nearStatic,25.6,-.47,-6.9,3.15,.14,14.6,mat(0x77745c));
  b(nearStatic,25.6,-.15,0.2,3.15,.55,.32,mat(0x4a302b));

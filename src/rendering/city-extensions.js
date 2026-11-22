@@ -70,6 +70,13 @@ export function createCityExtensions({THREE,root,block,material}){
  add(34.5, -.39, -23.5, 39.0, .14, 21.0, asphalt);
  // Courtyard perimeter safety curb buffering the Tech Freire south wall (x = 14.5)
  add(15.2, -.23, -23.5, 0.4, .30, 21.0, creamStone);
+ // Parked staff cars and school delivery van in rear courtyard
+ add(22.0, .35, -22.0, 2.0, .75, 4.4, creamStone); // white delivery van
+ add(22.0, .85, -22.3, 1.8, .55, 2.8, dark);
+ add(32.0, .28, -25.0, 1.8, .62, 4.0, rust);      // staff sedan
+ add(32.0, .72, -25.2, 1.5, .42, 2.2, dark);
+ add(42.0, .32, -25.0, 1.9, .68, 4.2, blue);      // staff SUV
+ add(42.0, .78, -25.2, 1.6, .46, 2.3, dark);
 
  // Side-street access curb cuts at York (x = -270) and Dauphin (x = -102) connecting Broad to Watts
  for (const x of [-270, -102]) {
