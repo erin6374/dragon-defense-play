@@ -2971,19 +2971,26 @@ function spawnMeteor(random=Math.random,opening=null){
   if(opening?.size&&isDeterministic)size=opening.size;
   else if(isPowerup)size=2.8+Math.random()*.6;
   else {
-   const spawnMassiveAnchor=(wave>=2&&Math.random()<0.28&&!meteors.some(m=>m.isMassive));
+   const spawnMassiveAnchor=(wave>=2&&Math.random()<0.22&&!meteors.some(m=>m.isMassive));
    if(spawnMassiveAnchor){
     isMassive=true;
-    size=9.5+Math.random()*2.2;
+    size=8.5+Math.random()*3.5;
     kind='molten';
     message('⚠️ MASSIVE INCANDESCENT METEOR INCOMING! INTERCEPT TO SHATTER!');
     sound('warning');
    }else{
-    const isGiant=(isDeterministic?random():Math.random())<0.65;
-    if(isGiant){
-     size=isDeterministic?3.6+random()*1.2:3.6+Math.random()*1.2;
+    const rollSize=(isDeterministic?random():Math.random());
+    // Strict 70% giant/large chunks, 30% smaller chunks across all waves
+    if(rollSize<0.70){
+     const isColossalRoll=rollSize<0.25;
+     if(isColossalRoll){
+      size=5.2+Math.random()*2.2;
+      colossus=wave>=3&&Math.random()<0.35;
+     }else{
+      size=3.4+Math.random()*1.8;
+     }
     }else{
-     size=isDeterministic?1.8+random()*1.0:1.8+Math.random()*1.0;
+     size=1.1+Math.random()*1.7;
     }
    }
   }
