@@ -27,9 +27,9 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  b(nearStatic,0,-.31,-98.5,2400,.18,2.0,walk); // East sidewalk
  b(nearStatic,0,-.31,-109.5,2400,.18,2.0,walk); // West sidewalk
  b(nearStatic,0,-.35,11.8,2400,.16,4,walk);
- // Cross streets at York (x=-167), Dauphin (x=-98), Susquehanna (x=70), and Diamond (x=245)
+ // Cross streets at York (x=-270), Dauphin (x=-102), Susquehanna (x=78), and Diamond (x=256)
  // Continuous pavement corridors extending through Broad, Watts, Park, and 13th back to Camac
- for(const x of [-167,-98,70,245]){
+ for(const x of [-270,-102,78,256]){
   b(nearStatic,x,-.43,-48.0,14,.16,184,asphalt);
   for(const side of [-1,1]){
    b(nearStatic,x+side*8.2,-.31,-48.0,2.0,.18,184,walk);
@@ -37,8 +37,8 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  }
  // Broad Street's double yellow center markings and white lane dividers.
  const yellow=mat(0xb88d41);
- const crossings=[-167,-98,70,245];
- for(const [left,right] of [[-1150,-175],[-159,-106],[-90,62],[78,237],[253,1150]]){
+ const crossings=[-270,-102,78,256];
+ for(const [left,right] of [[-1150,-278],[-262,-110],[-94,70],[86,248],[264,1150]]){
   for(const z of [23.7,24.3])b(nearStatic,(left+right)/2,-.352,z,right-left,.015,.13,yellow);
  }
  for(let x=-1150;x<=1150;x+=8){
@@ -47,6 +47,19 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  }
  for(const x of crossings)for(let z=14;z<44;z+=2.15){
   for(const side of [-1,1])b(nearStatic,x+side*8.4,-.33,z,2.5,.025,.72,white);
+ }
+ // 2100-Block Commercial Ground Parking Aprons (McDonald's & ArchWell / Former CVS)
+ // Paved customer parking apron with yellow stall striping in front of McDonald's (x in [178, 202], z in [-5, 10])
+ b(nearStatic,190.0,-.39,2.5,24.0,.14,15.0,asphalt);
+ for(let px=180.0;px<=200.0;px+=2.8){
+  b(nearStatic,px,-.31,3.0,.12,.02,4.8,yellow);
+ }
+ // Drive-thru lane apron and approach connecting to McDonald's
+ b(nearStatic,207.0,-.39,-12.0,12.0,.14,24.0,asphalt);
+ // ArchWell / Former CVS customer parking apron (x in [92, 116], z in [-4, 10])
+ b(nearStatic,104.0,-.39,3.0,24.0,.14,14.0,asphalt);
+ for(let px=94.0;px<=114.0;px+=2.8){
+  b(nearStatic,px,-.31,3.5,.12,.02,4.8,yellow);
  }
  // The vacant lot between the brownstone and the modern apartments is visible from Broad.
  b(nearStatic,25.6,-.47,-6.9,3.15,.14,14.6,mat(0x77745c));

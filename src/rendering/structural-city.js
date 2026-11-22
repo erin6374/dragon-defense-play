@@ -155,12 +155,12 @@ export function createStructuralCity(THREE,scene,bank){
  function fragmentBurst(pos,count=50,glass=false,power=1,chunkScale=1){if(!particlesEnabled)return;for(let i=0;i<count;i++){
   const kind=glass?2:i%2,slot=chipCursor++%1600,key=kind*1600+slot;
   const size=(glass?.05+Math.random()*.16:.06+Math.random()*.19)*chunkScale;
-  const p={position:pos.clone(),size:new THREE.Vector3(size*(glass?2:1.3),glass?size*1.5:size,glass?.008:size),rotation:new THREE.Euler(Math.random()*3,Math.random()*3,0),velocity:new THREE.Vector3((Math.random()-.5)*12*power,(2+Math.random()*7)*power,(Math.random()-.15)*9*power),spin:new THREE.Vector3(Math.random()*7,Math.random()*8,Math.random()*6),age:0,kind,slot,sleep:false};chips[key]=p;
+  const origin=(pos?.isVector3||typeof pos?.clone==='function')?pos.clone():new THREE.Vector3(pos?.x||0,pos?.y||0,pos?.z||0);const p={position:origin.clone(),size:new THREE.Vector3(size*(glass?2:1.3),glass?size*1.5:size,glass?.008:size),rotation:new THREE.Euler(Math.random()*3,Math.random()*3,0),velocity:new THREE.Vector3((Math.random()-.5)*12*power,(2+Math.random()*7)*power,(Math.random()-.15)*9*power),spin:new THREE.Vector3(Math.random()*7,Math.random()*8,Math.random()*6),age:0,kind,slot,sleep:false};chips[key]=p;
  }}
  // Bounded dust pool: one draw, shared texture, no per-impact lights.
  const dustMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:bank.images?.dust||null,color:0x8b8174,transparent:true,opacity:.20,depthWrite:false}),96);dustMesh.count=96;dustMesh.frustumCulled=false;scene.add(dustMesh);const dustAlpha=new THREE.InstancedBufferAttribute(new Float32Array(96),1);dustMesh.geometry.setAttribute('dustAlpha',dustAlpha);dustMesh.material.onBeforeCompile=shader=>{shader.vertexShader='attribute float dustAlpha;varying float vDustAlpha;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvDustAlpha=dustAlpha;');shader.fragmentShader='varying float vDustAlpha;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a*=vDustAlpha;')};const dust=[];let dustCursor=0;const pile=new Map();
  for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);
- function dustBurst(pos,power=1){if(!particlesEnabled)return;for(let i=0;i<8;i++){const slot=dustCursor++%96;dust[slot]={position:pos.clone(),age:0,life:3+Math.random()*3,size:(.8+Math.random())*power,v:new THREE.Vector3((Math.random()-.5)*power*3,.3+Math.random(),(Math.random()-.5)*power)};}}
+ function dustBurst(pos,power=1){if(!particlesEnabled||!pos)return;const origin=(pos.isVector3||typeof pos.clone==='function')?pos.clone():new THREE.Vector3(pos.x||0,pos.y||0,pos.z||0);for(let i=0;i<8;i++){const slot=dustCursor++%96;dust[slot]={position:origin.clone(),age:0,life:3+Math.random()*3,size:(.8+Math.random())*power,v:new THREE.Vector3((Math.random()-.5)*power*3,.3+Math.random(),(Math.random()-.5)*power)};}}
  const contact=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:bank.images?.dust||null,color:0x17130f,transparent:true,opacity:.26,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}),512);contact.count=512;contact.frustumCulled=false;scene.add(contact);for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);let contactCursor=0;
  const pileKey=p=>Math.floor(p.x/1.5)+':'+Math.floor(p.z/1.5);
  function settle(p){dummy.position.set(p.position.x,.17,p.position.z);dummy.rotation.set(-Math.PI/2,0,p.rotation.y);dummy.scale.set(Math.max(.5,p.size.x)*1.3,Math.max(.5,p.size.z,p.size.y)*1.2,1);dummy.updateMatrix();contact.setMatrixAt(contactCursor++%512,dummy.matrix);contact.instanceMatrix.needsUpdate=true;p.state='settled';moving.delete(p);const key=pileKey(p.position);pile.set(key,Math.min(1.8,(pile.get(key)||0)+Math.min(.12,p.size.x*p.size.y*p.size.z*.025)));}
@@ -202,19 +202,20 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
+  const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x||0, point?.y||0, point?.z||0);
   const resistance=b.school?14.0:3.8;
   let singleHitDetached=0;
   const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.025:0.06)));
   for(const p of b.parts){
    if(p.state!=='attached'||p.type==='foundation')continue;
-   const distance=distanceToBox(point,p);
+   const distance=distanceToBox(origin,p);
    if(distance>radius*0.75)continue;
    p.bucket.mesh.setColorAt(p.index,new THREE.Color().setScalar(.38+.38*Math.min(1,distance/radius)));
    p.bucket.mesh.instanceColor.needsUpdate=true;
    p.health-=strength*(1-distance/(radius*1.2))*1.0/resistance;
    if(p.health<=0||(p.type==='window'&&distance<radius*0.5)){
     if(singleHitDetached<maxDetachedPerHit){
-     removed+=detach(p,point,strength,true);
+     removed+=detach(p,origin,strength,true);
      singleHitDetached++;
     }
    }
@@ -222,8 +223,8 @@ export function createStructuralCity(THREE,scene,bank){
   b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.15));
   b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
   b.collapseClock=0;
-  dustBurst(point,Math.min(3,radius*.3));
-  fragmentBurst(point,Math.min(120,Math.round(35+radius*9)),false,strength);
+  dustBurst(origin,Math.min(3,radius*.3));
+  fragmentBurst(origin,Math.min(120,Math.round(35+radius*9)),false,strength);
   return removed;
  }
  function forceDamage(b,value){

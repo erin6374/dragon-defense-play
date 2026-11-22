@@ -7,10 +7,10 @@
 // East-west street direction is the negative world Z axis; their road
 // centerlines remain fixed through all distant-parallax blocks.
 export const CROSS_STREETS = Object.freeze([
-  { name: 'W York St', x: -167, roadHalfWidth: 8.0 },
-  { name: 'W Dauphin St', x: -98, roadHalfWidth: 8.0 },
-  { name: 'W Susquehanna Ave', x: 70, roadHalfWidth: 8.0 },
-  { name: 'W Diamond St', x: 245, roadHalfWidth: 8.0 }
+  { name: 'W York St', x: -270, roadHalfWidth: 8.0 },
+  { name: 'W Dauphin St', x: -102, roadHalfWidth: 8.0 },
+  { name: 'W Susquehanna Ave', x: 78, roadHalfWidth: 8.0 },
+  { name: 'W Diamond St', x: 256, roadHalfWidth: 8.0 }
 ]);
 
 // Reserve the road plus curb/sidewalk clearance on both sides of the street.

@@ -25,7 +25,7 @@ assert.ok(pharmacy?.institutional&&pharmacy.h<7&&pharmacy.w>=18&&pharmacy.front<
  'retail pharmacy has a low one-storey building set back from Broad');
 assert.ok(restaurant&&restaurant.h<7&&restaurant.x>pharmacy.x&&restaurant.x<church.x,
  'McDonalds remains an independent low building with a drive-thru approach');
-assert.ok(church&&church.x>restaurant.x&&church.stories===4&&church.x+church.w*.5<245,
+assert.ok(church&&church.x>restaurant.x&&church.stories===4&&church.x+church.w*.5<256,
  'Berean Church remains a four-storey independent parcel west of Diamond');
 assert.ok(!city.buildings.some(b=>b.background&&footprintsOverlap(b,pharmacy)),
  'no procedural houses intersect the pharmacy');
@@ -51,14 +51,14 @@ for(const b of city.buildings.filter(b=>b.historicSash)){
 }
 console.log('Historic sash opening enclosure/recess PASS');
 
-// Dauphin calibrated at x=-98
+// Dauphin calibrated at x=-102
 const dollMuseum=city.buildings.find(b=>b.name==='north-doll-museum');
-assert.ok(dollMuseum&&dollMuseum.x>-98&&dollMuseum.x<0&&dollMuseum.historicSash,
+assert.ok(dollMuseum&&dollMuseum.x>-102&&dollMuseum.x<0&&dollMuseum.historicSash,
  'Philadelphia Doll Museum is situated on the school side of Dauphin with historic sash openings');
 
-// 2300 block PECO corner across Dauphin (x < -98) features projecting bays
+// 2300 block PECO corner across Dauphin (x < -102) features projecting bays
 const northCorner=city.buildings.find(b=>b.name==='north-2300-corner-commercial');
-assert.ok(northCorner&&northCorner.x<-98&&northCorner.projectingBays,
+assert.ok(northCorner&&northCorner.x<-102&&northCorner.projectingBays,
  '2300-block PECO corner retains projecting bays across Dauphin');
 console.log('North Broad reference parcel alignment PASS');
 

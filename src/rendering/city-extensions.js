@@ -28,12 +28,21 @@ export function createCityExtensions({THREE,root,block,material}){
  // 3. The 2100 Block (between Susquehanna x = 62.0 and Diamond x = 253.0) contains deep institutional lots
  //    (ArchWell, McDonald's parking/drive-thru, Berean Presbyterian Church); Watts Street does not exist there.
  // 4. Continuous through-traffic runs along N Park Avenue at z = -66.0, clearing all frontage buildings.
+ // Real-World Philadelphia Street Grid & Watts Street Cartway Alignment:
+ // In authentic Philadelphia geography (Google Maps / Philadelphia Land Records / Google Earth):
+ // 1. N Watts Street is a narrow secondary residential alley behind the 2200 North rowhouses.
+ //    It serves rowhouses 2236-2260 N Watts St and terminates at x = -45.0 in a paved turnaround.
+ //    It NEVER continues south to Tech Freire (x = 0). There is NO street hitting the school!
+ // 2. Tech Freire (x in [-14.6, 14.6], z in [-58.4, 0.4]) occupies an authentic deep factory parcel.
+ //    Behind 2219-2211 N Broad is an enclosed private parking and delivery courtyard (x in [14, 55], z in [-35, -12]),
+ //    NOT a public thoroughfare. There is NO Watts Street south of the school!
+ // 3. The 2300 Block (York x = -270 to Dauphin x = -102) has an authentic 150m rear service lane at z = -34.
+ // 4. The 2100 Block (Susquehanna x = 78 to Diamond x = 256) has through-traffic on N Park Ave (z = -66).
  const wattsSegments = [
-   [-550.0, -175.0], // 2400 block (North of York Street)
-   [-158.0, -90.0],  // 2300 block (Between PECO south wall and Dauphin Street)
-   [-90.0,  -16.0],  // 2200 North block (Dauphin Street down to Tech Freire north property line)
-   [ 16.0,   62.0],  // 2200 South block (Tech Freire south property line down to Susquehanna Ave)
-   [253.0,  550.0]   // 2000 block (South of Diamond Street)
+   [-550.0, -278.0], // 2400 block (North of York Street x = -270)
+   [-262.0, -110.0], // 2300 block (Between York and Dauphin)
+   [-94.0,  -45.0],  // 2200 North residential alley (Dauphin down to 2236 Watts St; 32m NORTH of school)
+   [ 264.0,  550.0]  // 2000 block (South of Diamond Street x = 256)
  ];
  for (const [xMin, xMax] of wattsSegments) {
    const segW = xMax - xMin;
@@ -51,23 +60,19 @@ export function createCityExtensions({THREE,root,block,material}){
      add(x, -.285, -34.0, 3.2, .015, .10, paint);
    }
  }
- // Clean dead-end curb caps and safety bollards at Tech Freire property lines (x = -16.0 and x = 16.0)
- for (const endX of [-16.0, 16.0]) {
-   // Transverse curb barrier cap across Watts Street roadway
-   add(endX, -.23, -34.0, 0.6, .32, 7.0, creamStone);
-   // Trio of safety bollards preventing vehicles from driving into school lot
-   for (const bz of [-36.2, -34.0, -31.8]) {
-     add(endX + (endX < 0 ? -0.4 : 0.4), .35, bz, .22, .75, .22, metal);
-     add(endX + (endX < 0 ? -0.4 : 0.4), .75, bz, .26, .10, .26, rust);
-   }
+ // Clean dead-end curb cap and safety bollards at Watts alley termination (x = -45.0)
+ add(-45.0, -.23, -34.0, 0.6, .32, 7.0, creamStone);
+ for (const bz of [-36.2, -34.0, -31.8]) {
+   add(-44.6, .35, bz, .22, .75, .22, metal);
+   add(-44.6, .75, bz, .26, .10, .26, rust);
  }
- // Dead-end cap at PECO south lot line (x = -138.0)
- add(-138.0, -.23, -34.0, 0.6, .32, 7.0, creamStone);
- for (const bz of [-36.2, -34.0, -31.8]) add(-138.4, .35, bz, .22, .75, .22, metal);
+ // Enclosed private delivery & parking courtyard behind 2219-2211 N Broad (x in [14, 55], z in [-35, -12])
+ add(34.5, -.39, -23.5, 39.0, .14, 21.0, asphalt);
+ // Courtyard perimeter safety curb buffering the Tech Freire south wall (x = 14.5)
+ add(15.2, -.23, -23.5, 0.4, .30, 21.0, creamStone);
 
- // Side-street access curb cuts at York (x = -167), Dauphin (x = -98), and Susquehanna (x = 70)
- // connecting Broad Street to N Watts Street (spanning z in [-28, -8])
- for (const x of [-167, -98, 70]) {
+ // Side-street access curb cuts at York (x = -270) and Dauphin (x = -102) connecting Broad to Watts
+ for (const x of [-270, -102]) {
    for (const z of [-28, -22, -16]) add(x, -.33, z, 8.4, .05, 4.0, asphalt);
  }
  // Previous speculative service-station placeholder removed because it overlapped

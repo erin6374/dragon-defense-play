@@ -301,7 +301,7 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const addBox=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(box,mat);m.position.set(x,y,z);m.scale.set(w,h,d);street.add(m);return m;};
  const decal=(x,y,z,w,d,mat)=>{const m=new THREE.Mesh(plane,mat);m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.scale.set(w,d,1);street.add(m);return m;};
  // True four-lane layout: two lanes per direction, yellow center separation.
- const streetCrossings=[-167,-98,70,245];
+ const streetCrossings=[-270,-102,78,256];
  for(let x=-750;x<=750;x+=6.6){
   if(streetCrossings.some(cx=>Math.abs(x-cx)<9.5))continue;
   decal(x,-.284,18.55,3.8,.095,lineWhite);decal(x,-.283,28.5,3.8,.095,lineWhite);

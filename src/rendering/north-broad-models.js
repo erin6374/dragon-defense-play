@@ -15,7 +15,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1005656.glb',
     frontWidth: 20.29,
     gameBuilding: 'south-diamond-corner',
-    position: [214.2, 0, -0.15],
+    position: [223.2, 0, -0.15],
     isChurch: true,
     sign: null,
     matchConfidence: 'Exact Corner Match (Corner of Broad & Diamond, 2101-07 N Broad)'
