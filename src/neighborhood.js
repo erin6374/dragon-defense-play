@@ -56,6 +56,23 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  }
  // Drive-thru lane apron and approach connecting to McDonald's
  b(nearStatic,207.0,-.39,-12.0,12.0,.14,24.0,asphalt);
+ // Authentic McDonald's Landmark Accent (2109 N Broad - Studio E-031):
+ // Red mansard accent fascia band along front roof edge
+ b(nearStatic, 190.0, 5.95, -0.9, 14.0, 0.42, 0.35, mat(0xba4033));
+ // Iconic Golden Arches double-curve 'M' perched above restaurant entrance
+ const goldMat = mat(0xf4bd27);
+ for (const ax of [-0.62, 0.62]) {
+  const cX = 190.0 + ax;
+  const curve = new THREE.CatmullRomCurve3([
+   new THREE.Vector3(cX - 0.48, 6.25, -0.85),
+   new THREE.Vector3(cX - 0.30, 7.50, -0.85),
+   new THREE.Vector3(cX,        7.85, -0.85),
+   new THREE.Vector3(cX + 0.30, 7.50, -0.85),
+   new THREE.Vector3(cX + 0.48, 6.25, -0.85)
+  ]);
+  const archMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.12, 8, false), goldMat);
+  nearStatic.add(archMesh);
+ }
  // ArchWell / Former CVS customer parking apron (x in [92, 116], z in [-4, 10])
  b(nearStatic,104.0,-.39,3.0,24.0,.14,14.0,asphalt);
  for(let px=94.0;px<=114.0;px+=2.8){

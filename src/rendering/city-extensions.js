@@ -40,8 +40,9 @@ export function createCityExtensions({THREE,root,block,material}){
  // 4. The 2100 Block (Susquehanna x = 78 to Diamond x = 256) has through-traffic on N Park Ave (z = -66).
  const wattsSegments = [
    [-550.0, -278.0], // 2400 block (North of York Street x = -270)
-   [-262.0, -110.0], // 2300 block (Between York and Dauphin)
-   [-94.0,  -45.0],  // 2200 North residential alley (Dauphin down to 2236 Watts St; 32m NORTH of school)
+   [-262.0, -162.0], // 2300 block North (York down to PECO substation north wall at x = -162)
+   [-136.0, -110.0], // 2300 block South (PECO south wall at x = -136 down to Dauphin at x = -110)
+   [-72.0,  -45.0],  // 2200 North residential alley (behind 2248-2236 Watts St; terminates 32m NORTH of school)
    [ 264.0,  550.0]  // 2000 block (South of Diamond Street x = 256)
  ];
  for (const [xMin, xMax] of wattsSegments) {
