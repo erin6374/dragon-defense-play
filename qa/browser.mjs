@@ -19,17 +19,17 @@ for(const hp of [1,2,8,30])for(const size of [.55,.95,1.3,2.4])
 assert.equal(fireballMeteorDamage({size:2,hp:8,indestructible:true}),0);
 assert.equal(fireballMeteorDamage({size:8,hp:65,boss:true}),5);
 assert.equal(fireballMeteorDamage({size:.6,hp:4},false,.7),.7);
-assert.deepEqual(meteorSplitPlan({size:.7},0),{count:0,size:0});
-const mediumSplit=meteorSplitPlan({size:1.4},0),largeSplit=meteorSplitPlan({size:2.4},0);
-assert.equal(mediumSplit.count,3);
+assert.deepEqual(meteorSplitPlan({size:.7},0),{count:0,size:0,tier:'particles',harmless:true});
+const mediumSplit=meteorSplitPlan({size:1.4},0),largeSplit=meteorSplitPlan({size:3.2},0);
+assert.equal(mediumSplit.count,2,'medium produces two small fragments');
 assert.ok(mediumSplit.size<1.1,'medium splits into small');
-assert.equal(largeSplit.count,3);
-assert.ok(largeSplit.size>=1.1&&largeSplit.size<1.8,'large splits into medium');
-assert.equal(meteorSplitPlan({size:2.4,generation:2},0).count,0);
-assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS).count,0);
-assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS-1).count,1);
+assert.equal(largeSplit.count,2,'large produces two medium fragments');
+assert.ok(largeSplit.size>=1.8&&largeSplit.size<=2.2,'large splits into medium');
+assert.equal(meteorSplitPlan({size:.95,generation:2},0).count,0,'small terminal particles never recurse');
+assert.equal(meteorSplitPlan({size:3.2},MAX_PLAYABLE_METEORS).count,1,'only freed parent slot is reused at cap');
+assert.equal(meteorSplitPlan({size:3.2},MAX_PLAYABLE_METEORS-1).count,2,'two slots available below cap');
 
-assert.deepEqual([1,2,3,4,5,15].map(w=>openingMeteorWave(w)?.count??null),[1,2,1,2,null,null]);
+assert.deepEqual([1,2,3,4,5,15].map(w=>openingMeteorWave(w)?.count??null),[6,8,12,16,null,null]);
 for(const size of [.8,1.65,3.2]){
  const stone=impactProfile(size,'stone'),molten=impactProfile(size,'molten');
  assert.ok(molten.strength>stone.strength&&molten.radius>stone.radius&&molten.fire>stone.fire);
