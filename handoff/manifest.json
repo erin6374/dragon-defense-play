@@ -8,7 +8,7 @@
   "export_branch": "agent/chatgpt-rc120-patch-export-20261122",
   "patch_path": "handoff/dragon-defense-rc120-chatgpt.patch",
   "patch_git_blob_sha1": "07154da0cd9d4e7bbf6255a6bb5fbed425c67713",
-  "patch_length_bytes": 25860,
+  "patch_length_bytes": 25878,
   "changed_files": [
     "qa/browser.mjs",
     "qa/frontage-contract.mjs",
