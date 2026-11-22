@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three/build/three.module.js';
 import {createStructuralCity} from '../src/rendering/structural-city.js';
-import {populateCity} from '../src/simulation/city-layout.js';
+import {populateCity,footprintsOverlap} from '../src/simulation/city-layout.js';
 import {occupiesCrossStreet} from '../src/simulation/road-corridors.js';
 function make(includeEdges){
  const mat=()=>new THREE.MeshStandardMaterial();
@@ -46,3 +46,31 @@ const northCorner=city.buildings.find(b=>b.name==='north-dauphin-historic-corner
 assert.ok(northCorner&&northCorner.x<-59&&northCorner.projectingBays&&northCorner.ornateRoofline,
  '2300 block historic corner features projecting bays and ornate roofline');
 console.log('North Broad reference alignment (Doll Museum & 2300 corner) PASS');
+
+
+// RC120 background parcel contract: procedurally generated houses must never
+// intrude into another physical building footprint or an intersecting street.
+// This checks every depth row, not just the two named Broad Street edge cases.
+const backgroundBuildings=city.buildings.filter(b=>b.background);
+assert.ok(backgroundBuildings.length>=200,'retain a populated city after collision filtering');
+for(const b of backgroundBuildings){
+ assert.ok(!occupiesCrossStreet(b.x,b.w,5.0),`background ${b.name} invades a street right-of-way`);
+ for(const neighbor of city.buildings){
+  if(neighbor===b)continue;
+  assert.ok(!footprintsOverlap(b,neighbor),
+   `background parcel collision: ${b.name} overlaps ${neighbor.name}`);
+ }
+}
+console.log('All generated rowhouses clear mapped parcels and each other PASS',
+ {backgroundParcels:backgroundBuildings.length});
+
+// Mapping the real school FBX against the adjacent GLB parcel pivots still
+// requires visual alignment. Report front-row proxy collisions explicitly;
+// do not silently count this background-only check as full map acceptance.
+const frontage=city.buildings.filter(b=>!b.background);
+const unresolved=[];
+for(let i=0;i<frontage.length;i++)for(let j=i+1;j<frontage.length;j++){
+ if(footprintsOverlap(frontage[i],frontage[j]))unresolved.push(
+  `${frontage[i].name} / ${frontage[j].name}`);
+}
+if(unresolved.length)console.warn('Frontage proxy footprint overlaps require 3D model review:',unresolved);
