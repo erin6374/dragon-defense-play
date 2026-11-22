@@ -5,9 +5,9 @@ const REPLACED_BY_NORTH_BROAD = new Set([
   // 2200-block north (GLB replacements from manifest):
   'united-fund-cream',          // 2227 N Broad — GLB 1007132
   'south-cream-rowhouse',       // 2229-33 N Broad — GLB 1003388 / 1525758
-  'maximus-cares-brownstone',   // 2235-37 N Broad — GLB 1536711
-  'south-tan-brick',            // 2241 N Broad — GLB 1508518
-  'historic-tan-rowhouses',     // 2243-49 N Broad — GLB fill (hide to avoid Z-fight)
+  // RC120 GLB manifest contains no 2235-37 model or 2243-49 fill model.
+  // Keep these two procedural houses visible until actual replacements exist.
+  'south-tan-brick',            // 2239-41 N Broad — GLBs 1536711 / 1508518
   'north-doll-museum',          // 2251-53 N Broad — GLB 1536713 / 1542243
   // 2200-block south (GLB models 1007133 & 1007134):
   'north-brownstone',           // 2217-19 N Broad — GLB 1007133 / 1007134
@@ -227,6 +227,12 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function forceDamage(b,value){
   const target=Math.max(0,Math.min(1,value));b.pressure=Math.max(b.pressure,target);b.damage=Math.max(b.damage,target);
+  // School health is a cumulative gauge, NOT a list of entire floors to tear
+  // away. Its physical structural pieces already fracture at the actual meteor
+  // impact in impact(); the separate source-FBX damage mask and rebuild model
+  // follow the same hit. Do not strip the tallest 5–15% of ALL school pieces
+  // every time syncStructuralDamage() reconciles the health indicator.
+  if(b.school&&target<1)return;
   const count=Math.floor(b.structuralParts.length*target);const ordered=[...b.structuralParts].sort((a,b)=>b.original.position.y-a.original.position.y);for(let i=0;i<count;i++)detach(ordered[i],ordered[i].position,.5);
   if(target>=1)for(const p of b.parts)detach(p,p.position,.6);
  }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {parcelOverhang,overlapsBetweenLoadedModels} from '../simulation/model-footprint-audit.js';
 
 // North Broad Street Model Pack Integration (RC113)
 // Real photogrammetric models for 11 Broad Street structures from Berean Church
@@ -268,6 +269,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       def,
       loaded: false,
       model: null,
+      worldBounds: null,
+      loadError: null,
       damage: 0,
       damageStage: 0,
       groups: {},
@@ -372,6 +375,16 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         });
 
         root.add(model);
+        // Cache the *actual imported geometry's* world-space bounds once.
+        // Root pivots/declared front widths alone cannot prove that an asset
+        // fits its lot or avoids an adjacent facade. Used only for QA reports.
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const bounds = {minX:box.min.x,maxX:box.max.x,
+          minY:box.min.y,maxY:box.max.y,minZ:box.min.z,maxZ:box.max.z};
+        entry.worldBounds = Object.values(bounds).every(Number.isFinite)
+          ? Object.fromEntries(Object.entries(bounds).map(([k,v])=>[k,+v.toFixed(3)]))
+          : null;
         entry.model = model;
         entry.loaded = true;
 
@@ -383,8 +396,10 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       },
       undefined,
       err => {
+        entry.loadError = String(err?.message || err || 'asset load failed').slice(0,200);
         console.warn(`[NorthBroadModels] Failed to load ${def.file}:`, err);
-        // Fallback: procedural building stays visible automatically
+        // Missing assets remain visible in diagnostics instead of silently
+        // claiming full model placement; fallback art must be reviewed.
       }
     );
   }
@@ -502,12 +517,19 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         totalModels: NORTH_BROAD_DEFINITIONS.length,
         placementCount: entries.length,
         loadedCount: entries.filter(e => e.loaded).length,
+        // Geometry-vs-geometry intersections are warnings, not an automatic
+        // acceptance verdict: cornices and signs may intentionally protrude.
+        overlapWarnings: overlapsBetweenLoadedModels(entries),
         models: entries.map(e => ({
           id: e.def.id,
           address: e.def.address,
           name: e.def.name,
           gameBuilding: e.def.gameBuilding,
           loaded: e.loaded,
+          loadError: e.loadError,
+          // Null until GLTFLoader finishes. Units are scene world units.
+          worldBounds: e.worldBounds,
+          parcelOverhang: parcelOverhang(e.worldBounds,e.targetBuilding),
           visible: e.model?.visible ?? false,
           damage: +(e.damage || 0).toFixed(2),
           matchConfidence: e.def.matchConfidence
