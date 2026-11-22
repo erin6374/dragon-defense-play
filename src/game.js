@@ -1,4 +1,4 @@
-import {createSoundEngine} from './audio/sound-engine.js';
+﻿import {createSoundEngine} from './audio/sound-engine.js';
 import {renderPixelRatio} from './rendering/render-budget.js';
 import {createChapterStaging} from './simulation/chapter-staging.js';
 import {createFinalSquadron} from './simulation/final-squadron.js';
@@ -94,13 +94,11 @@ function skyCameraLift(altitude){
  const original=Math.max(0,Math.min(44,altitude)-25)*.62;
  return original+Math.max(0,altitude-44);
 }
-function meteorEntryHeight(z,size,minimum=82){
- // Spawns directly at the top of the visible screen so incoming meteors immediately enter view.
- const pitch=Math.atan2(streetView.y-streetView.targetY,streetView.z-streetView.targetZ);
- const halfFov=Math.atan(Math.tan(THREE.MathUtils.degToRad(streetView.fov*.5)));
- const depth=streetView.z-z;
- const skyTop=streetView.y+depth*Math.tan(halfFov-pitch);
- return Math.max(minimum,Math.min(88,skyTop+size*0.45));
+function meteorEntryHeight(z,size,minimum=330){
+ // All meteors spawn from the orbital satellite and mega-meteor layer (Y = 325..365)
+ // at the very top of the world map, plummeting through the stratosphere into view.
+ const base=Math.max(minimum,325+Math.random()*35);
+ return base+(size||1)*2.0;
 }
 const camera=new THREE.PerspectiveCamera(streetView.fov,1,1,1600),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:new URLSearchParams(location.search).get('qa')==='1'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));window.pixelArtMode=false;renderer.shadowMap.enabled=!window.matchMedia('(pointer:coarse)').matches;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.AgXToneMapping;renderer.toneMappingExposure=1.24;document.body.prepend(renderer.domElement);applyVisualPreset();const graphicsDropdown=document.getElementById('graphics');if(graphicsDropdown)graphicsDropdown.value=visualPreset;
@@ -553,13 +551,19 @@ function stampPermanentDamage(key,u,v,ru,rv){
  schoolDamageTextures[key].needsUpdate=true;
 }
 function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
- neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),r,strength);
+ const school=neighborhood.school;
+ const currentDmg=school?.damage||0;
+ const isColossal=r>4.5||strength>2.0;
+ const maxHitDmg=isColossal?0.15:0.08;
+ const targetMaxDmg=Math.min(1.0,currentDmg+maxHitDmg);
+ neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),Math.min(r,5.5),Math.min(strength,1.2));
+ if(school&&school.damage>targetMaxDmg){school.damage=targetMaxDmg;}
  // The reconstructed school determines damage from meteor type, velocity and
  // exact 3D impact position, independent of whole-floor visibility cutoffs.
- schoolReconstruction?.impact({x,y,z,radius:r,strength,type,speed});
- sourceDamage.stamp(x,y,z,r);
+ schoolReconstruction?.impact({x,y,z,radius:Math.min(r,5.5),strength:Math.min(strength,1.2),type,speed});
+ sourceDamage.stamp(x,y,z,Math.min(r,5.5));
  const range=schoolBounds.getSize(new THREE.Vector3());
- stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,r/range.x,r/range.y);
+ stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,Math.min(r,5.5)/range.x,Math.min(r,5.5)/range.y);
 }
 function setRowhouseSourceVisible(role,on){
  // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
@@ -962,10 +966,10 @@ function updateSkylineDamage(dt){
 let trafficLightRed=false;
 const trafficSignals=[];const trafficGreen=new THREE.MeshBasicMaterial({color:0x22ed62}),trafficRed=new THREE.MeshBasicMaterial({color:0xf34135}),trafficOff=new THREE.MeshBasicMaterial({color:0x222a30});
 const CROSS_STREET_CONFIG=[
- {name:'W YORK ST',x:-160},
- {name:'W DAUPHIN ST',x:-53},
+ {name:'W YORK ST',x:-167},
+ {name:'W DAUPHIN ST',x:-98},
  {name:'W SUSQUEHANNA AVE',x:53},
- {name:'W DIAMOND ST',x:214}
+ {name:'W DIAMOND ST',x:245}
 ];
 const streetSignBladeMaterial=(text)=>{
  const canvas=document.createElement('canvas');canvas.width=384;canvas.height=96;
@@ -980,7 +984,7 @@ const streetSignBladeMaterial=(text)=>{
 const broadSignMat=streetSignBladeMaterial('N BROAD ST');
 for(const street of CROSS_STREET_CONFIG){
  const streetSignMat=streetSignBladeMaterial(street.name);
- for(const sx of [-7.1, 7.1]){
+ for(const sx of [-7.8, 7.8]){
   const px=street.x+sx;
   for(const z of [12.5,35.7]){
    const pole=block(scene,px,3.2,z,.23,6.4,.23,material(0x34383c));
@@ -1000,7 +1004,7 @@ for(const street of CROSS_STREET_CONFIG){
 function updateSignals(){trafficLightRed=(elapsed%18)>11;for(const s of trafficSignals){s.red.material=trafficLightRed?trafficRed:trafficOff;s.green.material=trafficLightRed?trafficOff:trafficGreen;}}
 const policeBlockadeGroup=new THREE.Group();policeBlockadeGroup.name='police-intersections-blockade';policeBlockadeGroup.visible=false;scene.add(policeBlockadeGroup);
 const policeBlockades=[];
-for(const crossX of [-160, -53, 53, 214]){
+for(const crossX of [-167, -98, 53, 245]){
  for(const z of [11.5, 36.5]){
   const cruiser=new THREE.Group();cruiser.position.set(crossX+(crossX>0?3.2:-3.2),-.36,z);
   cruiser.rotation.y=(crossX>0?-1:1)*0.55;
@@ -1111,7 +1115,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const streetScale=backgroundStreet?.52:(midgroundStreet?.66:(rearStreet?.82:1.0));
  const spawnDist=260+Math.random()*40;
  if(crossStreet){
-  const crossX=forcedX??[-160,-53,53,214][Math.floor(Math.random()*4)];
+  const crossX=forcedX??[-167,-98,53,245][Math.floor(Math.random()*4)];
   root.position.set(crossX,-.36,laneZ);
   root.rotation.set(0,crossDir<0?-Math.PI/2:Math.PI/2,0);
  }else{
@@ -1136,7 +1140,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  }
  beacon=root.userData.vehicleBeacon||null;
  const isCorridor=!emergency&&!rearStreet&&!midgroundStreet&&!backgroundStreet&&!crossStreet;
- const turnAt=isCorridor&&Math.random()<.25?(dir>0?[-160,-53,53,214][Math.floor(Math.random()*4)]:[214,53,-53,-160][Math.floor(Math.random()*4)]):null;
+ const turnAt=isCorridor&&Math.random()<.25?(dir>0?[-167,-98,53,245][Math.floor(Math.random()*4)]:[245,53,-98,-167][Math.floor(Math.random()*4)]):null;
  const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
  cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
  if(bike&&!scooter&&wave<=10&&cars.length<carCap-2&&Math.random()<.68&&forcedX===null){
@@ -1259,7 +1263,7 @@ function fireTruckService(c,dt){
   }
   const home=c.originalLane||c.laneZ;
   if(Math.abs(c.root.position.z-home)>.3){
-   if(!c.returning){const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
+   if(!c.returning){const turn=[-167,-98,53,245].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
    const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();
    if(distance<.3)c.route.shift();else{c.root.position.addScaledVector(delta,Math.min(distance,dt*6.5)/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);}
    c.routing=true;c.serviceStop=true;c.speed=6.5;
@@ -1269,8 +1273,8 @@ function fireTruckService(c,dt){
  }
  c.returning=false;
  const pos=c.serviceTarget.root.position;
- if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
- if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=[-160,-53,53,214].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
+ if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=[-167,-98,53,245].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
+ if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=[-167,-98,53,245].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
  if(c.route?.length){const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();if(distance<.3)c.route.shift();else{const step=Math.min(distance,dt*6.5);c.root.position.addScaledVector(delta,step/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);c.speed=6.5}c.routing=!!c.route.length;c.serviceStop=true;if(c.routing)return;c.laneZ=c.routeLane;c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}
  const near=Math.abs(c.root.position.x-pos.x)<5.5;
  if(!near){if(c.laneZ===-37){c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}c.serviceStop=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;}
@@ -1315,7 +1319,7 @@ function updateCars(dt){carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wa
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>Math.abs(q.x-c.root.position.x)<q.radius+5&&Math.abs(q.z-c.root.position.z)<5);
-  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&[-160,-53,53,214].some(cx=>Math.abs(c.root.position.x-cx)<13);
+  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&[-167,-98,53,245].some(cx=>Math.abs(c.root.position.x-cx)<13);
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,streetStop>0||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
@@ -1386,7 +1390,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    c.blink=0;
   }
   if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
-   const exitCross=[-160,-53,53,214].find(x=>Math.abs(c.root.position.x-x)<22);
+   const exitCross=[-167,-98,53,245].find(x=>Math.abs(c.root.position.x-x)<22);
    if(exitCross!==undefined)c.turnAt=exitCross;
   }
   if(!c.frozen&&(Math.abs(c.root.position.x)>280||(c.crossStreet&&(c.crossDir<0?c.root.position.z<-135:c.root.position.z>135))||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
@@ -1487,7 +1491,7 @@ function spawnCrowd(forcedX=null,forcedZ=null){
   }else if(isRear){
    x=(Math.random()-.5)*130;z=Math.random()<.5?-34:-40;
   }else if(crossing&&!jaywalker){
-   x=[-160,-53,53,214][Math.floor(Math.random()*4)];z=fromFar?38:11;
+   x=[-167,-98,53,245][Math.floor(Math.random()*4)];z=fromFar?38:11;
   }else{
    x=(Math.random()-.5)*150;z=Math.random()<.55?10.5:44.5;
   }
@@ -1519,7 +1523,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
   const isRear=Math.random()<.24;
   const isCross=!isRear&&Math.random()<.16;
   const laneZ=isCross?(dir>0?46:8):isRear?-37:(dir>0?(Math.random()<.5?17:20):(Math.random()<.5?27:30));
-  const posX=isCross?[-160,-53,53,214][Math.floor(Math.random()*4)]:(Math.random()-.5)*220;
+  const posX=isCross?[-167,-98,53,245][Math.floor(Math.random()*4)]:(Math.random()-.5)*220;
   spawnCar(posX,laneZ,dir);
  }
  const crowdTarget=chapterNum===1?38:chapterNum===2?32:chapterNum===3?28:36;
@@ -1527,7 +1531,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
   const isRear=Math.random()<.20;
   const isCross=!isRear&&Math.random()<.25;
   const z=isRear?(Math.random()<.5?-34:-40):isCross?(Math.random()<.5?11:38):(Math.random()<.55?10.5:44.5);
-  const x=isCross?[-160,-53,53,214][Math.floor(Math.random()*4)]:(Math.random()-.5)*150;
+  const x=isCross?[-167,-98,53,245][Math.floor(Math.random()*4)]:(Math.random()-.5)*150;
   spawnCrowd(x,z);
  }
 }
@@ -3008,8 +3012,10 @@ function spawnMeteor(random=Math.random,opening=null){
  else if(isPowerup==='mega_fire_breath'){message('✨ WHITE-GOLD SPARKLING METEOR INCOMING! DESTROY FOR MEGA FIRE BREATH!');sound('bonus');}
  else if(isPowerup==='purple_ram'){message('💜 PURPLE METEOR-BUSTER POWERUP INCOMING! DESTROY FOR 10s INVULNERABLE RAM SHIELD!');sound('bonus');purpleShieldImpact=1.0;}
  mesh.position.set(x,meteorEntryHeight(target.z-3,size),target.z-3);scene.add(mesh);if(orbitalTheater&&typeof orbitalTheater.blastLaserAt==='function'){orbitalTheater.blastLaserAt(x,368,-165);}
- const speed=opening?(isMassive?10.5:15+random()*3)*difficulty():(6+wave*.65+random()*2)*difficulty()/(.78+size*.36);
- const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?2.4:1));
+ const orbitalDist=Math.max(80,mesh.position.y-target.y);
+ const baseFlightSec=Math.max(7.5,(14.0-wave*0.35)*(fastImpact?0.6:1.0));
+ const speed=(orbitalDist/baseFlightSec)*(isMassive?0.88:(1.0+random()*0.22))*difficulty();
+ const velocity=new THREE.Vector3(target.x-x,target.y-mesh.position.y,target.z-mesh.position.z).normalize().multiplyScalar(speed*(fastImpact?1.8:1));
  const meteorHp=isMassive?(colossus?7:5):(size>=3.2?Math.max(3,Math.ceil(size*(easyMode()?0.75:1.35))):Math.max(1,Math.ceil(size*(easyMode()?0.6:1.0))));
  meteors.push({kind,isPowerup,opening:!!opening,fastImpact,isMassive,colossus,largeSplitter:isMassive||!!opening||(size>1.8&&random()<.75),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:meteorHp,size,damage:isMassive?3.5:(size>2.8?2.5:size>1.6?1.8:1),baseScale:mesh.scale.clone(),hitFlash:0});
 }
@@ -3122,9 +3128,9 @@ function spawnFinalBoss(){if(bossSpawned)return;bossSpawned=true;finalSquadron.s
   {x:24,z:-22,size:6.8,hp:70,name:'BACKGROUND COLOSSUS'}
  ];
  for(const spec of bossSpecs){
-  const mesh=createPlayableRock(spec.size,5);mesh.position.set(spec.x,meteorEntryHeight(spec.z,spec.size,135+Math.random()*25),spec.z);
+  const mesh=createPlayableRock(spec.size,5);mesh.position.set(spec.x,meteorEntryHeight(spec.z,spec.size,345+Math.random()*20),spec.z);
   mesh.material=moltenMaterial;scene.add(mesh);
-  meteors.push({mesh,target:new THREE.Vector3(spec.x,1,spec.z),vel:new THREE.Vector3(0,-1.75-Math.random()*.35,0),trail:0,hp:spec.hp,maxHp:spec.hp,size:spec.size,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0,colossusName:spec.name,baseScale:mesh.scale.clone(),hitFlash:0});
+  meteors.push({mesh,target:new THREE.Vector3(spec.x,1,spec.z),vel:new THREE.Vector3(0,-22.0-Math.random()*4.0,0),trail:0,hp:spec.hp,maxHp:spec.hp,size:spec.size,damage:15,boss:true,burning:true,kind:'molten',fracturePhase:0,colossusName:spec.name,baseScale:mesh.scale.clone(),hitFlash:0});
  }
  // Guaranteed finale power-ups: Blue Plasma (Mega-Fireballs) & Green Tempest (Space Gale)
  function spawnFinalePowerup(kind,x,y,z,tx=x,ty=1,tz=z){

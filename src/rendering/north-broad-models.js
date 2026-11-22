@@ -14,10 +14,10 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1005656.glb',
     frontWidth: 20.29,
     gameBuilding: 'south-diamond-corner',
-    position: [194.0, 0, -0.15],
+    position: [227.485, 0, -0.15],
     isChurch: true,
     sign: null,
-    matchConfidence: 'Identified (Corner of Broad & Diamond, replaces generic bank)'
+    matchConfidence: 'Exact Corner Match (Corner of Broad & Diamond, 2101-07 N Broad)'
   },
   {
     id: '1007134',
@@ -50,7 +50,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     gameBuilding: 'united-fund-cream',
     position: [-13.55, 0, -0.15],
     sign: 'United Fund of Pennsylvania, Inc.',
-    matchConfidence: 'Exact 100% Match (united-fund-cream parcel)'
+    matchConfidence: 'Exact 100% Match (united-fund-cream parcel, north party wall of Tech Freire)'
   },
   {
     id: '1003388',
@@ -59,7 +59,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1003388.glb',
     frontWidth: 5.13,
     gameBuilding: 'south-cream-rowhouse',
-    position: [-19.785, 0, -0.15],
+    position: [-23.815, 0, -0.15],
     sign: 'Black United Fund Conference Center',
     matchConfidence: 'Exact 100% Match (south-cream-rowhouse parcel, shared party wall with 2233)'
   },
@@ -70,7 +70,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1525758.glb',
     frontWidth: 6.24,
     gameBuilding: 'south-cream-rowhouse',
-    position: [-25.47, 0, -0.15],
+    position: [-29.50, 0, -0.15],
     sign: 'blues babe FOUNDATION',
     matchConfidence: 'Exact 100% Match (south-cream-rowhouse parcel, shared party wall with 2231)'
   },
@@ -81,7 +81,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1536711.glb',
     frontWidth: 5.79,
     gameBuilding: 'south-tan-brick',
-    position: [-32.285, 0, -0.15],
+    position: [-46.955, 0, -0.15],
     sign: null,
     matchConfidence: 'Exact 100% Match (south-tan-brick parcel, opposing stoop pair with 2241)'
   },
@@ -92,7 +92,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1508518.glb',
     frontWidth: 5.68,
     gameBuilding: 'south-tan-brick',
-    position: [-38.02, 0, -0.15],
+    position: [-52.69, 0, -0.15],
     sign: null,
     matchConfidence: 'Exact 100% Match (south-tan-brick parcel, opposing stoop pair with 2239)'
   },
@@ -103,7 +103,7 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1536713.glb',
     frontWidth: 5.57,
     gameBuilding: 'north-doll-museum',
-    position: [-43.645, 0, -0.15],
+    position: [-80.305, 0, -0.15],
     sign: 'PCs for People',
     matchConfidence: 'Exact 100% Match (north-doll-museum parcel, shared party wall with Doll Museum)'
   },
@@ -114,9 +114,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1542243.glb',
     frontWidth: 6.48,
     gameBuilding: 'north-doll-museum',
-    position: [-49.67, 0, -0.15],
+    position: [-86.33, 0, -0.15],
     sign: 'PHILADELPHIA DOLL MUSEUM',
-    matchConfidence: 'Exact 100% Match (north-doll-museum parcel)'
+    matchConfidence: 'Exact Corner Match (Corner of Broad & Dauphin, 2253 N Broad)'
   },
   {
     id: '1051326',
@@ -125,9 +125,9 @@ export const NORTH_BROAD_DEFINITIONS = [
     file: './assets/models/north-broad/models/1051326.glb',
     frontWidth: 20.45,
     gameBuilding: 'north-2300-corner-commercial',
-    position: [-139.0, 0, -0.15],
+    position: [-148.425, 0, -0.15],
     sign: 'PHILADELPHIA ELECTRIC COMPANY',
-    matchConfidence: 'Exact 100% Match (2300 block PECO building replaces generic commercial)'
+    matchConfidence: 'Exact Corner Match (Corner of Broad & York, 2309-13 N Broad)'
   },
   {
     id: 'watts-example',
