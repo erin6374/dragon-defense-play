@@ -54,10 +54,12 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    'north-2300-corner-commercial':{type:'dauphinCorner',label:['NORTH BROAD PLAZA','2330 BROAD'],bg:'#202838',fg:'#fff4cf'},
    'north-2400-broad-station':{type:'dauphinCommerce',label:['BROAD & YORK','METRO STATION'],bg:'#1c2a38',fg:'#f5e8c4'},
    'north-york-commercial':{type:'dauphinCommerce',label:['YORK HARDWARE','2400 BROAD'],bg:'#342218',fg:'#ffefc8'},
-   'south-temple-broad-corner':{type:'dauphinCorner',label:['TEMPLE CORNER','2130 BROAD'],bg:'#4a1820',fg:'#fff5d8'},
-   'south-temple-broad-shop':{type:'dauphinCommerce',label:['UNIVERSITY DELI','2120 BROAD'],bg:'#1c2d42',fg:'#f8f0d8'},
-   'south-norris-corner':{type:'dauphinCorner',label:['NORRIS PLAZA','2110 BROAD'],bg:'#282038',fg:'#f5ecd0'},
-   'south-temple-campus-hall':{type:'campusInstitution',label:['TEMPLE UNIVERSITY','CAMPUS RESIDENCE'],bg:'#38141c',fg:'#f8edd0'},
+   'former-cvs-2131-broad':{type:'pharmacyCvs',label:['ARCHWELL HEALTH','FORMER RITE AID / CVS'],bg:'#103854',fg:'#ffffff'},
+   'broad-2125-commercial':{type:'dauphinCommerce',label:['BROAD COMMERCIAL','2125 N BROAD'],bg:'#203042',fg:'#fff4cf'},
+   'broad-2121-mixed-use':{type:'dauphinCorner',label:['TEMPLE DELI & GROCERY','2121 N BROAD'],bg:'#1e3226',fg:'#f8edd0'},
+   'broad-2117-apartments':{type:'templeResidence',label:['TEMPLE FLATS','STUDENT HOUSING'],bg:'#5c1824',fg:'#fff6d8'},
+   'broad-2113-commercial':{type:'dauphinCommerce',label:['COMMUNITY RETAIL','2113 N BROAD'],bg:'#342218',fg:'#ffefc8'},
+   'mcdonalds-2109-broad':{type:'mcdonalds',label:["McDonald's",'24 HOURS • DRIVE-THRU'],bg:'#bf1a1a',fg:'#ffcc00'},
    'south-diamond-corner':{type:'dauphinCorner',label:['BROAD & DIAMOND','COMMUNITY BANK'],bg:'#183226',fg:'#fff6d8'},
  };
 
@@ -309,6 +311,44 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const bb=makeSign(group,{...b,x:b.x,w:b.w*.82},['PHILADELPHIA','COMMUNITY BOARD'],'#1a2838','#f5d272',b.h+.88,.96,1.18);
    bb.position.z=b.front+.24;
   }
+  else if(spec.type==='mcdonalds'){
+   // 2109 N Broad: McDonald's freestanding restaurant with golden mansard roof and drive-thru
+   bx(group,b.x,b.h+.35,z+.12,b.w+.4,.72,.42,gold);
+   bx(group,b.x,b.h-.15,z+.08,b.w+.15,.32,.28,brickTrim);
+   // Illuminated McDonald's red & gold sign
+   makeSign(group,b,["McDonald's",'24 HOURS • DRIVE-THRU'],'#bf1a1a','#ffcc00',b.h+.35,.82,.68);
+   // Glazed storefront & order counter
+   bx(group,b.x,1.45,z+.06,b.w*.92,2.5,.06,shadow);
+   bx(group,b.x-b.w*.22,1.60,z+.12,b.w*.42,2.3,.08,glass);
+   bx(group,b.x+b.w*.24,1.60,z+.12,b.w*.38,2.3,.08,glass);
+   // Drive-thru approach pylon sign
+   const dtSign=makeSign(group,{...b,x:b.x-b.w*.5-2.2,w:3.6},['DRIVE-THRU','OPEN 24 HOURS'],'#bf1a1a','#ffcc00',3.2,.95,.78);
+   dtSign.position.z=b.front+.25;
+  }
+  else if(spec.type==='pharmacyCvs'){
+   // 2131 N Broad: Former CVS / Rite Aid (ArchWell Health) single-story commercial pharmacy
+   bx(group,b.x,b.h+.25,z+.10,b.w+.4,.65,.35,ivory);
+   bx(group,b.x,b.h-.15,z+.08,b.w+.2,.30,.25,alum);
+   makeSign(group,b,['ARCHWELL HEALTH','FORMER RITE AID / CVS'],'#103854','#ffffff',b.h+.25,.88,.72);
+   bx(group,b.x,1.65,z+.06,b.w*.90,2.6,.06,shadow);
+   for(let k=-3;k<=3;k++){
+    bx(group,b.x+k*(b.w*.12),1.65,z+.12,b.w*.09,2.4,.06,glass);
+   }
+   awning(group,b,-b.w*.32,4.8,0x103854,'PATIENT ENTRANCE');
+  }
+  else if(spec.type==='templeResidence'){
+   // 2117 N Broad: Temple student apartment building
+   bx(group,b.x,b.h-.25,z,b.w+.2,.36,.36,brickTrim);
+   makeSign(group,b,['TEMPLE FLATS','STUDENT HOUSING'],'#5c1824','#fff6d8',2.5,.90,.85);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.5)*(b.h/b.stories);
+    for(const dx of [-b.w*.32,-b.w*.10,b.w*.10,b.w*.32]){
+     bx(group,b.x+dx,y,z+.04,1.4,1.6,.05,glass);
+     bx(group,b.x+dx,y-.85,z+.08,1.6,.12,.22,warmStone);
+    }
+   }
+  }
+
   else if(spec.type==='campusInstitution'){
    // South of Susquehanna: Philadelphia Military Academy / Makkah Mosque campus
    bx(group,b.x,b.h-.20,z+.10,b.w+.24,.36,.36,warmStone);

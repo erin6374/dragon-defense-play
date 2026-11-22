@@ -7,15 +7,15 @@
 // East-west street direction is the negative world Z axis; their road
 // centerlines remain fixed through all distant-parallax blocks.
 export const CROSS_STREETS = Object.freeze([
-  { name: 'W York St', x: -167, roadHalfWidth: 7 },
-  { name: 'W Dauphin St', x: -98, roadHalfWidth: 7 },
-  { name: 'W Susquehanna Ave', x: 53, roadHalfWidth: 7 },
-  { name: 'W Diamond St', x: 245, roadHalfWidth: 7 }
+  { name: 'W York St', x: -167, roadHalfWidth: 8.0 },
+  { name: 'W Dauphin St', x: -98, roadHalfWidth: 8.0 },
+  { name: 'W Susquehanna Ave', x: 53, roadHalfWidth: 8.0 },
+  { name: 'W Diamond St', x: 245, roadHalfWidth: 8.0 }
 ]);
 
 // Reserve the road plus curb/sidewalk clearance on both sides of the street.
-// A proposed building must NOT intersect the right-of-way corridor.
-export function occupiesCrossStreet(x, buildingWidth = 0, clearance = 2.0) {
+// A proposed building must NOT intersect the right-of-way corridor across all depths.
+export function occupiesCrossStreet(x, buildingWidth = 0, clearance = 4.5) {
   return CROSS_STREETS.some(({ x: cx, roadHalfWidth }) =>
     Math.abs(x - cx) < roadHalfWidth + clearance + buildingWidth * 0.5
   );

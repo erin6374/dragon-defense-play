@@ -45,7 +45,7 @@ export function createStructuralCity(THREE,scene,bank){
  }
  const densities={column:4,slab:4,roof:3,wall:2,facade:2,window:.18,frame:.4,furniture:.7,stair:1.8,partition:.65,foundation:8};
  function addPart(b,type,mat,x,y,z,w,h,d,floor=0,rotation=0){
-  const initHealth = type==='column'?(b.school?8.0:3.8):type==='window'?.18:1.5;
+  const initHealth = type==='column'?(b.school?12.0:4.5):type==='window'?.18:2.0;
   const p={id:parts.length,building:b,type,mat,floor,position:new THREE.Vector3(x,y,z),size:new THREE.Vector3(w,h,d),rotation:new THREE.Euler(0,rotation,0),state:'attached',health:initHealth,velocity:new THREE.Vector3(),spin:new THREE.Vector3(),age:0};
   p.original={position:p.position.clone(),rotation:p.rotation.clone(),size:p.size.clone()};p.mass=Math.max(.05,w*h*d*(densities[type]||1));
   parts.push(p);b.parts.push(p);return p;
@@ -195,9 +195,9 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
-  const resistance=b.school?3.5:1.4;
+  const resistance=b.school?5.0:2.0;
   let singleHitDetached=0;
-  const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.08:0.18)));
+  const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.06:0.15)));
   for(const p of b.parts){
    if(p.state!=='attached'||p.type==='foundation')continue;
    const distance=distanceToBox(point,p);
@@ -232,13 +232,13 @@ export function createStructuralCity(THREE,scene,bank){
    b.collapseClock=0.25;
    const support=supportedFloors(b.parts,b.stories);
    const lostRatio=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
-   const catastrophic=b.pressure>=0.95&&lostRatio>0.82;
+   const catastrophic=b.pressure>=0.95&&lostRatio>0.88;
    let shed=0;
    for(const p of b.parts){
     if(p.state!=='attached'||p.type==='foundation')continue;
     if(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached')){
-     p.failureAt??=time+0.35+p.floor*0.35+Math.random()*0.35;
-     if(time>=p.failureAt){detach(p,p.position,.65);if(++shed>25)break}
+     p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
+     if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}
     }
     else if(p.type==='frame'&&p.original.position.z>b.front-.1){
      const attached=b.sections.some(w=>w.state==='attached'&&w.floor===p.floor&&Math.abs(w.position.x-p.position.x)<b.w/(b.bays||2));

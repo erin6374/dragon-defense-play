@@ -137,15 +137,15 @@ export function createForegroundMeteors(THREE, scene) {
     if (!b) return null;
 
     const startX = targetX !== null ? targetX : (Math.random() - 0.5) * 110;
-    const startY = 68.0 + Math.random() * 18.0;
-    const startZ = targetZ !== null ? targetZ : 62.0 + Math.random() * 16.0;
+    // Bolides spawn from the orbital ceiling (Y >= 330) plunging down through the entire map
+    const startY = 330.0 + Math.random() * 35.0;
+    const startZ = targetZ !== null ? targetZ : 45.0 + Math.random() * 16.0;
 
     b.pos.set(startX, startY, startZ);
-    // Heading downwards and forward towards the camera (landing off-screen below viewport)
     b.vel.set(
       (Math.random() - 0.5) * 8.0,
-      -36.0 - Math.random() * 18.0,
-      12.0 + Math.random() * 10.0
+      -48.0 - Math.random() * 16.0,
+      6.0 + Math.random() * 4.0
     );
 
     const thickness = 1.6 + Math.random() * 0.9;
@@ -156,7 +156,7 @@ export function createForegroundMeteors(THREE, scene) {
     b.mesh.visible = true;
     b.active = true;
     b.life = 0;
-    b.maxLife = 2.6;
+    b.maxLife = 7.5;
     totalNearBolidesSpawned++;
     return b;
   }

@@ -76,12 +76,12 @@ export function createDistantNeighborhood({root,flameTexture}){
   // Intersections and crossings are an inexpensive white instanced pattern.
   for(const xx of cross)for(let q=0;q<4;q++)add(tier,'walk',xx+(q-1.5)*1.35,-.25,s.z,0.52,.02,6.4);
  }
- // Continue the two cross streets through the deeper residential grid.
+ // Continue all 4 cross streets through the deeper residential grid across all tiers.
  for(const x of cross){
-   for(let tier=1;tier<tiers.length;tier++){
+   for(let tier=0;tier<tiers.length;tier++){
     const t=tiers[tier],depth=t.max-t.min,mid=(t.min+t.max)/2;
-    street(x,mid,12,depth,tier);
-    for(const side of [-1,1])add(tier,'walk',x+side*7.35,-.31,mid,1.35,.15,depth);
+    street(x,mid,14,depth,tier);
+    for(const side of [-1,1])add(tier,'walk',x+side*8.2,-.31,mid,1.4,.15,depth);
    }
  }
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
@@ -118,7 +118,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    const h=stories*(civic?4.0:commercial?3.95:3.52)+((ix*13+row*5)%7)*.19;
    const w=civic?7.3:commercial?7:5.75+((ix+row)%4)*.44;
    const d=civic?21:commercial?16:9+((ix*2+row)%5)*1.24;
-   if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
+   if(occupiesCrossStreet(x,w,5.0))continue; // strict clearance for all 4 cross streets across all depths
    const color=facades[(ix*3+row*5)%facades.length];
    const home=registerBuilding(tier,x,z,w,h,d,y0);
    addPart(home,'main',x,y0+h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
@@ -177,10 +177,10 @@ export function createDistantNeighborhood({root,flameTexture}){
  // The east-side blocks beyond the playable frontage are visible at the pan limits.
  // Use simple fixed masses here, with the low civic lot beside Susquehanna kept open.
  for(const side of [-1,1]){
-  for(const z of [-10,-31,-53,-75]){
+  for(const z of [-31,-53,-75]){
    for(let i=0;i<22;i++){
     const x=side*(70+i*9.4);
-    if(z===-10&&(side===-1?x>-225:x<225))continue; // preserve authentic Broad Street frontage
+    if(occupiesCrossStreet(x,8.2,5.0))continue; // strictly keep all 4 cross streets 100% open
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);
@@ -197,9 +197,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    }
   }
  }
- const civic=registerBuilding(0,72,-12,20,5.4,19);
- addPart(civic,'main',72,2.7,-12,20,5.4,19,0x85847a);
- addPart(civic,'roof',72,5.5,-12,20.4,.2,19.2);
+ // Low green buffer near Susquehanna
  add(0,'green',68,-.40,-.8,13,.08,4.6);
   // Real-world surrounding neighborhood landmarks from aerial Google Earth references:
   // 1. Edberg-Olson Football Complex (Temple University Football facility, East at Susquehanna/10th)

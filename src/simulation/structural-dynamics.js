@@ -6,7 +6,12 @@ export function supportedFloors(parts,stories){
  const total=Array(stories).fill(0),live=Array(stories).fill(0);
  for(const p of parts)if(p.type==='column'){total[p.floor]++;if(p.state==='attached')live[p.floor]++}
  const supported=[];let below=true;
- for(let f=0;f<stories;f++){below=below&&live[f]/Math.max(1,total[f])>=.67;supported.push(below)}
+ for(let f=0;f<stories;f++){
+  const ratio=total[f]>0?live[f]/total[f]:1.0;
+  // Gradual structural response: a floor remains self-supporting unless >75% of columns on that floor are destroyed
+  below=below&&(ratio>=0.25);
+  supported.push(below||ratio>=0.45);
+ }
  return supported;
 }
 export function verticalExtent(p){const r=p.rotation,s=p.size,cx=Math.cos(r.x),sx=Math.sin(r.x),cy=Math.cos(r.y),sy=Math.sin(r.y),cz=Math.cos(r.z),sz=Math.sin(r.z);return (Math.abs(cx*sz+cz*sx*sy)*s.x+Math.abs(cx*cz-sx*sy*sz)*s.y+Math.abs(sx*cy)*s.z)*.5;}
