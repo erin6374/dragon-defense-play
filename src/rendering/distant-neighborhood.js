@@ -6,10 +6,13 @@ import {createBuildingCombustion} from './building-combustion.js';
 // nominations at 2101 and 2301 N Broad document rowhouse blocks, corner shops
 // and larger masonry buildings along the corridor. Lots here are illustrative.
 const STREET_AXIS=[
- {name:'N Park Ave',z:-88},{name:'N 13th St',z:-112},
- {name:'N Camac St',z:-143},{name:'N 12th St',z:-174},
- {name:'N 11th St',z:-204},{name:'N 10th St',z:-234},
- {name:'N 9th St',z:-265},{name:'N 8th St',z:-296}
+ {name:'N Camac St',z:-136.0},
+ {name:'N 12th St',z:-176.0},
+ {name:'N 11th St',z:-210.0},
+ {name:'N 10th St',z:-250.0},
+ {name:'N 9th St',z:-290.0},
+ {name:'N 8th St',z:-330.0},
+ {name:'N 7th St',z:-370.0}
 ];
 const facades=[0x9a5c4a,0x6d423b,0xb7afa1,0xcac1b1,0x8a9192,0x8a674e,0xc0a38c,0x7d5350,0xbabcc0];
 // Depth cueing is baked into existing instanced facade colors; it does not
@@ -28,12 +31,12 @@ function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;
 const rand=seeded(1221237);
 export function createDistantNeighborhood({root,flameTexture}){
  const tiers=[
-  {name:'outside-playable-block',min:-87,max:0},
-  {name:'park-camac',min:-135,max:-87},
-  {name:'camac-11th',min:-199,max:-135},
-  {name:'11th-9th',min:-261,max:-199},
-  {name:'9th-8th',min:-326,max:-261},
-  {name:'horizon',min:-980,max:-326}
+  {name:'outside-playable-block',min:-60,max:0},
+  {name:'park-camac',min:-136,max:-60},
+  {name:'camac-11th',min:-210,max:-136},
+  {name:'11th-9th',min:-290,max:-210},
+  {name:'9th-8th',min:-370,max:-290},
+  {name:'horizon',min:-980,max:-370}
  ];
  const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
@@ -71,7 +74,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  const cross=CROSS_STREETS.map(s=>s.x);
  for(let k=0;k<STREET_AXIS.length;k++){
   const s=STREET_AXIS[k],tier=Math.max(0,slot(s.z));
-  if(k>0)street(0,s.z,2600,8.5,tier);
+  street(0,s.z,2600,8.5,tier);
   for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,2600,.15,1.45);
   // Intersections and crossings are an inexpensive white instanced pattern.
   for(const xx of cross)for(let q=0;q<4;q++)add(tier,'walk',xx+(q-1.5)*1.35,-.25,s.z,0.52,.02,6.4);
@@ -87,8 +90,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
  const nearParapetHeights=[];
   const nearParapetBandsByRow=new Map();
- const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565,-602,-638,-674,-705,-735,-765,-795,-825,-855,-885,-915,-930];
- for(const z of [-328,-362,-397,-435,-472,-510,-546,-582,-620,-656,-692,-720,-750,-780,-810,-840,-870,-900,-930]){
+ const rowCenters=[-156,-193,-230,-270,-310,-350,-390,-430,-470,-510,-550,-590,-630,-670,-710,-750,-790,-830,-870,-910,-950];
+ for(const z of [-410,-450,-490,-530,-570,-610,-650,-690,-730,-770,-810,-850,-890,-930,-970]){
   const streetElev=Math.max(0,-z-100)*0.0028;
   street(0,z,2600,8.5,slot(z),streetElev);
  }
@@ -117,7 +120,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    const stories=civic?4:modern||commercial||(ix+row)%4===0?3:2;
    const h=stories*(civic?4.0:commercial?3.95:3.52)+((ix*13+row*5)%7)*.19;
    const w=civic?7.3:commercial?7:5.75+((ix+row)%4)*.44;
-   const d=civic?21:commercial?16:9+((ix*2+row)%5)*1.24;
+   const d=Math.min(12.0, (civic?12.0:commercial?11.5:8.5+((ix*2+row)%5)*0.8));
    if(occupiesCrossStreet(x,w,5.0))continue; // strict clearance for all 4 cross streets across all depths
    const color=facades[(ix*3+row*5)%facades.length];
    const home=registerBuilding(tier,x,z,w,h,d,y0);
@@ -174,26 +177,26 @@ export function createDistantNeighborhood({root,flameTexture}){
    if(commercial)addPart(home,'window',x,y0+1.4,z+d/2+.10,w*.78,2.15,.07);
   }
  }
- // The east-side blocks beyond the playable frontage are visible at the pan limits.
- // Use simple fixed masses here, with the low civic lot beside Susquehanna kept open.
+ // East/West pan limit wings aligned to middleground rows (z = -50.5, -85.0, -120.0)
+ // strictly clearing N Watts St (-34.0), N Park Ave (-66.0), N 13th St (-104.0), and N Camac St (-136.0)
  for(const side of [-1,1]){
-  for(const z of [-31,-53,-75]){
+  for(const z of [-50.5,-85.0,-120.0]){
+   const tier=Math.max(0,slot(z));
    for(let i=0;i<22;i++){
-     const x=side*(70+i*9.4);
+     const x=side*(85+i*9.4);
      if(occupiesCrossStreet(x,8.2,5.0))continue;
-     // Strict exclusion for deep frontage models and parcels
-     if((x>-175&&x<-159) || (x>-159&&x<-138&&z>-55) || (x>-106&&x<-90) || (x>-90&&x<-75&&z>-55) || (x>-75&&x<-13&&z>-35) || (Math.abs(x)<16&&z>-45) || (x>13&&x<62&&z>-35) || (x>62&&x<78) || (x>78&&x<105&&z>-35) || (x>105&&x<162&&z>-25) || (x>162&&x<214&&z>-40) || (x>214&&x<237&&z>-55) || (x>237&&x<253))continue; // strictly keep all 4 cross streets 100% open
-    const h=7.6+(i*13+Math.abs(z))%7;
-    const color=facades[(i+Math.abs(z))%facades.length];
-    const home=registerBuilding(0,x,z,8.2,h,14);
-    addPart(home,'main',x,h/2,z,8.2,h,14,color);
-    const sideRoofColor=((i+Math.abs(z))%6===0)?0x524e4b:[0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3][(i+Math.abs(z))%4];
-    addPart(home,'roof',x,h+.14,z,8.5,.28,14.2,sideRoofColor);
-    addPart(home,'cornice',x,h+.28,z+7.1,8.6,.36,.42);
+     if((x>-175&&x<-159) || (x>-106&&x<-90) || (x>62&&x<78) || (x>237&&x<253))continue;
+    const h=7.6+(i*13+Math.abs(Math.round(z)))%7;
+    const color=facades[(i+Math.abs(Math.round(z)))%facades.length];
+    const home=registerBuilding(tier,x,z,8.2,h,12.0);
+    addPart(home,'main',x,h/2,z,8.2,h,12.0,color);
+    const sideRoofColor=((i+Math.abs(Math.round(z)))%6===0)?0x524e4b:[0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3][(i+Math.abs(Math.round(z)))%4];
+    addPart(home,'roof',x,h+.14,z,8.5,.28,12.2,sideRoofColor);
+    addPart(home,'cornice',x,h+.28,z+6.1,8.6,.36,.42);
     for(const floor of [1,2,3]){
      for(const dx of [-1.75,1.75]){
-      addPart(home,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
-      addPart(home,'cornice',x+dx,h*floor/4-.92,z+7.12,1.5,.12,.24); // window sill
+      addPart(home,'window',x+dx,h*floor/4,z+6.05,1.32,1.62,.12);
+      addPart(home,'cornice',x+dx,h*floor/4-.92,z+6.12,1.5,.12,.24);
      }
     }
    }

@@ -20,12 +20,17 @@ export function createCityExtensions({THREE,root,block,material}){
  const add=(x,y,z,w,h,d,mat)=>block(host,x,y,z,w,h,d,mat);
  // Back street immediately behind the school and its neighbors: rowhouses were
  // deliberately moved back to leave this roadway visible (see neighborhood.js).
- add(0,-.38,-40,1200,.16,9,asphalt);
- add(0,-.23,-33.8,1200,.20,2.8,creamStone);
- add(0,-.23,-46.2,1200,.20,2.8,creamStone);
- for(let x=-550;x<=550;x+=9){add(x,-.285,-40,3.2,.015,.10,paint);}
- // Side-street access curb cut at each intersection with Broad (York, Dauphin, Susquehanna, Diamond).
- for(const x of [-167,-98,70,245])for(const z of [-28,-19])add(x,-.33,z,8.4,.05,1.8,asphalt);
+ // N Watts Street: North-south street directly behind the Broad Street frontage.
+ // Centerline z = -34.0, road width = 7.0 (spans z in [-37.5, -30.5]).
+ add(0,-.38,-34.0,1200,.16,7.0,asphalt);
+ // East sidewalk (facing Broad parcel rears): z = -29.0, width = 3.0 (spans z in [-30.5, -27.5])
+ add(0,-.23,-29.0,1200,.20,3.0,creamStone);
+ // West sidewalk (facing Row 0 rowhouse fronts): z = -39.0, width = 3.0 (spans z in [-40.5, -37.5])
+ add(0,-.23,-39.0,1200,.20,3.0,creamStone);
+ for(let x=-550;x<=550;x+=9){add(x,-.285,-34.0,3.2,.015,.10,paint);}
+ // Side-street access curb cuts at each cross street intersection (York, Dauphin, Susquehanna, Diamond)
+ // connecting Broad Street to N Watts Street (spanning z in [-28, -8])
+ for(const x of [-167,-98,70,245])for(const z of [-28,-22,-16])add(x,-.33,z,8.4,.05,4.0,asphalt);
  // Previous speculative service-station placeholder removed because it overlapped
  // the real masonry block documented in the user's Street View references.
  const gx=null;
@@ -47,5 +52,5 @@ export function createCityExtensions({THREE,root,block,material}){
   add(x,.52,9.6,3.4,.20,1.0,creamStone);add(x,.80,9.15,3.4,.65,.16,metal);
   add(x-1.35,.22,9.6,.12,.55,.75,metal);add(x+1.35,.22,9.6,.12,.55,.75,metal);
  }
- return {group:host,propsEstimate:host.children.length,backStreetZ:-40,gasStationX:gx};
+ return {group:host,propsEstimate:host.children.length,backStreetZ:-34.0,gasStationX:gx};
 }

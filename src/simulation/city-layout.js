@@ -124,7 +124,8 @@ export function populateCity(city){
  // 7. NEAR NEIGHBORHOOD DEPTH ROWS (Clear sightlines down all 4 cross streets & behind parcels)
  // =========================================================================
  const palette=['brick','cream','stone','brickBrown','brickTan'];
- const depthRows=[-25,-41,-57,-73];
+ // Middleground residential rows strictly between North-South street corridors:
+ const depthRows=[-50.5,-85.0,-120.0];
 
  // Footprints of deep frontage models & parking lots that depth rows must NEVER overlap:
  function insideFrontageExclusion(bx, bWidth, bz) {
@@ -163,10 +164,11 @@ export function populateCity(city){
  }
 
  // Deeper lot buildings between Broad and the rear residential fabric
+ // Deeper lot buildings between Broad and the rear residential fabric (strictly clear Watts St corridor at z = -34.0)
  for(const [name,x,w,d,h,z,stories,kind] of [
   ['rear-wing-school',0,16.0,21,8.8,-26.0,2,'brick'],
-  ['rear-wing-east-2',31.46,10.5,20,7.6,-27.5,2,'cream'],
-  ['rear-wing-east-3',42.96,8.0,13,8.0,-21.5,2,'brickTan']
+  ['rear-wing-east-2',31.46,10.5,10,7.6,-18.0,2,'cream'],
+  ['rear-wing-east-3',42.96,8.0,8,8.0,-17.0,2,'brickTan']
  ]) {if(Math.abs(x)<18&&z>-85)continue;house({name,x,w,d:d-2,h,z:z-(d-2)/2,stories,background:true,kind});}
 
  for(let row=0;row<depthRows.length;row++){
@@ -177,13 +179,14 @@ export function populateCity(city){
    // Neighbor centers are spaced 8.2m apart; widths above that generated
    // intersecting walls every fourth house in the previous procedural grid.
    const width=Math.min(8.0,7.1+((i+row)%4)*.7);
+   const bDepth=13.0; // depth strictly matches residential parcel depth between street corridors
    // Strict cross-street clearance keeps York, Dauphin, Susquehanna, and Diamond sightlines 100% open
-   const candidate={name:`background-${row}-${i}`,x,w:width,z,d:14.5};
+   const candidate={name:`background-${row}-${i}`,x,w:width,z,d:bDepth};
    if(occupiesCrossStreet(x,width,5.0) || insideFrontageExclusion(x,width,z)
       ||occupiedFootprints.some(existing=>footprintsOverlap(candidate,existing)))continue;
    const stories=2+((i*3+row)%3);
    const h=3.3+stories*2.7+((i+row)%3)*.34;
-   house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});
+   house({name:`background-${row}-${i}`,x,w:width,d:bDepth,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});
   }
  }
 

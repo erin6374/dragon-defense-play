@@ -17,13 +17,22 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  b(nearStatic,0,-.43,108,2400,.12,128,westSidewalk); // west side, z=44..172
  b(nearStatic,0,-.30,44.2,2400,.17,.38,westCurb); // street-facing curb
  for(let z=52;z<=132;z+=12)b(nearStatic,0,-.359,z,2400,.012,.11,westJoint);
- b(nearStatic,0,-.43,-88,2400,.13,8.5,asphalt); // rear street beyond the last playable row
+ // North-South streets parallel to Broad:
+ // N Park Ave: Centerline z = -66.0, road width = 9.0 (spans z in [-70.5, -61.5])
+ b(nearStatic,0,-.43,-66.0,2400,.13,9.0,asphalt);
+ b(nearStatic,0,-.31,-60.5,2400,.18,2.0,walk); // East sidewalk
+ b(nearStatic,0,-.31,-71.5,2400,.18,2.0,walk); // West sidewalk
+ // N 13th St: Centerline z = -104.0, road width = 9.0 (spans z in [-108.5, -99.5])
+ b(nearStatic,0,-.43,-104.0,2400,.13,9.0,asphalt);
+ b(nearStatic,0,-.31,-98.5,2400,.18,2.0,walk); // East sidewalk
+ b(nearStatic,0,-.31,-109.5,2400,.18,2.0,walk); // West sidewalk
  b(nearStatic,0,-.35,11.8,2400,.16,4,walk);
  // Cross streets at York (x=-167), Dauphin (x=-98), Susquehanna (x=70), and Diamond (x=245)
+ // Continuous pavement corridors extending through Broad, Watts, Park, and 13th back to Camac
  for(const x of [-167,-98,70,245]){
-  b(nearStatic,x,-.43,-22.5,14,.16,133,asphalt);
+  b(nearStatic,x,-.43,-48.0,14,.16,184,asphalt);
   for(const side of [-1,1]){
-   b(nearStatic,x+side*8.2,-.31,-38,2.0,.18,100,walk);
+   b(nearStatic,x+side*8.2,-.31,-48.0,2.0,.18,184,walk);
   }
  }
  // Broad Street's double yellow center markings and white lane dividers.
