@@ -95,7 +95,9 @@ assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'sho
 // Fresh games and cutscenes perch; chapter cleanup must retain free flight.
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
 assert.ok(waveSource.startsWith('function newWave(){'),'wave transition function found');
-assert.doesNotMatch(waveSource,/perchDragon\s*\(/,'ordinary waves preserve Paulo free-flight position');
+assert.match(waveSource,/if\(wave===1\)\{\s*perchDragon\(true\)/,'only the first wave perches Paulo for the rooftop prologue');
+assert.equal((waveSource.match(/perchDragon\s*\(/g) ?? []).length,1,
+ 'later ordinary waves must preserve Paulo free-flight position');
 assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(true\)/,'initial game reset still perches Paulo');
 
 // Touch drags already reach the universal pointermove listener. A second
