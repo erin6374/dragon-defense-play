@@ -22,8 +22,8 @@ assert.ok(pharmacy?.institutional&&pharmacy.h<7&&pharmacy.w>=18&&pharmacy.front<
  'retail pharmacy has a low one-storey building set back from Broad');
 assert.ok(restaurant&&restaurant.h<7&&restaurant.x>pharmacy.x&&restaurant.x<church.x,
  'McDonalds remains an independent low building with a drive-thru approach');
-assert.ok(church&&church.x>restaurant.x&&church.projectingBays,
- 'Berean Church remains adjacent to the Diamond cross street');
+assert.ok(church&&church.x>restaurant.x&&church.stories===4&&church.x+church.w*.5<245,
+ 'Berean Church remains a four-storey independent parcel west of Diamond');
 assert.ok(!city.buildings.some(b=>b.background&&footprintsOverlap(b,pharmacy)),
  'no procedural houses intersect the pharmacy');
 for(const b of [edges[0],edges.at(-1)]){
