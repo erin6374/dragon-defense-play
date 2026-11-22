@@ -228,6 +228,12 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function forceDamage(b,value){
   const target=Math.max(0,Math.min(1,value));b.pressure=Math.max(b.pressure,target);b.damage=Math.max(b.damage,target);
+  // School health is a cumulative gauge, NOT a list of entire floors to tear
+  // away. Its physical structural pieces already fracture at the actual meteor
+  // impact in impact(); the separate source-FBX damage mask and rebuild model
+  // follow the same hit. Do not strip the tallest 5–15% of ALL school pieces
+  // every time syncStructuralDamage() reconciles the health indicator.
+  if(b.school&&target<1)return;
   const count=Math.floor(b.structuralParts.length*target);const ordered=[...b.structuralParts].sort((a,b)=>b.original.position.y-a.original.position.y);for(let i=0;i<count;i++)detach(ordered[i],ordered[i].position,.5);
   if(target>=1)for(const p of b.parts)detach(p,p.position,.6);
  }

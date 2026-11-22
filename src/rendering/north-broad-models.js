@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { parcelOverhang, overlapsBetweenLoadedModels } from '../simulation/model-footprint-audit.js';
 
 // North Broad Street Model Pack Integration (RC113)
 // Real photogrammetric models for 11 Broad Street structures from Berean Church
@@ -268,6 +269,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       def,
       loaded: false,
       model: null,
+      worldBounds: null,
+      loadError: null,
       damage: 0,
       damageStage: 0,
       groups: {},
@@ -372,6 +375,13 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         });
 
         root.add(model);
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const bounds = {minX:box.min.x,maxX:box.max.x,
+          minY:box.min.y,maxY:box.max.y,minZ:box.min.z,maxZ:box.max.z};
+        entry.worldBounds = Object.values(bounds).every(Number.isFinite)
+          ? Object.fromEntries(Object.entries(bounds).map(([k,v])=>[k,+v.toFixed(3)]))
+          : null;
         entry.model = model;
         entry.loaded = true;
 
@@ -383,6 +393,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       },
       undefined,
       err => {
+        entry.loadError = String(err?.message || err || 'asset load failed').slice(0,200);
         console.warn(`[NorthBroadModels] Failed to load ${def.file}:`, err);
         // Fallback: procedural building stays visible automatically
       }
@@ -502,12 +513,16 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         totalModels: NORTH_BROAD_DEFINITIONS.length,
         placementCount: entries.length,
         loadedCount: entries.filter(e => e.loaded).length,
+        overlapWarnings: overlapsBetweenLoadedModels(entries),
         models: entries.map(e => ({
           id: e.def.id,
           address: e.def.address,
           name: e.def.name,
           gameBuilding: e.def.gameBuilding,
           loaded: e.loaded,
+          loadError: e.loadError,
+          worldBounds: e.worldBounds,
+          parcelOverhang: parcelOverhang(e.worldBounds, e.targetBuilding),
           visible: e.model?.visible ?? false,
           damage: +(e.damage || 0).toFixed(2),
           matchConfidence: e.def.matchConfidence

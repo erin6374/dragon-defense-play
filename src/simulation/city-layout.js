@@ -1,4 +1,13 @@
 import {occupiesCrossStreet} from './road-corridors.js';
+
+// Axis-aligned ground-plan footprints. Tiny contact at shared party walls is valid;
+// positive two-axis interior overlap is not. The structural mesh may have trim
+// beyond this envelope, so this test is a minimum placement guarantee.
+export function footprintsOverlap(a,b,epsilon=0.05){
+ const dx=Math.min(a.x+a.w/2,b.x+b.w/2)-Math.max(a.x-a.w/2,b.x-b.w/2);
+ const dz=Math.min(a.z+a.d/2,b.z+b.d/2)-Math.max(a.z-a.d/2,b.z-b.d/2);
+ return dx>epsilon&&dz>epsilon;
+}
 // Frontage reference: calibrated to Google Maps / Google Street View, Philadelphia
 // land records, and the North Broad photogrammetric survey.
 // Ground-truth anchor: Tech Freire Charter School at 2221 N Broad St (x = 0).
@@ -6,7 +15,14 @@ import {occupiesCrossStreet} from './road-corridors.js';
 // - Positive x is South toward Susquehanna (x = 70) and Diamond (x = 245).
 // All parcels touch real party walls with ZERO unwanted gaps and zero corridor blocks.
 export function populateCity(city){
- const house=o=>city.addBuilding({d:14.5,z:-7.4,stories:3,bays:2,...o});
+ // Reserve the existing school parcel even though its proxy is inserted last.
+ // Do not move/resize the source school model just to pass background-row QA.
+ const occupiedFootprints=[{name:'tech-freire-school',x:0,w:26.52,z:-8.6,d:18}];
+ const house=o=>{
+  const footprint={name:o.name,x:o.x,w:o.w,z:o.z??-7.4,d:o.d??14.5};
+  occupiedFootprints.push(footprint);
+  return city.addBuilding({d:14.5,z:-7.4,stories:3,bays:2,...o});
+ };
 
  // =========================================================================
  // 1. 2200 BLOCK NORTH BROAD (North of Tech Freire, x = 0 to Dauphin x = -98)
@@ -146,20 +162,6 @@ export function populateCity(city){
   return false;
  }
 
- for(let row=0;row<depthRows.length;row++){
-  const z=depthRows[row];
-  const count=96;
-  for(let i=0;i<count;i++){
-   const x=-380+i*8.2+((row%2)*1.4);
-   const width=7.1+((i+row)%4)*.7;
-   // Strict cross-street clearance keeps York, Dauphin, Susquehanna, and Diamond sightlines 100% open
-   if(occupiesCrossStreet(x,width,5.0) || insideFrontageExclusion(x,width,z))continue;
-   const stories=2+((i*3+row)%3);
-   const h=3.3+stories*2.7+((i+row)%3)*.34;
-   house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});
-  }
- }
-
  // Deeper lot buildings between Broad and the rear residential fabric
  for(const [name,x,w,d,h,z,stories,kind] of [
   ['rear-wing-school',0,16.0,21,8.8,-26.0,2,'brick'],
@@ -167,7 +169,25 @@ export function populateCity(city){
   ['rear-wing-east-3',42.96,8.0,13,8.0,-21.5,2,'brickTan']
  ]) {if(Math.abs(x)<18&&z>-85)continue;house({name,x,w,d:d-2,h,z:z-(d-2)/2,stories,background:true,kind});}
 
+ for(let row=0;row<depthRows.length;row++){
+  const z=depthRows[row];
+  const count=96;
+  for(let i=0;i<count;i++){
+   const x=-380+i*8.2+((row%2)*1.4);
+   // Neighbor centers are spaced 8.2m apart; widths above that generated
+   // intersecting walls every fourth house in the previous procedural grid.
+   const width=Math.min(8.0,7.1+((i+row)%4)*.7);
+   // Strict cross-street clearance keeps York, Dauphin, Susquehanna, and Diamond sightlines 100% open
+   const candidate={name:`background-${row}-${i}`,x,w:width,z,d:14.5};
+   if(occupiesCrossStreet(x,width,5.0) || insideFrontageExclusion(x,width,z)
+      ||occupiedFootprints.some(existing=>footprintsOverlap(candidate,existing)))continue;
+   const stories=2+((i*3+row)%3);
+   const h=3.3+stories*2.7+((i+row)%3)*.34;
+   house({name:`background-${row}-${i}`,x,w:width,h,z,background:true,stories,bays:2+((i+row)%2),kind:palette[(i+row)%palette.length]});
+  }
+ }
+
  // The school itself: Tech Freire Charter School (central anchor, x = 0)
- const school=house({name:'tech-freire-school',x:0,w:27.0,h:28.0,d:18,z:-8.6,stories:5,bays:6,school:true,kind:'brick'});
+ const school=house({name:'tech-freire-school',x:0,w:26.52,h:28.0,d:18,z:-8.6,stories:5,bays:6,school:true,kind:'brick'});
  return school;
 }
