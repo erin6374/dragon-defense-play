@@ -74,3 +74,28 @@ for(let i=0;i<frontage.length;i++)for(let j=i+1;j<frontage.length;j++){
   `${frontage[i].name} / ${frontage[j].name}`);
 }
 if(unresolved.length)console.warn('Frontage proxy footprint overlaps require 3D model review:',unresolved);
+
+
+// A single 15% school hit must NOT strip an entire top band of structural
+// elements. Real impacts detach local pieces; health synchronization only
+// updates the gauge until the school has accumulated 100% damage.
+city.setParticlesEnabled(false);
+const school=city.buildings.find(b=>b.school);
+assert.ok(school,'school must have a structural proxy');
+const attachedStructure=()=>school.structuralParts.filter(p=>p.state==='attached').length;
+const initialStructure=attachedStructure();
+city.forceDamage(school,.15);
+assert.equal(school.damage,.15);
+assert.equal(attachedStructure(),initialStructure,'15% health loss cannot erase global roof/floor bands');
+city.impact(school,new THREE.Vector3(school.x,school.h-.8,school.front),5,1.2);
+const afterLocalStrike=attachedStructure();
+assert.ok(initialStructure-afterLocalStrike<=Math.ceil(initialStructure*.025),
+ 'one local school impact may detach at most 2.5% of structural components');
+city.forceDamage(school,.30);
+assert.equal(attachedStructure(),afterLocalStrike,
+ 'cumulative 30% damage must not remove new parts outside actual impact points');
+city.forceDamage(school,1);
+assert.equal(attachedStructure(),0,'100% school damage must allow full structural collapse');
+city.restore();
+assert.equal(attachedStructure(),initialStructure,'school reset must restore all structural components');
+console.log('School localized damage/gauge reconciliation/full-collapse/reset PASS');
