@@ -301,12 +301,12 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const addBox=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(box,mat);m.position.set(x,y,z);m.scale.set(w,h,d);street.add(m);return m;};
  const decal=(x,y,z,w,d,mat)=>{const m=new THREE.Mesh(plane,mat);m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.scale.set(w,d,1);street.add(m);return m;};
  // True four-lane layout: two lanes per direction, yellow center separation.
- const streetCrossings=[-160,-53,53,214];
+ const streetCrossings=[-167,-98,53,245];
  for(let x=-750;x<=750;x+=6.6){
-  if(streetCrossings.some(cx=>Math.abs(x-cx)<9))continue;
+  if(streetCrossings.some(cx=>Math.abs(x-cx)<9.5))continue;
   decal(x,-.284,18.55,3.8,.095,lineWhite);decal(x,-.283,28.5,3.8,.095,lineWhite);
  }
- const streetIntervals=[[-780,-167],[-153,-60],[-46,46],[60,207],[221,780]];
+ const streetIntervals=[[-780,-174],[-160,-105],[-91,46],[60,238],[252,780]];
  for(const [left,right] of streetIntervals){
   for(const z of [23.35,24.35])decal((left+right)/2,-.283,z,right-left,.11,lineYellow);
   // Curb caps: dashed curb at the sidewalk edge, broken at cross streets

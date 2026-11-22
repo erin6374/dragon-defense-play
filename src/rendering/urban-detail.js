@@ -100,7 +100,40 @@ export function addStreetSetDressing(THREE,root){
  }
  // Crosswalk approaches across York, Dauphin, Susquehanna, and Diamond: broad, restrained pavement markings.
  const paint=new THREE.MeshBasicMaterial({color:0xd5d3c8,transparent:true,opacity:.82,depthWrite:false});
- for(const cx of [-160,-53,53,214])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+ for(const cx of [-167,-98,53,245])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+
+ // Authentic Philadelphia municipal green street-name blade signs at the four cross-street corners.
+ function makeSignMaterial(text){
+  const c=document.createElement('canvas');c.width=256;c.height=64;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#094827';ctx.fillRect(0,0,256,64);
+  ctx.strokeStyle='#ffffff';ctx.lineWidth=4;ctx.strokeRect(4,4,248,56);
+  ctx.fillStyle='#ffffff';ctx.font='bold 21px system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,128,32);
+  const tex=new THREE.CanvasTexture(c);tex.anisotropy=4;
+  return new THREE.MeshBasicMaterial({map:tex});
+ }
+ const broadMat=makeSignMaterial('N BROAD ST');
+ const crossSigns=[
+  {name:'W YORK ST',x:-167},
+  {name:'W DAUPHIN ST',x:-98},
+  {name:'W SUSQUEHANNA AVE',x:53},
+  {name:'W DIAMOND ST',x:245}
+ ];
+ for(const cs of crossSigns){
+  const signMat=makeSignMaterial(cs.name);
+  for(const side of [-7.2,7.2]){
+   const poleX=cs.x+side;
+   add(poleX,1.8,11.2,.12,3.6,.12,steel);
+   add(poleX,3.65,11.2,.22,.15,.22,accent);
+   const crossBlade=new THREE.Mesh(new THREE.BoxGeometry(1.6,.32,.04),signMat);
+   crossBlade.position.set(poleX,3.38,11.2);set.add(crossBlade);
+   const broadBlade=new THREE.Mesh(new THREE.BoxGeometry(.04,.32,1.6),broadMat);
+   broadBlade.position.set(poleX,3.72,11.2);set.add(broadBlade);
+  }
+ }
+
  return set;
 }
 
@@ -116,7 +149,7 @@ export function addForegroundPlanting(THREE,root){
  for(let i=0;i<bed.count;i++){
   const x=-130+i*1.22;
   // Keep all 4 crosswalk approaches open.
-  if([-160,-53,53,214].some(cx=>Math.abs(x-cx)<6.5)){
+  if([-167,-98,53,245].some(cx=>Math.abs(x-cx)<7.5)){
    leaf.scale.setScalar(0);
   }else{
    const spread=(i*7%13)/13;
