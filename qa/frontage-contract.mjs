@@ -10,17 +10,28 @@ function make(includeEdges){
  city.finalize();return city;
 }
 const base=make(false),city=make(true),edges=city.buildings.filter(b=>b.name.startsWith('broad-'));
-assert.equal(edges.length,2);assert.equal(city.stats().drawBatches,base.stats().drawBatches,'extension reuses existing instanced draw batches');
+// RC120 replaced the old 2-lot Broad extension with three mapped 2100-block
+// storefronts. The 2131 pharmacy and 2109 McDonald's are separately named.
+assert.equal(edges.length,3,'all three RC120 2100-block storefronts are present');
+assert.equal(city.stats().drawBatches,base.stats().drawBatches,'extension reuses existing instanced draw batches');
 for(const b of edges){assert.ok(!b.background&&!occupiesCrossStreet(b.x,b.w));assert.equal(b.parts.filter(p=>p.type==='stair').length,0);}
-const campus=edges.find(b=>b.institutional);
-assert.ok(campus.h<7&&campus.w>25&&campus.front<=-5,'preserve low, broad, set-back south footprint');
-assert.ok(!city.buildings.some(b=>b.background&&Math.abs(b.x-campus.x)<(b.w+campus.w)/2&&Math.abs(b.z-campus.z)<(b.d+campus.d)/2),'no procedural houses intersect campus');
+const pharmacy=city.buildings.find(b=>b.name==='former-cvs-2131-broad');
+const restaurant=city.buildings.find(b=>b.name==='mcdonalds-2109-broad');
+const church=city.buildings.find(b=>b.name==='south-diamond-corner');
+assert.ok(pharmacy?.institutional&&pharmacy.h<7&&pharmacy.w>=18&&pharmacy.front<=0,
+ 'retail pharmacy has a low one-storey building set back from Broad');
+assert.ok(restaurant&&restaurant.h<7&&restaurant.x>pharmacy.x&&restaurant.x<church.x,
+ 'McDonalds remains an independent low building with a drive-thru approach');
+assert.ok(church&&church.x>restaurant.x&&church.projectingBays,
+ 'Berean Church remains adjacent to the Diamond cross street');
+assert.ok(!city.buildings.some(b=>b.background&&footprintsOverlap(b,pharmacy)),
+ 'no procedural houses intersect the pharmacy');
 for(const b of [edges[0],edges.at(-1)]){
  assert.ok(city.impact(b,new THREE.Vector3(b.x,b.h*.6,b.front),5,2)>0);
- assert.ok(b.damage>0&&b.parts.some(p=>p.state!=='attached'));
+ assert.ok(b.pressure>0&&b.parts.some(p=>p.state!=='attached'));
 }
 city.restore();assert.ok(edges.every(b=>b.damage===0&&b.parts.every(p=>p.state==='attached')));
-console.log('Frontage damage/reset/road-clearance PASS', {addedComponents:city.stats().components-base.stats().components,addedDrawBatches:city.stats().drawBatches-base.stats().drawBatches});
+console.log('RC120 2100-block frontage/damage/reset/road-clearance PASS', {addedComponents:city.stats().components-base.stats().components,addedDrawBatches:city.stats().drawBatches-base.stats().drawBatches});
 
 // Historic upper-storey openings must stay narrow, recessed and enclosed by
 // masonry, while school/modern glazing retains its original proportions.
@@ -36,16 +47,16 @@ for(const b of city.buildings.filter(b=>b.historicSash)){
 }
 console.log('Historic sash opening enclosure/recess PASS');
 
-// Doll Museum at 2253 N Broad must be on the school side of Dauphin (x > -53).
+// RC120 calibrated Dauphin at x=-98, not the obsolete x=-53.
 const dollMuseum=city.buildings.find(b=>b.name==='north-doll-museum');
-assert.ok(dollMuseum&&dollMuseum.x>-53&&dollMuseum.x<0&&dollMuseum.historicSash,
- 'Philadelphia Doll Museum is situated on the school side of Dauphin with historic sash openings');
-
-// 2300 block corner across Dauphin (x < -59) features projecting stone bays and ornate roofline.
-const northCorner=city.buildings.find(b=>b.name==='north-dauphin-historic-corner');
-assert.ok(northCorner&&northCorner.x<-59&&northCorner.projectingBays&&northCorner.ornateRoofline,
- '2300 block historic corner features projecting bays and ornate roofline');
-console.log('North Broad reference alignment (Doll Museum & 2300 corner) PASS');
+assert.ok(dollMuseum&&dollMuseum.x>-90&&dollMuseum.x<0&&dollMuseum.historicSash,
+ 'Doll Museum is on the school side of W Dauphin with historic sash openings');
+// The 2300 block PECO corner is now an external-model replacement, not the
+// former procedural north-dauphin-historic-corner identity.
+const northCorner=city.buildings.find(b=>b.name==='north-2300-corner-commercial');
+assert.ok(northCorner&&northCorner.x<-135&&northCorner.projectingBays,
+ '2300-block PECO corner retains projecting bays across Dauphin');
+console.log('RC120 North Broad reference parcel alignment PASS');
 
 
 // RC120 background parcel contract: procedurally generated houses must never
