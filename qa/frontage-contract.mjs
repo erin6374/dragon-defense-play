@@ -57,6 +57,14 @@ const northCorner=city.buildings.find(b=>b.name==='north-2300-corner-commercial'
 assert.ok(northCorner&&northCorner.x<-135&&northCorner.projectingBays,
  '2300-block PECO corner retains projecting bays across Dauphin');
 console.log('RC120 North Broad reference parcel alignment PASS');
+// These historical parcels do not have GLB replacements in RC120. They must
+// remain rendered as procedural buildings rather than disappear entirely.
+for(const name of ['maximus-cares-brownstone','historic-tan-rowhouses']){
+ const parcel=city.buildings.find(b=>b.name===name);
+ assert.ok(parcel&&!parcel.hideIntactGeometry,
+  `Missing historical GLB must retain procedural geometry: ${name}`);
+}
+console.log('Unmapped historic parcels retain procedural visibility PASS');
 
 
 // RC120 background parcel contract: procedurally generated houses must never
