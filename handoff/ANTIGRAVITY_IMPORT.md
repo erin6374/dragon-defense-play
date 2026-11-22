@@ -103,3 +103,18 @@ not integration approval.
 A patch is a source-code handoff, not a playable zip. Antigravity owns
 integration tests, visual review, packaging and eventual release. If your branch
 has advanced, integrate selectively instead of overwriting recent work.
+
+## Frozen patch CI snapshot (Nov 22 2026; exact head 7cc1ef9)
+- Focused-fire workflow: **SUCCESS** (run 44996299328).
+- Browser QA workflow: **FAIL** (run 44996299327). Playwright
+  `locator('#cinematic-skip').click` timed out after 90 seconds because
+  the skip-cutscene button remained hidden at `qa/browser.mjs:604`.
+  Investigate actual stage state, visibility and potential outdated QA
+  assumptions; do not mark training/intro tested or approved.
+- Cinematic scene workflow: **FAIL** (run 44996299340). The runner reported
+  `curl: (7) Failed to connect to 127.0.0.1:8765` while starting capture;
+  investigate browser/server startup and logs before judging visual art.
+- Motion review workflow: pending at last check (run 44996299366).
+
+These results describe the **unintegrated ChatGPT source candidate** only.
+No actual Windows hardware FPS or rendered building placement acceptance.
