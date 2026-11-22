@@ -7,10 +7,10 @@
   "repository": "erin6374/dragon-defense-play",
   "primary_branch": "feature/north-broad-graphics",
   "primary_pr": 2,
-  "observed_parent_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+  "observed_parent_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
   "observed_version": "5.5.0-rc.59",
   "observed_build_id": "5.5-licensed-smoke-sheet-roll-rc59",
-  "release_status": "rc59_numerical_smoke_guard_qa_fixed_new_head_ci_pending_art_fail_windows_fps_unmeasured",
+  "release_status": "rc59_exact_base_five_ci_success_art_fail_windows_fps_unmeasured",
   "pending_acceptance": [
     "Physical Windows FPS/CPU/RAM CSV during destruction",
     "Cinematic art acceptance"
@@ -25,43 +25,43 @@
   "tests_at_snapshot": [
     {
       "name": "browser",
-      "run_id": 44935580825,
-      "source_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+      "run_id": 44940806065,
+      "source_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
       "status": "completed",
-      "conclusion": "failure",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44935580825"
+      "conclusion": "success",
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44940806065"
     },
     {
       "name": "cinematic",
-      "run_id": 44935580805,
-      "source_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+      "run_id": 44940806113,
+      "source_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44935580805"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44940806113"
     },
     {
       "name": "focused",
-      "run_id": 44935580840,
-      "source_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+      "run_id": 44940806051,
+      "source_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44935580840"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44940806051"
     },
     {
       "name": "CC0",
-      "run_id": 44935580859,
-      "source_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+      "run_id": 44940806059,
+      "source_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44935580859"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44940806059"
     },
     {
       "name": "motion",
-      "run_id": 44935580810,
-      "source_sha": "7513f3e5c08d2af546656936bd40db5333267f85",
+      "run_id": 44940806044,
+      "source_sha": "4a82b999a0cd555095a51c5cf683ffa2fc7a5061",
       "status": "completed",
       "conclusion": "success",
-      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44935580810"
+      "url": "https://github.com/erin6374/dragon-defense-play/actions/runs/44940806044"
     }
   ],
   "critical_user_requirements": [
@@ -90,8 +90,9 @@
     "qa/CINEMATIC-REVIEW.md",
     "qa/MOTION-VISUAL-REVIEW.md"
   ],
-  "next_task": "Verify five exact-head workflows at new HEAD, inspect browser report and cinematic PNG, 5+30s MP4, Windows ZIP CRC and CC0/FBX hashes; fix regressions before visual tuning",
+  "next_task": "Obtain genuine 60-second heavy-destruction physical Windows performance CSV/JSON; inspect FPS/stalls/CPU/RAM and adaptive framebuffer before selecting a measured bounded optimization. Cinematic ART FAIL remains.",
   "implemented": [
+    "2026-11-22: Live RC59 base 4a82b999: all five exact-head workflows SUCCESS (browser 44940806065, cinematic 44940806113, focused 44940806051, CC0 44940806059, motion 44940806044). Prior independent artifact CRC 282/282, six motion MP4s, and CC0/FBX hashes are historical checks, not newly repeated. No physical Windows FPS evidence; cinematic ART FAIL. Snapshot is historical; resolve live PR HEAD before edits.",
     "2026-11-21: Base 7513f3e5 browser run 44935580825 FAILED at smoke-plume-contract.mjs:65: numerical guard proof still used .94 while shader/contract now use 1.0; corrected numerical bound to 1.0 in QA commit a7e7bb49, no rendering/gameplay change. Cinematic 44935580805, focused 44935580840, CC0 44935580859, motion 44935580810 SUCCESS at base. New-head CI/artifacts PENDING. ART FAIL and physical Windows FPS unresolved.",
     "2026-11-21: At verified failing base eb75efb browser workflow 44929377341 failed before browser launch: smoke contract still asserted old .78+.16 seed alpha. Other four workflows succeeded (cinematic 44929377337, focused 44929377390, CC0 44929377416, motion 44929377347). Updated source contract to .90+.10 seed and shader early-discard conservative bound .94 to 1.0; corrected numerical proof. Implementation base bb0b10db; new-head workflows/artifacts pending. ART FAIL, physical Windows FPS unresolved.",
     "2026-11-21: Licensed CC0 plume alpha seed multiplier increased from .78+.16*seed to .90+.10*seed; no new sheets/pools/texture reads. Verified base 5688805e five workflows success: browser 44914048806, cinematic 44914048798, focused 44914048815, CC0 44914048809, motion 44914048796; prior artifacts CRC 282/282, motion 5x5s+1x30s, CC0/FBX hashes matched. Candidate CI pending. ART FAIL and physical Windows FPS unresolved.",
