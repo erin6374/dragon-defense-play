@@ -250,6 +250,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   for(const p of pieces){
    if(p.falling||p.resting||p.removed)continue;
    if(p.homeY<=min.y+1.05)continue; // foundation remains grounded
+    if(p.homeY>min.y+height*0.75&&!collapsing)continue; // roof & top level remain standing overhead
    if(!['floor','beam','pier','column','atrium-column','partition','spandrel','glass','facade','rear','side','side-spandrel'].includes(p.zone))continue;
    const nearby=supportLinks.get(p)||[];
    if(!nearby.length)continue;

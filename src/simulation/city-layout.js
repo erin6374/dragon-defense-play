@@ -17,7 +17,7 @@ export function footprintsOverlap(a,b,epsilon=0.05){
 export function populateCity(city){
  // Reserve the existing school parcel even though its proxy is inserted last.
  // Do not move/resize the source school model just to pass background-row QA.
- const occupiedFootprints=[{name:'tech-freire-school',x:0,w:26.52,z:-8.6,d:18}];
+ const occupiedFootprints=[{name:'tech-freire-school',x:0,w:29.2,z:-27.5,d:62.0}];
  const house=o=>{
   const footprint={name:o.name,x:o.x,w:o.w,z:o.z??-7.4,d:o.d??14.5};
   occupiedFootprints.push(footprint);
@@ -111,7 +111,7 @@ export function populateCity(city){
  house({name:'mcdonalds-2109-broad',x:173.0,w:22.0,h:6.2,d:18.0,z:-10.0,kind:'brickBrown',stories:1,bays:5,exteriorOnly:true});
 
  // Berean Presbyterian Church (2101-07 N Broad St) sits on the North corner of Diamond Street — GLB 1005656
- house({name:'south-diamond-corner',historicSash:true,x:220.5,w:31.0,h:16.0,d:50.0,z:-25.0,kind:'brickRed',stories:4,bays:6,exteriorOnly:true});
+ house({name:'south-diamond-corner',historicSash:true,x:219.5,w:31.0,h:16.0,d:50.0,z:-25.0,kind:'brickRed',stories:4,bays:6,exteriorOnly:true});
 
  // [W DIAMOND ST (2100 N) cross street intersection is 100% CLEAR from x = 237.0 to 253.0 (centerline x = 245)]
 
@@ -144,8 +144,8 @@ export function populateCity(city){
   if (right > -90 && left < -75 && bz > -55) return true;
   // 2200 North rowhouses (x = -75 to -13, z > -35)
   if (right > -75 && left < -13 && bz > -35) return true;
-  // Tech Freire school campus (x = -16 to +16, z > -45)
-  if (right > -16 && left < 16 && bz > -45) return true;
+  // Tech Freire school campus (x = -16.5 to +16.5, z > -62)
+  if (right > -16.5 && left < 16.5 && bz > -62.0) return true;
   // 2200 South rowhouses & shops (x = 13 to 62, z > -35)
   if (right > 13 && left < 62 && bz > -35) return true;
   // Susquehanna Ave cross street (x = 62 to 78 across ALL depths)
@@ -156,8 +156,8 @@ export function populateCity(city){
   if (right > 105 && left < 162 && bz > -25) return true;
   // McDonald's restaurant & parking lot (x = 162 to 205, z > -40)
   if (right > 162 && left < 205 && bz > -40) return true;
-  // Berean Presbyterian Church lot (x = 205 to 237, z > -55)
-  if (right > 205 && left < 237 && bz > -55) return true;
+  // Berean Presbyterian Church lot (x = 204 to 236, z > -55)
+  if (right > 204 && left < 236 && bz > -55) return true;
   // Diamond St cross street (x = 237 to 253 across ALL depths)
   if (right > 237 && left < 253) return true;
   return false;

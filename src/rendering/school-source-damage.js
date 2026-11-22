@@ -64,24 +64,27 @@ export function createSchoolSourceDamage() {
        float noise3D = sin(schoolDamagePosition.x*1.35 + schoolDamagePosition.y*1.85)*0.24 +
                        cos(schoolDamagePosition.z*1.95 - schoolDamagePosition.y*1.15)*0.18 +
                        sin(schoolDamagePosition.x*2.71 - schoolDamagePosition.z*2.33)*0.12;
+       // Top level & roof (Y > 21.5m) strictly protected from middle-floor cavities:
+       // Roof parapets and 5th-floor classrooms remain solidly perched overhead!
+       bool isTopLevel = schoolDamagePosition.y > 21.5;
        // Chunk 1: Middle-East facade breach (X ≈ 6.5, Y ≈ 10.5, Z ≈ -1.0)
        vec3 c1 = vec3(6.5, 10.5, -1.0);
        float r1 = max(0.0, (schoolDestructionRatio - 0.06) * 11.5) * (1.0 + noise3D);
-       if(length(schoolDamagePosition - c1) < r1) discard;
+       if(!isTopLevel && length(schoolDamagePosition - c1) < r1) discard;
        // Chunk 2: Mid-Level Entrance & Atrium cavity (X ≈ -4.0, Y ≈ 7.0, Z ≈ -2.0)
        vec3 c2 = vec3(-4.0, 7.0, -2.0);
        float r2 = max(0.0, (schoolDestructionRatio - 0.20) * 12.0) * (1.0 + noise3D);
-       if(length(schoolDamagePosition - c2) < r2) discard;
+       if(!isTopLevel && length(schoolDamagePosition - c2) < r2) discard;
        // Chunk 3: West wing 3rd-floor structural bite (X ≈ -8.5, Y ≈ 14.0, Z ≈ -3.5)
        vec3 c3 = vec3(-8.5, 14.0, -3.5);
        float r3 = max(0.0, (schoolDestructionRatio - 0.38) * 10.5) * (1.0 + noise3D);
-       if(length(schoolDamagePosition - c3) < r3) discard;
+       if(!isTopLevel && length(schoolDamagePosition - c3) < r3) discard;
        // Chunk 4: Rear-East Classroom blast punch (X ≈ 5.0, Y ≈ 12.0, Z ≈ -12.0)
        vec3 c4 = vec3(5.0, 12.0, -12.0);
        float r4 = max(0.0, (schoolDestructionRatio - 0.55) * 12.5) * (1.0 + noise3D);
-       if(length(schoolDamagePosition - c4) < r4) discard;
-       // Catastrophic collapse only when building reaches 96%+ destruction
-       if(schoolDestructionRatio >= 0.96){
+       if(!isTopLevel && length(schoolDamagePosition - c4) < r4) discard;
+        // Catastrophic collapse only when building reaches 96%+ destruction
+        if(schoolDestructionRatio >= 0.96){
          float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
          float endCollapse = mix(1.0, 0.05, clamp((schoolDestructionRatio - 0.96) / 0.04, 0.0, 1.0));
          if(normH > endCollapse) discard;

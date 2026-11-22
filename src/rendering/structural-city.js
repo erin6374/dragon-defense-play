@@ -270,6 +270,8 @@ export function createStructuralCity(THREE,scene,bank){
    let shed=0;
    for(const p of b.parts){
     if(p.state!=='attached'||p.type==='foundation')continue;
+     const isTopRoof=p.type==='roof'||p.original.position.y>b.h*0.80;
+     if(!b.school&&isTopRoof&&!catastrophic)continue; // roof & top level remain standing overhead
     if(!b.school&&(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached'))){
      p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
      if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}

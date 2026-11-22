@@ -18,19 +18,58 @@ export function createCityExtensions({THREE,root,block,material}){
  const lamp=new THREE.MeshBasicMaterial({color:0xffefbf});
  const cube=new THREE.BoxGeometry(1,1,1);
  const add=(x,y,z,w,h,d,mat)=>block(host,x,y,z,w,h,d,mat);
- // Back street immediately behind the school and its neighbors: rowhouses were
- // deliberately moved back to leave this roadway visible (see neighborhood.js).
- // N Watts Street: North-south street directly behind the Broad Street frontage.
- // Centerline z = -34.0, road width = 7.0 (spans z in [-37.5, -30.5]).
- add(0,-.38,-34.0,1200,.16,7.0,asphalt);
- // East sidewalk (facing Broad parcel rears): z = -29.0, width = 3.0 (spans z in [-30.5, -27.5])
- add(0,-.23,-29.0,1200,.20,3.0,creamStone);
- // West sidewalk (facing Row 0 rowhouse fronts): z = -39.0, width = 3.0 (spans z in [-40.5, -37.5])
- add(0,-.23,-39.0,1200,.20,3.0,creamStone);
- for(let x=-550;x<=550;x+=9){add(x,-.285,-34.0,3.2,.015,.10,paint);}
- // Side-street access curb cuts at each cross street intersection (York, Dauphin, Susquehanna, Diamond)
+ // Real-World Philadelphia Street Grid Alignment:
+ // N Watts Street is a secondary street running parallel to North Broad Street at z = -34.0.
+ // In authentic Philadelphia parcel geography (Google Maps / Philadelphia Land Records):
+ // 1. Tech Freire Charter School (2221 N Broad, x in [-16.0, 16.0]) is an authentic deep industrial parcel
+ //    extending back to z = -58.4m. N Watts Street DOES NOT cut through Tech Freire!
+ //    Watts Street dead-ends cleanly at the school's north property line (x = -16.0) and south line (x = 16.0).
+ // 2. PECO Substation at York Street (x in [-159.0, -138.0]) occupies a deep lot; Watts terminates at x = -138.0.
+ // 3. The 2100 Block (between Susquehanna x = 62.0 and Diamond x = 253.0) contains deep institutional lots
+ //    (ArchWell, McDonald's parking/drive-thru, Berean Presbyterian Church); Watts Street does not exist there.
+ // 4. Continuous through-traffic runs along N Park Avenue at z = -66.0, clearing all frontage buildings.
+ const wattsSegments = [
+   [-550.0, -175.0], // 2400 block (North of York Street)
+   [-158.0, -90.0],  // 2300 block (Between PECO south wall and Dauphin Street)
+   [-90.0,  -16.0],  // 2200 North block (Dauphin Street down to Tech Freire north property line)
+   [ 16.0,   62.0],  // 2200 South block (Tech Freire south property line down to Susquehanna Ave)
+   [253.0,  550.0]   // 2000 block (South of Diamond Street)
+ ];
+ for (const [xMin, xMax] of wattsSegments) {
+   const segW = xMax - xMin;
+   const segX = (xMin + xMax) * 0.5;
+   // Roadway: width = 7.0, spans z in [-37.5, -30.5]
+   add(segX, -.38, -34.0, segW, .16, 7.0, asphalt);
+   // East sidewalk (facing Broad parcel rears): z = -29.0, width = 3.0
+   add(segX, -.23, -29.0, segW, .20, 3.0, creamStone);
+   // West sidewalk (facing depth rowhouses): z = -39.0, width = 3.0
+   add(segX, -.23, -39.0, segW, .20, 3.0, creamStone);
+ }
+ // Dashed centerlines along active Watts Street roadway segments
+ for (const [xMin, xMax] of wattsSegments) {
+   for (let x = xMin + 4; x <= xMax - 4; x += 9) {
+     add(x, -.285, -34.0, 3.2, .015, .10, paint);
+   }
+ }
+ // Clean dead-end curb caps and safety bollards at Tech Freire property lines (x = -16.0 and x = 16.0)
+ for (const endX of [-16.0, 16.0]) {
+   // Transverse curb barrier cap across Watts Street roadway
+   add(endX, -.23, -34.0, 0.6, .32, 7.0, creamStone);
+   // Trio of safety bollards preventing vehicles from driving into school lot
+   for (const bz of [-36.2, -34.0, -31.8]) {
+     add(endX + (endX < 0 ? -0.4 : 0.4), .35, bz, .22, .75, .22, metal);
+     add(endX + (endX < 0 ? -0.4 : 0.4), .75, bz, .26, .10, .26, rust);
+   }
+ }
+ // Dead-end cap at PECO south lot line (x = -138.0)
+ add(-138.0, -.23, -34.0, 0.6, .32, 7.0, creamStone);
+ for (const bz of [-36.2, -34.0, -31.8]) add(-138.4, .35, bz, .22, .75, .22, metal);
+
+ // Side-street access curb cuts at York (x = -167), Dauphin (x = -98), and Susquehanna (x = 70)
  // connecting Broad Street to N Watts Street (spanning z in [-28, -8])
- for(const x of [-167,-98,70,245])for(const z of [-28,-22,-16])add(x,-.33,z,8.4,.05,4.0,asphalt);
+ for (const x of [-167, -98, 70]) {
+   for (const z of [-28, -22, -16]) add(x, -.33, z, 8.4, .05, 4.0, asphalt);
+ }
  // Previous speculative service-station placeholder removed because it overlapped
  // the real masonry block documented in the user's Street View references.
  const gx=null;
