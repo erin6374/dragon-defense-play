@@ -96,7 +96,7 @@ assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'sho
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
 assert.ok(waveSource.startsWith('function newWave(){'),'wave transition function found');
 assert.doesNotMatch(waveSource,/perchDragon\s*\(/,'ordinary waves preserve Paulo free-flight position');
-assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(false\)/,'initial game reset still perches Paulo');
+assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(true\)/,'initial game reset still perches Paulo');
 
 // Touch drags already reach the universal pointermove listener. A second
 // touch-specific listener used to raycast the same event twice.
