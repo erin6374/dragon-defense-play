@@ -3,6 +3,7 @@ import * as THREE from '../vendor/three/build/three.module.js';
 import {createStructuralCity} from '../src/rendering/structural-city.js';
 import {populateCity,footprintsOverlap} from '../src/simulation/city-layout.js';
 import {occupiesCrossStreet} from '../src/simulation/road-corridors.js';
+import {boundsOverlap3D,parcelOverhang,overlapsBetweenLoadedModels} from '../src/simulation/model-footprint-audit.js';
 function make(includeEdges){
  const mat=()=>new THREE.MeshStandardMaterial();
  const city=createStructuralCity(THREE,new THREE.Scene(),{getBuilding:mat,concrete:mat(),roof:mat(),blackMetal:mat(),images:{}});
@@ -118,3 +119,24 @@ assert.equal(attachedStructure(),0,'100% school damage must allow full structura
 city.restore();
 assert.equal(attachedStructure(),initialStructure,'school reset must restore all structural components');
 console.log('School localized damage/gauge reconciliation/full-collapse/reset PASS');
+
+
+// An imported GLB pivot may be correct while its actual mesh protrudes into
+// the next lot. Test diagnostics using world-space bounds before Antigravity
+// uses the per-model browser QA output to re-fit historic facade assets.
+const box=(minX,maxX,minY=0,maxY=10,minZ=-10,maxZ=0)=>({minX,maxX,minY,maxY,minZ,maxZ});
+const a=box(-10,0),b=box(-1,8),adjacent=box(0,8);
+assert.equal(boundsOverlap3D(a,adjacent),null,'shared party wall is not an intersection');
+const crossing=boundsOverlap3D(a,b);
+assert.ok(crossing&&crossing.x>.9&&crossing.y>0&&crossing.z>0);
+assert.equal(boundsOverlap3D(a,box(-4,2,11,14)),null,'models at separate elevations do not collide');
+assert.deepEqual(parcelOverhang(box(-9,1),{x:-5,w:10,z:-5,d:10}),
+ {northX:0,southX:1,rearZ:0,frontZ:0},'show the side where a model overhangs its parcel');
+const entries=[
+ {def:{id:'1',address:'A'},loaded:true,worldBounds:a},
+ {def:{id:'2',address:'B'},loaded:true,worldBounds:b},
+ {def:{id:'3',address:'Pending'},loaded:false,worldBounds:box(-9,1)}
+];
+assert.deepEqual(overlapsBetweenLoadedModels(entries).map(x=>[x.first,x.second]),[['1','2']],
+ 'report only loaded model pairs with a 3D volume intersection');
+console.log('Imported GLB geometry footprint/parcel overhang diagnostics PASS');
