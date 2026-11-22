@@ -2,19 +2,20 @@ import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '..
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
 const REPLACED_BY_NORTH_BROAD = new Set([
-  // 2200-block north (GLB replacements from manifest):
+  // Exact 1:1 match with GLB photogrammetric models:
   'united-fund-cream',          // 2227 N Broad — GLB 1007132
-  'south-cream-rowhouse',       // 2229-33 N Broad — GLB 1003388 / 1525758
-  'maximus-cares-brownstone',   // 2235-37 N Broad — GLB 1536711
-  'south-tan-brick',            // 2241 N Broad — GLB 1508518
-  'historic-tan-rowhouses',     // 2243-49 N Broad — GLB fill (hide to avoid Z-fight)
-  'north-doll-museum',          // 2251-53 N Broad — GLB 1536713 / 1542243
-  // 2200-block south (GLB models 1007133 & 1007134):
-  'north-brownstone',           // 2217-19 N Broad — GLB 1007133 / 1007134
-  // 2300-block corner (GLB 1051326 PECO):
-  'north-2300-corner-commercial',
-  // 2101-07 N Broad (GLB 1005656 Berean Church):
-  'south-diamond-corner'
+  'black-united-fund',          // 2231 N Broad — GLB 1003388
+  'blues-babe-foundation',      // 2233 N Broad — GLB 1525758
+  // Note: 2235-37 (maximus-cares-brownstone) REMAINS PROCEDURAL — NO GLB MODEL in pack!
+  'north-2239-rowhouse',        // 2239 N Broad — GLB 1536711
+  'north-2241-rowhouse',        // 2241 N Broad — GLB 1508518
+  // Note: 2243-49 (historic-tan-rowhouses) REMAINS PROCEDURAL — NO GLB MODEL in pack!
+  'pcs-for-people',             // 2251 N Broad — GLB 1536713
+  'north-doll-museum',          // 2253 N Broad — GLB 1542243
+  'north-2219-brownstone',      // 2219 N Broad — GLB 1007133
+  'north-2217-brownstone',      // 2217 N Broad — GLB 1007134
+  'north-2300-corner-commercial',// 2309-13 N Broad — GLB 1051326 (PECO)
+  'south-diamond-corner'        // 2101-07 N Broad — GLB 1005656 (Berean Church)
 ]);
 
 export function createStructuralCity(THREE,scene,bank){

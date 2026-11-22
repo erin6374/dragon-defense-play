@@ -423,7 +423,7 @@ function updateFires(dt){
   f.spreadTimer=(f.spreadTimer||0)+dt;
   if(f.spreadTimer>5.5&&schoolFire.length<36&&f.suppression<.3){
    f.spreadTimer=0;
-   const nearB=neighborhood.targetBuildings.find(b=>b.damage<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+   const nearB=neighborhood.targetBuildings.find(b=>!b.school&&b.damage<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
    if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
   }
 
@@ -431,7 +431,7 @@ function updateFires(dt){
   f.burnTimer=(f.burnTimer||0)+dt;
   if(f.burnTimer>=1.2){
    f.burnTimer=0;
-   const bldg=neighborhood.targetBuildings.find(b=>Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
+   const bldg=neighborhood.targetBuildings.find(b=>!b.school&&Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
    const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=2.0;
    if(bldg){bldg.damage=Math.min(1.0,(bldg.damage||0)+.012);}
    else if(onSchoolStructure){
@@ -3331,7 +3331,7 @@ function damage(x,z,y=7,meteor=null){
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
  const targetX=THREE.MathUtils.clamp(x,-240,240);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
- const targetBuilding=neighborhood.targetBuildings.find(b=>Math.abs(b.x-targetX)<b.w/2+1.8&&z>=b.z-b.d/2-1.8&&z<=b.front+1.8);
+ const targetBuilding=neighborhood.targetBuildings.find(b=>!b.school&&Math.abs(b.x-targetX)<b.w/2+1.8&&z>=b.z-b.d/2-1.8&&z<=b.front+1.8);
  const neighbor=!!targetBuilding;
  const roadStrike=z>13&&z<36&&y<3;
  if(roadStrike){strikeParkedCars(targetX,z,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,z,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,z,profile.shockRadius);flashAt(targetX,1.8,z,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,z),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,z),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,z);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,z+(Math.random()-.5)*2.5);

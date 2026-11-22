@@ -10,13 +10,17 @@
 import * as THREE from 'three';
 
 export const REPLACED_BY_NORTH_BROAD = new Set([
-  'united-fund-cream',
-  'south-cream-rowhouse',
-  'south-tan-brick',
-  'north-doll-museum',
-  'north-brownstone',
-  'north-2300-corner-commercial',
-  'south-diamond-corner'
+  'united-fund-cream',          // 2227 N Broad — GLB 1007132
+  'black-united-fund',          // 2231 N Broad — GLB 1003388
+  'blues-babe-foundation',      // 2233 N Broad — GLB 1525758
+  'north-2239-rowhouse',        // 2239 N Broad — GLB 1536711
+  'north-2241-rowhouse',        // 2241 N Broad — GLB 1508518
+  'pcs-for-people',             // 2251 N Broad — GLB 1536713
+  'north-doll-museum',          // 2253 N Broad — GLB 1542243
+  'north-2219-brownstone',      // 2219 N Broad — GLB 1007133
+  'north-2217-brownstone',      // 2217 N Broad — GLB 1007134
+  'north-2300-corner-commercial',// 2309-13 N Broad — GLB 1051326 (PECO)
+  'south-diamond-corner'        // 2101-07 N Broad — GLB 1005656 (Berean Church)
 ]);
 
 export function createBroadStreetReferenceFacades(scene, buildings){
@@ -54,7 +58,8 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    'north-2300-corner-commercial':{type:'dauphinCorner',label:['NORTH BROAD PLAZA','2330 BROAD'],bg:'#202838',fg:'#fff4cf'},
    'north-2400-broad-station':{type:'dauphinCommerce',label:['BROAD & YORK','METRO STATION'],bg:'#1c2a38',fg:'#f5e8c4'},
    'north-york-commercial':{type:'dauphinCommerce',label:['YORK HARDWARE','2400 BROAD'],bg:'#342218',fg:'#ffefc8'},
-   'former-cvs-2131-broad':{type:'pharmacyCvs',label:['ARCHWELL HEALTH','FORMER RITE AID / CVS'],bg:'#103854',fg:'#ffffff'},
+     'broad-2129-newman':{type:'templeNewman',label:['TEMPLE NEWMAN CENTER','CATHOLIC CAMPUS MINISTRY'],bg:'#1b3252',fg:'#fff6d8'},
+  'former-cvs-2131-broad':{type:'pharmacyCvs',label:['ARCHWELL HEALTH','FORMER RITE AID / CVS'],bg:'#103854',fg:'#ffffff'},
    'broad-2125-commercial':{type:'dauphinCommerce',label:['BROAD COMMERCIAL','2125 N BROAD'],bg:'#203042',fg:'#fff4cf'},
    'broad-2121-mixed-use':{type:'dauphinCorner',label:['TEMPLE DELI & GROCERY','2121 N BROAD'],bg:'#1e3226',fg:'#f8edd0'},
    'broad-2117-apartments':{type:'templeResidence',label:['TEMPLE FLATS','STUDENT HOUSING'],bg:'#5c1824',fg:'#fff6d8'},
@@ -311,19 +316,35 @@ export function createBroadStreetReferenceFacades(scene, buildings){
    const bb=makeSign(group,{...b,x:b.x,w:b.w*.82},['PHILADELPHIA','COMMUNITY BOARD'],'#1a2838','#f5d272',b.h+.88,.96,1.18);
    bb.position.z=b.front+.24;
   }
+  else if(spec.type==='templeNewman'){
+   // 2129 N Broad: Temple University Newman Center
+   bx(group,b.x,b.h-.25,z,b.w+.2,.36,.36,warmStone);
+   makeSign(group,b,['TEMPLE NEWMAN CENTER','CATHOLIC CAMPUS MINISTRY'],'#1b3252','#fff6d8',2.5,.90,.85);
+   for(let floor=1;floor<b.stories;floor++){
+    const y=(floor+.5)*(b.h/b.stories);
+    for(const dx of [-b.w*.32,-b.w*.10,b.w*.10,b.w*.32]){
+     bx(group,b.x+dx,y,z+.04,1.4,1.6,.05,glass);
+     bx(group,b.x+dx,y-.85,z+.08,1.6,.12,.22,ivory);
+    }
+   }
+  }
   else if(spec.type==='mcdonalds'){
    // 2109 N Broad: McDonald's freestanding restaurant with golden mansard roof and drive-thru
    bx(group,b.x,b.h+.35,z+.12,b.w+.4,.72,.42,gold);
    bx(group,b.x,b.h-.15,z+.08,b.w+.15,.32,.28,brickTrim);
-   // Illuminated McDonald's red & gold sign
    makeSign(group,b,["McDonald's",'24 HOURS • DRIVE-THRU'],'#bf1a1a','#ffcc00',b.h+.35,.82,.68);
-   // Glazed storefront & order counter
    bx(group,b.x,1.45,z+.06,b.w*.92,2.5,.06,shadow);
    bx(group,b.x-b.w*.22,1.60,z+.12,b.w*.42,2.3,.08,glass);
    bx(group,b.x+b.w*.24,1.60,z+.12,b.w*.38,2.3,.08,glass);
-   // Drive-thru approach pylon sign
    const dtSign=makeSign(group,{...b,x:b.x-b.w*.5-2.2,w:3.6},['DRIVE-THRU','OPEN 24 HOURS'],'#bf1a1a','#ffcc00',3.2,.95,.78);
    dtSign.position.z=b.front+.25;
+   // Paved parking apron & drive-thru approach between McDonald's and Berean Church (x = 184 to 214)
+   const lotW = 29.85, lotX = 198.9;
+   bx(group, lotX, -.25, -13.0, lotW, .12, 18.0, slate);
+   // Parking stall lines
+   for(let k = 0; k < 6; k++){
+    bx(group, lotX - 11.0 + k * 4.5, -.18, -13.0, .14, .02, 5.2, ivory);
+   }
   }
   else if(spec.type==='pharmacyCvs'){
    // 2131 N Broad: Former CVS / Rite Aid (ArchWell Health) single-story commercial pharmacy

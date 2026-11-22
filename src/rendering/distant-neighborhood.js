@@ -182,7 +182,7 @@ export function createDistantNeighborhood({root,flameTexture}){
      const x=side*(70+i*9.4);
      if(occupiesCrossStreet(x,8.2,5.0))continue;
      // Strict exclusion for deep frontage models and parcels
-     if((x>-162&&x<-136&&z>-55) || (x>-92&&x<-74&&z>-55) || (x>-75&&x<-10&&z>-38) || (Math.abs(x)<18&&z>-45) || (x>10&&x<60&&z>-38) || (x>58&&x<82) || (x>78&&x<134&&z>-40) || (x>170&&x<220&&z>-40) || (x>216&&x<238&&z>-55))continue; // strictly keep all 4 cross streets 100% open
+     if((x>-175&&x<-159) || (x>-159&&x<-138&&z>-55) || (x>-106&&x<-90) || (x>-90&&x<-75&&z>-55) || (x>-75&&x<-13&&z>-35) || (Math.abs(x)<16&&z>-45) || (x>13&&x<62&&z>-35) || (x>62&&x<78) || (x>78&&x<105&&z>-35) || (x>105&&x<162&&z>-25) || (x>162&&x<214&&z>-40) || (x>214&&x<237&&z>-55) || (x>237&&x<253))continue; // strictly keep all 4 cross streets 100% open
     const h=7.6+(i*13+Math.abs(z))%7;
     const color=facades[(i+Math.abs(z))%facades.length];
     const home=registerBuilding(0,x,z,8.2,h,14);
