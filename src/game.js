@@ -305,7 +305,7 @@ let lightningCooldown=5;
 function updateNight(dt){
  const targetPhase=dayPhase(wave);let phaseDelta=targetPhase-displayedPhase;if(phaseDelta<-.5)phaseDelta+=1;if(phaseDelta>.5)phaseDelta-=1;
  const blend=1-Math.exp(-dt*.45);displayedPhase=(displayedPhase+phaseDelta*blend+1)%1;displayedDarkness+=(dayDarkness(wave)-displayedDarkness)*blend;
- const darkness=displayedDarkness;cinematicLighting.update(dt,darkness);schoolReconstruction?.setNight(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.08+darkness*.05;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00105+darkness*.00020;cinematicSky.setPhase(displayedPhase,darkness,dt,disasterSkyIntensity(wave,skylineDamage),dragon.position.y);neighborhood.setAtmosphere(displayedPhase,darkness);
+ const darkness=displayedDarkness;cinematicLighting.update(dt,darkness);schoolReconstruction?.setNight(darkness);northBroadModels?.setNight?.(darkness);skylineBackdrop.setDamage(Math.max(skylineDamage,schoolDamage>=.999?1:schoolDamage*.6));skylineBackdrop.setTime(displayedPhase,darkness);skylineAirUniforms.day.value=1-darkness;skylineAirUniforms.opacity.value=.08+darkness*.05;scene.background.lerp(skyTarget,Math.min(1,dt*.9));scene.fog.color.copy(scene.background);scene.fog.density=.00105+darkness*.00020;cinematicSky.setPhase(displayedPhase,darkness,dt,disasterSkyIntensity(wave,skylineDamage),dragon.position.y);neighborhood.setAtmosphere(displayedPhase,darkness);
  // Distant building haze is now handled by the skyline materials and fog;
  // do not allocate an unused color blend in this per-frame path.
  // Architectural texture preserves facade detail while distance haze stays subtle.
@@ -3274,7 +3274,25 @@ function settleMeteorAsPermanentSlag(m){
  }
  if(m.mesh.parent)scene.remove(m.mesh);
 }
-function debrisPiece(pos,type){if(debris.length>24)return;const mesh=new THREE.Mesh(type==='glass'?glassShardGeometry:cube,mats[type]||mats.stone);mesh.position.copy(pos);const large=Math.random()<.045;mesh.scale.setScalar(cell*(large?.52+Math.random()*.32:.07+Math.random()*.15));scene.add(mesh);debris.push({mesh,v:new THREE.Vector3((Math.random()-.5)*8,Math.random()*10,(Math.random()-.5)*7),life:1.5+Math.random()*1.2,bounces:0,rubble:!large&&Math.random()<.62,trail:false})}
+function debrisPiece(pos,type,origin=null){
+ if(debris.length>96)return;
+ const mesh=new THREE.Mesh(type==='glass'?glassShardGeometry:cube,mats[type]||mats.stone);
+ mesh.position.copy(pos);
+ const large=Math.random()<.05;
+ mesh.scale.setScalar(cell*(large?.48+Math.random()*.30:.08+Math.random()*.16));
+ scene.add(mesh);
+ let vx=(Math.random()-.5)*10,vy=3.5+Math.random()*8.0,vz=2.0+Math.random()*7.0;
+ if(origin){
+  const out=pos.clone().sub(origin);
+  if(out.lengthSq()>0.001){
+   out.normalize();
+   vx=out.x*(5.0+Math.random()*8.0);
+   vy=Math.max(2.5,out.y*(4.0+Math.random()*7.0)+Math.random()*4.0);
+   vz=Math.max(1.8,out.z*(5.0+Math.random()*8.0)+Math.random()*3.5);
+  }
+ }
+ debris.push({mesh,v:new THREE.Vector3(vx,vy,vz),angVel:new THREE.Vector3(Math.random()*12,Math.random()*12,Math.random()*12),life:1.8+Math.random()*1.4,bounces:0,rubble:!large&&Math.random()<.60,trail:false});
+}
 function spawnHelicopterCrashDebris(pos,variant=0){
  const colors=[0x294f70,0xe6e5dc,0xb83525];
  const bodyM=material(colors[variant]||0x294f70,.3,.4);
@@ -4497,30 +4515,79 @@ if(m.grounded){
   }
   if(m.dragonHunter&&m.mesh.position.distanceTo(dragon.position)<2.6){hurtDragon('FLAMING METEOR');groundFireball(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,1.2);remove(meteors,i);continue;}
  const openingImpact=m.opening&&traceOpeningMeteorImpact(m,meteorStart);
- if(openingImpact||(m.dragonHunter&&m.mesh.position.y<=.8)||(!m.opening&&!m.dragonHunter&&(m.mesh.position.distanceTo(m.target)<Math.max(.8,m.size*.65)||m.mesh.position.y<=.7))){if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}const heat=openingMoltenHeat(m);
- if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat);
- if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
- if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
- groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);cinematicFX.burst(m.target,Math.max(.4,m.size));if(impactProfile(m.size,m.kind).penetrates&&m.target.z<13){const internal=m.target.clone().add(new THREE.Vector3(0,-1.2,-1.7));cinematicFX.burst(internal,Math.max(.4,m.size*.8));neighborhood.city.impact(neighborhood.city.buildings.find(b=>Math.abs(b.x-internal.x)<b.w/2&&Math.abs(b.z-internal.z)<b.d/2),internal,impactProfile(m.size,m.kind).radius,.45);}if(m.burning){const count=m.kind==='flaming'?5:3;for(let k=0;k<count;k++)ignite(m.target.x+(Math.random()-.5)*m.size*4,Math.max(.4,m.target.y),m.target.z+(Math.random()-.5)*2);}
- const roofImpact=neighborhood.roofBreach(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).radius*.65*heat);
- if(roofImpact){emitMeteorShrapnel(m.target,Math.min(5,m.size*2));
-  for(let k=0;k<3;k++)ignite(m.target.x+(Math.random()-.5)*3,Math.max(1,m.target.y-2.2),m.target.z+(Math.random()-.5)*2);
-  neighborhood.aftershock(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).shockRadius,p=>debrisPiece(p,'roof'));
- }
- damage(m.target.x,m.target.z,m.target.y,m);if(m.size>1.5){blast(m.target.x,m.target.y,m.target.z,5*m.size);neighborhood.impact(m.target.x,m.target.y,m.target.z,3*m.size,p=>debrisPiece(p,'brick'),heat);}
- strikeParkedCars(m.target.x,m.target.z,5.5*heat);for(const c of cars)if(performanceLab.isEnabled('traffic')&&Math.abs(c.root.position.x-m.target.x)<4&&Math.abs(c.root.position.z-m.target.z)<7&&m.target.y<5)explodeCar(c);
-  // Meteor breaks up on impact: explosive blast, shrapnel, and shattered pieces!
-  // Meteors NEVER sit or linger inside buildings!
-  blast(m.target.x,m.target.y,m.target.z,Math.max(3.2,1.8*m.size));
-  emitMeteorShrapnel(m.target,Math.min(8,2+m.size*2.2));
-  sound('impact',{x:m.target.x});
-  const pieceCount=Math.min(10,Math.round(3+m.size*2.5));
-  for(let s=0;s<pieceCount;s++){
-   const p=m.target.clone().add(new THREE.Vector3((Math.random()-.5)*1.6,(Math.random()-.5)*1.6,(Math.random()-.5)*1.6));
-   debrisPiece(p,m.kind==='flaming'?'stone':'brick');
+
+  // Sweep collision detection: catch any descending meteor piercing a building roof or facade
+  let sweepHit=null;
+  if(!m.dragonHunter&&m.vel&&m.vel.y<-0.1){
+   const curr=m.mesh.position;
+   const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
+   const sMinZ=schoolBounds.min.z,sMaxZ=schoolBounds.max.z;
+   const sMaxY=schoolBounds.max.y;
+   if(curr.x>=sMinX-0.6&&curr.x<=sMaxX+0.6&&curr.z>=sMinZ-0.6&&curr.z<=sMaxZ+0.6&&curr.y<=sMaxY&&meteorStart.y>=sMaxY-1.2){
+    sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
+   }
+   if(!sweepHit&&neighborhood?.targetBuildings){
+    for(const b of neighborhood.targetBuildings){
+     if(b.damage>=0.98)continue;
+     if(curr.x>=b.x-b.w*0.5-0.6&&curr.x<=b.x+b.w*0.5+0.6&&curr.z>=b.z-b.d*0.5-0.6&&curr.z<=b.front+0.6&&curr.y<=b.h&&meteorStart.y>=b.h-1.2){
+      sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
+      break;
+     }
+    }
+   }
   }
-  remove(meteors,i);
-  if(!active)break;continue}
+
+  const targetReached=(!m.opening&&!m.dragonHunter&&(
+   m.mesh.position.distanceTo(m.target)<Math.max(1.0,m.size*0.75)||
+   (m.mesh.position.y<=m.target.y&&Math.hypot(m.mesh.position.x-m.target.x,m.mesh.position.z-m.target.z)<Math.max(4.0,m.size*1.8))||
+   m.mesh.position.y<=0.7
+  ));
+
+  if(openingImpact||(m.dragonHunter&&m.mesh.position.y<=.8)||sweepHit||targetReached){
+   if(sweepHit)m.target.copy(sweepHit);
+   if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}
+   const heat=openingMoltenHeat(m);
+   if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat);
+   if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
+   if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
+   groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);
+   cinematicFX.burst(m.target,Math.max(.4,m.size));
+   if(impactProfile(m.size,m.kind).penetrates&&m.target.z<13){
+    const internal=m.target.clone().add(new THREE.Vector3(0,-1.2,-1.7));
+    cinematicFX.burst(internal,Math.max(.4,m.size*.8));
+    neighborhood.city.impact(neighborhood.city.buildings.find(b=>Math.abs(b.x-internal.x)<b.w/2&&Math.abs(b.z-internal.z)<b.d/2),internal,impactProfile(m.size,m.kind).radius,.45);
+   }
+   if(m.burning){
+    const count=m.kind==='flaming'?5:3;
+    for(let k=0;k<count;k++)ignite(m.target.x+(Math.random()-.5)*m.size*4,Math.max(.4,m.target.y),m.target.z+(Math.random()-.5)*2);
+   }
+   const roofImpact=neighborhood.roofBreach(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).radius*.65*heat);
+   if(roofImpact){
+    emitMeteorShrapnel(m.target,Math.min(6,m.size*2.2));
+    for(let k=0;k<3;k++)ignite(m.target.x+(Math.random()-.5)*3,Math.max(1,m.target.y-2.2),m.target.z+(Math.random()-.5)*2);
+    neighborhood.aftershock(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).shockRadius,p=>debrisPiece(p,'roof',m.target));
+   }
+   damage(m.target.x,m.target.z,m.target.y,m);
+   if(m.size>1.5){
+    blast(m.target.x,m.target.y,m.target.z,5*m.size);
+    neighborhood.impact(m.target.x,m.target.y,m.target.z,3*m.size,p=>debrisPiece(p,'brick',m.target),heat);
+   }
+   strikeParkedCars(m.target.x,m.target.z,5.5*heat);
+   for(const c of cars)if(performanceLab.isEnabled('traffic')&&Math.abs(c.root.position.x-m.target.x)<4&&Math.abs(c.root.position.z-m.target.z)<7&&m.target.y<5)explodeCar(c);
+
+   // Realistic physics breakup: explosive detonation, shrapnel spray, and cascading debris
+   // Meteors NEVER sit, linger, or remain inside buildings!
+   blast(m.target.x,m.target.y,m.target.z,Math.max(3.8,2.2*m.size));
+   emitMeteorShrapnel(m.target,Math.min(10,3+m.size*2.5));
+   sound('impact',{x:m.target.x});
+   const pieceCount=Math.min(16,Math.round(5+m.size*3.0));
+   for(let s=0;s<pieceCount;s++){
+    const p=m.target.clone().add(new THREE.Vector3((Math.random()-.5)*1.8,(Math.random()-.5)*1.8,(Math.random()-.5)*1.8));
+    debrisPiece(p,s%3===0?'glass':(m.kind==='flaming'?'stone':'brick'),m.target);
+   }
+   remove(meteors,i);
+   if(!active)break;continue;
+  }
  for(const b of blasts){if(m.fragmentGrace>0||b.age>.64)continue;const dist=m.mesh.position.distanceTo(b.mesh.position),reach=b.r+m.size*.85+(easyMode()?2.2:.8);
  if(dist>=reach)continue;
  const centrality=Math.max(0,1-dist/Math.max(.1,reach));

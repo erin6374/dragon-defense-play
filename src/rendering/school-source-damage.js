@@ -11,9 +11,17 @@ export function createSchoolSourceDamage() {
  texture.minFilter=texture.magFilter=THREE.LinearFilter;
  texture.needsUpdate=true;
  const destructionRatio={value:0.0};
+ const MAX_IMPACTS=16;
+ const impactPoints=Array.from({length:MAX_IMPACTS},()=>new THREE.Vector4(0,0,0,0));
+ const impactCount={value:0};
  let strikes=0;
  const stamp=(x,y,z,radius)=>{
   const r=radius*1.2;
+  const idx=strikes%MAX_IMPACTS;
+  impactPoints[idx].set(x,y,z,Math.max(1.8,radius));
+  strikes++;
+  impactCount.value=Math.min(strikes,MAX_IMPACTS);
+
   const low=(p,origin)=>Math.max(0,Math.floor((p-origin-r)/cell));
   const high=(p,origin,count)=>Math.min(count-1,Math.ceil((p-origin+r)/cell));
   for(let k=low(z,min.z);k<=high(z,min.z,depth);k++){
@@ -30,8 +38,8 @@ export function createSchoolSourceDamage() {
     }
    }
   }
-  strikes++;
   texture.needsUpdate=true;
+  if(texture.source)texture.source.needsUpdate=true;
  };
  const patch=material=>{
   const glass=material.name==='school-glass';
@@ -41,6 +49,8 @@ export function createSchoolSourceDamage() {
    shader.uniforms.schoolDamageMin={value:min};
    shader.uniforms.schoolDamageSize={value:size};
    shader.uniforms.schoolDestructionRatio=destructionRatio;
+   shader.uniforms.uSchoolImpacts={value:impactPoints};
+   shader.uniforms.uSchoolImpactCount=impactCount;
    shader.vertexShader='varying vec3 schoolDamagePosition;\n'+shader.vertexShader;
    shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',
     '#include <worldpos_vertex>\n schoolDamagePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -48,7 +58,9 @@ export function createSchoolSourceDamage() {
     uniform highp sampler3D schoolDamageMap;
     uniform vec3 schoolDamageMin;
     uniform vec3 schoolDamageSize;
-    uniform float schoolDestructionRatio;\n`+shader.fragmentShader;
+    uniform float schoolDestructionRatio;
+    uniform vec4 uSchoolImpacts[16];
+    uniform int uSchoolImpactCount;\n`+shader.fragmentShader;
    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',`
     #include <clipping_planes_fragment>
     vec3 damageUv=(schoolDamagePosition-schoolDamageMin)/schoolDamageSize;
@@ -57,39 +69,50 @@ export function createSchoolSourceDamage() {
      damage=texture(schoolDamageMap,damageUv).r;
     }
     if(damage>${glass?'.24':'.53'})discard;
-     // Procedural volumetric 3D chunk damage:
-     // Large irregular chunks/craters carve out the lower and middle storeys
-     // while leaving upper floors and roof parapets intact overhead!
-     if(schoolDestructionRatio > 0.04){
-       float noise3D = sin(schoolDamagePosition.x*1.35 + schoolDamagePosition.y*1.85)*0.24 +
-                       cos(schoolDamagePosition.z*1.95 - schoolDamagePosition.y*1.15)*0.18 +
-                       sin(schoolDamagePosition.x*2.71 - schoolDamagePosition.z*2.33)*0.12;
-       // Top level & roof (Y > 21.5m) strictly protected from middle-floor cavities:
-       // Roof parapets and 5th-floor classrooms remain solidly perched overhead!
-       bool isTopLevel = schoolDamagePosition.y > 21.5;
-       // Chunk 1: Middle-East facade breach (X ≈ 6.5, Y ≈ 10.5, Z ≈ -1.0)
-       vec3 c1 = vec3(6.5, 10.5, -1.0);
-       float r1 = max(0.0, (schoolDestructionRatio - 0.06) * 11.5) * (1.0 + noise3D);
-       if(!isTopLevel && length(schoolDamagePosition - c1) < r1) discard;
-       // Chunk 2: Mid-Level Entrance & Atrium cavity (X ≈ -4.0, Y ≈ 7.0, Z ≈ -2.0)
-       vec3 c2 = vec3(-4.0, 7.0, -2.0);
-       float r2 = max(0.0, (schoolDestructionRatio - 0.20) * 12.0) * (1.0 + noise3D);
-       if(!isTopLevel && length(schoolDamagePosition - c2) < r2) discard;
-       // Chunk 3: West wing 3rd-floor structural bite (X ≈ -8.5, Y ≈ 14.0, Z ≈ -3.5)
-       vec3 c3 = vec3(-8.5, 14.0, -3.5);
-       float r3 = max(0.0, (schoolDestructionRatio - 0.38) * 10.5) * (1.0 + noise3D);
-       if(!isTopLevel && length(schoolDamagePosition - c3) < r3) discard;
-       // Chunk 4: Rear-East Classroom blast punch (X ≈ 5.0, Y ≈ 12.0, Z ≈ -12.0)
-       vec3 c4 = vec3(5.0, 12.0, -12.0);
-       float r4 = max(0.0, (schoolDestructionRatio - 0.55) * 12.5) * (1.0 + noise3D);
-       if(!isTopLevel && length(schoolDamagePosition - c4) < r4) discard;
-        // Catastrophic collapse only when building reaches 96%+ destruction
-        if(schoolDestructionRatio >= 0.96){
-         float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
-         float endCollapse = mix(1.0, 0.05, clamp((schoolDestructionRatio - 0.96) / 0.04, 0.0, 1.0));
-         if(normH > endCollapse) discard;
-       }
-     }`);
+
+    // Dynamic procedural 3D crater carving for every meteor hit:
+    // Carves out the exact section where the meteor hit with jagged procedural fracture edges!
+    for(int i = 0; i < 16; i++){
+      if(i >= uSchoolImpactCount) break;
+      vec3 c = uSchoolImpacts[i].xyz;
+      float baseR = uSchoolImpacts[i].w;
+      if(baseR <= 0.05) continue;
+
+      // High-frequency 3D procedural noise creates organic jagged bite edges
+      float noise3D = sin(schoolDamagePosition.x*2.15 + schoolDamagePosition.y*2.85)*0.22 +
+                      cos(schoolDamagePosition.z*2.65 - schoolDamagePosition.y*1.75)*0.18 +
+                      sin(schoolDamagePosition.x*3.71 - schoolDamagePosition.z*3.33)*0.12;
+      float r = baseR * (1.0 + noise3D);
+      // Glass curtain wall blows out 45% wider than concrete/masonry:
+      if(${glass ? 'true' : 'false'}) {
+        r *= 1.45;
+      }
+
+      // Procedural vertical height sectioning:
+      // 1) First-floor strike (c.y <= 4.5m): facade and floor slab blow out,
+      //    while upper 3 or 4 floors and roof (Y > 7.8m) remain standing overhead!
+      bool isGroundStrike = c.y <= 4.5;
+      if(isGroundStrike && schoolDamagePosition.y > 7.8) continue;
+
+      // 2) Roof strike (c.y >= 18.0m): roof and cornice crumple,
+      //    while lower floors (Y < 16.0m) remain solidly standing!
+      bool isRoofStrike = c.y >= 18.0;
+      if(isRoofStrike && schoolDamagePosition.y < 16.0) continue;
+
+      // 3) Mid-level strike (4.5m < c.y < 18.0m): mid-level cavity blown out,
+      //    while the top floor / roof level (Y > 21.5m) remains standing overhead!
+      bool isMidStrike = c.y > 4.5 && c.y < 18.0;
+      if(isMidStrike && schoolDamagePosition.y > 21.5) continue;
+
+      if(length(schoolDamagePosition - c) < r) discard;
+    }
+
+    // Catastrophic collapse only when building reaches 96%+ destruction
+    if(schoolDestructionRatio >= 0.96){
+      float normH=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
+      float endCollapse = mix(1.0, 0.05, clamp((schoolDestructionRatio - 0.96) / 0.04, 0.0, 1.0));
+      if(normH > endCollapse) discard;
+    }`);
    if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
     #include <color_fragment>
     vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));
@@ -129,12 +152,22 @@ export function createSchoolSourceDamage() {
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v3-'+material.name;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v4-'+material.name;
  };
- return {stamp,patch,strikes:()=>strikes,setDestruction:ratio=>{destructionRatio.value=THREE.MathUtils.clamp(ratio,0,1);},reset:()=>{
-  pixels.fill(0);
-  strikes=0;
-  destructionRatio.value=0;
-  texture.needsUpdate=true;
- }};
+ return {
+  stamp,
+  patch,
+  strikes:()=>strikes,
+  impacts:()=>impactPoints.slice(0,impactCount.value),
+  setDestruction:ratio=>{destructionRatio.value=THREE.MathUtils.clamp(ratio,0,1);},
+  reset:()=>{
+   pixels.fill(0);
+   strikes=0;
+   destructionRatio.value=0;
+   impactCount.value=0;
+   for(const p of impactPoints)p.set(0,0,0,0);
+   texture.needsUpdate=true;
+   if(texture.source)texture.source.needsUpdate=true;
+  }
+ };
 }

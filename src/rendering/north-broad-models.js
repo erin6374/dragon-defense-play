@@ -164,8 +164,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   // Berean Church Rubble & Interior Proxy
   let churchInterior = null;
   let churchRubbleProxy = null;
-
   let churchFeatures = null;
+  const churchStainedGlassMaterials = [];
 
   function buildBereanRoseWindowAndSpires(THREE, parentGroup, churchPos) {
     const group = new THREE.Group();
@@ -176,18 +176,45 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a8176, roughness: 0.92, metalness: 0.02 });
     const trimMat = new THREE.MeshStandardMaterial({ color: 0xd3c4a8, roughness: 0.88, metalness: 0.02 });
     const spireSlateMat = new THREE.MeshStandardMaterial({ color: 0x45474b, roughness: 0.95, metalness: 0.05 });
-    const stainedGlassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x244258,
-      emissive: 0x3d587a,
-      emissiveIntensity: 0.85,
-      roughness: 0.12,
-      metalness: 0.18,
+
+    // Multi-color jewel-toned stained glass materials (sapphire cobalt, ruby red, amber gold)
+    const cobaltGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x164273,
+      emissive: 0x1e5a9c,
+      emissiveIntensity: 0.90,
+      roughness: 0.10,
+      metalness: 0.20,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.08,
+      clearcoatRoughness: 0.06,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.90,
       side: THREE.DoubleSide
     });
+    const rubyGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x7a1824,
+      emissive: 0x992230,
+      emissiveIntensity: 0.90,
+      roughness: 0.10,
+      metalness: 0.20,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      transparent: true,
+      opacity: 0.90,
+      side: THREE.DoubleSide
+    });
+    const amberGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xca8c2a,
+      emissive: 0xe5a336,
+      emissiveIntensity: 0.95,
+      roughness: 0.08,
+      metalness: 0.22,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide
+    });
+    churchStainedGlassMaterials.push(cobaltGlassMat, rubyGlassMat, amberGlassMat);
     const portalDoorMat = new THREE.MeshStandardMaterial({ color: 0x782e27, roughness: 0.82, metalness: 0.05 });
 
     // 1. FRONT GRAND CIRCULAR STAINED GLASS ROSE WINDOW (Facing Broad Street / Camera at Z = 0.25, X = 5.3, Y = 11.2)
@@ -195,10 +222,23 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     roseRoot.name = 'berean-rose-window-front';
     roseRoot.position.set(5.3, 11.2, 0.25);
 
-    // Jewel-toned stained glass circular disc
-    const glassGeo = new THREE.CircleGeometry(2.2, 48);
-    const glassMesh = new THREE.Mesh(glassGeo, stainedGlassMat);
-    roseRoot.add(glassMesh);
+    // Multi-ring jewel-toned stained glass:
+    // Outer sapphire cobalt ring (radius 1.05m to 2.18m)
+    const outerCobaltGeo = new THREE.RingGeometry(1.05, 2.18, 48);
+    const outerCobaltMesh = new THREE.Mesh(outerCobaltGeo, cobaltGlassMat);
+    roseRoot.add(outerCobaltMesh);
+
+    // Middle ruby crimson ring (radius 0.35m to 1.05m)
+    const midRubyGeo = new THREE.RingGeometry(0.35, 1.05, 36);
+    const midRubyMesh = new THREE.Mesh(midRubyGeo, rubyGlassMat);
+    midRubyMesh.position.z = 0.01;
+    roseRoot.add(midRubyMesh);
+
+    // Center amber gold rosette disc (radius 0.35m)
+    const centerAmberGeo = new THREE.CircleGeometry(0.35, 24);
+    const centerAmberMesh = new THREE.Mesh(centerAmberGeo, amberGlassMat);
+    centerAmberMesh.position.z = 0.02;
+    roseRoot.add(centerAmberMesh);
 
     // Outer carved stone surround ring
     const ringGeo = new THREE.RingGeometry(2.18, 2.62, 48);
@@ -286,8 +326,15 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     southRose.position.set(20.85, 10.5, -22.0);
     southRose.rotation.y = Math.PI / 2;
 
-    const southGlass = new THREE.Mesh(new THREE.CircleGeometry(1.85, 36), stainedGlassMat);
-    southRose.add(southGlass);
+    // Multi-ring jeweled glass for south transept rose window
+    const southCobaltGeo = new THREE.RingGeometry(0.85, 1.85, 36);
+    const southCobaltMesh = new THREE.Mesh(southCobaltGeo, cobaltGlassMat);
+    southRose.add(southCobaltMesh);
+
+    const southRubyGeo = new THREE.CircleGeometry(0.85, 24);
+    const southRubyMesh = new THREE.Mesh(southRubyGeo, rubyGlassMat);
+    southRubyMesh.position.z = 0.01;
+    southRose.add(southRubyMesh);
     const southRing = new THREE.Mesh(new THREE.RingGeometry(1.83, 2.22, 36), trimMat);
     southRing.position.z = 0.04;
     southRose.add(southRing);
@@ -769,6 +816,16 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         }
       }
       return hits;
+    },
+    setNight(darkness) {
+      for (const mat of churchStainedGlassMaterials) {
+        mat.emissiveIntensity = 0.60 + 0.85 * darkness;
+      }
+      for (const mat of signMaterials) {
+        if (mat.emissiveIntensity !== undefined) {
+          mat.emissiveIntensity = 0.40 + 0.60 * darkness;
+        }
+      }
     },
     restore() {
       for (const entry of entries) {
