@@ -81,6 +81,8 @@ const AUDIO_MANIFEST = {
 export function createSoundEngine() {
   let ctx = null;
   let muted = false;
+  let musicMuted = false;
+  let sfxMuted = false;
   let masterGain = null;
   let sfxBus = null;
   let ambientBus = null;
@@ -250,7 +252,7 @@ export function createSoundEngine() {
   }
 
   function setFlameStreamAudio(active, isMega = false) {
-    if (!ctx || muted) return;
+    if (!ctx || muted || sfxMuted) return;
     try {
       const now = ctx.currentTime;
       if (active) {
@@ -304,6 +306,9 @@ export function createSoundEngine() {
   // Master Sound Dispatch: 100% Real Acoustic Samples & Multi-Layered Foley
   function sound(kind, opt = {}) {
     if (muted) return;
+    const isMusic = kind === 'fanfare' || kind === 'combo' || kind === 'victory';
+    if (isMusic && musicMuted) return;
+    if (!isMusic && sfxMuted) return;
     initContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
@@ -554,7 +559,7 @@ export function createSoundEngine() {
     if (taikoEngine && battleTelemetry) {
       taikoEngine.update(dt, battleTelemetry);
     }
-    if (!ctx || muted || !titanRumbleGain) return;
+    if (!ctx || muted || sfxMuted || !titanRumbleGain) return;
     try {
       const now = ctx.currentTime;
       // Rumble intensifies as altitude approaches orbit (y > 70) and Titan is on screen
@@ -576,21 +581,67 @@ export function createSoundEngine() {
       masterGain.gain.setValueAtTime(muted ? 0 : 1, ctx.currentTime);
     }
     if (flameLoopGain && ctx) {
-      flameLoopGain.gain.setValueAtTime(muted ? 0 : 0.38, ctx.currentTime);
+      flameLoopGain.gain.setValueAtTime(muted || sfxMuted ? 0 : 0.38, ctx.currentTime);
     }
     if (titanRumbleGain && ctx) {
-      titanRumbleGain.gain.setValueAtTime(muted ? 0 : 0.25, ctx.currentTime);
+      titanRumbleGain.gain.setValueAtTime(muted || sfxMuted ? 0 : 0.25, ctx.currentTime);
+    }
+    if (percussionBus && ctx) {
+      percussionBus.gain.setValueAtTime(muted || musicMuted ? 0 : 1.28, ctx.currentTime);
+    }
+    if (sfxBus && ctx) {
+      sfxBus.gain.setValueAtTime(muted || sfxMuted ? 0 : 0.9, ctx.currentTime);
+    }
+    if (ambientBus && ctx) {
+      ambientBus.gain.setValueAtTime(muted || sfxMuted ? 0 : 0.85, ctx.currentTime);
     }
     if (taikoEngine) {
-      taikoEngine.setMuted(muted);
+      taikoEngine.setMuted(muted || musicMuted);
     }
     if (roarEngine) {
-      roarEngine.setMuted(muted);
+      roarEngine.setMuted(muted || sfxMuted);
     }
   }
 
   function isMuted() {
     return muted;
+  }
+
+  function setMusicMuted(val) {
+    musicMuted = !!val;
+    if (percussionBus && ctx) {
+      percussionBus.gain.setValueAtTime(musicMuted || muted ? 0 : 1.28, ctx.currentTime);
+    }
+    if (taikoEngine) {
+      taikoEngine.setMuted(musicMuted || muted);
+    }
+  }
+
+  function isMusicMuted() {
+    return musicMuted;
+  }
+
+  function setSfxMuted(val) {
+    sfxMuted = !!val;
+    if (sfxBus && ctx) {
+      sfxBus.gain.setValueAtTime(sfxMuted || muted ? 0 : 0.9, ctx.currentTime);
+    }
+    if (ambientBus && ctx) {
+      ambientBus.gain.setValueAtTime(sfxMuted || muted ? 0 : 0.85, ctx.currentTime);
+    }
+    if (flameLoopGain && ctx) {
+      flameLoopGain.gain.setValueAtTime(sfxMuted || muted ? 0 : 0.38, ctx.currentTime);
+    }
+    if (titanRumbleGain && ctx) {
+      titanRumbleGain.gain.setValueAtTime(sfxMuted || muted ? 0 : 0.25, ctx.currentTime);
+    }
+    if (roarEngine) {
+      roarEngine.setMuted(sfxMuted || muted);
+    }
+  }
+
+  function isSfxMuted() {
+    return sfxMuted;
   }
 
   function getTaikoStats() {
@@ -608,6 +659,10 @@ export function createSoundEngine() {
     update,
     setMuted,
     isMuted,
+    setMusicMuted,
+    isMusicMuted,
+    setSfxMuted,
+    isSfxMuted,
     getTaikoStats,
     getRoarStats,
     dragonRoar: (variant, opts) => (roarEngine ? roarEngine.triggerRoar(variant, opts) : false)
