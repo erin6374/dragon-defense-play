@@ -165,6 +165,144 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   let churchInterior = null;
   let churchRubbleProxy = null;
 
+  let churchFeatures = null;
+
+  function buildBereanRoseWindowAndSpires(THREE, parentGroup, churchPos) {
+    const group = new THREE.Group();
+    group.name = 'berean-church-rose-window-and-spires';
+    group.position.set(churchPos[0], churchPos[1], churchPos[2]);
+
+    // Materials
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a8176, roughness: 0.92, metalness: 0.02 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0xd3c4a8, roughness: 0.88, metalness: 0.02 });
+    const spireSlateMat = new THREE.MeshStandardMaterial({ color: 0x45474b, roughness: 0.95, metalness: 0.05 });
+    const stainedGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x244258,
+      emissive: 0x3d587a,
+      emissiveIntensity: 0.85,
+      roughness: 0.12,
+      metalness: 0.18,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.08,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide
+    });
+    const portalDoorMat = new THREE.MeshStandardMaterial({ color: 0x782e27, roughness: 0.82, metalness: 0.05 });
+
+    // 1. FRONT GRAND CIRCULAR STAINED GLASS ROSE WINDOW (Facing Broad Street / Camera at Z = 0.25, X = 5.3, Y = 11.2)
+    const roseRoot = new THREE.Group();
+    roseRoot.name = 'berean-rose-window-front';
+    roseRoot.position.set(5.3, 11.2, 0.25);
+
+    // Jewel-toned stained glass circular disc
+    const glassGeo = new THREE.CircleGeometry(2.2, 48);
+    const glassMesh = new THREE.Mesh(glassGeo, stainedGlassMat);
+    roseRoot.add(glassMesh);
+
+    // Outer carved stone surround ring
+    const ringGeo = new THREE.RingGeometry(2.18, 2.62, 48);
+    const ringMesh = new THREE.Mesh(ringGeo, trimMat);
+    ringMesh.position.z = 0.04;
+    roseRoot.add(ringMesh);
+
+    // Inner tracery stone ring
+    const innerRingGeo = new THREE.RingGeometry(0.85, 1.05, 36);
+    const innerRingMesh = new THREE.Mesh(innerRingGeo, trimMat);
+    innerRingMesh.position.z = 0.06;
+    roseRoot.add(innerRingMesh);
+
+    // 8 Radial stone mullions (cross spokes)
+    const spokeGeo = new THREE.BoxGeometry(0.11, 4.4, 0.12);
+    for (let i = 0; i < 4; i++) {
+      const spoke = new THREE.Mesh(spokeGeo, trimMat);
+      spoke.position.z = 0.08;
+      spoke.rotation.z = (i * Math.PI) / 4;
+      roseRoot.add(spoke);
+    }
+
+    // Central decorative rosette hub
+    const hubGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.18, 16);
+    const hubMesh = new THREE.Mesh(hubGeo, trimMat);
+    hubMesh.rotation.x = Math.PI / 2;
+    hubMesh.position.z = 0.10;
+    roseRoot.add(hubMesh);
+
+    // Gothic arched entrance portal directly below rose window (Y = 2.4, Z = 0.22)
+    const doorGeo = new THREE.BoxGeometry(3.4, 4.2, 0.3);
+    const doorMesh = new THREE.Mesh(doorGeo, portalDoorMat);
+    doorMesh.position.set(5.3, 2.2, 0.22);
+    group.add(doorMesh);
+
+    const doorArchGeo = new THREE.RingGeometry(1.68, 2.12, 32, 1, 0, Math.PI);
+    const doorArchMesh = new THREE.Mesh(doorArchGeo, trimMat);
+    doorArchMesh.position.set(5.3, 4.25, 0.28);
+    group.add(doorArchMesh);
+
+    // Carved stone entrance steps
+    for (let s = 0; s < 3; s++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(5.2 - s * 0.4, 0.2, 0.7), trimMat);
+      step.position.set(5.3, 0.1 + s * 0.2, 0.45 + (2 - s) * 0.4);
+      group.add(step);
+    }
+
+    group.add(roseRoot);
+
+    // 2. TWIN OCTAGONAL BELFRY TOWERS & CONICAL SPIRES (Front corners at X = -7.0 and X = 17.6)
+    const spiresGroup = new THREE.Group();
+    spiresGroup.name = 'berean-church-twin-spires';
+    for (const tx of [-7.0, 17.6]) {
+      // Tower stone shaft
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 12, 8), stoneMat);
+      shaft.position.set(tx, 6.0, -1.5);
+      shaft.castShadow = true;
+      spiresGroup.add(shaft);
+
+      // Stone decorative belfry cornice
+      const cornice = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 1.7, 0.8, 8), trimMat);
+      cornice.position.set(tx, 12.4, -1.5);
+      cornice.castShadow = true;
+      spiresGroup.add(cornice);
+
+      // Conical spire roof
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(2.0, 6.0, 8), spireSlateMat);
+      spire.position.set(tx, 15.8, -1.5);
+      spire.castShadow = true;
+      spiresGroup.add(spire);
+
+      // Spire cross finial
+      const finialV = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.4, 0.12), trimMat);
+      finialV.position.set(tx, 19.3, -1.5);
+      const finialH = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.12), trimMat);
+      finialH.position.set(tx, 19.1, -1.5);
+      spiresGroup.add(finialV);
+      spiresGroup.add(finialH);
+    }
+    group.add(spiresGroup);
+
+    // 3. SOUTH TRANSEPT CIRCULAR ROSE WINDOW (Facing Diamond Street at X = 20.85, Y = 10.5, Z = -22.0)
+    const southRose = new THREE.Group();
+    southRose.name = 'berean-rose-window-diamond-street';
+    southRose.position.set(20.85, 10.5, -22.0);
+    southRose.rotation.y = Math.PI / 2;
+
+    const southGlass = new THREE.Mesh(new THREE.CircleGeometry(1.85, 36), stainedGlassMat);
+    southRose.add(southGlass);
+    const southRing = new THREE.Mesh(new THREE.RingGeometry(1.83, 2.22, 36), trimMat);
+    southRing.position.z = 0.04;
+    southRose.add(southRing);
+    for (let i = 0; i < 4; i++) {
+      const sp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.7, 0.1), trimMat);
+      sp.position.z = 0.06;
+      sp.rotation.z = (i * Math.PI) / 4;
+      southRose.add(sp);
+    }
+    group.add(southRose);
+
+    parentGroup.add(group);
+    return { group, roseRoot, spiresGroup, southRose };
+  }
+
   function buildChurchInteriorAndRubble(churchPos) {
     const group = new THREE.Group();
     group.name = 'berean-church-interior-proxy';
@@ -273,6 +411,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       loadError: null,
       damage: 0,
       damageStage: 0,
+      sectionDamage: { floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0, roseWindow: 0, churchRoof: 0, churchWalls: 0 },
+      churchFeatures: null,
       groups: {},
       glassMeshes: [],
       signMeshes: [],
@@ -282,6 +422,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
 
     if (def.isChurch) {
       buildChurchInteriorAndRubble(def.position);
+      entry.churchFeatures = buildBereanRoseWindowAndSpires(THREE, root, def.position);
     }
 
     loader.load(
@@ -400,29 +541,137 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     );
   }
 
+  // Realistic procedural physics damage: localized by 3D meteor impact coordinates
+  function applyLocalizedImpact(entry, origin, radius = 5.0, strength = 1.0) {
+    if (!entry.model) return 0;
+    entry.sectionDamage = entry.sectionDamage || {
+      floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0,
+      roseWindow: 0, churchRoof: 0, churchWalls: 0
+    };
+
+    const bHeight = entry.targetBuilding?.h || (entry.worldBounds ? entry.worldBounds.maxY - entry.worldBounds.minY : 16.0);
+    const relY = origin.y;
+    const normY = Math.max(0, Math.min(1.0, relY / bHeight));
+
+    if (entry.def.isChurch) {
+      if (relY >= 10.0) {
+        // High strike on church roof / spires: crumple roof, reveal interior trusses!
+        entry.sectionDamage.churchRoof = Math.min(1.0, entry.sectionDamage.churchRoof + strength * 0.75);
+        if (entry.sectionDamage.churchRoof >= 0.45) {
+          if (entry.groups.churchRoof) entry.groups.churchRoof.visible = false;
+          if (churchInterior) churchInterior.visible = true;
+          if (entry.churchFeatures?.spiresGroup) entry.churchFeatures.spiresGroup.visible = false;
+        }
+      } else {
+        // Lower strike: breach entrance / lower walls
+        entry.sectionDamage.churchWalls = Math.min(1.0, entry.sectionDamage.churchWalls + strength * 0.65);
+        if (entry.sectionDamage.churchWalls >= 0.55 && entry.groups.churchWalls) {
+          entry.groups.churchWalls.visible = false;
+        }
+      }
+
+      // Check direct rose window strike (Y ≈ 11.2, near front facade)
+      if (Math.abs(relY - 11.2) < 3.2 && origin.z > -12.0) {
+        entry.sectionDamage.roseWindow = Math.min(1.0, entry.sectionDamage.roseWindow + strength * 0.85);
+        if (entry.sectionDamage.roseWindow >= 0.45 && entry.churchFeatures?.roseRoot) {
+          entry.churchFeatures.roseRoot.visible = false;
+        }
+      }
+
+      entry.damage = (entry.sectionDamage.churchRoof * 0.5 + entry.sectionDamage.churchWalls * 0.5);
+      if (entry.damage >= 0.98) {
+        entry.model.visible = false;
+        if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = false;
+        if (churchInterior) churchInterior.visible = false;
+        if (churchRubbleProxy) churchRubbleProxy.visible = true;
+      }
+    } else {
+      // Rowhouse / Storefront localized height sectioning:
+      if (normY >= 0.80 || relY >= bHeight - 2.8) {
+        // Meteor hit roof / cornice level! Roof crumples while lower floors stay standing!
+        entry.sectionDamage.roof = Math.min(1.0, entry.sectionDamage.roof + strength * 0.75);
+        entry.sectionDamage.cornice = Math.min(1.0, entry.sectionDamage.cornice + strength * 0.85);
+        if (entry.sectionDamage.roof >= 0.45 && entry.groups.roof) entry.groups.roof.visible = false;
+        if (entry.sectionDamage.cornice >= 0.45 && entry.groups.cornice) entry.groups.cornice.visible = false;
+        // LOWER FLOORS REMAIN STANDING!
+      } else if (normY >= 0.52) {
+        // Floor 2 hit (upper story)!
+        entry.sectionDamage.floor2 = Math.min(1.0, entry.sectionDamage.floor2 + strength * 0.75);
+        if (entry.sectionDamage.floor2 >= 0.45) {
+          if (entry.groups.facade2) entry.groups.facade2.visible = false;
+          if (entry.groups.floor2) entry.groups.floor2.visible = false;
+        }
+        // Roof and Floors 0-1 remain standing!
+      } else if (normY >= 0.26) {
+        // Floor 1 hit (middle story)!
+        entry.sectionDamage.floor1 = Math.min(1.0, entry.sectionDamage.floor1 + strength * 0.75);
+        if (entry.sectionDamage.floor1 >= 0.45) {
+          if (entry.groups.facade1) entry.groups.facade1.visible = false;
+          if (entry.groups.floor1) entry.groups.floor1.visible = false;
+        }
+        // Floor 0 below and Floor 2 + roof above remain standing overhead!
+      } else {
+        // Floor 0 hit (first floor / ground level)!
+        // "Maybe the meteor crashes down to the first floor, but the other three or four floors are still standing."
+        entry.sectionDamage.floor0 = Math.min(1.0, entry.sectionDamage.floor0 + strength * 0.75);
+        if (entry.sectionDamage.floor0 >= 0.45) {
+          if (entry.groups.facade0) entry.groups.facade0.visible = false;
+          if (entry.groups.floor0) entry.groups.floor0.visible = false;
+          if (entry.groups.sign) entry.groups.sign.visible = false;
+        }
+        // Floors 1, 2 and roof ALL REMAIN STANDING OVERHEAD!
+      }
+
+      // Windows shatter in vicinity
+      if (entry.glassMeshes) {
+        for (const g of entry.glassMeshes) {
+          if (Math.abs(relY - (normY * bHeight)) < 3.8 || Math.random() < 0.6) {
+            g.visible = false;
+          }
+        }
+      }
+
+      entry.damage = (entry.sectionDamage.floor0 + entry.sectionDamage.floor1 + entry.sectionDamage.floor2 + entry.sectionDamage.roof) / 4.0;
+      if (entry.damage >= 0.98) {
+        entry.model.visible = false;
+      }
+    }
+
+    if (entry.targetBuilding) {
+      entry.targetBuilding.damage = Math.max(entry.targetBuilding.damage || 0, entry.damage);
+    }
+    return 1;
+  }
+
   function applyDamage(entry, dmg) {
     entry.damage = Math.max(0, Math.min(1, dmg));
     if (!entry.model) return;
 
     if (entry.def.isChurch) {
       // Berean Church Damage Stages
-      // Procedural destruction: roof survives up to 85% damage with scorched/distressed appearance;
-      // interior rubble proxy reveals progressively without sudden roof vaporization!
       if (entry.groups.churchRoof) {
         entry.groups.churchRoof.visible = entry.damage < 0.85;
       }
       if (churchInterior) {
         churchInterior.visible = entry.damage >= 0.35 && entry.damage < 0.99;
       }
+      if (entry.churchFeatures?.spiresGroup) {
+        entry.churchFeatures.spiresGroup.visible = entry.damage < 0.80;
+      }
+      if (entry.churchFeatures?.roseRoot) {
+        entry.churchFeatures.roseRoot.visible = entry.damage < 0.92;
+      }
       if (entry.groups.churchWalls) {
         entry.groups.churchWalls.visible = entry.damage < 0.96;
       }
       if (entry.damage >= 0.99) {
         entry.model.visible = false;
+        if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = false;
         if (churchInterior) churchInterior.visible = false;
         if (churchRubbleProxy) churchRubbleProxy.visible = true;
       } else {
         entry.model.visible = true;
+        if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = true;
         if (churchRubbleProxy) churchRubbleProxy.visible = false;
       }
     } else {
@@ -459,7 +708,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     for (const entry of entries) {
       if (!entry.loaded || !entry.targetBuilding) continue;
       const bDamage = entry.targetBuilding.damage || 0;
-      if (Math.abs(bDamage - entry.damage) > 0.01) {
+      if (bDamage > entry.damage + 0.08) {
         applyDamage(entry, bDamage);
       }
     }
@@ -506,9 +755,35 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     collapseBuilding(idOrAddress) {
       return this.damageBuilding(idOrAddress, 1.0);
     },
+    impact(point, radius = 5.0, strength = 1.0) {
+      const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x || 0, point?.y || 0, point?.z || 0);
+      let hits = 0;
+      for (const entry of entries) {
+        if (!entry.loaded || !entry.model || !entry.worldBounds) continue;
+        const wb = entry.worldBounds;
+        const margin = radius * 0.85;
+        if (origin.x >= wb.minX - margin && origin.x <= wb.maxX + margin &&
+            origin.z >= wb.minZ - margin && origin.z <= wb.maxZ + margin) {
+          applyLocalizedImpact(entry, origin, radius, strength);
+          hits++;
+        }
+      }
+      return hits;
+    },
     restore() {
       for (const entry of entries) {
-        applyDamage(entry, 0);
+        entry.damage = 0;
+        entry.sectionDamage = { floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0, roseWindow: 0, churchRoof: 0, churchWalls: 0 };
+        if (entry.model) {
+          entry.model.visible = true;
+          for (const key of Object.keys(entry.groups)) {
+            if (entry.groups[key]) entry.groups[key].visible = true;
+          }
+          for (const g of entry.glassMeshes) g.visible = true;
+        }
+        if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = true;
+        if (entry.churchFeatures?.roseRoot) entry.churchFeatures.roseRoot.visible = true;
+        if (entry.churchFeatures?.spiresGroup) entry.churchFeatures.spiresGroup.visible = true;
         if (entry.targetBuilding) {
           entry.targetBuilding.damage = 0;
           city.setIntactBuildingVisible(entry.def.gameBuilding, false);

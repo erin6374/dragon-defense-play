@@ -202,25 +202,26 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
-  const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x||0, point?.y||0, point?.z||0);
+  const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x||0, point?.y||0, point?.z||0);
   const resistance=b.school?14.0:3.8;
-  let singleHitDetached=0;
-  const maxDetachedPerHit=Math.max(1,Math.floor(b.structuralParts.length*(b.school?0.025:0.06)));
+  const isRoofHit = origin.y >= b.h - 2.8;
+  const isLowerHit = origin.y < b.h * 0.45;
   for(const p of b.parts){
    if(p.state!=='attached'||p.type==='foundation')continue;
    const distance=distanceToBox(origin,p);
-   if(distance>radius*0.75)continue;
+   if(distance>radius*0.85)continue;
    p.bucket.mesh.setColorAt(p.index,new THREE.Color().setScalar(.38+.38*Math.min(1,distance/radius)));
    p.bucket.mesh.instanceColor.needsUpdate=true;
-   p.health-=strength*(1-distance/(radius*1.2))*1.0/resistance;
-   if(p.health<=0||(p.type==='window'&&distance<radius*0.5)){
-    if(singleHitDetached<maxDetachedPerHit){
+   const isTopRoof = p.type==='roof' || p.original.position.y > b.h * 0.82;
+   // Localized physics: roof crumples if hit directly near roof height;
+   // lower/mid hits leave roof intact overhead!
+   if(isTopRoof && !isRoofHit && isLowerHit) continue;
+   p.health-=strength*(1-distance/(radius*1.2))*2.2/resistance;
+   if(p.health<=0||(p.type==='window'&&distance<radius*0.85)){
      removed+=detach(p,origin,strength,true);
-     singleHitDetached++;
-    }
    }
   }
-  b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.15));
+  b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.18));
   b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
   b.collapseClock=0;
   dustBurst(origin,Math.min(3,radius*.3));
@@ -272,7 +273,7 @@ export function createStructuralCity(THREE,scene,bank){
    for(const p of b.parts){
     if(p.state!=='attached'||p.type==='foundation')continue;
      const isTopRoof=p.type==='roof'||p.original.position.y>b.h*0.80;
-     if(!b.school&&isTopRoof&&!catastrophic)continue; // roof & top level remain standing overhead
+     if(!b.school&&isTopRoof&&!catastrophic&&(support[p.floor]||p.supports?.some(c=>c.state==='attached')))continue;
     if(!b.school&&(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached'))){
      p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
      if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}
