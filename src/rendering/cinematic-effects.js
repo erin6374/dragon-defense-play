@@ -1,5 +1,5 @@
 export function createCinematicEffects(T,scene,camera,bank){
- const dummy=new T.Object3D(),puffs=[],rings=[];let clock=0;
+ const dummy=new T.Object3D(),puffs=[],rings=[],dustPuffs=[];let clock=0;
  const windOrigin=new T.Vector3(),windDirection=new T.Vector3(1,0,0);
  let windStrength=0;
  function pool(capacity,material,geometry=new T.PlaneGeometry(1,1)){
@@ -13,10 +13,75 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterPixels=new Uint8Array(32*32*4);for(let y=0;y<32;y++)for(let x=0;x<32;x++){const i=(y*32+x)*4,r=Math.hypot((x-15.5)/15.5,(y-15.5)/15.5);waterPixels[i]=waterPixels[i+1]=waterPixels[i+2]=255;waterPixels[i+3]=Math.round(255*Math.max(0,1-r)**1.4)}const waterMap=new T.DataTexture(waterPixels,32,32,T.RGBAFormat);waterMap.needsUpdate=true;
  const spray=pool(900,new T.MeshBasicMaterial({map:waterMap,color:0xe3eff2,transparent:true,opacity:.65,depthWrite:false}));
  const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
- const pools=[flame,smoke,spray,ring];
+ const dust=pool(640,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
+ const pools=[flame,smoke,spray,ring,dust];
  function burst(pos,power=1){for(let i=0;i<Math.min(32,12*power)&&puffs.length<180;i++)puffs.push({p:pos.clone(),v:new T.Vector3((Math.random()-.5)*power*5,Math.random()*3+1,(Math.random()-.5)*power*4),age:0,life:2+Math.random()*3,size:.5+Math.random()*power});shock(pos,power*4)}
  function shock(pos,radius=5){if(rings.length<48)rings.push({p:pos.clone(),radius,age:0});}
- function begin(dt){clock+=dt;for(const p of pools)p.n=0;for(let i=puffs.length-1;i>=0;i--){const p=puffs[i];p.age+=dt;p.p.addScaledVector(p.v,dt);p.v.multiplyScalar(1-dt*.6);p.v.y+=dt*.35;smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*.7,p.age*.1);if(p.age>=p.life)puffs.splice(i,1)}for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.age+=dt;const size=r.radius*Math.min(1,r.age/.55);ring.add(r.p,size,size,Math.max(0,1-r.age/.65));if(r.age>.65)rings.splice(i,1)}}
+ function dustBurst(pos,power=1,opts={}){
+  const num=opts.count||Math.min(48,Math.max(10,Math.round(14*power)));
+  const originY=Math.max(0.2,pos.y);
+  for(let i=0;i<num&&dustPuffs.length<360;i++){
+   const angle=Math.random()*Math.PI*2;
+   const speed=(opts.radial!==false?4.0+Math.random()*8.0:2.0+Math.random()*4.0)*power;
+   const vx=Math.cos(angle)*speed;
+   const vz=Math.sin(angle)*speed;
+   const vy=(Math.random()*1.8+0.5)*(opts.upward||1.0)*Math.min(2.5,power);
+   const life=2.2+Math.random()*2.8;
+   const initialSize=0.9+Math.random()*1.2*power;
+   const targetSize=initialSize*(3.6+Math.random()*3.2);
+   dustPuffs.push({
+    p:new T.Vector3(pos.x+(Math.random()-0.5)*1.8,originY+Math.random()*0.4,pos.z+(Math.random()-0.5)*1.8),
+    v:new T.Vector3(vx,vy,vz),
+    age:0,life,
+    initialSize,targetSize,
+    rot:Math.random()*Math.PI*2,
+    rotSpeed:(Math.random()-0.5)*1.5,
+    maxOpacity:0.55+Math.random()*0.30
+   });
+  }
+  shock(pos,Math.min(18,power*3.5));
+ }
+ function demolitionDustWave(fromPos,toPos,power=1.8){
+  const delta=toPos.clone().sub(fromPos);
+  const len=delta.length();
+  const steps=Math.max(4,Math.round(len/3.2));
+  for(let i=0;i<=steps;i++){
+   const t=i/steps;
+   const pt=fromPos.clone().addScaledVector(delta,t);
+   pt.y=Math.max(0.3,pt.y);
+   dustBurst(pt,power,{count:16,radial:true,upward:0.75});
+  }
+ }
+ function begin(dt){
+  clock+=dt;
+  for(const p of pools)p.n=0;
+  for(let i=puffs.length-1;i>=0;i--){
+   const p=puffs[i];p.age+=dt;p.p.addScaledVector(p.v,dt);p.v.multiplyScalar(1-dt*.6);p.v.y+=dt*.35;
+   smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*.7,p.age*.1);
+   if(p.age>=p.life)puffs.splice(i,1);
+  }
+  for(let i=dustPuffs.length-1;i>=0;i--){
+   const d=dustPuffs[i];
+   d.age+=dt;
+   d.v.x*=Math.max(0,1-dt*0.85);
+   d.v.z*=Math.max(0,1-dt*0.85);
+   d.v.y*=Math.max(0,1-dt*0.7);
+   d.v.y+=dt*0.22;
+   d.p.addScaledVector(d.v,dt);
+   if(d.p.y<0.3){d.p.y=0.3;d.v.y=Math.abs(d.v.y)*0.25;}
+   d.rot+=d.rotSpeed*dt;
+   const progress=Math.min(1,d.age/d.life);
+   const currentSize=d.initialSize+(d.targetSize-d.initialSize)*Math.pow(progress,0.65);
+   const alpha=d.maxOpacity*Math.max(0,Math.sin(progress*Math.PI));
+   dust.add(d.p,currentSize,currentSize,alpha,d.rot);
+   if(d.age>=d.life)dustPuffs.splice(i,1);
+  }
+  for(let i=rings.length-1;i>=0;i--){
+   const r=rings[i];r.age+=dt;const size=r.radius*Math.min(1,r.age/.55);
+   ring.add(r.p,size,size,Math.max(0,1-r.age/.65));
+   if(r.age>.65)rings.splice(i,1);
+  }
+ }
  function setWind(origin,direction,strength=0){
   windStrength=Math.max(0,Math.min(1,strength));
   if(windStrength&&origin&&direction){windOrigin.copy(origin);windDirection.copy(direction);}
@@ -58,5 +123,5 @@ export function createCinematicEffects(T,scene,camera,bank){
   }
  }
  function water(from,to,width=.12){const delta=to.clone().sub(from),length=delta.length(),steps=Math.min(56,Math.max(12,Math.ceil(length*2)));for(let i=0;i<steps;i++){const t=(i+(clock*9%1))/steps;const p=from.clone().addScaledVector(delta,t);p.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),angle=Math.atan2(-delta.dot(right),delta.dot(up));spray.add(p,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle)}for(let i=0;i<12;i++){const a=clock*7+i*2.4,r=.2+(i%4)*.18;spray.add(to.clone().add(new T.Vector3(Math.cos(a)*r,Math.abs(Math.sin(a))*r,Math.sin(a)*r)),.23,.32,.4)}}
- return {begin,fire,setWind,water,burst,shock,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:4,puffs:puffs.length,shockwaves:rings.length,windStrength})};
+ return {begin,fire,setWind,water,burst,shock,dustBurst,demolitionDustWave,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;dustPuffs.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:pools.length,puffs:puffs.length,dustPuffs:dustPuffs.length,shockwaves:rings.length,windStrength})};
 }

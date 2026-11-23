@@ -1,3 +1,31 @@
+## November 23 — RC133 Realistic Building Collapse Physics, Volumetric Demolition Dust Waves, Persistent Flaming Rubble, and Upgraded Wyvern Paulo Rig
+
+Parent verified baseline SHA: d0643ac (RC132 5.5.0-rc.132, build 5.5-physics-destruction-and-infinite-sandbox-rc132).
+
+RC133 implements comprehensive realistic destruction physics, ground-hugging volumetric demolition dust fronts, smoldering flaming debris, and incorporates the new upgraded wyvern dragon model:
+1. **Volumetric Demolition Dust Waves & Ground-Level Pavement Expansion (src/rendering/cinematic-effects.js):**
+   - Implemented dynamic ground-hugging demolition dust system (dustPool, dustPuffs, dustBurst, demolitionDustWave) utilizing realistic pulverized concrete/gypsum drywall tan pigment (#bab09e).
+   - Squeezes air and pulverized concrete outward horizontally along Broad Street pavement (, v_z pprox 4	ext{--}14	ext{ m/s}$), billowing radially with pavement drag deceleration and soft atmospheric lofting.
+   - Triggered on meteor detonations, heavy floor slab drops, bouncing street rubble, and multi-point rolling demolition waves during full building collapse.
+2. **Persistent Flaming Debris & Smoldering Rubble System (src/game.js, src/rendering/destructible-school.js):**
+   - Added dynamic flaming debris tags (isFlaming: true) for ~35% to 50% of wreckage chunks severed during impacts and collapses.
+   - Flying flaming debris trails dark smoke wisps (	railSmokePool) and incandescent spark embers (	railEmberPool) along ballistic arcs.
+   - Implemented dedicated lamingRubblePool rendering charred, blackened masonry with pulsating glowing thermal fissures (emissive: 0xff3800, emissiveIntensity: 2.0).
+   - Settled burning rubble continuously emits rising dark smoke wisps and flickering embers, transforming Broad Street into a realistic smoldering disaster zone.
+3. **Dynamic North Broad Street Building Collapse Cascades (src/rendering/north-broad-models.js):**
+   - Upgraded collapseBuilding and critical damage ($\ge 90\%$) across 2100-2300 North Broad structures:
+   - Berean Presbyterian Church spires, roof, and gothic stonework crumble into dynamic tumbling debris chunks showering onto the sidewalk and roadway.
+   - 2200-block rowhouse facades and cornices breach and shower brick/glass into the street rather than instantly disappearing.
+   - Triggered rolling dust clouds billow from building foundations and deposit permanent smoldering rubble mounds along frontages.
+4. **Upgraded Wyvern Paulo Dragon Rig Integration (src/dragon/paulo-rig.js, 	ools/paulo-rig-checks/):**
+   - Replaced stacked ellipsoid geometry with lofted organic counter-shaded surfaces, swept horns, cheek spikes, nostrils, and slit-pupil eyes with animated eyelids.
+   - Wyvern body plan: forelimbs integrated into 20% larger, fuller wings featuring a continuous trailing edge and 12 membrane panels with 2,052 vertices.
+   - Spring-filtered animation blending across all 13 states, integrated wingbeat phase with lagging elbow/wrist, breathing, head pitch stabilization, hit recoil impulses, and seeded idle life fidgets (blinks, glances, tail flicks).
+   - Added automated headless regression contract 	ools/paulo-rig-checks/check-paulo-rig.mjs verifying API parity, NaN safety, bank mirroring, transition smoothness, and execution cost.
+5. **Instant Block Restoration Validation:**
+   - Unified 
+epairAllBuildings() cleanly resets all building collapses, restores full intact geometry, clears rubble pools, and resets school health to 100%.
+
 ## November 15 — RC68 School Fire Damage Isolation, Gas Propulsion Heading Alignment, Community Block Charge Intercept Rewards, and Midground Meteor Target Calibration
 
 Parent verified baseline SHA: d1f6b44 (RC67 5.5.0-rc.67, build 5.5-north-broad-refinement-rc67).

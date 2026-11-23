@@ -145,6 +145,7 @@ export const NORTH_BROAD_DEFINITIONS = [
 
 export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   const root = new THREE.Group();
+  let effectsHooks = null;
   root.name = 'NORTH-BROAD-REPLACEMENT-MODELS';
   scene.add(root);
 
@@ -749,6 +750,45 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         entry.model.visible = true;
       }
     }
+
+    if (entry.damage >= 0.90 && !entry.collapsedCascadeTriggered) {
+      entry.collapsedCascadeTriggered = true;
+      const wb = entry.worldBounds;
+      const cx = wb ? (wb.minX + wb.maxX) * 0.5 : entry.def.position[0];
+      const frontZ = wb ? wb.maxZ : entry.def.position[2];
+      const width = wb ? (wb.maxX - wb.minX) : 14.0;
+      const height = wb ? (wb.maxY - wb.minY) : 12.0;
+
+      // Dust clouds billowing from base and frontage
+      effectsHooks?.onDust?.(new THREE.Vector3(cx, 0.5, frontZ), 2.8);
+      effectsHooks?.onDustWave?.(
+        new THREE.Vector3(cx - width * 0.5, 0.4, frontZ),
+        new THREE.Vector3(cx + width * 0.5, 0.4, frontZ),
+        2.4
+      );
+
+      // Dynamic crumbling debris fragments falling from the facade toward the street
+      const debrisCount = entry.def.isChurch ? 36 : 22;
+      for (let i = 0; i < debrisCount; i++) {
+        const px = cx + (Math.random() - 0.5) * width * 0.85;
+        const py = 2.0 + Math.random() * (height - 3.0);
+        const pz = frontZ + Math.random() * 0.6;
+        const type = Math.random() < 0.28 ? 'glass' : (Math.random() < 0.35 ? 'roof' : 'brick');
+        const flaming = Math.random() < 0.40;
+        const origin = new THREE.Vector3(cx, py + 1.5, frontZ - 2.5);
+        effectsHooks?.onDebris?.(new THREE.Vector3(px, py, pz), type, origin, flaming);
+      }
+
+      // Smoldering, flaming rubble heaps left on the street frontage
+      const rubbleCount = entry.def.isChurch ? 14 : 7;
+      for (let k = 0; k < rubbleCount; k++) {
+        const rx = cx + (Math.random() - 0.5) * width * 0.8;
+        const rz = frontZ + 0.8 + Math.random() * 3.6;
+        const scale = 0.45 + Math.random() * 0.55;
+        const isFlaming = Math.random() < 0.45;
+        effectsHooks?.onRubble?.({ position: new THREE.Vector3(rx, 0.3, rz), scale, isFlaming });
+      }
+    }
   }
 
   function syncWithCityDamage() {
@@ -802,6 +842,9 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     collapseBuilding(idOrAddress) {
       return this.damageBuilding(idOrAddress, 1.0);
     },
+    setEffectsHooks(hooks) {
+      effectsHooks = hooks;
+    },
     impact(point, radius = 5.0, strength = 1.0) {
       const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x || 0, point?.y || 0, point?.z || 0);
       let hits = 0;
@@ -830,6 +873,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     restore() {
       for (const entry of entries) {
         entry.damage = 0;
+        entry.collapsedCascadeTriggered = false;
         entry.sectionDamage = { floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0, roseWindow: 0, churchRoof: 0, churchWalls: 0 };
         if (entry.model) {
           entry.model.visible = true;

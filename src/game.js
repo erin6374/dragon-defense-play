@@ -14,6 +14,7 @@ import {occupiesCrossStreet} from './simulation/road-corridors.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
+window.__DD_BUILD_INFO = { version: GAME_VERSION, build: BUILD_ID };
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
@@ -111,6 +112,7 @@ const skySteps=[0xadcde0,0xa5cce8,0x8dbde1,0xf2a278,0x985878,0x242244,0x14182e,0
 const cinematicSky=createCinematicSky(THREE,scene);
 const cinematicLighting=createCinematicLighting(renderer,scene,'cinematic');
 const cinematicFX=createCinematicEffects(THREE,scene,camera,visualBank);
+window.__DD_CINEMATIC_FX=cinematicFX;
 const finalSquadron=createFinalSquadron(scene);
 const powerGrid=createPowerGrid(THREE,scene);
 const foregroundMeteors=createForegroundMeteors(THREE,scene);
@@ -3881,6 +3883,7 @@ function applyDiagnosticSystem(key,on){
   schoolFragments.visible=on;
   neighborhood.setRubbleVisible(on);
   rubblePool.mesh.visible=on;
+  flamingRubblePool.mesh.visible=on;
  }
 }
 

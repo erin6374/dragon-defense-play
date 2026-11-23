@@ -365,7 +365,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
-     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,profile:null});
+     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,profile:null,isFlaming:false,hitGround:false});
   }
   flush();
  }
@@ -379,6 +379,8 @@ export function createDestructibleSchool(THREE,scene,bounds){
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
  return {group:batches,impact,collapse,update,reset,restore:reset,syncDestruction,stats,
+  setEffectsHooks:hooks=>{effectsHooks=hooks;},
+  getFlamingDebris:()=>pieces.filter(p=>p.resting&&p.isFlaming).map(p=>({x:p.x,y:p.y,z:p.z,scale:Math.max(p.w,p.h)})),
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
   setOverlayMode:on=>{if(overlayMode!==on){overlayMode=on;detachedOnly=false;flush();}},
   setVisible:(visible)=>batches.forEach(m=>m.visible=visible),
