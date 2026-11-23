@@ -3871,6 +3871,146 @@ let sandboxMeteorSize=3.6;
 let sandboxMeteorKind='molten';
 let trafficActive=true;
 let pedestriansActive=true;
+let sandboxTimeScale=1.0;
+let sandboxZoomLevel=1.0;
+let currentHoveredBuildingInfo=null;
+
+
+function getBuildingInspectorInfo(b){
+ if(!b)return {icon:'🏛️',title:'North Broad Structure',height:'14.0m',health:'100%',healthPercent:100,status:'Structurally Sound'};
+ const name=b.name||'';
+ const isSchool=b.school||name.includes('school');
+ let icon='🏛️';
+ let title='Historic Broad St Parcel · '+(b.x>0?(2221-Math.round(b.x*1.5)):(2221+Math.abs(Math.round(b.x*1.5))))+' N Broad St';
+ if(isSchool||Math.abs(b.x)<7){
+  icon='🏫';
+  title='Tech Freire Charter School · 2221 N Broad St';
+ }else if(name.includes('church')||name.includes('diamond-corner')||b.x>210){
+  icon='⛪';
+  title='Berean Presbyterian Church · 2101-07 N Broad St';
+ }else if(name.includes('mcdonald')||(b.x>=180&&b.x<=200)){
+  icon='🍔';
+  title="McDonald's & Drive-Thru · 2109 N Broad St";
+ }else if(name.includes('cvs')||name.includes('former-cvs')||(b.x>=92&&b.x<=116)){
+  icon='🏥';
+  title='ArchWell Health / Former CVS · 2131 N Broad St';
+ }else if(name.includes('newman')||(b.x>=118&&b.x<=130)){
+  icon='🎓';
+  title='Temple Newman Center · 2129 N Broad St';
+ }else if(name.includes('apartments')||name.includes('temple-flats')){
+  icon='🏬';
+  title='Temple Flats Student Housing · 2117-19 N Broad St';
+ }else if(name.includes('chicken')||name.includes('susquehanna-crown')){
+  icon='🍗';
+  title='Crown Fried Chicken · 2201-03 N Broad St';
+ }else if(name.includes('doll-museum')||(b.x<=-80&&b.x>=-92)){
+  icon='🧸';
+  title='Philadelphia Doll Museum · 2253 N Broad St';
+ }else if(name.includes('pcs-for-people')){
+  icon='💻';
+  title='PCs for People · 2251 N Broad St';
+ }else if(name.includes('blues-babe')){
+  icon='🎶';
+  title='blues babe FOUNDATION · 2233 N Broad St';
+ }else if(name.includes('black-united-fund')){
+  icon='🤝';
+  title='Black United Fund Conference Center · 2231 N Broad St';
+ }else if(name.includes('united-fund')){
+  icon='🏛️';
+  title='United Fund of Pennsylvania · 2227 N Broad St';
+ }else if(name.includes('maximus-cares')){
+  icon='🏡';
+  title='Maximus Cares Brownstone · 2235-37 N Broad St';
+ }else if(name.includes('2239')||name.includes('2241')){
+  icon='🏘️';
+  title='Historic Broad St Rowhouse · '+(name.includes('2239')?'2239':'2241')+' N Broad St';
+ }else if(name.includes('brownstone')){
+  icon='🏡';
+  title='Historic Broad St Brownstone · '+(b.x<0?'2227':'2219')+' N Broad St';
+ }else if(b.stories>=4||b.h>=14){
+  icon='🏢';
+  title='Broad Street Commercial Building · '+Math.round(b.x)+'m';
+ }
+ const heightVal=b.h||(isSchool?16:14);
+ const height=heightVal.toFixed(1)+'m';
+ const dmg=isSchool?(schoolDamage||0):(b.damage||0);
+ const healthPercent=Math.max(0,Math.min(100,Math.round((1-dmg)*100)));
+ const health=healthPercent+'%';
+ let status='Structurally Sound';
+ if(healthPercent===0){
+  status='Completely Ruined / Collapsed';
+ }else if(healthPercent<40){
+  status='Critical Structural Failure / Crater Impact';
+ }else if(healthPercent<75){
+  status='Moderate Facade & Roof Breach';
+ }else if(healthPercent<100){
+  status='Minor Exterior Impact Damage';
+ }
+ return {icon,title,height,health,healthPercent,status};
+}
+
+function repairAllBuildings(){
+ for(const crack of windowDamage){scene.remove(crack);crack.geometry?.dispose();}
+ windowDamage.length=0;
+ for(const w of nightWindows){w.broken=false;if(w.mesh)w.mesh.visible=true;}
+ for(const b of burningVehicles){if(b.driver)scene.remove(b.driver);}
+ burningVehicles.length=0;
+ damageHoles.length=0;
+ resetSchoolDamageMasks();
+ schoolDamage=0;
+ if(schoolFragments){schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;}
+ clearFires();
+ syncDamageHoles();
+ neighborhood?.restore?.();
+ northBroadModels?.restore?.();
+ schoolReconstruction?.restore?.();
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage();}
+ if(voxelReady&&architecture?.restore)architecture.restore();
+ for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry?.dispose();c.inner.geometry?.dispose();c.ember?.geometry?.dispose();}
+ craters.length=0;
+ hp=100;
+ updateHud();
+ sound('bonus');
+ message('🛠️ ENTIRE BLOCK RESTORED & REPAIRED TO 100% HEALTH');
+}
+
+function toggleSlowMo(enable){
+ if(enable!==undefined){
+  sandboxTimeScale=enable?0.25:1.0;
+ }else{
+  sandboxTimeScale=sandboxTimeScale===1.0?0.25:1.0;
+ }
+ const isSlow=sandboxTimeScale<0.9;
+ const tbSlow=document.getElementById('dd-tb-slowmo');
+ if(tbSlow){
+  tbSlow.textContent=isSlow?'⏱️ 0.25x':'⏱️ 1.0x';
+  tbSlow.classList.toggle('active',isSlow);
+ }
+ const modalSlow=document.getElementById('dd-modal-slowmo-btn');
+ if(modalSlow){
+  modalSlow.textContent=isSlow?'⏱️ Slow-Mo: ON (0.25x)':'⏱️ Slow-Mo: OFF (1.0x)';
+  modalSlow.classList.toggle('active',isSlow);
+ }
+ message(isSlow?'⏱️ CINEMATIC SLOW-MOTION ACTIVE (0.25x SIMULATION SPEED)':'⏱️ NORMAL SIMULATION SPEED RESUMED (1.0x)');
+}
+
+function spawnMeteorBarrage(count=4,centerX=null,centerZ=null){
+ const cx=(typeof centerX==='number')?centerX:(sandboxReticle.visible?sandboxReticle.position.x:(dragon?dragon.position.x:0));
+ const cz=(typeof centerZ==='number')?centerZ:(sandboxReticle.visible?sandboxReticle.position.z:-10);
+ const kinds=['molten','flaming','blue_plasma','purple_crystal'];
+ const offsets=[-14,-4,6,16];
+ for(let i=0;i<count;i++){
+  setTimeout(()=>{
+   const ox=offsets[i%offsets.length]+(Math.random()-0.5)*4;
+   const oz=(Math.random()-0.5)*6;
+   const size=2.4+Math.random()*2.2;
+   const kind=kinds[i%kinds.length];
+   spawnTestMeteorAt(cx+ox,0.5,cz+oz,size,kind);
+  },i*220);
+ }
+ sound('warning');
+ message(`☄️ METEOR BARRAGE (${count} BOLIDES) INCOMING!`);
+}
 
 function toggleFreeFlight(enable){
  freeFlightMode=(enable!==undefined)?!!enable:!freeFlightMode;
@@ -3911,6 +4051,10 @@ function toggleFreeFlight(enable){
   dragonLives=3;
   invulnerable=0;
   spawnTimer=1.0;
+  sandboxTimeScale=1.0;
+  sandboxZoomLevel=1.0;
+  const inspCard=document.getElementById('dd-inspector-card');
+  if(inspCard)inspCard.hidden=true;
   message('⚔️ STANDARD DEFENSE MODE RESUMED');
  }
 }
@@ -4102,8 +4246,11 @@ sandboxReticle.visible=false;
 scene.add(sandboxReticle);
 
 function updateSandboxReticle(e){
- if(!freeFlightMode||sandboxTool!=='meteor'){
+ const inspCard=document.getElementById('dd-inspector-card');
+ if(!freeFlightMode){
   sandboxReticle.visible=false;
+  if(inspCard)inspCard.hidden=true;
+  currentHoveredBuildingInfo=null;
   return;
  }
  sandboxMouse.x=(e.clientX/window.innerWidth)*2-1;
@@ -4111,6 +4258,7 @@ function updateSandboxReticle(e){
  sandboxRaycaster.setFromCamera(sandboxMouse,camera);
 
  let hitPoint=null;
+ let hitBuilding=null;
  const buildings=[neighborhood.school,...(neighborhood.targetBuildings||[])];
  const bBox=new THREE.Box3();
  const hitVec=new THREE.Vector3();
@@ -4125,6 +4273,7 @@ function updateSandboxReticle(e){
   if(sandboxRaycaster.ray.intersectBox(bBox,hitVec)){
    if(!hitPoint||hitVec.distanceTo(sandboxRaycaster.ray.origin)<hitPoint.distanceTo(sandboxRaycaster.ray.origin)){
     hitPoint=hitVec.clone();
+    hitBuilding=b;
    }
   }
  }
@@ -4137,12 +4286,46 @@ function updateSandboxReticle(e){
 
  if(hitPoint){
   sandboxReticle.position.copy(hitPoint).add(new THREE.Vector3(0,0.18,0));
-  sandboxReticle.visible=true;
+  sandboxReticle.visible=(sandboxTool==='meteor');
+
+  if(inspCard){
+   if(hitBuilding){
+    const info=getBuildingInspectorInfo(hitBuilding);
+    currentHoveredBuildingInfo=info;
+    const iconEl=document.getElementById('dd-insp-icon');
+    const titleEl=document.getElementById('dd-insp-title');
+    const descEl=document.getElementById('dd-insp-desc');
+    if(iconEl)iconEl.textContent=info.icon;
+    if(titleEl)titleEl.textContent=info.title;
+    if(descEl)descEl.textContent=`Height: ${info.height} · Health: ${info.health} · Status: ${info.status}`;
+    inspCard.hidden=false;
+   }else{
+    currentHoveredBuildingInfo={icon:'🛣️',title:'North Broad Street Corridor',height:'0.0m',health:'100%',healthPercent:100,status:'Clear Corridor'};
+    const iconEl=document.getElementById('dd-insp-icon');
+    const titleEl=document.getElementById('dd-insp-title');
+    const descEl=document.getElementById('dd-insp-desc');
+    if(iconEl)iconEl.textContent='🛣️';
+    if(titleEl)titleEl.textContent='North Broad Street Corridor';
+    if(descEl)descEl.textContent=`Elevation: 0.0m · Surface: Asphalt & Concrete · Pos: [${Math.round(hitPoint.x)}, ${Math.round(hitPoint.z)}]`;
+    inspCard.hidden=false;
+   }
+  }
  }else{
   sandboxReticle.visible=false;
+  if(inspCard)inspCard.hidden=true;
+  currentHoveredBuildingInfo=null;
  }
 }
 window.addEventListener('pointermove',updateSandboxReticle);
+window.addEventListener('wheel',e=>{
+ if(!freeFlightMode)return;
+ if(e.target.closest('#dd-unified-settings')||e.target.closest('#performance-lab-panel'))return;
+ e.preventDefault();
+ const delta=e.deltaY>0?-0.1:0.1;
+ sandboxZoomLevel=THREE.MathUtils.clamp(sandboxZoomLevel+delta,0.55,2.5);
+ message('🔍 INSPECTION ZOOM: '+Math.round(sandboxZoomLevel*100)+'%');
+},{passive:false});
+
 
 window.addEventListener('pointerdown',e=>{
  if(!freeFlightMode||sandboxTool!=='meteor')return;
@@ -4288,8 +4471,14 @@ function initUnifiedSettingsEvents(){
   document.getElementById('dd-tb-meteor-tool')?.classList.add('active');
   message('🎯 METEOR DROPPER ACTIVE — CLICK ANY BUILDING OR STREET');
  });
+ document.getElementById('dd-tb-barrage')?.addEventListener('click',()=>spawnMeteorBarrage());
+ document.getElementById('dd-modal-barrage-btn')?.addEventListener('click',()=>spawnMeteorBarrage());
  document.getElementById('dd-tb-firefighters')?.addEventListener('click',()=>dispatchFirefighters());
  document.getElementById('dd-tb-extinguish')?.addEventListener('click',extinguishAllFires);
+ document.getElementById('dd-tb-repair')?.addEventListener('click',repairAllBuildings);
+ document.getElementById('dd-modal-repair-btn')?.addEventListener('click',repairAllBuildings);
+ document.getElementById('dd-tb-slowmo')?.addEventListener('click',()=>toggleSlowMo());
+ document.getElementById('dd-modal-slowmo-btn')?.addEventListener('click',()=>toggleSlowMo());
  document.getElementById('dd-tb-traffic')?.addEventListener('click',()=>setTrafficEnabled(!trafficActive));
  document.getElementById('dd-tb-crowd')?.addEventListener('click',()=>setPedestriansEnabled(!pedestriansActive));
  document.getElementById('dd-tb-atmo')?.addEventListener('change',e=>setLevelAtmosphere(e.target.value));
@@ -4356,7 +4545,7 @@ document.getElementById('start')?.addEventListener('click',()=>{playTrainingMode
 window.addEventListener('keydown',e=>{if(e.key==='Tab'&&trainingMissions?.isActive()){e.preventDefault();trainingMissions.skip();}});document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
 const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3(),defenseMeteor=new THREE.Vector3();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;hp=100;dragonLives=999;}if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(meteors.length>=MAX_PLAYABLE_METEORS&&kind!=='mega_fire_breath')return;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{
+function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(meteors.length>=MAX_PLAYABLE_METEORS&&kind!=='mega_fire_breath')return;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{
  if(meteors.length>=MAX_PLAYABLE_METEORS)return;
  const isGiant=Math.random()<0.70;
  const size=isGiant?3.6+Math.random()*1.2:1.2+Math.random()*1.0;
@@ -5144,7 +5333,7 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
   quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
  }
  hostMetricTime+=dt;hostMetricFrames++;
- sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const step=fixedStep.advance(dt,update);const simMs=performance.now()-simStart;
+ sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const effectiveDt=dt*(freeFlightMode?sandboxTimeScale:1.0);const step=fixedStep.advance(effectiveDt,update);const simMs=performance.now()-simStart;
  const w=innerWidth,h=innerHeight;
  const resized=w!==lastW||h!==lastH;
  if(resized){
@@ -5180,7 +5369,7 @@ function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFram
  waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,Math.min(1,dt*1.8));
 
  const cinematicZoomBonus=waveClearZoomBlend*0.06;
- let targetZoom=THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
+ let targetZoom=freeFlightMode?sandboxZoomLevel:THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
 
  const cameraZ=streetView.z+Math.pow(altRatio,1.1)*24.0;
  camera.position.set(streetView.x+cameraScrollX+jitter,streetView.y+follow+pavementFollow*0.4,cameraZ);
@@ -5249,8 +5438,16 @@ window.__DD_SANDBOX={
  isFreeFlight:()=>freeFlightMode,
  setFreeFlight:(on)=>toggleFreeFlight(on),
  spawnTestMeteorAt,
+ spawnMeteorBarrage,
  dispatchFirefighters,
  extinguishAllFires,
+ repairAllBuildings,
+ toggleSlowMo,
+ getTimeScale:()=>sandboxTimeScale,
+ setTimeScale:(s)=>{sandboxTimeScale=s;},
+ getZoomLevel:()=>sandboxZoomLevel,
+ setZoomLevel:(z)=>{sandboxZoomLevel=z;},
+ getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
  setTrafficEnabled,
  isTrafficEnabled:()=>trafficActive,
  setPedestriansEnabled,
@@ -5294,8 +5491,16 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  isFreeFlight:()=>freeFlightMode,
  setFreeFlight:(on)=>toggleFreeFlight(on),
  spawnTestMeteorAt,
+ spawnMeteorBarrage,
  dispatchFirefighters,
  extinguishAllFires,
+ repairAllBuildings,
+ toggleSlowMo,
+ getTimeScale:()=>sandboxTimeScale,
+ setTimeScale:(s)=>{sandboxTimeScale=s;},
+ getZoomLevel:()=>sandboxZoomLevel,
+ setZoomLevel:(z)=>{sandboxZoomLevel=z;},
+ getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
  setTrafficEnabled,
  isTrafficEnabled:()=>trafficActive,
  setPedestriansEnabled,
@@ -5308,13 +5513,21 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
 window.__DD_QA={snap,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
  spawnTestMeteorAt:(x,y,z,size,kind)=>run('spawnTestMeteorAt',()=>{spawnTestMeteorAt(x,y,z,size,kind);return snap();}),
+ spawnMeteorBarrage:(count,x,z)=>run('spawnMeteorBarrage',()=>{spawnMeteorBarrage(count,x,z);return snap();}),
  dispatchFirefighters:(x)=>run('dispatchFirefighters',()=>{dispatchFirefighters(x);return snap();}),
  extinguishAllFires:()=>run('extinguishAllFires',()=>{extinguishAllFires();return snap();}),
+ repairAllBuildings:()=>run('repairAllBuildings',()=>{repairAllBuildings();return snap();}),
+ toggleSlowMo:(enable)=>run('toggleSlowMo',()=>{toggleSlowMo(enable);return {timeScale:sandboxTimeScale,snapshot:snap()};}),
+ getTimeScale:()=>sandboxTimeScale,
+ setTimeScale:(s)=>{sandboxTimeScale=s;},
+ getZoomLevel:()=>sandboxZoomLevel,
+ setZoomLevel:(z)=>{sandboxZoomLevel=z;},
+ getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
  setTrafficEnabled:(on)=>run('setTrafficEnabled',()=>{setTrafficEnabled(on);return snap();}),
  setPedestriansEnabled:(on)=>run('setPedestriansEnabled',()=>{setPedestriansEnabled(on);return snap();}),
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
- audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+ audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
