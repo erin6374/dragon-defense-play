@@ -416,28 +416,84 @@ function ignite(x,y,z){
 function updateFires(dt){
  for(let i=schoolFire.length-1;i>=0;i--){
   const f=schoolFire[i];f.age+=dt;
-  f.size=Math.min(2.8,f.initialSize+f.age*.08);
+  f.size=Math.min(3.2,f.initialSize+f.age*.09);
   f.anchorClock=(f.anchorClock||0)-dt;
   if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
 
-  // Fire spreads to adjacent buildings if left unsuppressed
+  // Identify building beneath or around fire
+  const bldg=neighborhood.targetBuildings?.find(b=>!b.school&&Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
+  const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=1.2;
+
+  // Realistic intra-building & neighborhood fire spread
   f.spreadTimer=(f.spreadTimer||0)+dt;
-  if(f.spreadTimer>5.5&&schoolFire.length<36&&f.suppression<.3){
+  if(f.spreadTimer>3.2&&schoolFire.length<40&&f.suppression<.35){
    f.spreadTimer=0;
-   const nearB=neighborhood.targetBuildings.find(b=>!b.school&&b.damage<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
-   if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
+   if(bldg){
+    const bFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x-bldg.x)<bldg.w*.5+1.5&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*.5+1.5).length;
+    if(bFires<5){
+     // Spread vertically to higher floors or horizontally to adjacent rooms
+     const climbY=Math.min(bldg.h-0.8,f.root.position.y+2.6+Math.random()*1.4);
+     const spreadX=bldg.x+(Math.random()-.5)*bldg.w*.75;
+     const spreadZ=bldg.z+(Math.random()-.5)*bldg.d*.75;
+     ignite(spreadX,climbY,spreadZ);
+    }else if(Math.random()<0.45){
+     // Spread to adjacent building if current building is heavily ablaze
+     const nearB=neighborhood.targetBuildings.find(b=>b!==bldg&&!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<20&&Math.abs(b.z-f.root.position.z)<18&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+     if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
+    }
+   }else if(onSchoolStructure){
+    const sFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x)<=14&&sf.root.position.z>=-58.4&&sf.root.position.z<=0.4).length;
+    if(sFires<8){
+     const climbY=Math.min(15.0,f.root.position.y+2.8+Math.random()*1.5);
+     const spreadX=(Math.random()-.5)*22;
+     const spreadZ=-48+Math.random()*42;
+     ignite(spreadX,climbY,spreadZ);
+    }
+   }else{
+    // Spread along street / ground
+    const nearB=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+    if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
+   }
   }
 
-  // Fires cause continuous damage over time if not put out
+  // Sustained untended burning gradually consumes structural framework
   f.burnTimer=(f.burnTimer||0)+dt;
-  if(f.burnTimer>=1.2){
+  if(f.burnTimer>=0.75){
    f.burnTimer=0;
-   const bldg=neighborhood.targetBuildings.find(b=>!b.school&&Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
-   const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=2.0;
-   if(bldg){bldg.damage=Math.min(1.0,(bldg.damage||0)+.012);}
-   else if(onSchoolStructure){
-    schoolDamage=Math.min(1.0,schoolDamage+.006);hp=Math.min(hp,Math.round((1-schoolDamage)*100));
+   const unsuppressed=Math.max(0,1-f.suppression);
+   if(bldg){
+    bldg.fireDamage=(bldg.fireDamage||0)+dt*0.038*unsuppressed;
+    bldg.damage=Math.max(bldg.damage||0,bldg.fireDamage);
+    // Periodically weaken and detach localized structural parts
+    if(Math.random()<0.35){
+     neighborhood.city.impact(bldg,f.root.position,2.8,0.24);
+     debrisPiece(f.root.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.6,-0.5,(Math.random()-.5)*1.6)),Math.random()<0.3?'glass':'brick',f.root.position);
+    }
+    // Catastrophic collapse from untended fire
+    if(!bldg.fireCollapsed&&(bldg.fireDamage>=0.70||bldg.damage>=0.96)){
+     bldg.fireCollapsed=true;
+     bldg.damage=1.0;
+     neighborhood.city.forceDamage(bldg,1.0);
+     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===bldg.id||(bldg.name&&d.name===bldg.name));
+     if(nbDef)northBroadModels.collapseBuilding(nbDef.id);
+     cinematicFX.demolitionDustWave(
+      new THREE.Vector3(bldg.x-bldg.w*.45,.3,bldg.front),
+      new THREE.Vector3(bldg.x+bldg.w*.45,.3,bldg.front),
+      2.4
+     );
+     sound('collapse',{x:bldg.x});
+     message(`🔥 UNTENDED FIRE CONSUMED ${bldg.name||'BUILDING'}! FULL COLLAPSE`);
+     shake=Math.max(shake,0.60);
+     for(const sf of schoolFire){
+      if(Math.abs(sf.root.position.x-bldg.x)<bldg.w*.6&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*.6){
+       sf.anchorY=0.4;
+      }
+     }
+    }
+   }else if(onSchoolStructure){
+    schoolDamage=Math.min(1.0,schoolDamage+dt*0.020*unsuppressed);
+    hp=Math.min(hp,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
   }
@@ -1826,7 +1882,7 @@ function acquireSkySmoke(x,y,z,scale,colorHex){
  b.m.material.color.setHex(colorHex);
  b.m.material.opacity=.58;
  b.m.visible=true;
- b.life=2.5;b.initialLife=2.5;b.windThin=0;
+ b.life=7.5;b.initialLife=7.5;b.windThin=0;
  scene.add(b.m);
  return b;
 }
@@ -1841,17 +1897,17 @@ function backgroundImpactEffects(health){
  return {fireChance:.38+.57*damage,mushroomChance:.04+.46*damage,scale:.8+1.9*damage};
 }
 function cinematicSkyExplosion(x,y,z,effects=backgroundImpactEffects(neighborhoodHealth())){
- if(skyBursts.length>=20)return;
- if(Math.random()<effects.mushroomChance&&skyBursts.length<14){
-  for(let j=0;j<3;j++){
-   const sx=x+(Math.random()-.5)*2,sy=y+j*2.2*effects.scale;
-   const sw=(j<1?2.6:4.0+(j-1)*1.2)*effects.scale;
-   const color=j<1?0xff9951:0x45474d;
+ if(skyBursts.length>=48)return;
+ if(Math.random()<effects.mushroomChance&&skyBursts.length<36){
+  for(let j=0;j<5;j++){
+   const sx=x+(Math.random()-.5)*2.5,sy=y+j*3.6*effects.scale;
+   const sw=(j<1?3.2:4.6+(j-1)*1.6)*effects.scale;
+   const color=j<1?0xff9951:0x36383d;
    skyBursts.push(acquireSkySmoke(sx,sy,z,sw,color));
   }
  }
  skyBursts.push(acquireSkyBurst(x,y,z,effects.scale));
- if(skyBursts.length>20){
+ if(skyBursts.length>48){
   const b=skyBursts.shift();
   releaseSkyObject(b);
  }
@@ -1861,7 +1917,7 @@ function updateSkyBursts(dt){
   const b=skyBursts[i];
   b.life-=dt;
   if(b.smoke){
-   b.m.position.y+=dt*1.5;
+   b.m.position.y+=dt*8.5;
    const proximity=b.m.position.distanceTo(dragon.position);
    if(proximity<15){
     const strength=(1-proximity/15)*dt*(3+Math.abs(Math.sin(elapsed*9))*5);
@@ -1878,8 +1934,8 @@ function updateSkyBursts(dt){
      b.windThin=Math.min(.60,(b.windThin||0)+dt*.8*strength);
     }
    }
-   b.m.scale.multiplyScalar(1+dt*.18);
-   b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58*(1-(b.windThin||0));
+   b.m.scale.multiplyScalar(1+dt*.12);
+   b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.62*(1-(b.windThin||0));
   }else{
    b.m.scale.setScalar(b.scale*(1+(1-b.life/.8)*5));
    b.m.material.opacity=Math.max(0,b.life/.8)*.75;
@@ -5328,8 +5384,112 @@ if(m.grounded){
   if(m.dragonHunter&&m.mesh.position.distanceTo(dragon.position)<2.6){hurtDragon('FLAMING METEOR');groundFireball(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,1.2);remove(meteors,i);continue;}
  const openingImpact=m.opening&&traceOpeningMeteorImpact(m,meteorStart);
 
+  // Progressive downward meteor crunching through building structure
+  if(m.crunching){
+   m.mesh.position.y+=m.vel.y*dt;
+   const currY=m.mesh.position.y;
+   const b=m.crunchBuilding;
+   const rad=Math.max(1.8,(m.size||1)*0.9);
+
+   // Coring destruction directly beneath/around the descending heavy mass
+   if(b&&!b.school){
+    neighborhood.city.impact(b,m.mesh.position,rad,0.48);
+    northBroadModels.impact(m.mesh.position,rad*1.1,0.52);
+    b.damage=Math.min(0.98,(b.damage||0)+dt*0.45*(m.size||1));
+   }else if(b?.school){
+    neighborhood.city.impact(neighborhood.school,m.mesh.position,rad,0.50);
+    schoolDamage=Math.min(1.0,schoolDamage+dt*0.22*(m.size||1));
+    hp=Math.min(hp,Math.round((1-schoolDamage)*100));
+    syncStructuralDamage();updateHud();
+   }
+
+   // Shards giving way directly beneath the meteor as it crunches through
+   const shardCount=Math.min(4,Math.max(1,Math.round((m.size||1)*1.2)));
+   for(let s=0;s<shardCount;s++){
+    const shardPos=m.mesh.position.clone().add(new THREE.Vector3(
+     (Math.random()-.5)*(m.size||1)*0.7,
+     -0.3-Math.random()*0.8,
+     (Math.random()-.5)*(m.size||1)*0.7
+    ));
+    const shardType=s===0?'glass':(Math.random()<0.4?'roof':(Math.random()<0.5?'wood':'concrete'));
+    debrisPiece(shardPos,shardType,m.mesh.position);
+   }
+
+   // Dust puffs kicking up from pulverized building materials
+   if(Math.random()<dt*16){
+    cinematicFX.dustBurst(m.mesh.position,Math.max(0.4,(m.size||1)*0.4),{count:3,radial:true});
+   }
+
+   // Flaming/molten meteors ignite interior floor fires as they crunch through
+   if(m.burning&&Math.random()<dt*8&&schoolFire.length<40){
+    ignite(m.mesh.position.x+(Math.random()-.5)*2.0,m.mesh.position.y,m.mesh.position.z+(Math.random()-.5)*1.8);
+   }
+
+   // Check if meteor reached its crunch stopping depth
+   if(currY<=(m.crunchStopY||0.6)){
+    m.crunching=false;
+    m.mesh.position.y=Math.max(0.4,m.crunchStopY||0.6);
+
+    // Size-dependent resting or disintegration
+    if((m.size||1)>=3.2||m.isMassive){
+     // Big meteors: reach foundation/ground, crunch ground pavement into crater & shockwave
+     addCrater(m.mesh.position.x,m.mesh.position.z,2.6+(m.size||1)*0.45);
+     blast(m.mesh.position.x,0.4,m.mesh.position.z,4.8*(m.size||1));
+     cinematicFX.demolitionDustWave(
+      m.mesh.position,
+      m.mesh.position.clone().add(new THREE.Vector3(0,0,3.5)),
+      2.2
+     );
+     shake=Math.max(shake,0.85);
+     sound('impact',{x:m.mesh.position.x});
+
+     // Start foundation fire if flaming
+     if(m.burning){
+      for(let k=0;k<4;k++){
+       ignite(m.mesh.position.x+(Math.random()-.5)*3.5,0.4,m.mesh.position.z+(Math.random()-.5)*3.0);
+      }
+     }
+
+     // Bigger meteors can break up a little bit, or stay as one massive charred core
+     if(Math.random()<0.45){
+      const fragPieces=Math.min(6,Math.max(3,Math.round((m.size||1)*1.2)));
+      for(let p=0;p<fragPieces;p++){
+       const fp=m.mesh.position.clone().add(new THREE.Vector3((Math.random()-.5)*2.5,0.3,(Math.random()-.5)*2.5));
+       preserveRubble({position:fp,scale:0.45+Math.random()*0.55,isFlaming:m.burning});
+      }
+      remove(meteors,i);
+      continue;
+     }else{
+      m.grounded=true;
+      m.ttl=25.0;
+      m.vel.set(0,0,0);
+     }
+    }else{
+     // Small/Medium meteors: get stuck on intermediate floor or roof, or break into rubble
+     shake=Math.max(shake,0.45);
+     sound('impact',{x:m.mesh.position.x});
+     if(m.burning){
+      ignite(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z);
+     }
+     if(Math.random()<0.55){
+      // Stays stuck/embedded in the floor/roof as smoldering rock
+      m.grounded=true;
+      m.ttl=18.0;
+      m.vel.set(0,0,0);
+     }else{
+      settleMeteorAsPermanentSlag(m);
+      remove(meteors,i);
+      continue;
+     }
+    }
+   }
+   continue;
+  }
+
   // Sweep collision detection: catch any descending meteor piercing a building roof or facade
   let sweepHit=null;
+  let hitBuilding=null;
+  let hitSchool=false;
   if(!m.dragonHunter&&m.vel&&m.vel.y<-0.1){
    const curr=m.mesh.position;
    const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
@@ -5337,16 +5497,41 @@ if(m.grounded){
    const sMaxY=schoolBounds.max.y;
    if(curr.x>=sMinX-0.6&&curr.x<=sMaxX+0.6&&curr.z>=sMinZ-0.6&&curr.z<=sMaxZ+0.6&&curr.y<=sMaxY&&meteorStart.y>=sMaxY-1.2){
     sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
+    hitSchool=true;
    }
    if(!sweepHit&&neighborhood?.targetBuildings){
     for(const b of neighborhood.targetBuildings){
      if(b.damage>=0.98)continue;
      if(curr.x>=b.x-b.w*0.5-0.6&&curr.x<=b.x+b.w*0.5+0.6&&curr.z>=b.z-b.d*0.5-0.6&&curr.z<=b.front+0.6&&curr.y<=b.h&&meteorStart.y>=b.h-1.2){
       sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
+      hitBuilding=b;
       break;
      }
     }
    }
+  }
+
+  // Roof breach triggers progressive crunching through the building
+  if(sweepHit&&!m.dragonHunter&&!m.boss&&!m.opening&&m.mesh.position.y>1.2){
+   m.crunching=true;
+   m.crunchBuilding=hitBuilding||(hitSchool?neighborhood.school:null);
+   m.crunchStartY=m.mesh.position.y;
+   const sz=m.size||1;
+   if(sz<1.8){
+    m.crunchStopY=Math.max(1.0,(hitBuilding?hitBuilding.h-2.8:(hitSchool?schoolBounds.max.y-2.8:m.mesh.position.y-2.2)));
+   }else if(sz<3.2){
+    m.crunchStopY=Math.max(0.6,(hitBuilding?hitBuilding.h-6.8:(hitSchool?schoolBounds.max.y-6.8:2.5)));
+   }else{
+    m.crunchStopY=0.5;
+   }
+   m.vel.set(m.vel.x*0.15,-16.0,m.vel.z*0.15);
+   neighborhood.roofBreach(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(1.5,sz*1.4));
+   cinematicFX.burst(m.mesh.position,Math.max(0.4,sz*0.7));
+   sound('impact',{x:m.mesh.position.x});
+   emitMeteorShrapnel(m.mesh.position,Math.min(6,sz*2.0));
+   shake=Math.max(shake,Math.min(0.75,0.25+sz*0.1));
+   if(m.burning)ignite(m.mesh.position.x,m.mesh.position.y-0.4,m.mesh.position.z);
+   continue;
   }
 
   const targetReached=(!m.opening&&!m.dragonHunter&&(
@@ -5675,7 +5860,7 @@ window.__DD_QA={snap,
  setPedestriansEnabled:(on)=>run('setPedestriansEnabled',()=>{setPedestriansEnabled(on);return snap();}),
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
- audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+ audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
