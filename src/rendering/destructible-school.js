@@ -318,10 +318,19 @@ export function createDestructibleSchool(THREE,scene,bounds){
   if(changed)flush();
  }
  let detachedOnly=false;
+ let overlayMode=false;
  function flush(){
   const counts=new Array(materials.length).fill(0);
   for(const p of pieces){
-   if(p.removed||(detachedOnly&&!p.falling))continue;
+   if(p.removed)continue;
+   if(detachedOnly&&!p.falling)continue;
+   if(overlayMode&&!p.falling){
+    // In overlay mode, keep internal structural elements (floor slabs, columns, beams, atrium trusses,
+    // interior classroom partitions, ceiling lights, desks, roof HVAC equipment) visible inside the building!
+    // Omit duplicate exterior facade brick that would conflict with the intact FBX exterior.
+    const isInternal=['floor','beam','column','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','roof-hvac'].includes(p.zone);
+    if(!isInternal)continue;
+   }
    const kind=p.profile==='glass'?shardBatch:p.kind;
    const index=counts[kind]++;
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
@@ -336,6 +345,21 @@ export function createDestructibleSchool(THREE,scene,bounds){
   batches.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;
    // Frustum culling is disabled; recomputing a bounds sphere here is wasteful.
    });
+ }
+ function syncDestruction(ratio){
+  if(ratio<=0)return;
+  const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
+  const targetDetached=Math.floor(pieces.length*Math.min(1.0,ratio*0.92));
+  const currentDetached=pieces.filter(p=>p.falling||p.resting).length;
+  const needed=targetDetached-currentDetached;
+  if(needed>0){
+   // Sort candidates: top floors collapse downward first under gravity & blast overpressure
+   const candidates=[...attachedPieces].sort((a,b)=>b.homeY-a.homeY);
+   for(let i=0;i<Math.min(needed,candidates.length);i++){
+    detach(candidates[i],i*7.31+ratio*19.1,0.03+Math.random()*0.18,ratio>0.35);
+   }
+   flush();
+  }
  }
  function reset(){
   collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
@@ -354,8 +378,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
    byMaterial:Object.fromEntries(['glass','structure','facade'].map(profile=>[profile,pieces.filter(p=>p.profile===profile).length])),
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
- return {group:batches,impact,collapse,update,reset,stats,
+ return {group:batches,impact,collapse,update,reset,restore:reset,syncDestruction,stats,
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
+  setOverlayMode:on=>{if(overlayMode!==on){overlayMode=on;detachedOnly=false;flush();}},
   setVisible:(visible)=>batches.forEach(m=>m.visible=visible),
   setNight:(darkness)=>{materials[4].emissiveIntensity=.18+.8*darkness}};
 }

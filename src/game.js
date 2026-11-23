@@ -486,13 +486,14 @@ function syncSchoolVisibility(){
  const useSource=Boolean(actualSchoolOverlayReady);
  if(actualSchoolOverlay)actualSchoolOverlay.visible=visible&&useSource;
  if(architecturalModel)architecturalModel.visible=false;
- schoolReconstruction?.setDetachedOnly(useSource);
+ schoolReconstruction?.setOverlayMode(useSource);
  schoolReconstruction?.setVisible(visible);
  schoolSignGroup.visible=visible&&schoolDamage<.75;
 }
 function syncStructuralDamage(){
  neighborhood.city.forceDamage(neighborhood.school,schoolDamage);
  sourceDamage.setDestruction(schoolDamage);
+ schoolReconstruction?.syncDestruction?.(schoolDamage);
  updateSchoolFragments();
  if(schoolDamage>=1)schoolReconstruction?.collapse();
  syncSchoolVisibility();
@@ -858,6 +859,26 @@ function refreshAudioButtons(){
  if(modalSfx){
   modalSfx.textContent=isSfxM?'🔇 SFX: OFF':'💥 Sound Effects: ON';
   modalSfx.classList.toggle('active',!isSfxM);
+ }
+ const tbMusic=document.getElementById('dd-tb-music');
+ if(tbMusic){
+  tbMusic.textContent=isMusicM?'🎵 Music: OFF':'🎵 Music: ON';
+  tbMusic.classList.toggle('active',!isMusicM);
+ }
+ const tbSfx=document.getElementById('dd-tb-sfx');
+ if(tbSfx){
+  tbSfx.textContent=isSfxM?'🔊 SFX: OFF':'🔊 SFX: ON';
+  tbSfx.classList.toggle('active',!isSfxM);
+ }
+ const btmMusic=document.getElementById('music-toggle-bottom');
+ if(btmMusic){
+  btmMusic.textContent=isMusicM?'🎵 Music: OFF':'🎵 Music: ON';
+  btmMusic.classList.toggle('active',!isMusicM);
+ }
+ const btmSfx=document.getElementById('sfx-toggle-bottom');
+ if(btmSfx){
+  btmSfx.textContent=isSfxM?'🔊 SFX: OFF':'🔊 SFX: ON';
+  btmSfx.classList.toggle('active',!isSfxM);
  }
 }
 function refreshSoundButton(){refreshAudioButtons();}
@@ -1911,7 +1932,7 @@ function updateWorld(dt){
  const beforeY=dragon.position.y;dragon.position.y=THREE.MathUtils.lerp(beforeY,1.3,Math.min(1,dt*3.4));
  dragon.rotation.z=Math.sin(elapsed*35)*.14;
  if(!dragonGroundImpact&&dragon.position.y<1.65){dragonGroundImpact=true;shake=Math.max(shake,.35);emitImpact(dragon.position.x,.7,dragon.position.z,20,.3);sound('impact');}
-}else dragon.rotation.z=THREE.MathUtils.lerp(dragon.rotation.z,0,Math.min(1,dt*5));waterDisable=Math.max(0,waterDisable-dt);gasCooldown=Math.max(0,gasCooldown-dt);dragon.visible=dragonStun>0||invulnerable<=0||Math.floor(elapsed*11)%2===0;
+}else dragon.rotation.z=THREE.MathUtils.lerp(dragon.rotation.z,0,Math.min(1,dt*5));waterDisable=Math.max(0,waterDisable-dt);gasCooldown=Math.max(0,gasCooldown-dt);dragon.visible=dragonEnabled&&(dragonStun>0||invulnerable<=0||Math.floor(elapsed*11)%2===0);
  updateBurningVehicles(dt);if(performanceLab.isEnabled('helicopters'))helicopterTimer-=dt;if(performanceLab.isEnabled('helicopters')&&helicopterTimer<=0){spawnHelicopter();helicopterTimer=6+Math.random()*7;}
  for(let i=helicopters.length-1;performanceLab.isEnabled('helicopters')&&i>=0;i--){const h=helicopters[i];h.life-=dt;h.rotor.rotation.y+=dt*28;h.tail.rotation.z+=dt*22;let searchlightSynced=false;if(!h.crashing){
    // Cockpit forward visibility is deliberately limited: ~64-degree field of view.
@@ -3600,7 +3621,7 @@ function updateChapterSettlement(dt){
  }
  return true;
 }
-function updateHud(){document.getElementById('score').textContent=score.toLocaleString();const isTr=trainingMissions?.isActive();document.getElementById('wave').textContent=isTr?'TRAIN':wave;const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent=isTr?'🥋 ASTRAL SIMULATION VOID':'CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title;document.getElementById('hp').textContent=isTr?'100%':hp+'%';document.getElementById('healthbar').style.width=(isTr?100:hp)+'%';updateNeighborhoodGauge();document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);}
+function updateHud(){document.getElementById('score').textContent=score.toLocaleString();const isTr=trainingMissions?.isActive();document.getElementById('wave').textContent=freeFlightMode?'∞ SANDBOX':(isTr?'TRAIN':wave);const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent=freeFlightMode?'🛠️ DIRECTOR SANDBOX (INFINITE)':(isTr?'🥋 ASTRAL SIMULATION VOID':'CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title);document.getElementById('hp').textContent=isTr?'100%':hp+'%';document.getElementById('healthbar').style.width=(isTr?100:hp)+'%';updateNeighborhoodGauge();document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);}
 let toastTimer=0;function message(t){document.getElementById('toast').textContent=t;toastTimer=1.8}
 function isChapterEnd(wave){return wave===2||wave===3||wave===10||wave===14;}
 function recordRallyClear(){
@@ -3707,6 +3728,7 @@ function completeTacticalTrial(){
 }
 
 function updateWaveProgress(dt,rally=rallyLoop){
+ if(freeFlightMode)return;
  if(tacticalTrialActive){updateTacticalTrial(dt);return;}
  const chapterEnd=isChapterEnd(wave);
  const opening=openingMeteorWave(wave);
@@ -4012,6 +4034,28 @@ function spawnMeteorBarrage(count=4,centerX=null,centerZ=null){
  message(`☄️ METEOR BARRAGE (${count} BOLIDES) INCOMING!`);
 }
 
+let dragonEnabled=true;
+function toggleDragon(enable){
+ dragonEnabled=(enable!==undefined)?!!enable:!dragonEnabled;
+ if(dragon)dragon.visible=dragonEnabled;
+ if(pauloPreviewRig&&pauloPreviewRig.root)pauloPreviewRig.root.visible=dragonEnabled;
+ const tbDragon=document.getElementById('dd-tb-dragon');
+ if(tbDragon){
+  tbDragon.textContent=dragonEnabled?'🐉 Dragon: ON':'🐉 Dragon: OFF';
+  tbDragon.classList.toggle('active',dragonEnabled);
+ }
+ const setDragon=document.getElementById('dd-setting-dragon');
+ if(setDragon){
+  setDragon.textContent=dragonEnabled?'🐉 Dragon: ON':'🐉 Dragon: OFF';
+  setDragon.classList.toggle('active',dragonEnabled);
+ }
+ message(dragonEnabled?'🐉 DRAGON VISIBLE':'🐉 DRAGON HIDDEN — SPECTATOR INSPECTION MODE');
+}
+window.toggleDragon=toggleDragon;
+window.toggleMusic=()=>{window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());refreshAudioButtons();};
+window.toggleSfx=()=>{window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());refreshAudioButtons();};
+window.startSandboxDirect=()=>{document.getElementById('overlay').style.display='none';if(!active){try{reset();}catch(e){}}toggleFreeFlight(true);};
+
 function toggleFreeFlight(enable){
  freeFlightMode=(enable!==undefined)?!!enable:!freeFlightMode;
  const toolbar=document.getElementById('dd-sandbox-toolbar');
@@ -4046,6 +4090,9 @@ function toggleFreeFlight(enable){
   spawnTimer=999999;
   stormTimer=999999;
   remaining=0;
+  between=0;
+  chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};
+  updateHud();
   message('✈️ FREE-FLIGHT MAP INSPECTOR ACTIVE — FLY ANYWHERE');
  }else{
   dragonLives=3;
@@ -4487,10 +4534,35 @@ function initUnifiedSettingsEvents(){
 
  // Bottom Bar Sandbox Button
  document.getElementById('sandbox-btn')?.addEventListener('click',()=>toggleFreeFlight());
+ document.getElementById('dd-tb-dragon')?.addEventListener('click',()=>toggleDragon());
+ document.getElementById('dd-setting-dragon')?.addEventListener('click',()=>toggleDragon());
+ document.getElementById('dd-tb-music')?.addEventListener('click',()=>{
+  window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());
+  refreshAudioButtons();
+ });
+ document.getElementById('dd-tb-sfx')?.addEventListener('click',()=>{
+  window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());
+  refreshAudioButtons();
+ });
+ document.getElementById('music-toggle-bottom')?.addEventListener('click',()=>{
+  window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());
+  refreshAudioButtons();
+ });
+ document.getElementById('sfx-toggle-bottom')?.addEventListener('click',()=>{
+  window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());
+  refreshAudioButtons();
+ });
+ document.getElementById('start-sandbox-direct')?.addEventListener('click',()=>{
+  document.getElementById('overlay').style.display='none';
+  if(!active){try{reset();}catch(e){}}
+  toggleFreeFlight(true);
+ });
 }
 
+initUnifiedSettingsEvents();
 window.addEventListener('DOMContentLoaded',initUnifiedSettingsEvents);
-setTimeout(initUnifiedSettingsEvents,500);
+setTimeout(initUnifiedSettingsEvents,200);
+setTimeout(initUnifiedSettingsEvents,800);
 
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'){
@@ -5448,6 +5520,11 @@ window.__DD_SANDBOX={
  getZoomLevel:()=>sandboxZoomLevel,
  setZoomLevel:(z)=>{sandboxZoomLevel=z;},
  getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
+  toggleDragon:(on)=>run('toggleDragon',()=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible,snapshot:snap()};}),
+  setDragonEnabled:(on)=>{toggleDragon(on);return dragonEnabled;},
+  isDragonEnabled:()=>dragonEnabled,
+  setMusicMuted:(on)=>{window.__DD_AUDIO.setMusicMuted(on);refreshAudioButtons();return soundEngine.isMusicMuted();},
+  setSfxMuted:(on)=>{window.__DD_AUDIO.setSfxMuted(on);refreshAudioButtons();return soundEngine.isSfxMuted();},
  setTrafficEnabled,
  isTrafficEnabled:()=>trafficActive,
  setPedestriansEnabled,
@@ -5501,6 +5578,11 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  getZoomLevel:()=>sandboxZoomLevel,
  setZoomLevel:(z)=>{sandboxZoomLevel=z;},
  getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
+  toggleDragon:(on)=>run('toggleDragon',()=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible,snapshot:snap()};}),
+  setDragonEnabled:(on)=>{toggleDragon(on);return dragonEnabled;},
+  isDragonEnabled:()=>dragonEnabled,
+  setMusicMuted:(on)=>{window.__DD_AUDIO.setMusicMuted(on);refreshAudioButtons();return soundEngine.isMusicMuted();},
+  setSfxMuted:(on)=>{window.__DD_AUDIO.setSfxMuted(on);refreshAudioButtons();return soundEngine.isSfxMuted();},
  setTrafficEnabled,
  isTrafficEnabled:()=>trafficActive,
  setPedestriansEnabled,
@@ -5511,6 +5593,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  closeSettings:()=>closeUnifiedSettings()
 };
 window.__DD_QA={snap,
+  isFreeFlight:()=>freeFlightMode,
+  schoolReconstruction:()=>schoolReconstruction?.stats()||null,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
  spawnTestMeteorAt:(x,y,z,size,kind)=>run('spawnTestMeteorAt',()=>{spawnTestMeteorAt(x,y,z,size,kind);return snap();}),
  spawnMeteorBarrage:(count,x,z)=>run('spawnMeteorBarrage',()=>{spawnMeteorBarrage(count,x,z);return snap();}),
@@ -5523,6 +5607,11 @@ window.__DD_QA={snap,
  getZoomLevel:()=>sandboxZoomLevel,
  setZoomLevel:(z)=>{sandboxZoomLevel=z;},
  getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
+  toggleDragon:(on)=>run('toggleDragon',()=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible,snapshot:snap()};}),
+  setDragonEnabled:(on)=>{toggleDragon(on);return dragonEnabled;},
+  isDragonEnabled:()=>dragonEnabled,
+  setMusicMuted:(on)=>{window.__DD_AUDIO.setMusicMuted(on);refreshAudioButtons();return soundEngine.isMusicMuted();},
+  setSfxMuted:(on)=>{window.__DD_AUDIO.setSfxMuted(on);refreshAudioButtons();return soundEngine.isSfxMuted();},
  setTrafficEnabled:(on)=>run('setTrafficEnabled',()=>{setTrafficEnabled(on);return snap();}),
  setPedestriansEnabled:(on)=>run('setPedestriansEnabled',()=>{setPedestriansEnabled(on);return snap();}),
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
