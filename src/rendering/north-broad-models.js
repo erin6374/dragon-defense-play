@@ -590,6 +590,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   }
 
   // Realistic procedural physics damage: localized by 3D meteor impact coordinates
+  // Realistic procedural physics damage: localized by 3D meteor impact coordinates
   function applyLocalizedImpact(entry, origin, radius = 5.0, strength = 1.0) {
     if (!entry.model) return 0;
     entry.sectionDamage = entry.sectionDamage || {
@@ -602,32 +603,32 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     const normY = Math.max(0, Math.min(1.0, relY / bHeight));
 
     if (entry.def.isChurch) {
-      if (relY >= 10.0) {
-        // High strike on church roof / spires: crumple roof, reveal interior trusses!
-        entry.sectionDamage.churchRoof = Math.min(1.0, entry.sectionDamage.churchRoof + strength * 0.75);
-        if (entry.sectionDamage.churchRoof >= 0.45) {
+      if (relY >= 8.0 || origin.z < -8.0) {
+        // High strike on church roof / spires / nave: crumple roof, reveal interior trusses and pews!
+        entry.sectionDamage.churchRoof = Math.min(1.0, entry.sectionDamage.churchRoof + strength * 0.95);
+        if (entry.sectionDamage.churchRoof >= 0.28) {
           if (entry.groups.churchRoof) entry.groups.churchRoof.visible = false;
           if (churchInterior) churchInterior.visible = true;
           if (entry.churchFeatures?.spiresGroup) entry.churchFeatures.spiresGroup.visible = false;
         }
       } else {
         // Lower strike: breach entrance / lower walls
-        entry.sectionDamage.churchWalls = Math.min(1.0, entry.sectionDamage.churchWalls + strength * 0.65);
-        if (entry.sectionDamage.churchWalls >= 0.55 && entry.groups.churchWalls) {
+        entry.sectionDamage.churchWalls = Math.min(1.0, entry.sectionDamage.churchWalls + strength * 0.85);
+        if (entry.sectionDamage.churchWalls >= 0.28 && entry.groups.churchWalls) {
           entry.groups.churchWalls.visible = false;
         }
       }
 
       // Check direct rose window strike (Y ≈ 11.2, near front facade)
-      if (Math.abs(relY - 11.2) < 3.2 && origin.z > -12.0) {
-        entry.sectionDamage.roseWindow = Math.min(1.0, entry.sectionDamage.roseWindow + strength * 0.85);
-        if (entry.sectionDamage.roseWindow >= 0.45 && entry.churchFeatures?.roseRoot) {
+      if (Math.abs(relY - 11.2) < 4.5 && origin.z > -16.0) {
+        entry.sectionDamage.roseWindow = Math.min(1.0, entry.sectionDamage.roseWindow + strength * 0.95);
+        if (entry.sectionDamage.roseWindow >= 0.28 && entry.churchFeatures?.roseRoot) {
           entry.churchFeatures.roseRoot.visible = false;
         }
       }
 
       entry.damage = (entry.sectionDamage.churchRoof * 0.5 + entry.sectionDamage.churchWalls * 0.5);
-      if (entry.damage >= 0.98) {
+      if (entry.damage >= 0.70) {
         entry.model.visible = false;
         if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = false;
         if (churchInterior) churchInterior.visible = false;
@@ -637,56 +638,58 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       // Rowhouse / Storefront localized height sectioning:
       if (normY >= 0.80 || relY >= bHeight - 2.8) {
         // Meteor hit roof / cornice level! Roof crumples while lower floors stay standing!
-        entry.sectionDamage.roof = Math.min(1.0, entry.sectionDamage.roof + strength * 0.75);
-        entry.sectionDamage.cornice = Math.min(1.0, entry.sectionDamage.cornice + strength * 0.85);
-        if (entry.sectionDamage.roof >= 0.45 && entry.groups.roof) entry.groups.roof.visible = false;
-        if (entry.sectionDamage.cornice >= 0.45 && entry.groups.cornice) entry.groups.cornice.visible = false;
-        // LOWER FLOORS REMAIN STANDING!
+        entry.sectionDamage.roof = Math.min(1.0, entry.sectionDamage.roof + strength * 0.95);
+        entry.sectionDamage.cornice = Math.min(1.0, entry.sectionDamage.cornice + strength * 0.95);
+        if (entry.sectionDamage.roof >= 0.28 && entry.groups.roof) entry.groups.roof.visible = false;
+        if (entry.sectionDamage.cornice >= 0.28 && entry.groups.cornice) entry.groups.cornice.visible = false;
       } else if (normY >= 0.52) {
         // Floor 2 hit (upper story)!
-        entry.sectionDamage.floor2 = Math.min(1.0, entry.sectionDamage.floor2 + strength * 0.75);
-        if (entry.sectionDamage.floor2 >= 0.45) {
+        entry.sectionDamage.floor2 = Math.min(1.0, entry.sectionDamage.floor2 + strength * 0.95);
+        if (entry.sectionDamage.floor2 >= 0.28) {
           if (entry.groups.facade2) entry.groups.facade2.visible = false;
           if (entry.groups.floor2) entry.groups.floor2.visible = false;
         }
-        // Roof and Floors 0-1 remain standing!
       } else if (normY >= 0.26) {
         // Floor 1 hit (middle story)!
-        entry.sectionDamage.floor1 = Math.min(1.0, entry.sectionDamage.floor1 + strength * 0.75);
-        if (entry.sectionDamage.floor1 >= 0.45) {
+        entry.sectionDamage.floor1 = Math.min(1.0, entry.sectionDamage.floor1 + strength * 0.95);
+        if (entry.sectionDamage.floor1 >= 0.28) {
           if (entry.groups.facade1) entry.groups.facade1.visible = false;
           if (entry.groups.floor1) entry.groups.floor1.visible = false;
         }
-        // Floor 0 below and Floor 2 + roof above remain standing overhead!
       } else {
         // Floor 0 hit (first floor / ground level)!
-        // "Maybe the meteor crashes down to the first floor, but the other three or four floors are still standing."
-        entry.sectionDamage.floor0 = Math.min(1.0, entry.sectionDamage.floor0 + strength * 0.75);
-        if (entry.sectionDamage.floor0 >= 0.45) {
+        entry.sectionDamage.floor0 = Math.min(1.0, entry.sectionDamage.floor0 + strength * 0.95);
+        if (entry.sectionDamage.floor0 >= 0.28) {
           if (entry.groups.facade0) entry.groups.facade0.visible = false;
           if (entry.groups.floor0) entry.groups.floor0.visible = false;
           if (entry.groups.sign) entry.groups.sign.visible = false;
         }
-        // Floors 1, 2 and roof ALL REMAIN STANDING OVERHEAD!
+      }
+
+      // When exterior facades breach, open shell so interior floor slabs & furniture are clearly exposed!
+      if (entry.groups.shell && (entry.sectionDamage.floor0 >= 0.28 || entry.sectionDamage.floor1 >= 0.28 || entry.sectionDamage.floor2 >= 0.28 || entry.sectionDamage.roof >= 0.28)) {
+        entry.groups.shell.visible = false;
       }
 
       // Windows shatter in vicinity
       if (entry.glassMeshes) {
         for (const g of entry.glassMeshes) {
-          if (Math.abs(relY - (normY * bHeight)) < 3.8 || Math.random() < 0.6) {
+          if (Math.abs(relY - (normY * bHeight)) < 5.0 || Math.random() < 0.75) {
             g.visible = false;
           }
         }
       }
 
       entry.damage = (entry.sectionDamage.floor0 + entry.sectionDamage.floor1 + entry.sectionDamage.floor2 + entry.sectionDamage.roof) / 4.0;
-      if (entry.damage >= 0.98) {
+      if (entry.damage >= 0.85) {
         entry.model.visible = false;
       }
     }
 
     if (entry.targetBuilding) {
       entry.targetBuilding.damage = Math.max(entry.targetBuilding.damage || 0, entry.damage);
+      // Forward physical impact into structural-city so floor slabs and interior furniture physically detach!
+      city.impact(entry.targetBuilding, origin, radius, strength);
     }
     return 1;
   }
@@ -851,7 +854,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       for (const entry of entries) {
         if (!entry.loaded || !entry.model || !entry.worldBounds) continue;
         const wb = entry.worldBounds;
-        const margin = radius * 0.85;
+        const margin = radius * 1.5 + 4.0;
         if (origin.x >= wb.minX - margin && origin.x <= wb.maxX + margin &&
             origin.z >= wb.minZ - margin && origin.z <= wb.maxZ + margin) {
           applyLocalizedImpact(entry, origin, radius, strength);

@@ -119,20 +119,112 @@ export function createStructuralCity(THREE,scene,bank){
     addPart(b,'wall',wall,x,base+sh*.5,z0,bw-.03,sh-.16,.22,f);
    }
    for(const x of [x0,x0+b.w])for(let iz=0;iz<tileZ;iz++)addPart(b,'wall',wall,x,base+sh*.5,z0+(iz+.5)*b.d/tileZ,.25,sh-.15,b.d/tileZ-.03,f);
-   // Rooms, corridor openings and stairs on every floor, including rear buildings.
-   const rooms=o.exteriorOnly?0:b.background?2:Math.max(2,Math.floor(b.w/4));
-   for(let room=0;room<rooms;room++){
-    const cx=x0+(room+.5)*b.w/rooms;
-    if(room<rooms-1){const px=x0+(room+1)*b.w/rooms;addPart(b,'partition','plaster',px,base+sh*.48,b.z+2,.10,sh-.35,b.d*.42,f);addPart(b,'partition','plaster',px,base+sh*.82,b.z-1,.10,sh*.25,2,f)}
-    const roomWidth=b.w/rooms-.12,doorWidth=Math.min(.95,roomWidth*.35),jamb=(roomWidth-doorWidth)/2;
-    for(const side of [-1,1])addPart(b,'partition','room',cx+side*(doorWidth+jamb)/2,base+sh*.5,b.z-2,jamb,sh-.32,.10,f);
-    addPart(b,'partition','room',cx,base+sh-.45,b.z-2,doorWidth,.6,.10,f);
-    // Table/desk, legs, cabinet and upholstered chair/sofa. Shared instances.
-    const tx=cx+(room%2?-.35:.35),tz=b.front-2.1;
-    addPart(b,'furniture','wood',tx,base+.92,tz,Math.min(1.5,b.w/rooms*.60),.12,.8,f);
-    for(const dx of [-.48,.48])addPart(b,'furniture','frame',tx+dx,base+.52,tz,.07,.75,.55,f);
-    addPart(b,'furniture','furniture',tx,base+.55,tz-.7,.60,.12,.55,f);addPart(b,'furniture','furniture',tx,base+.9,tz-.95,.6,.68,.10,f);
-    addPart(b,'furniture','wood',cx,base+.65,b.z-1.6,.8,1.15,.45,f);
+   // Authentic Interior Furniture & Room Partition Layouts
+   // Populated for ALL buildings: houses, businesses, storefronts, and church.
+   // Visible when facades are blown open; detaches and tumbles into street rubble on collapse.
+   const isMcDonalds = b.name === 'mcdonalds-2109-broad';
+   const isPharmacy = b.name === 'former-cvs-2131-broad';
+   const isChurch = b.name === 'south-diamond-corner';
+   const isTakeoutShop = b.name === 'susquehanna-crown-chicken' || b.name === 'north-red-brick-shop';
+   const isOffice = b.name.includes('fund') || b.name === 'pcs-for-people' || b.name === 'broad-2129-newman' || b.name === 'north-2300-corner-commercial';
+
+   if (isMcDonalds && f === 0) {
+    // McDonald's Fast-Food Dining, Counter & Kitchen
+    for (const bx of [x0 + 3.2, x0 + 6.2, x0 + 9.2]) {
+     addPart(b,'furniture','wood',bx,base+0.76,b.front-2.6,1.4,0.08,0.75,f);
+     addPart(b,'furniture','frame',bx,base+0.38,b.front-2.6,0.12,0.72,0.12,f);
+     addPart(b,'furniture','red',bx,base+0.44,b.front-2.6+0.62,1.4,0.12,0.42,f);
+     addPart(b,'furniture','red',bx,base+0.82,b.front-2.6+0.80,1.4,0.65,0.10,f);
+     addPart(b,'furniture','red',bx,base+0.44,b.front-2.6-0.62,1.4,0.12,0.42,f);
+     addPart(b,'furniture','red',bx,base+0.82,b.front-2.6-0.80,1.4,0.65,0.10,f);
+    }
+    addPart(b,'furniture','creamWarm',b.x+1.2,base+0.52,b.z,6.2,1.05,0.85,f);
+    for (const rx of [-1.8, 0, 1.8]) {
+     addPart(b,'furniture','frame',b.x+1.2+rx,base+1.24,b.z-0.05,0.42,0.36,0.32,f);
+    }
+    addPart(b,'furniture','frame',b.x+1.2,base+2.6,b.z,5.8,0.65,0.25,f);
+    addPart(b,'furniture','frame',b.x+5.8,base+0.65,b.z-3.2,2.4,1.1,0.9,f);
+    addPart(b,'furniture','frame',b.x+5.8,base+0.50,b.z+2.4,2.6,0.95,0.8,f);
+   } else if (isPharmacy && f === 0) {
+    // CVS / Pharmacy Retail Gondolas & Pharmacy
+    for (const gx of [-6.5, -2.2, 2.2, 6.5]) {
+     addPart(b,'furniture','frame',b.x+gx,base+0.85,b.front-4.5,0.72,1.65,5.8,f);
+     addPart(b,'furniture','furniture',b.x+gx,base+0.55,b.front-4.5,0.76,0.08,5.7,f);
+     addPart(b,'furniture','furniture',b.x+gx,base+1.15,b.front-4.5,0.76,0.08,5.7,f);
+    }
+    addPart(b,'furniture','creamWarm',b.x-7.8,base+0.50,b.front-1.8,2.8,0.95,0.80,f);
+    addPart(b,'furniture','frame',b.x-7.8,base+1.16,b.front-1.8,0.45,0.36,0.38,f);
+    addPart(b,'furniture','creamWarm',b.x+3.5,base+0.55,b.z-4.2,5.6,1.10,0.85,f);
+    addPart(b,'furniture','wood',b.x+3.5,base+1.10,b.z-7.5,5.4,2.10,0.45,f);
+   } else if (isChurch && f === 0) {
+    // Berean Presbyterian Church Nave & Interior
+    for (let row = 0; row < 8; row++) {
+     const pz = b.front - 5.0 - row * 3.4;
+     for (const side of [-1, 1]) {
+      addPart(b,'furniture','wood',b.x+side*5.2,base+0.48,pz,4.6,0.12,0.62,f);
+      addPart(b,'furniture','wood',b.x+side*5.2,base+0.88,pz-0.26,4.6,0.68,0.08,f);
+     }
+    }
+    addPart(b,'furniture','wood',b.x,base+0.55,b.z-12.0,3.4,1.0,1.1,f);
+    addPart(b,'furniture','wood',b.x-2.4,base+0.70,b.z-9.0,1.1,1.35,0.85,f);
+    for (let tr = 0; tr < 6; tr++) {
+     addPart(b,'furniture','wood',b.x,base+b.h*0.75,b.front-5.5-tr*5.8,b.w*0.82,0.45,0.45,f);
+    }
+   } else {
+    // Residential Rowhouses, Apartments, Commercial Shops & Offices
+    const rooms = b.background ? 2 : Math.max(2, Math.floor(b.w / 4));
+    for (let room = 0; room < rooms; room++) {
+     const cx = x0 + (room + 0.5) * b.w / rooms;
+     if (room < rooms - 1) {
+      const px = x0 + (room + 1) * b.w / rooms;
+      addPart(b,'partition','plaster',px,base+sh*.48,b.z+2,.10,sh-.35,b.d*.42,f);
+      addPart(b,'partition','plaster',px,base+sh*.82,b.z-1,.10,sh*.25,2,f);
+     }
+     const roomWidth = b.w / rooms - .12, doorWidth = Math.min(.95, roomWidth * .35), jamb = (roomWidth - doorWidth) / 2;
+     for (const side of [-1, 1]) addPart(b,'partition','room',cx+side*(doorWidth+jamb)/2,base+sh*.5,b.z-2,jamb,sh-.32,.10,f);
+     addPart(b,'partition','room',cx,base+sh-.45,b.z-2,doorWidth,.6,.10,f);
+
+     if (isOffice) {
+      const tx = cx + (room % 2 ? -0.35 : 0.35), tz = b.front - 2.2;
+      addPart(b,'furniture','wood',tx,base+0.74,tz,1.4,0.08,0.75,f);
+      addPart(b,'furniture','frame',tx,base+0.36,tz,1.2,0.68,0.60,f);
+      addPart(b,'furniture','frame',tx,base+1.02,tz-0.12,0.52,0.40,0.08,f);
+      addPart(b,'furniture','furniture',tx,base+0.46,tz+0.65,0.48,0.85,0.48,f);
+      addPart(b,'furniture','frame',cx+1.1,base+0.65,b.z-1.5,0.50,1.20,0.60,f);
+     } else if (isTakeoutShop && f === 0) {
+      const tx = cx, tz = b.front - 2.0;
+      addPart(b,'furniture','creamWarm',tx,base+0.52,tz,Math.min(1.8, b.w/rooms*.8),1.05,0.75,f);
+      addPart(b,'furniture','frame',tx,base+1.18,tz,0.45,0.32,0.35,f);
+      addPart(b,'furniture','furniture',tx,base+0.42,tz+0.9,0.38,0.82,0.38,f);
+     } else if (f === 0) {
+      // Ground floor residential living room
+      const sofaX = cx + (room % 2 ? -0.35 : 0.35), sofaZ = b.front - 2.1;
+      addPart(b,'furniture','furniture',sofaX,base+0.42,sofaZ,1.65,0.36,0.82,f);
+      addPart(b,'furniture','furniture',sofaX,base+0.76,sofaZ-0.35,1.65,0.62,0.20,f);
+      addPart(b,'furniture','furniture',sofaX-0.86,base+0.54,sofaZ,0.18,0.50,0.82,f);
+      addPart(b,'furniture','furniture',sofaX+0.86,base+0.54,sofaZ,0.18,0.50,0.82,f);
+      addPart(b,'furniture','wood',sofaX,base+0.36,sofaZ+0.92,1.05,0.08,0.55,f);
+      addPart(b,'furniture','frame',sofaX,base+0.16,sofaZ+0.92,0.85,0.30,0.40,f);
+      addPart(b,'furniture','wood',cx,base+0.40,b.z-1.8,1.25,0.46,0.42,f);
+      addPart(b,'furniture','frame',cx,base+0.88,b.z-1.8,1.05,0.55,0.06,f);
+      addPart(b,'furniture','wood',cx+(room%2?1.3:-1.3),base+0.92,b.z-2.4,0.92,1.80,0.32,f);
+      addPart(b,'furniture','wood',cx,base+0.74,b.z+1.6,1.30,0.08,0.80,f);
+      addPart(b,'furniture','furniture',cx-0.42,base+0.44,b.z+1.6,0.40,0.82,0.40,f);
+      addPart(b,'furniture','furniture',cx+0.42,base+0.44,b.z+1.6,0.40,0.82,0.40,f);
+     } else {
+      // Upper floors: Bedroom
+      const bedX = cx + (room % 2 ? -0.32 : 0.32), bedZ = b.front - 2.2;
+      addPart(b,'furniture','wood',bedX,base+0.22,bedZ,1.60,0.26,1.95,f);
+      addPart(b,'furniture','furniture',bedX,base+0.46,bedZ,1.52,0.26,1.85,f);
+      addPart(b,'furniture','wood',bedX,base+0.90,bedZ-0.95,1.60,0.92,0.12,f);
+      addPart(b,'furniture','wood',bedX+(room%2?1.05:-1.05),base+0.28,bedZ-0.65,0.45,0.52,0.42,f);
+      addPart(b,'furniture','wood',cx+(room%2?-1.25:1.25),base+0.85,b.z-1.4,1.10,1.65,0.52,f);
+      const deskX = cx + (room % 2 ? 0.65 : -0.65);
+      addPart(b,'furniture','wood',deskX,base+0.72,b.z+1.1,1.15,0.08,0.62,f);
+      addPart(b,'furniture','frame',deskX,base+0.35,b.z+1.1,1.00,0.66,0.48,f);
+      addPart(b,'furniture','furniture',deskX,base+0.44,b.z+1.6,0.42,0.82,0.42,f);
+     }
+    }
    }
    const stairX=x0+Math.min(1.5,b.w*.18),stairZ=z0+1.0;
    if(!o.exteriorOnly&&f<b.stories-1){for(let step=0;step<12;step++)addPart(b,'stair','concrete',stairX,base+.22+step*sh/12,stairZ+step*.24,1.0,.14,.27,f);
@@ -173,7 +265,8 @@ export function createStructuralCity(THREE,scene,bank){
  function write(p){
   if(!p.bucket?.mesh)return;
   const {mesh,broken}=p.bucket;
-  if(p.building.hideIntactGeometry){
+  const detached=p.state==='falling'||p.state==='settled';
+  if(p.building.hideIntactGeometry && !detached && ['wall','facade','column','foundation','roof','frame','window'].includes(p.type)){
    mesh.setMatrixAt(p.index,zero);
    broken.setMatrixAt(p.index,zero);
    dirty.add(p.bucket);
@@ -181,7 +274,6 @@ export function createStructuralCity(THREE,scene,bank){
   }
   dummy.position.copy(p.position);dummy.rotation.copy(p.rotation);dummy.scale.copy(p.size);dummy.updateMatrix();
   mesh.setMatrixAt(p.index,p.state==='attached'?dummy.matrix:zero);
-  const detached=p.state==='falling'||p.state==='settled';
   if(detached||broken.visible){
    broken.setMatrixAt(p.index,detached?dummy.matrix:zero);
    broken.instanceMatrix.needsUpdate=true;
@@ -197,8 +289,15 @@ export function createStructuralCity(THREE,scene,bank){
   p.velocity.set(blast?dx*.9*power/weight:(Math.random()-.5)*.25,blast?Math.min(.7,2*power/weight):-.25,blast?(dz*.6+2)*power/weight:(Math.random()-.5)*.25);
   const turn=blast?.65:.18;p.spin.set((Math.random()-.5)*turn,(Math.random()-.5)*turn,(Math.random()-.5)*turn);
   if(p.size.y>p.size.z*2)p.spin.x=(Math.random()<.5?-1:1)*.28;
+  if(p.type==='furniture'){
+   p.spin.set((Math.random()-.5)*4.5*power,(Math.random()-.5)*3.8*power,(Math.random()-.5)*3.0*power);
+   p.velocity.z+=(Math.random()*2.8+1.4)*power;
+   p.velocity.y+=(Math.random()*2.2+0.8)*power;
+  }
   moving.add(p);
-  if(['wall','facade','column'].includes(p.type))fragmentBurst(p.position,5,false,power);return 1;
+  if(['wall','facade','column'].includes(p.type))fragmentBurst(p.position,5,false,power);
+  if(p.type==='furniture')fragmentBurst(p.position,3,false,power*0.8);
+  return 1;
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
@@ -216,9 +315,11 @@ export function createStructuralCity(THREE,scene,bank){
    // Localized physics: roof crumples if hit directly near roof height;
    // lower/mid hits leave roof intact overhead!
    if(isTopRoof && !isRoofHit && isLowerHit) continue;
-   p.health-=strength*(1-distance/(radius*1.2))*2.2/resistance;
-   if(p.health<=0||(p.type==='window'&&distance<radius*0.85)){
-     removed+=detach(p,origin,strength,true);
+   const coreCrater = distance < radius * 0.65;
+   const fragilePart = (p.type === 'window' && distance < radius * 0.90) || (p.type === 'furniture' && distance < radius * 0.80);
+   p.health -= strength * (1 - distance / (radius * 1.2)) * 3.5 / resistance;
+   if (p.health <= 0 || coreCrater || fragilePart) {
+     removed += detach(p, origin, strength, true);
    }
   }
   b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.18));

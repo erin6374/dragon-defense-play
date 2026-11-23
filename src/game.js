@@ -2523,7 +2523,7 @@ function syncWindMouth(){
  windVisual.quaternion.setFromUnitVectors(breathXAxis,gustDirection);
 }
 function gustCooldownReset(){windCooldown=4;gustId++;}
-function releaseWind(){if(!holdStart)return;const held=(performance.now()-holdStart)/1000;holdStart=0;if(held<.27){shoot();return;}if(held<.7||windCooldown>0||dragonStun>0||!active||paused){message(windCooldown>0?'WIND RECHARGING':'HOLD LONGER TO INHALE');return;}
+function releaseWind(){if(!holdStart)return;if(!dragonEnabled||(freeFlightMode&&sandboxTool==='meteor')){holdStart=0;return;}const held=(performance.now()-holdStart)/1000;holdStart=0;if(held<.27){shoot();return;}if(held<.7||windCooldown>0||dragonStun>0||!active||paused){message(windCooldown>0?'WIND RECHARGING':'HOLD LONGER TO INHALE');return;}
  syncWindMouth();gustTime=.85;gustCooldownReset();gustRoadNotified=false;gustMissileNotified=false;windActive=true;if(wave===15)finalSquadron.deflectMissiles(dragon.position,gustDirection,26,1.2);sound('bonus');message('PAULO UNLEASHES A GALE!');}
 let gasHolding=false;
 let activeMouseButtons=0;
@@ -2533,6 +2533,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
  activeMouseButtons=e.buttons;
  aim(e);
+ if(!dragonEnabled||(freeFlightMode&&sandboxTool==='meteor'))return;
  if(dragonStun>0){
   dragonStun=Math.max(0,dragonStun-0.22);
   flashAt(dragon.position.x,dragon.position.y,dragon.position.z,0.9);
@@ -2548,8 +2549,8 @@ renderer.domElement.addEventListener('pointerdown',e=>{
 window.addEventListener('pointerdown',e=>{activeMouseButtons=e.buttons;},{capture:true,passive:true});
 window.addEventListener('pointermove',e=>{activeMouseButtons=e.buttons;if((e.buttons&2)===0&&!input.isDown(ACTIONS.GAS))cancelGasHold();},{capture:true,passive:true});
 window.addEventListener('mousemove',e=>{activeMouseButtons=e.buttons;if((e.buttons&2)===0&&!input.isDown(ACTIONS.GAS))cancelGasHold();},{capture:true,passive:true});
-window.addEventListener('pointerup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0)releaseWind();},{capture:true});
-window.addEventListener('mouseup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0)releaseWind();},{capture:true});
+window.addEventListener('pointerup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0){if(dragonEnabled&&(!freeFlightMode||sandboxTool!=='meteor'))releaseWind();else holdStart=0;}},{capture:true});
+window.addEventListener('mouseup',e=>{activeMouseButtons=e.buttons;if(e.button===2||(e.buttons&2)===0)cancelGasHold();if(e.button===0){if(dragonEnabled&&(!freeFlightMode||sandboxTool!=='meteor'))releaseWind();else holdStart=0;}},{capture:true});
 window.addEventListener('pointercancel',()=>{activeMouseButtons=0;cancelGasHold();},{capture:true});
 window.addEventListener('keydown',e=>{const action=input.keyDown(e.code);if(action)e.preventDefault();if(e.repeat)return;if(dragonStun>0){dragonStun=Math.max(0,dragonStun-0.22);flashAt(dragon.position.x,dragon.position.y,dragon.position.z,0.9);sound('warning');if(dragonStun<=0){recoveryLift=2.5;dragonGroundImpact=false;message('PAULO BREAKS FREE FROM SHOCK!');}else message(`ELECTRICAL SHOCK — TAP KEYS TO BREAK FREE (${dragonStun.toFixed(1)}s)`);}if(action===ACTIONS.FIRE)shoot();if(action===ACTIONS.PAUSE)togglePause();if(action===ACTIONS.GAS){gasHolding=true;gasAttack();}if(action===ACTIONS.DEBUG)profiler.toggle();});
 window.addEventListener('keyup',e=>{const action=input.keyUp(e.code);if(action===ACTIONS.GAS)cancelGasHold();if(e.code==='Space')holdStart=0;});
@@ -2573,6 +2574,13 @@ if(mobileControls){
 
 const sharedShotGeometry=new THREE.IcosahedronGeometry(.34,1);
 function updateDragonWind(dt){
+ if(!dragonEnabled){
+  windCooldown=0;gustTime=0;windActive=false;
+  if(windVisual)windVisual.visible=false;
+  clearWindDebris();
+  cinematicFX.setWind(null,null,0);
+  return;
+ }
  windCooldown=Math.max(0,windCooldown-dt);gustTime=Math.max(0,gustTime-dt);windActive=gustTime>0;windVisual.visible=windActive;updateBreathMeter();
  if(windActive)syncWindMouth();
  cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
@@ -2594,7 +2602,7 @@ function updateDragonWind(dt){
  }
  const rocketsDeflected=militaryOccupation.deflectWind(origin,direction,dt);
  if(rocketsDeflected.affected&&!gustMissileNotified){gustMissileNotified=true;message('PAULO DEFLECTS MILITARY ROCKETS!');}
- for(const m of meteors){if(m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<(isGreenGale?75:43)&&across<(isGreenGale?12:5)+along*.35){m.vel.addScaledVector(direction,dt*32*galePowerMult/(1+(m.size||1)*.16));m.vel.y+=dt*(isGreenGale?65.0:8.0);m.windPushedTime=elapsed;}}
+ for(const m of meteors){if(m.testMeteor||m.grounded||!m.mesh)continue;const delta=m.mesh.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<(isGreenGale?75:43)&&across<(isGreenGale?12:5)+along*.35){m.vel.addScaledVector(direction,dt*32*galePowerMult/(1+(m.size||1)*.16));m.vel.y+=dt*(isGreenGale?65.0:8.0);m.windPushedTime=elapsed;}}
  for(const h of helicopters){if(h.crashing||!h.root)continue;const delta=h.root.position.clone().sub(origin),along=delta.dot(direction),across=delta.clone().addScaledVector(direction,-along).length();if(along>0&&along<48&&across<7+along*.35){h.root.position.addScaledVector(direction,dt*29);h.root.position.y+=dt*5;if(h.disorientTime<=0){h.disorientTime=5;h.contactTime=0;message('HELICOPTER CAUGHT IN WIND — LOSING CONTROL!');}h.evasion=Math.max(h.evasion,1);h.dodgeSide=direction.x>0?1:-1;}}
  // Project the gust onto street level, independent of the dragon’s altitude.
  let windX=direction.x,windZ=direction.z;
@@ -2640,7 +2648,7 @@ function applyStreetGust(dt,origin,dx,dz,progress,vehicles=cars,people=crowd){
  windDustPool.end();windLitterPool.end();
  return foliageBend;
 }
-function shoot(){if(dragonStun>0||!active||paused||cooldown>0)return;
+function shoot(){if(!dragonEnabled||(freeFlightMode&&sandboxTool==='meteor')||dragonStun>0||!active||paused||cooldown>0)return;
 const isWet=waterDisable>0;
 const isMega=!isWet&&(elapsed<megaFireBreathUntil);
 const isStream=!isWet&&(elapsed<fireStreamUntil);
@@ -3405,28 +3413,62 @@ function damage(x,z,y=7,meteor=null){
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
  const targetX=THREE.MathUtils.clamp(x,-240,240);
  const targetY=THREE.MathUtils.clamp(y,.3,40);
- const targetBuilding=neighborhood.targetBuildings.find(b=>!b.school&&Math.abs(b.x-targetX)<b.w/2+1.8&&z>=b.z-b.d/2-1.8&&z<=b.front+1.8);
+ const hitZ=z;
+ const blastRadius=profile.radius*(diffMode==='hard'?2.2:1.0);
+ const blastStrength=profile.strength*diffDmg;
+ const shockRadius=profile.shockRadius*(diffMode==='hard'?2.5:1.0);
+
+ // 1. Always evaluate photogrammetric North Broad Models (Berean Church, Rowhouses, PECO)
+ const nbHits=northBroadModels?.impact?.(new THREE.Vector3(targetX,targetY,hitZ),blastRadius+2.5,blastStrength)||0;
+
+ // 2. Generous parcel search: matches direct hits on roof, facade, porch, entrance steps, or parking lot
+ const targetBuilding=neighborhood.targetBuildings.find(b=>
+  !b.school &&
+  Math.abs(b.x-targetX)<=b.w*0.5+Math.max(3.0,blastRadius*0.5)&&
+  hitZ>=(b.z-b.d*0.5-Math.max(4.0,blastRadius*0.6))&&
+  hitZ<=(b.front+Math.max(6.0,blastRadius*0.8))
+ ) || neighborhood.targetBuildings.find(b=>
+  !b.school && Math.hypot(b.x-targetX,b.z-hitZ)<=Math.max(b.w,b.d)*0.55+blastRadius
+ );
  const neighbor=!!targetBuilding;
- const roadStrike=z>13&&z<36&&y<3;
- if(roadStrike){strikeParkedCars(targetX,z,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,z,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,z,profile.shockRadius);flashAt(targetX,1.8,z,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,z),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,z),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,z);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,z+(Math.random()-.5)*2.5);
-  for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-z)<5)explodeCar(c);
+
+ const roadStrike=hitZ>13&&hitZ<36&&targetY<3;
+ if(roadStrike){
+  strikeParkedCars(targetX,hitZ,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,hitZ,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,hitZ,profile.shockRadius);flashAt(targetX,1.8,hitZ,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,hitZ),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,hitZ),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,hitZ);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,hitZ+(Math.random()-.5)*2.5);
+  for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-hitZ)<5)explodeCar(c);
+  neighborhood.aftershock(targetX,targetY,hitZ,shockRadius*0.75,p=>debrisPiece(p,'brick'),blastStrength*0.6);
   sound('impact');return;
  }
- const hitZ=z;
- const schoolHalfW=neighborhood.school.w*0.5+0.6;
- const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-0.6;
- const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+0.6;
- const schoolMaxY=neighborhood.school.h+1.2;
- const isSchoolHit=!neighbor&&architecturalReady&&
-  Math.abs(targetX)<=schoolHalfW&&
-  hitZ>=schoolMinZ&&hitZ<=schoolMaxZ&&
-  targetY>=1.0&&targetY<=schoolMaxY;
+
+ const schoolHalfW=neighborhood.school.w*0.5+1.2;
+ const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-1.2;
+ const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+1.2;
+ const schoolMaxY=neighborhood.school.h+2.0;
+ const isSchoolHit=architecturalReady&&(
+  (Math.abs(targetX)<=schoolHalfW+blastRadius*0.4&&hitZ>=schoolMinZ-blastRadius*0.4&&hitZ<=schoolMaxZ+blastRadius*0.4&&targetY<=schoolMaxY)||
+  (!neighbor&&Math.abs(targetX)<=schoolHalfW+3.0&&hitZ>=schoolMinZ-3.0&&hitZ<=schoolMaxZ+3.0)
+ );
+
  if(isSchoolHit&&hp>0)sound('dragonRoar',{variant:'furious',x:dragon.position.x});
- if(!neighbor&&!isSchoolHit){emitImpact(targetX,targetY,hitZ,50,profile.strength);sound('impact',{x:targetX});return;}
+
+ const effectiveTarget=targetBuilding||neighborhood.targetBuildings.find(b=>
+  !b.school&&Math.hypot(b.x-targetX,b.z-hitZ)<=blastRadius+14.0
+ );
+
+ if(!effectiveTarget&&!isSchoolHit&&nbHits===0){
+  emitImpact(targetX,targetY,hitZ,50,profile.strength);
+  sound('impact',{x:targetX});
+  return;
+ }
  let lost=0;
- if(neighbor){
+ if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
-  lost=neighborhood.impact(targetX,targetY,hitZ,profile.radius*(diffMode==='hard'?2.2:1),p=>debrisPiece(p,'brick'),profile.strength*diffDmg);northBroadModels?.impact?.(new THREE.Vector3(targetX,targetY,hitZ),profile.radius*(diffMode==='hard'?2.2:1),profile.strength*diffDmg);if(targetBuilding&&!targetBuilding.roofBreached)neighborhood.roofBreach(targetX,targetY,z,profile.radius*(diffMode==='hard'?1.5:.65));neighborhood.aftershock(targetX,targetY,hitZ,profile.shockRadius*(diffMode==='hard'?2.5:1),p=>debrisPiece(p,'brick'),(diffMode==='hard'?2.0:1));if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,4.2);panicCrowdAt(targetX,hitZ,38);
+  lost=neighborhood.impact(targetX,targetY,hitZ,blastRadius,p=>debrisPiece(p,'brick'),blastStrength);
+  if(!effectiveTarget.roofBreached&&(targetY>=effectiveTarget.h-3.5||hitZ<effectiveTarget.front-2.0)){
+   neighborhood.roofBreach(targetX,targetY,hitZ,blastRadius*(diffMode==='hard'?1.5:0.85));
+  }
+  neighborhood.aftershock(targetX,targetY,hitZ,shockRadius,p=>debrisPiece(p,'brick'),blastStrength);
+  if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,4.2);panicCrowdAt(targetX,hitZ,38);
   emitImpact(targetX,targetY,hitZ,185,1.38);
   if(lost>0&&Math.random()<profile.fire*(diffMode==='hard'?1.5:1)){ignite(targetX,targetY,hitZ);cinematicFX.fire(new THREE.Vector3(targetX,targetY,hitZ),elapsed,Math.max(2.5,profile.radius*1.1),.48,'structure');if(Math.random()<.82)ignite(targetX+(Math.random()-.5)*3.2,Math.max(1,targetY-1.2),hitZ-.20);
    if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*4.5,Math.min(14,targetY+1.8),hitZ-.35);
@@ -4042,17 +4084,30 @@ function toggleDragon(enable){
  dragonEnabled=(enable!==undefined)?!!enable:!dragonEnabled;
  if(dragon)dragon.visible=dragonEnabled;
  if(pauloPreviewRig&&pauloPreviewRig.root)pauloPreviewRig.root.visible=dragonEnabled;
+ if(!dragonEnabled){
+  for(let i=shots.length-1;i>=0;i--){
+   const s=shots[i];
+   if(!s.hostile){if(s.mesh)scene.remove(s.mesh);shots.splice(i,1);}
+  }
+  windCooldown=0;gustTime=0;windActive=false;
+  if(windVisual)windVisual.visible=false;
+  clearWindDebris();
+  cinematicFX.setWind(null,null,0);
+  dragonFireLight.intensity=0;
+  holdStart=0;gasHolding=false;
+  soundEngine.setFlameStreamAudio(false,false);
+ }
  const tbDragon=document.getElementById('dd-tb-dragon');
  if(tbDragon){
-  tbDragon.textContent=dragonEnabled?'🐉 Dragon: ON':'🐉 Dragon: OFF';
+  tbDragon.textContent=dragonEnabled?'🐉 Dragon & Breath Effects: ON':'🐉 Dragon & Breath Effects: OFF';
   tbDragon.classList.toggle('active',dragonEnabled);
  }
  const setDragon=document.getElementById('dd-setting-dragon');
  if(setDragon){
-  setDragon.textContent=dragonEnabled?'🐉 Dragon: ON':'🐉 Dragon: OFF';
+  setDragon.textContent=dragonEnabled?'🐉 Dragon & Breath Effects: ON':'🐉 Dragon & Breath Effects: OFF';
   setDragon.classList.toggle('active',dragonEnabled);
  }
- message(dragonEnabled?'🐉 DRAGON VISIBLE':'🐉 DRAGON HIDDEN — SPECTATOR INSPECTION MODE');
+ message(dragonEnabled?'🐉 DRAGON & WEAPONS ACTIVE':'🐉 DRAGON & FIRE/WIND REMOVED — CLEAN INSPECTION');
 }
 window.toggleDragon=toggleDragon;
 window.toggleMusic=()=>{window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());refreshAudioButtons();};
@@ -5005,6 +5060,7 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
   const travelSq=path.lengthSq();let hitIndex=-1,hitT=Infinity;
   for(let mi=0;mi<meteors.length;mi++){
    const m=meteors[mi];
+   if(m.testMeteor)continue;
    const depthScale=projectDefensePoint(m.mesh.position,camera.position,defenseMeteor);
    const radius=(m.size*1.1+.95)*depthScale;
    shotScratchDelta.copy(defensePrevious).sub(defenseMeteor);
@@ -5118,7 +5174,7 @@ if(m.grounded){
 
  // Purple Meteor-Buster Ram vs Meteors & Satellites & Full-Speed Flight Meteor Buster
  const distToDragon=m.mesh.position.distanceTo(dragon.position);
- if(!m.grounded&&distToDragon<(m.size*0.85+2.8)){
+ if(dragonEnabled&&!m.testMeteor&&!m.grounded&&distToDragon<(m.size*0.85+2.8)){
   if(elapsed<purpleRamUntil){
    purpleShieldImpact=1.0;
    sound('purpleRamHit',{x:m.mesh.position.x});
