@@ -71,7 +71,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  scene.add(schoolCracksGroup);
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
- let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
+ let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0,effectsHooks=null;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
@@ -264,6 +264,11 @@ export function createDestructibleSchool(THREE,scene,bounds){
 
   const frame=structural.has(p)||p.zone==='floor'||p.zone==='basement-floor';
   p.profile=isGlass?'glass':frame?'structure':'facade';
+  if(effectsHooks){
+   if(p.profile==='glass')effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
+   else if(['column','pier','atrium-column'].includes(p.zone))effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
+   else if(['floor','basement-floor'].includes(p.zone))effectsHooks.onFloorPancake?.(p.x,p.y,p.z);
+  }
   return true;
  }
  function impact({x,y,z,radius=3.8,strength=1,type='stone',speed=0}){
