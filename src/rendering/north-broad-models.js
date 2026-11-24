@@ -585,6 +585,64 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     entry.interiorProxy = interiorRoot;
   }
 
+  function buildBuildingFacadeCracks(entry) {
+    const cracksGroup = new THREE.Group();
+    cracksGroup.name = `facade-cracks-${entry.def.id}`;
+    const pos = entry.def.position;
+    cracksGroup.position.set(pos[0], pos[1], pos[2]);
+    const width = entry.def.frontWidth || 6.0;
+    const height = entry.targetBuilding?.h || 12.0;
+    const isChurch = !!entry.def.isChurch;
+
+    // Procedural mortar stress fracture lines across facade frontage
+    const points = [];
+    const seed = entry.def.id ? (entry.def.id.charCodeAt(0) * 17 + entry.def.id.length * 31) : 42;
+    const pseudoRand = (n) => {
+      const v = Math.sin(seed * 9.17 + n * 13.37) * 43758.5453;
+      return v - Math.floor(v);
+    };
+
+    const numCracks = isChurch ? 6 : 5;
+    for (let c = 0; c < numCracks; c++) {
+      let curX = (pseudoRand(c * 7) - 0.5) * (width * 0.78);
+      let curY = 1.2 + pseudoRand(c * 11) * (height - 2.5);
+      const segments = 4 + Math.floor(pseudoRand(c * 13) * 4);
+      for (let s = 0; s < segments; s++) {
+        const nextX = curX + (pseudoRand(c * 17 + s * 3) - 0.48) * (width * 0.22);
+        const nextY = curY - (0.4 + pseudoRand(c * 19 + s * 5) * 1.2);
+        points.push(curX, Math.max(0.4, curY), 0.08);
+        points.push(nextX, Math.max(0.4, nextY), 0.08);
+
+        // Spiderweb branch
+        if (pseudoRand(c * 23 + s * 7) < 0.45) {
+          const branchX = curX + (pseudoRand(c * 29 + s * 11) - 0.5) * 1.5;
+          const branchY = curY - 0.35;
+          points.push(curX, Math.max(0.4, curY), 0.08);
+          points.push(branchX, Math.max(0.4, branchY), 0.08);
+        }
+        curX = nextX;
+        curY = nextY;
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x241d19,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false
+    });
+    const lineMesh = new THREE.LineSegments(geo, mat);
+    lineMesh.name = `cracks-lines-${entry.def.id}`;
+    cracksGroup.add(lineMesh);
+    cracksGroup.visible = false;
+    root.add(cracksGroup);
+
+    entry.facadeCracks = cracksGroup;
+    entry.facadeCracksMat = mat;
+  }
+
   // Load each replacement model
   for (const def of NORTH_BROAD_DEFINITIONS) {
     if (!def.position || !def.file || def.id === 'watts-example') continue;
@@ -601,6 +659,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       churchFeatures: null,
       rubbleProxy: null,
       interiorProxy: null,
+      facadeCracks: null,
+      facadeCracksMat: null,
       groups: {},
       glassMeshes: [],
       signMeshes: [],
@@ -615,6 +675,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       buildBuildingRubbleProxy(entry);
       buildBuildingInteriorFloors(entry);
     }
+    buildBuildingFacadeCracks(entry);
 
     loader.load(
       def.file,
@@ -895,8 +956,22 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
       } else {
         entry.model.visible = true;
+        if (entry.facadeCracks) {
+          entry.facadeCracks.visible = false;
+          entry.facadeCracksMat.opacity = 0.0;
+        }
         if (entry.interiorProxy) entry.interiorProxy.visible = false;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
+      }
+    }
+
+    if (entry.facadeCracks) {
+      if (entry.damage >= 0.15 && entry.damage < 0.95) {
+        entry.facadeCracks.visible = true;
+        const crackProgress = THREE.MathUtils.clamp((entry.damage - 0.15) / 0.55, 0.0, 1.0);
+        entry.facadeCracksMat.opacity = 0.25 + crackProgress * 0.70;
+      } else {
+        entry.facadeCracks.visible = false;
       }
     }
 
@@ -992,6 +1067,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       const res = this.damageBuilding(idOrAddress, 1.0);
       const entry = entries.find(e => e.def.id === idOrAddress || e.def.address.includes(idOrAddress) || e.def.name.includes(idOrAddress));
       if (entry) {
+        if (entry.facadeCracks) entry.facadeCracks.visible = false;
         if (entry.model) entry.model.visible = false;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
         if (entry.def.isChurch && churchRubbleProxy) churchRubbleProxy.visible = true;

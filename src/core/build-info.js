@@ -2,10 +2,10 @@
 // Auto-generated during build/packaging process
 
 export const BUILD_INFO = {
-  version: "5.5.0-rc.141",
-  build: "5.5-material-rigidity-implosion-live-wire-sparks-rc141",
+  version: "5.5.0-rc.142",
+  build: "5.5-distant-smoke-facade-cracks-gale-suppression-rc142",
   date: "2026-11-24",
-  releaseName: "5.5-material-rigidity-implosion-live-wire-sparks-rc141"
+  releaseName: "5.5-distant-smoke-facade-cracks-gale-suppression-rc142"
 };
 
 export const GAME_VERSION = BUILD_INFO.version;

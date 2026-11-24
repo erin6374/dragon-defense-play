@@ -70,7 +70,9 @@ function createFluidCombustionAtlases(THREE){
    const h=1-(y+.5)/SH;
    for(let x=0;x<SW;x++){
     const u=(x+.5)/SW-.5,i=(y*SW+x)*4;
-    if(x<3||x>=SW-3||y<3||y>=SH-3){p[i]=180;p[i+1]=180;p[i+2]=180;p[i+3]=0;continue;}
+    const uNorm=Math.abs(u)*2.0,hNorm=Math.abs(h-0.5)*2.0;
+    const rDist=Math.hypot(uNorm*1.08,hNorm*1.08);
+    if(rDist>=1.0||uNorm>=0.97||hNorm>=0.97){p[i]=180;p[i+1]=180;p[i+2]=180;p[i+3]=0;continue;}
     const low=noise(u*5.6+2.3,h*7.2-flow),mid=noise(u*16+low*2.7,h*16-flow*1.9);
     const high=noise(u*35+mid*2,h*31-flow*3.1);
     const center=Math.sin(t*.28+h*5.2)*.065+(low-.5)*.16;
@@ -78,11 +80,9 @@ function createFluidCombustionAtlases(THREE){
     const rad=Math.abs(u-center)/spread;
     const wisps=clamp((1.14-rad+(mid-.5)*.68+(high-.5)*.24)*1.95);
     let density=clamp((.14+.54*low+.32*mid)*wisps);
-    // Soft organic envelope guaranteeing seamless fade to 0 before canvas borders
-    const uNorm=Math.abs(u)*2.0,hNorm=Math.abs(h-0.5)*2.0;
-    const rDist=Math.hypot(uNorm*1.08,hNorm*1.08);
-    const borderFade=clamp((1.0-rDist)*2.8)*clamp((1.0-uNorm)*3.8)*clamp((1.0-hNorm)*3.8);
-    density*=Math.pow(borderFade,1.35);
+    // Continuous analytical feathering envelope guaranteeing seamless asymptotic fade to 0
+    const borderFade=clamp((1.0-rDist)*2.4)*clamp((0.97-uNorm)*3.4)*clamp((0.97-hNorm)*3.4);
+    density*=Math.pow(borderFade,1.65);
     // White atlas, colored by existing grayscale/soot sprite materials.
     const v=Math.round(177+55*high);
     p[i]=v;p[i+1]=v;p[i+2]=v;p[i+3]=Math.round(255*density*.72);

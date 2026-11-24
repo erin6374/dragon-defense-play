@@ -39,6 +39,36 @@ export function createDestructibleSchool(THREE,scene,bounds){
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   scene.add(mesh);return mesh;
  });
+
+ const schoolCracksGroup = new THREE.Group();
+ schoolCracksGroup.name = 'TECH-FREIRE-FACADE-CRACKS';
+ const schoolCrackPoints = [];
+ for (let c = 0; c < 14; c++) {
+  let curX = min.x + 1.2 + (c / 14) * (width - 2.4) + Math.sin(c * 3.7) * 1.2;
+  let curY = levels[1] + (c % 4) * 3.2;
+  for (let s = 0; s < 6; s++) {
+   const nextX = curX + Math.sin(c * 5.1 + s * 2.3) * 1.5;
+   const nextY = curY - (0.6 + Math.abs(Math.cos(c * 2.9 + s * 3.1)) * 1.1);
+   schoolCrackPoints.push(curX, Math.max(min.y + 0.3, curY), front + 0.06);
+   schoolCrackPoints.push(nextX, Math.max(min.y + 0.3, nextY), front + 0.06);
+   if (s % 2 === 1) {
+    const branchX = curX + (s % 4 === 1 ? 1.3 : -1.3);
+    const branchY = curY - 0.4;
+    schoolCrackPoints.push(curX, Math.max(min.y + 0.3, curY), front + 0.06);
+    schoolCrackPoints.push(branchX, Math.max(min.y + 0.3, branchY), front + 0.06);
+   }
+   curX = nextX;
+   curY = nextY;
+  }
+ }
+ const schoolCrackGeo = new THREE.BufferGeometry();
+ schoolCrackGeo.setAttribute('position', new THREE.Float32BufferAttribute(schoolCrackPoints, 3));
+ const schoolCrackMat = new THREE.LineBasicMaterial({ color: 0x221a16, transparent: true, opacity: 0.0, depthWrite: false });
+ const schoolCrackLines = new THREE.LineSegments(schoolCrackGeo, schoolCrackMat);
+ schoolCrackLines.frustumCulled = false;
+ schoolCracksGroup.add(schoolCrackLines);
+ schoolCracksGroup.visible = false;
+ scene.add(schoolCracksGroup);
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
  let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
@@ -309,6 +339,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
  }
  function collapse(){
+  if(schoolCracksGroup)schoolCracksGroup.visible=false;
   if(collapsing)return;
   collapsing=true;
   // Stagger the loss of all remaining support, including trim and rooftop units.
@@ -390,6 +421,15 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function syncDestruction(ratio){
   currentRatio=ratio;
+  if(schoolCracksGroup){
+   if(ratio>=0.15&&ratio<0.96){
+    schoolCracksGroup.visible=true;
+    const prog=THREE.MathUtils.clamp((ratio-0.15)/0.55,0.0,1.0);
+    schoolCrackMat.opacity=0.28+prog*0.68;
+   }else{
+    schoolCracksGroup.visible=false;
+   }
+  }
   if(ratio<=0)return;
   if(ratio>=0.97){collapse();return;}
   const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
@@ -417,6 +457,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
  }
  function reset(){
+  if(schoolCracksGroup){schoolCracksGroup.visible=false;schoolCrackMat.opacity=0;}
   collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
