@@ -332,7 +332,7 @@ function updateNight(dt){
  lightningCooldown-=dt;
  if(darkness>.55&&lightningCooldown<=0){lightningCooldown=2+Math.random()*6;const b=neighborhood.targetBuildings[Math.floor(Math.random()*neighborhood.targetBuildings.length)];if(b){flashAt(b.x,Math.min(b.h,7+Math.random()*5),b.front,1.1);emitImpact(b.x,Math.min(b.h,8),b.front,18,.22)}}
 }
-const material=(c,emissive=0,roughness=0.92,metalness=0)=>new THREE.MeshStandardMaterial({color:c,emissive,roughness,metalness,envMapIntensity:0.0});const mats={brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:0.06,metalness:0.32,clearcoat:1.0,clearcoatRoughness:0.06,envMapIntensity:3.2,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide}),glassLit:new THREE.MeshStandardMaterial({color:0xe5b67d,emissive:0x5b3110,roughness:0.18,metalness:0.15}),frame:material(0x283b4b,0,0.52,0.45),roof:new THREE.MeshStandardMaterial({color:0x2e343c,roughness:0.98,metalness:0,envMapIntensity:0.0}),gold:material(0xe6a93d,0,0.35,0.6),road:material(0x2b3344,0,0.90,0),sidewalk:material(0x92918e,0,0.92,0),grass:material(0x395e4d,0,0.95,0),tree:material(0x327b5b,0,0.95,0),trunk:material(0x72523e,0,0.92,0),purple:material(0x683ba5,0,0.45,0.2),purpleLight:material(0x9860cb,0,0.45,0.2),purpleDark:material(0x43266d,0,0.45,0.2),wing:material(0xe6a63c,0,0.45,0.1),fire:new THREE.MeshBasicMaterial({color:0xfff0aa,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),blueFire:new THREE.MeshBasicMaterial({color:0x99e8ff,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),greenFire:new THREE.MeshBasicMaterial({color:0xaaffbb,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c,0,0.94,0.035)};
+const material=(c,emissive=0,roughness=0.92,metalness=0)=>new THREE.MeshStandardMaterial({color:c,emissive,roughness,metalness,envMapIntensity:0.0});const mats={wood:material(0x5a3d28,0,0.75,0.05),furniture:material(0x2d4868,0,0.65,0.1),metal:material(0x4a5460,0,0.45,0.75),concrete:material(0x8a8a86,0,0.95,0),brick:material(0xa96653),brick2:material(0xbd8065),mortar:material(0x705a58),stone:material(0xb6a99b),stone2:material(0x918f89),glass:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:0.06,metalness:0.32,clearcoat:1.0,clearcoatRoughness:0.06,envMapIntensity:3.2,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide}),glassLit:new THREE.MeshStandardMaterial({color:0xe5b67d,emissive:0x5b3110,roughness:0.18,metalness:0.15}),frame:material(0x283b4b,0,0.52,0.45),roof:new THREE.MeshStandardMaterial({color:0x2e343c,roughness:0.98,metalness:0,envMapIntensity:0.0}),gold:material(0xe6a93d,0,0.35,0.6),road:material(0x2b3344,0,0.90,0),sidewalk:material(0x92918e,0,0.92,0),grass:material(0x395e4d,0,0.95,0),tree:material(0x327b5b,0,0.95,0),trunk:material(0x72523e,0,0.92,0),purple:material(0x683ba5,0,0.45,0.2),purpleLight:material(0x9860cb,0,0.45,0.2),purpleDark:material(0x43266d,0,0.45,0.2),wing:material(0xe6a63c,0,0.45,0.1),fire:new THREE.MeshBasicMaterial({color:0xfff0aa,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),blueFire:new THREE.MeshBasicMaterial({color:0x99e8ff,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),greenFire:new THREE.MeshBasicMaterial({color:0xaaffbb,transparent:true,opacity:0.98,blending:THREE.AdditiveBlending,depthWrite:false}),steamyFire:new THREE.MeshBasicMaterial({color:0xd5eaff,transparent:true,opacity:0.8}),meteor:material(0x6e605c,0,0.94,0.035)};
 const cube=new THREE.BoxGeometry(1,1,1),ico=new THREE.IcosahedronGeometry(1,1);const staticGroup=new THREE.Group();scene.add(staticGroup);
 function block(parent,x,y,z,w,h,d,m,cast=false){const mesh=new THREE.Mesh(cube,m);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh}
 function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296)}const rand=seeded(44122);
@@ -550,7 +550,7 @@ function updateFires(dt){
   // Dragon firefighting: wind gust or close swoop puts out fires for bonus points!
   const dDist=dragon.position.distanceTo(f.root.position);
   const isSwooping=(Math.hypot(dragonVelX,dragonVelY)>4.5)||diveEnergy>0.1||Math.abs(flightRoll)>0.18;
-  if(dDist<22){
+  if(dragonEnabled&&dDist<22){
    const wingProximity=Math.max(0,1-dDist/22);
    const wingPower=(isSwooping?1.75:1.0)*wingProximity;
    f.suppression+=dt*0.85*wingPower;
@@ -3846,6 +3846,42 @@ function settleMeteorAsPermanentSlag(m){
  }
  if(m.mesh.parent)scene.remove(m.mesh);
 }
+function spawnFurnitureDebris(pos,type='wood',origin=null){
+ if(debris.length>96)return;
+ const geo=cube;
+ const mat=mats[type]||mats.wood;
+ const mesh=new THREE.Mesh(geo,mat);
+ mesh.position.copy(pos);
+ const fKind=Math.random();
+ if(fKind<0.35){
+  mesh.scale.set(0.72+Math.random()*0.3,0.38,0.48+Math.random()*0.2);
+ }else if(fKind<0.65){
+  mesh.scale.set(0.42,0.75+Math.random()*0.35,0.38);
+ }else{
+  mesh.scale.set(0.35,0.35,0.35);
+ }
+ scene.add(mesh);
+ let vx=(Math.random()-0.5)*8.0,vy=2.0+Math.random()*5.0,vz=3.5+Math.random()*7.0;
+ if(origin){
+  const out=pos.clone().sub(origin);
+  if(out.lengthSq()>0.001){
+   out.normalize();
+   vx=out.x*(4.0+Math.random()*6.0);
+   vy=Math.max(1.8,out.y*3.5+Math.random()*3.0);
+   vz=Math.max(2.5,out.z*(5.0+Math.random()*6.0));
+  }
+ }
+ debris.push({
+  mesh,
+  v:new THREE.Vector3(vx,vy,vz),
+  angVel:new THREE.Vector3((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14),
+  life:3.5+Math.random()*2.0,
+  bounces:0,
+  rubble:true,
+  isFurnitureDebris:true,
+  trail:false
+ });
+}
 function debrisPiece(pos,type,origin=null){
  if(debris.length>96)return;
  const mesh=new THREE.Mesh(type==='glass'?glassShardGeometry:cube,mats[type]||mats.stone);
@@ -4624,7 +4660,7 @@ function toggleDragon(enable){
 window.toggleDragon=toggleDragon;
 window.toggleMusic=()=>{window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());refreshAudioButtons();};
 window.toggleSfx=()=>{window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());refreshAudioButtons();};
-window.startSandboxDirect=()=>{document.getElementById('overlay').style.display='none';if(!active){try{reset();}catch(e){}}toggleFreeFlight(true);};
+window.startSandboxDirect=()=>{document.getElementById('overlay').style.display='none';if(!active){try{reset();}catch(e){}}toggleFreeFlight(true);toggleDragon(false);};
 
 function toggleFreeFlight(enable){
  freeFlightMode=(enable!==undefined)?!!enable:!freeFlightMode;
@@ -5220,7 +5256,7 @@ if(active&&!paused){
  }
 }
 if(targetingReticle){targetingReticle.rotation.z+=dt*1.2;const pulse=1+Math.sin(elapsed*7)*.08;targetingReticle.scale.set(pulse,pulse,pulse);targetingReticle.position.set(pointer.x,pointer.y,1.5);targetingReticle.visible=active&&!paused;}
- const isFiringContinuous=(elapsed<rapidFireUntil||elapsed<fireStreamUntil||elapsed<megaFireBreathUntil);const firePressed=input.isDown(ACTIONS.FIRE)||(activeMouseButtons&1)!==0;if(isFiringContinuous&&cooldown<=0&&firePressed)shoot();soundEngine.setFlameStreamAudio(isFiringContinuous&&firePressed,elapsed<megaFireBreathUntil);updateMeteorRadar(dt);
+ const isFiringContinuous=(elapsed<rapidFireUntil||elapsed<fireStreamUntil||elapsed<megaFireBreathUntil);const firePressed=input.isDown(ACTIONS.FIRE)||(activeMouseButtons&1)!==0;if(isFiringContinuous&&cooldown<=0&&firePressed&&dragonEnabled&&(!freeFlightMode||sandboxTool!=='meteor'))shoot();soundEngine.setFlameStreamAudio(isFiringContinuous&&firePressed,elapsed<megaFireBreathUntil);updateMeteorRadar(dt);
  // Mouse right button, F key or the GAS HUD button activate gas; prolonged fire never does.
 
  dragonMeteorTimer-=dt;if(!settling&&wave>4&&wave<15&&dragonMeteorTimer<=0&&(!rallyLoop||remaining>0)){spawnDragonMeteor();dragonMeteorTimer=waveBudget(wave,document.getElementById('difficulty')?.value).hunterMinInterval+Math.random()*3;}
@@ -5879,6 +5915,14 @@ if(m.grounded){
      });
      neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
     }
+
+    // Physical furniture spillout tumbling out through facade openings onto the street
+    const fCount=Math.floor(Math.random()*3)+1;
+    for(let f=0;f<fCount;f++){
+     const fPos=m.mesh.position.clone().add(new THREE.Vector3((Math.random()-0.5)*2.5,(Math.random()-0.5)*0.8,1.2+Math.random()*1.8));
+     const fType=Math.random()<0.35?'wood':(Math.random()<0.65?'furniture':'metal');
+     spawnFurnitureDebris(fPos,fType,m.mesh.position);
+    }
    }
 
    if(b&&!b.school){
@@ -6006,14 +6050,14 @@ if(m.grounded){
    const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
    const sMinZ=schoolBounds.min.z,sMaxZ=schoolBounds.max.z;
    const sMaxY=schoolBounds.max.y;
-   if(curr.x>=sMinX-0.6&&curr.x<=sMaxX+0.6&&curr.z>=sMinZ-0.6&&curr.z<=sMaxZ+0.6&&curr.y<=sMaxY&&meteorStart.y>=sMaxY-1.2){
+   if(curr.x>=sMinX-0.8&&curr.x<=sMaxX+0.8&&curr.z>=sMinZ-0.8&&curr.z<=sMaxZ+0.8&&curr.y<=sMaxY+0.8&&meteorStart.y>=0.5){
     sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
     hitSchool=true;
    }
    if(!sweepHit&&neighborhood?.targetBuildings){
     for(const b of neighborhood.targetBuildings){
      if(b.damage>=0.999)continue;
-     if(curr.x>=b.x-b.w*0.5-0.8&&curr.x<=b.x+b.w*0.5+0.8&&curr.z>=b.z-b.d*0.5-0.8&&curr.z<=b.front+0.8&&curr.y<=b.h+0.8&&meteorStart.y>=b.h-2.2){
+     if(curr.x>=b.x-b.w*0.5-1.0&&curr.x<=b.x+b.w*0.5+1.0&&curr.z>=b.z-b.d*0.5-1.0&&curr.z<=b.front+1.0&&curr.y<=b.h+0.8&&meteorStart.y>=0.5){
       sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
       hitBuilding=b;
       break;
@@ -6387,7 +6431,7 @@ window.__DD_QA={snap,
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
  audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,
-  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getInteriorProxiesVisibleCount:()=>northBroadModels?.entries?.filter(e=>e.interiorProxy?.visible).length||0,getFurnitureDebrisCount:()=>debris.filter(d=>d.isFurnitureDebris).length,isBuildingDestructible:(idOrName)=>!!neighborhood?.targetBuildings?.find(b=>b.name===idOrName||(b.name&&b.name.includes(idOrName))),getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);

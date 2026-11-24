@@ -960,7 +960,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
           entry.facadeCracks.visible = false;
           entry.facadeCracksMat.opacity = 0.0;
         }
-        if (entry.interiorProxy) entry.interiorProxy.visible = false;
+        if (entry.interiorProxy) entry.interiorProxy.visible = entry.damage >= 0.20 && entry.damage < 0.95;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
       }
     }
