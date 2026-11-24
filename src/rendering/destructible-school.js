@@ -41,7 +41,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  });
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
- let collapsing=false,supportClock=0,impactSerial=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
+ let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
@@ -285,6 +285,11 @@ export function createDestructibleSchool(THREE,scene,bounds){
    if(p.homeY<=min.y+1.05)continue; // foundation remains grounded
     if(p.homeY>min.y+height*0.75&&!collapsing)continue; // roof & top level remain standing overhead
    if(!['floor','beam','pier','column','atrium-column','partition','spandrel','glass','facade','rear','side','side-spandrel'].includes(p.zone))continue;
+   // Localize progressive failure to the impacted structural sector unless overall damage is catastrophic
+   if(currentRatio<0.82){
+    const distToImpact=Math.hypot(p.homeX-lastImpact.x,p.homeZ-lastImpact.z);
+    if(distToImpact>4.2)continue;
+   }
    const nearby=supportLinks.get(p)||[];
    if(!nearby.length)continue;
    let healthy=0,failed=0;
@@ -381,6 +386,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    });
  }
  function syncDestruction(ratio){
+  currentRatio=ratio;
   if(ratio<=0)return;
   const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
   const targetDetached=Math.floor(pieces.length*Math.min(1.0,ratio*0.92));

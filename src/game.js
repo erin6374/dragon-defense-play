@@ -395,11 +395,11 @@ let schoolFire=[];const fireGroup=new THREE.Group();scene.add(fireGroup);
 function makeFireTexture(smoke=false){
  const c=document.createElement('canvas');c.width=128;c.height=192;const g=c.getContext('2d');
  for(let n=0;n<12;n++){
-  const x=64+Math.sin(n*2.17)*(smoke?16:11),y=166-n*12,rad=(smoke?30:22)*(1-n*.035);
+  const x=64+Math.sin(n*2.17)*(smoke?12:9),y=148-n*10.5,rad=(smoke?22:18)*(1-n*.038);
   const grad=g.createRadialGradient(x,y,1,x,y,rad);
-  if(smoke){grad.addColorStop(0,'rgba(87,90,95,.30)');grad.addColorStop(.5,'rgba(57,60,65,.25)');grad.addColorStop(1,'rgba(50,54,59,0)');}
+  if(smoke){grad.addColorStop(0,'rgba(87,90,95,.30)');grad.addColorStop(.55,'rgba(57,60,65,.22)');grad.addColorStop(1,'rgba(50,54,59,0)');}
   else{grad.addColorStop(0,n<4?'rgba(255,245,158,.91)':'rgba(255,148,38,.75)');grad.addColorStop(.50,'rgba(248,76,22,.47)');grad.addColorStop(1,'rgba(133,24,9,0)');}
-  g.fillStyle=grad;g.beginPath();g.ellipse(x,y,rad*.75,rad*1.3,0,0,Math.PI*2);g.fill();
+  g.fillStyle=grad;g.beginPath();g.ellipse(x,y,rad*.75,rad*1.15,0,0,Math.PI*2);g.fill();
  }
  return new THREE.CanvasTexture(c);
 }
@@ -649,16 +649,14 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  const school=neighborhood.school;
  const currentDmg=school?.damage||0;
  const isColossal=r>4.5||strength>2.0;
- const maxHitDmg=isColossal?0.15:0.08;
- const targetMaxDmg=Math.min(1.0,currentDmg+maxHitDmg);
- neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),Math.min(r,5.5),Math.min(strength,1.2));
+ const maxHitDmg=isColossal?0.11:0.065;
+ const targetMaxDmg=Math.min(0.98,currentDmg+maxHitDmg);
+ neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),Math.min(r,4.0),Math.min(strength,0.9));
  if(school&&school.damage>targetMaxDmg){school.damage=targetMaxDmg;}
- // The reconstructed school determines damage from meteor type, velocity and
- // exact 3D impact position, independent of whole-floor visibility cutoffs.
- schoolReconstruction?.impact({x,y,z,radius:Math.min(r,5.5),strength:Math.min(strength,1.2),type,speed});
- sourceDamage.stamp(x,y,z,Math.min(r,5.5));
+ schoolReconstruction?.impact({x,y,z,radius:Math.min(r,4.0),strength:Math.min(strength,0.9),type,speed});
+ sourceDamage.stamp(x,y,z,Math.min(r,4.0));
  const range=schoolBounds.getSize(new THREE.Vector3());
- stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,Math.min(r,5.5)/range.x,Math.min(r,5.5)/range.y);
+ stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,Math.min(r,4.0)/range.x,Math.min(r,4.0)/range.y);
 }
 function setRowhouseSourceVisible(role,on){
  // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
@@ -3681,22 +3679,24 @@ function damage(x,z,y=7,meteor=null){
   // User directive: smaller meteors (<= 2.0m) do no more than 5% damage,
   // really big meteors (>= 3.6m) do maybe 15% damage. Gradual proportional destruction.
   const mSize=meteor?.size??1.8;
-  const isBig=mSize>=3.6||meteor?.isMassive||meteor?.colossus||meteor?.boss;
+  const isColossal=mSize>=4.5||meteor?.colossus||meteor?.boss;
+  const isBig=mSize>=3.0||meteor?.isMassive;
   let hitDmg=0.018;
-  if(isBig){
-   // Big meteors do exactly 15% damage as requested
-   hitDmg=0.150;
-  }else if(mSize>=2.0){
-   // Medium meteors do scaled 5.5% damage
-   hitDmg=0.055;
+  if(isColossal){
+   hitDmg=0.110;
+  }else if(isBig){
+   hitDmg=0.070;
+  }else if(mSize>=1.8){
+   hitDmg=0.038;
   }else if(mSize>=1.2){
-   // Small meteors do scaled 1.8% damage
-   hitDmg=0.018;
+   hitDmg=0.015;
   }else{
-   // Tiny particles / shrapnel rain harmlessly down onto ground (0 damage)
    hitDmg=0.000;
   }
-  schoolDamage=Math.min(1.0,schoolDamage+hitDmg);
+  if(meteor?.crunched||meteor?.crunchDamageDealt>0){
+   hitDmg=0.0;
+  }
+  schoolDamage=Math.min(0.98,schoolDamage+hitDmg);
   // Small masonry chips and glass descend from the exact impact point, rather
   // than unrelated random locations around the roof. Reuse instanced VFX pools.
   if(performanceLab.isEnabled('particles')){
@@ -5526,17 +5526,35 @@ if(m.grounded){
    m.mesh.position.y+=m.vel.y*dt;
    const currY=m.mesh.position.y;
    const b=m.crunchBuilding;
-   const rad=Math.max(1.8,(m.size||1)*0.9);
+   const sz=m.size||1;
 
-   // Coring destruction directly beneath/around the descending heavy mass
+   // Bounded damage budget distributed strictly proportionally over vertical distance
+   const totalDist=Math.max(1.0,(m.crunchStartY||currY)-(m.crunchStopY||0.5));
+   const stepDist=Math.abs(m.vel.y*dt);
+   const maxBudget=sz>=4.5?0.11:(sz>=3.0?0.07:(sz>=1.8?0.036:0.015));
+   const stepDmg=Math.min(m.crunchDamageBudget||0,(stepDist/totalDist)*maxBudget);
+   m.crunchDamageBudget=Math.max(0,(m.crunchDamageBudget||0)-stepDmg);
+   m.crunchDamageDealt=(m.crunchDamageDealt||0)+stepDmg;
+
+   // Sectional floor-by-floor coring destruction: punch localized holes every ~2.8m of vertical descent
+   const punchInterval=2.8;
+   const shouldPunchFloor=Math.abs((m.lastPunchY||currY)-currY)>=punchInterval;
+   if(shouldPunchFloor){
+    m.lastPunchY=currY;
+    const punchRad=Math.min(2.4,Math.max(1.2,sz*0.48));
+    if(b&&!b.school){
+     neighborhood.city.impact(b,m.mesh.position,punchRad,0.35);
+     northBroadModels.impact(m.mesh.position,punchRad*1.1,0.38);
+    }else if(b?.school){
+     neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
+    }
+   }
+
    if(b&&!b.school){
-    neighborhood.city.impact(b,m.mesh.position,rad,0.48);
-    northBroadModels.impact(m.mesh.position,rad*1.1,0.52);
-    b.damage=Math.min(0.98,(b.damage||0)+dt*0.45*(m.size||1));
+    b.damage=Math.min(0.96,(b.damage||0)+stepDmg);
    }else if(b?.school){
-    neighborhood.city.impact(neighborhood.school,m.mesh.position,rad,0.50);
-    schoolDamage=Math.min(1.0,schoolDamage+dt*0.22*(m.size||1));
-    hp=Math.min(hp,Math.round((1-schoolDamage)*100));
+    schoolDamage=Math.min(0.98,schoolDamage+stepDmg);
+    hp=Math.max(2,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
 
@@ -5565,6 +5583,7 @@ if(m.grounded){
    // Check if meteor reached its crunch stopping depth
    if(currY<=(m.crunchStopY||0.6)){
     m.crunching=false;
+    m.crunched=true;
     m.mesh.position.y=Math.max(0.4,m.crunchStopY||0.6);
 
     // Size-dependent resting or disintegration
@@ -5582,9 +5601,7 @@ if(m.grounded){
 
      // Start foundation fire if flaming
      if(m.burning){
-      for(let k=0;k<4;k++){
-       ignite(m.mesh.position.x+(Math.random()-.5)*3.5,0.4,m.mesh.position.z+(Math.random()-.5)*3.0);
-      }
+      ignite(m.mesh.position.x,0.4,m.mesh.position.z);
      }
 
      // Bigger meteors can break up a little bit, or stay as one massive charred core
@@ -5654,6 +5671,10 @@ if(m.grounded){
    m.crunchBuilding=hitBuilding||(hitSchool?neighborhood.school:null);
    m.crunchStartY=m.mesh.position.y;
    const sz=m.size||1;
+   const maxMeteorDmg=sz>=4.5?0.11:(sz>=3.0?0.07:(sz>=1.8?0.036:0.015));
+   m.crunchDamageBudget=maxMeteorDmg;
+   m.crunchDamageDealt=0;
+   m.lastPunchY=m.mesh.position.y;
    if(sz<1.8){
     m.crunchStopY=Math.max(1.0,(hitBuilding?hitBuilding.h-2.8:(hitSchool?schoolBounds.max.y-2.8:m.mesh.position.y-2.2)));
    }else if(sz<3.2){
@@ -5778,9 +5799,10 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'){
 }
 const motionQA=schoolQA&&new URLSearchParams(location.search).get('motion')==='1';
 function animate(){if(!motionQA){requestAnimationFrame(animate);renderFrame();}}
-function renderFrame(captureCamera=null){diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
- if(!motionQA&&maxRenderFPS>0&&present-previousRenderAt<1000/maxRenderFPS-1.0)return;
- previousRenderAt=present;const dt=motionQA?3/60:clock.getDelta();
+window.renderFrame=renderFrame;
+function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
+ if(forcedDt===null&&!motionQA&&maxRenderFPS>0&&present-previousRenderAt<1000/maxRenderFPS-1.0)return;
+ previousRenderAt=present;const dt=forcedDt!==null?forcedDt:(motionQA?3/60:clock.getDelta());
  if(!motionQA){
   if(dt>.25&&active&&!paused)quality.sample(Math.min(dt,.2));
   quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
@@ -5974,6 +5996,8 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  closeSettings:()=>closeUnifiedSettings()
 };
 window.__DD_QA={snap,
+  stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return snap();},
+  renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
   schoolReconstruction:()=>schoolReconstruction?.stats()||null,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),

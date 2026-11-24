@@ -144,7 +144,7 @@ ${anchor}`);
   if(plumeMode>.5){
    // CC0 WispySmoke03 density drives dark, layered billows, not generated
    // smoke noise. Age fade prevents hard particle loop resets.
-   float feather=1.-smoothstep(.72,1.,abs(q.x-.5)*2.);
+   float feather=(1.-smoothstep(.45,1.,abs(q.x-.5)*2.))*(1.-smoothstep(.62,1.,q.y))*smoothstep(0.,.14,q.y);
    float ashBlend=smoothstep(.12,.88,vAge);
    float sootVariation=.85+.24*fract(vSeed*.413);
    color=mix(vec3(.051,.046,.044),vec3(.123,.133,.141),ashBlend)*
