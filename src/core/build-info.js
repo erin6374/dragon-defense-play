@@ -2,10 +2,10 @@
 // Auto-generated during build/packaging process
 
 export const BUILD_INFO = {
-  version: "5.5.0-rc.138",
-  build: "5.5-procedural-destruction-subway-breach-rc138",
+  version: "5.5.0-rc.139",
+  build: "5.5-subway-train-water-main-fire-spread-rc139",
   date: "2026-11-24",
-  releaseName: "5.5-procedural-destruction-subway-breach-rc138"
+  releaseName: "5.5-subway-train-water-main-fire-spread-rc139"
 };
 
 export const GAME_VERSION = BUILD_INFO.version;

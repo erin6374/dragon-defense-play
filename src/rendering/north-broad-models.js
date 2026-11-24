@@ -450,6 +450,14 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
   const rubbleBox = new THREE.BoxGeometry(1, 1, 1);
   const rubbleWood = new THREE.MeshStandardMaterial({ color: 0x5a3e28, roughness: 0.88, metalness: 0.05 });
   const rubbleStone = new THREE.MeshStandardMaterial({ color: 0x8c8982, roughness: 0.95, metalness: 0.0 });
+  const rubbleBrick = new THREE.MeshStandardMaterial({ color: 0x984635, roughness: 0.94, metalness: 0.02 });
+  const furnitureWood = new THREE.MeshStandardMaterial({ color: 0x503522, roughness: 0.72, metalness: 0.05 });
+  const fabricCouchRed = new THREE.MeshStandardMaterial({ color: 0x852a32, roughness: 0.88 });
+  const fabricCouchBlue = new THREE.MeshStandardMaterial({ color: 0x244260, roughness: 0.88 });
+  const mattressMat = new THREE.MeshStandardMaterial({ color: 0xdedac8, roughness: 0.82 });
+  const metalDeskMat = new THREE.MeshStandardMaterial({ color: 0x424850, roughness: 0.45, metalness: 0.75 });
+  const retailShelfMat = new THREE.MeshStandardMaterial({ color: 0x3d6b85, roughness: 0.55 });
+  const copperPipeMat = new THREE.MeshStandardMaterial({ color: 0xb87333, roughness: 0.35, metalness: 0.85 });
 
   function buildBuildingRubbleProxy(entry) {
     if (entry.def.isChurch) return;
@@ -459,21 +467,122 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     rubbleRoot.position.set(pos[0], pos[1], pos[2]);
     const width = entry.def.frontWidth || 6.0;
     const depth = entry.targetBuilding?.d || 18.0;
-    const count = Math.max(14, Math.round(width * 2.5));
+
+    // Foundation basement floor slab & perimeter
+    const foundation = new THREE.Mesh(rubbleBox, rubbleStone);
+    foundation.scale.set(width * 0.95, 0.35, depth * 0.85);
+    foundation.position.set(0, 0.15, -depth * 0.42);
+    foundation.receiveShadow = true;
+    rubbleRoot.add(foundation);
+
+    for (const side of [-1, 1]) {
+      const curb = new THREE.Mesh(rubbleBox, rubbleStone);
+      curb.scale.set(0.35, 0.65, depth * 0.85);
+      curb.position.set(side * (width * 0.47), 0.35, -depth * 0.42);
+      rubbleRoot.add(curb);
+    }
+
+    // Masonry, brick & timber rubble chunks
+    const count = Math.max(18, Math.round(width * 3.2));
     for (let i = 0; i < count; i++) {
-      const chunk = new THREE.Mesh(rubbleBox, i % 3 === 0 ? rubbleWood : rubbleStone);
+      const mat = (i % 3 === 0) ? rubbleWood : ((i % 2 === 0) ? rubbleBrick : rubbleStone);
+      const chunk = new THREE.Mesh(rubbleBox, mat);
       const rx = (Math.random() - 0.5) * (width * 0.85);
       const rz = -depth * 0.45 + (Math.random() - 0.5) * (depth * 0.7);
-      const ry = 0.35 + Math.random() * 0.85;
-      chunk.scale.set(0.6 + Math.random() * 0.9, 0.4 + Math.random() * 0.6, 0.6 + Math.random() * 0.9);
+      const ry = 0.35 + Math.random() * 0.95;
+      chunk.scale.set(0.5 + Math.random() * 0.9, 0.35 + Math.random() * 0.6, 0.5 + Math.random() * 0.9);
       chunk.position.set(rx, ry, rz);
       chunk.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
       chunk.castShadow = true;
       rubbleRoot.add(chunk);
     }
+
+    const isCommercial = entry.def.name.includes('McDonald') || entry.def.name.includes('CVS') || entry.def.name.includes('Center') || entry.def.name.includes('Fund');
+    if (isCommercial) {
+      for (let s = 0; s < 3; s++) {
+        const shelf = new THREE.Mesh(rubbleBox, retailShelfMat);
+        shelf.scale.set(1.4, 0.75, 0.45);
+        shelf.position.set((s - 1) * 1.5, 0.55, -depth * 0.35 - s * 2.2);
+        shelf.rotation.set(0.2, (s * 0.8), -0.15);
+        shelf.castShadow = true;
+        rubbleRoot.add(shelf);
+      }
+      const counter = new THREE.Mesh(rubbleBox, metalDeskMat);
+      counter.scale.set(2.4, 0.85, 0.8);
+      counter.position.set(0.5, 0.52, -depth * 0.22);
+      counter.rotation.set(0.1, 0.4, 0.15);
+      rubbleRoot.add(counter);
+    } else {
+      const couch = new THREE.Mesh(rubbleBox, fabricCouchRed);
+      couch.scale.set(2.2, 0.65, 0.85);
+      couch.position.set((Math.random() - 0.5) * (width * 0.4), 0.45, -depth * 0.28);
+      couch.rotation.set(0.35, 0.6, -0.2);
+      couch.castShadow = true;
+      rubbleRoot.add(couch);
+
+      const couchBack = new THREE.Mesh(rubbleBox, fabricCouchRed);
+      couchBack.scale.set(2.2, 0.75, 0.25);
+      couchBack.position.set((Math.random() - 0.5) * (width * 0.4), 0.75, -depth * 0.28 - 0.3);
+      couchBack.rotation.set(0.35, 0.6, -0.2);
+      rubbleRoot.add(couchBack);
+
+      const table = new THREE.Mesh(rubbleBox, furnitureWood);
+      table.scale.set(1.5, 0.12, 0.95);
+      table.position.set((Math.random() - 0.5) * (width * 0.45), 0.65, -depth * 0.48);
+      table.rotation.set(0.25, -0.4, 0.18);
+      rubbleRoot.add(table);
+
+      const mattress = new THREE.Mesh(rubbleBox, mattressMat);
+      mattress.scale.set(1.6, 0.32, 2.0);
+      mattress.position.set((Math.random() - 0.5) * (width * 0.35), 0.40, -depth * 0.62);
+      mattress.rotation.set(-0.15, 0.3, 0.22);
+      rubbleRoot.add(mattress);
+    }
+
+    for (let p = 0; p < 3; p++) {
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4 + p * 0.5, 6), copperPipeMat);
+      pipe.position.set((Math.random() - 0.5) * (width * 0.6), 0.6 + p * 0.25, -depth * 0.4 + (p - 1) * 2.0);
+      pipe.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+      rubbleRoot.add(pipe);
+    }
+
     rubbleRoot.visible = false;
     root.add(rubbleRoot);
     entry.rubbleProxy = rubbleRoot;
+  }
+
+  function buildBuildingInteriorFloors(entry) {
+    if (entry.def.isChurch) return;
+    const interiorRoot = new THREE.Group();
+    interiorRoot.name = `interior-${entry.def.id}`;
+    const pos = entry.def.position;
+    interiorRoot.position.set(pos[0], pos[1], pos[2]);
+    const width = entry.def.frontWidth || 6.0;
+    const depth = entry.targetBuilding?.d || 18.0;
+    const height = entry.targetBuilding?.h || 12.0;
+    const stories = Math.max(2, Math.floor(height / 3.2));
+
+    for (let st = 1; st < stories; st++) {
+      const floorY = st * (height / stories);
+      const slab = new THREE.Mesh(rubbleBox, rubbleStone);
+      slab.scale.set(width * 0.88, 0.22, depth * 0.82);
+      slab.position.set(0, floorY, -depth * 0.44);
+      interiorRoot.add(slab);
+
+      const couch = new THREE.Mesh(rubbleBox, fabricCouchBlue);
+      couch.scale.set(1.8, 0.55, 0.75);
+      couch.position.set(-width * 0.2, floorY + 0.32, -depth * 0.32);
+      interiorRoot.add(couch);
+
+      const desk = new THREE.Mesh(rubbleBox, furnitureWood);
+      desk.scale.set(1.4, 0.65, 0.8);
+      desk.position.set(width * 0.2, floorY + 0.35, -depth * 0.42);
+      interiorRoot.add(desk);
+    }
+
+    interiorRoot.visible = false;
+    root.add(interiorRoot);
+    entry.interiorProxy = interiorRoot;
   }
 
   // Load each replacement model
@@ -491,6 +600,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       sectionDamage: { floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0, roseWindow: 0, churchRoof: 0, churchWalls: 0 },
       churchFeatures: null,
       rubbleProxy: null,
+      interiorProxy: null,
       groups: {},
       glassMeshes: [],
       signMeshes: [],
@@ -503,6 +613,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       entry.churchFeatures = buildBereanRoseWindowAndSpires(THREE, root, def.position);
     } else {
       buildBuildingRubbleProxy(entry);
+      buildBuildingInteriorFloors(entry);
     }
 
     loader.load(
@@ -784,6 +895,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
       } else {
         entry.model.visible = true;
+        if (entry.interiorProxy) entry.interiorProxy.visible = false;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
       }
     }

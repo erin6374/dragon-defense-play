@@ -493,7 +493,9 @@ function updateFires(dt){
    f.burnTimer=0;
    const unsuppressed=Math.max(0,1-f.suppression);
    if(bldg){
-    bldg.fireDamage=(bldg.fireDamage||0)+dt*0.045*unsuppressed;
+    const bFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x-bldg.x)<bldg.w*0.6&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*0.6).length;
+    const burnRate=(0.018+bFires*0.016)*unsuppressed;
+    bldg.fireDamage=(bldg.fireDamage||0)+burnRate;
     bldg.damage=Math.max(bldg.damage||0,bldg.fireDamage);
     // Periodically weaken and detach localized structural parts
     if(Math.random()<0.38){
@@ -2006,6 +2008,10 @@ function disposeCrater(c){
   scene.remove(c.subwayGroup);
   c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
  }
+ if(c.geyserGroup){
+  scene.remove(c.geyserGroup);
+  c.geyserGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
+ }
 }
 function addCrater(x,z,radius=3,opts={}){
  const isBroadStreetCorridor=z>=13&&z<=34&&Math.abs(x)<260;
@@ -2031,6 +2037,7 @@ function addCrater(x,z,radius=3,opts={}){
 
   // Subterranean Subway Cavern
   subwayGroup=new THREE.Group();
+  subwayGroup.name='subway-cavern-group';
   subwayGroup.position.set(x,0,z);
   const W=Math.max(11.0,radius*2.6), D=Math.max(8.5,radius*2.2), H=5.2;
 
@@ -2116,10 +2123,67 @@ function addCrater(x,z,radius=3,opts={}){
   const tunnelLight=new THREE.PointLight(0xffaa44,1.8,18.0);
   tunnelLight.position.set(0,-H*0.5+0.8,0);subwayGroup.add(tunnelLight);
 
+  // Authentic SEPTA Broad Street Line (B-IV) Subway Train Car on Tracks
+  const carGroup=new THREE.Group();
+  carGroup.name='septa-b4-subway-car';
+  const carL=Math.min(W*0.96,14.5);
+  const carW=2.75;
+  const carH=2.65;
+  const carTrackZ=-D*0.25; // Sits on southbound track
+  const carCenterY=-H+0.22+carH*0.5;
+
+  const steelBodyMat=new THREE.MeshStandardMaterial({color:0xc4cbd4,metalness:0.88,roughness:0.28});
+  const septaRedMat=new THREE.MeshStandardMaterial({color:0xd9381e,roughness:0.42});
+  const septaBlueMat=new THREE.MeshStandardMaterial({color:0x144988,roughness:0.42});
+  const winGlassMat=new THREE.MeshStandardMaterial({color:0x1a2632,roughness:0.15,metalness:0.75});
+  const winGlowMat=new THREE.MeshStandardMaterial({color:0xfff0cc,emissive:0xffd988,emissiveIntensity:0.65,roughness:0.5});
+
+  const carBody=new THREE.Mesh(new THREE.BoxGeometry(carL,carH,carW),steelBodyMat);
+  carBody.position.set(0,carCenterY,carTrackZ);
+  carGroup.add(carBody);
+
+  for(const side of [-1, 1]){
+   const redStripe=new THREE.Mesh(new THREE.BoxGeometry(carL*0.98,0.16,0.04),septaRedMat);
+   redStripe.position.set(0,carCenterY+0.12,carTrackZ+side*(carW*0.5+0.02));
+   carGroup.add(redStripe);
+
+   const blueStripe=new THREE.Mesh(new THREE.BoxGeometry(carL*0.98,0.12,0.04),septaBlueMat);
+   blueStripe.position.set(0,carCenterY-0.06,carTrackZ+side*(carW*0.5+0.02));
+   carGroup.add(blueStripe);
+
+   const winCount=Math.max(4,Math.floor(carL/2.2));
+   for(let w=0;w<winCount;w++){
+    const wx=-carL*0.42+(w+0.5)*(carL*0.84/winCount);
+    const win=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.62,0.05),winGlassMat);
+    win.position.set(wx,carCenterY+0.45,carTrackZ+side*(carW*0.5+0.02));
+    carGroup.add(win);
+
+    const glow=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.52,0.02),winGlowMat);
+    glow.position.set(wx,carCenterY+0.45,carTrackZ+side*(carW*0.5-0.05));
+    carGroup.add(glow);
+   }
+  }
+
+  for(const rx of [-carL*0.28, carL*0.28]){
+   const hvac=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.35,1.6),steelBodyMat);
+   hvac.position.set(rx,carCenterY+carH*0.5+0.18,carTrackZ);
+   carGroup.add(hvac);
+  }
+
+  for(const bx of [-carL*0.35, carL*0.35]){
+   const truck=new THREE.Mesh(new THREE.BoxGeometry(2.1,0.32,carW*0.85),steelMat);
+   truck.position.set(bx,-H+0.20,carTrackZ);
+   carGroup.add(truck);
+  }
+
+  carGroup.rotation.z=-0.04;
+  carGroup.rotation.y=0.03;
+  subwayGroup.add(carGroup);
+
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
-  message('🚇 BROAD STREET SUBWAY BREACH! SUBTERRANEAN TUNNEL CAVERN COLLAPSED');
+  message('🚇 BROAD STREET SUBWAY BREACH! SEPTA TRAIN CAR & CAVERN COLLAPSED');
  } else {
   // TRUE 3D VOLUMETRIC DEPRESSED CRATER BOWL (Non-subway)
   const depth=Math.min(2.2,0.85+radius*0.22);
@@ -2148,7 +2212,38 @@ function addCrater(x,z,radius=3,opts={}){
   scene.add(ember);
  }
 
- craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,subwayGroup,isSubway:isSubwayBreach,sparkTimer:0,life:120,initialLife:120});
+ let geyserGroup=null;
+ if(isSubwayBreach||radius>=3.2){
+  geyserGroup=new THREE.Group();
+  geyserGroup.name='water-main-geyser';
+  const gx=x+(Math.random()-0.5)*(radius*0.75);
+  const gz=z+(Math.random()-0.5)*(radius*0.75);
+  geyserGroup.position.set(gx,0,gz);
+
+  const pipeMat=new THREE.MeshStandardMaterial({color:0x3a3835,roughness:0.85,metalness:0.65});
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.25,1.4,10),pipeMat);
+  pipe.position.set(0,-0.6,0);
+  pipe.rotation.z=(Math.random()-0.5)*0.35;
+  geyserGroup.add(pipe);
+
+  const waterMat=new THREE.MeshStandardMaterial({
+   color:0x88d0ff,roughness:0.12,metalness:0.1,transparent:true,opacity:0.78,emissive:0x1b5a8c,emissiveIntensity:0.35
+  });
+  const geyserMesh=new THREE.Mesh(new THREE.ConeGeometry(0.85,11.0,12,1,true),waterMat);
+  geyserMesh.position.set(0,5.5,0);
+  geyserGroup.add(geyserMesh);
+
+  const crest=new THREE.Mesh(new THREE.SphereGeometry(1.4,8,8),new THREE.MeshStandardMaterial({
+   color:0xddf4ff,roughness:0.3,transparent:true,opacity:0.72
+  }));
+  crest.position.set(0,10.8,0);
+  geyserGroup.add(crest);
+
+  scene.add(geyserGroup);
+  sound('water');
+ }
+
+ craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
  streetStop=Math.max(streetStop,1.5);
  sound('steam',{x});
  if(craters.length>8){const c=craters.shift();disposeCrater(c);}
@@ -2174,6 +2269,21 @@ function updateCraters(dt){
    }
    if(Math.random()<dt*3.5){
     cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*2.0,0.2,c.z+(Math.random()-.5)*2.0),0.7,{count:4,upward:1.4});
+   }
+  }
+  if(c.geyserGroup){
+   c.geyserTimer=(c.geyserTimer||0)+dt;
+   if(c.geyserGroup.children[1]) c.geyserGroup.children[1].scale.y=0.92+0.22*Math.sin(elapsed*11.0);
+   if(c.geyserGroup.children[2]) c.geyserGroup.children[2].position.y=10.2+1.8*Math.sin(elapsed*11.0);
+   if(c.geyserTimer>0.35){
+    c.geyserTimer=0;
+    cinematicFX.dustBurst?.(new THREE.Vector3(c.geyserGroup.position.x,1.0,c.geyserGroup.position.z),0.6,{count:3,upward:2.5});
+    if(c.ember) cinematicFX.dustBurst?.(new THREE.Vector3(c.geyserGroup.position.x,0.4,c.geyserGroup.position.z),0.8,{count:4,upward:1.8});
+   }
+   for(const f of schoolFire){
+    if(f.root.position.distanceTo(c.geyserGroup.position)<14.0){
+     f.suppression=Math.min(1.0,f.suppression+dt*1.2);
+    }
    }
   }
   if(heatRatio>0.25&&Math.random()<dt*7&&quality.allowTrail(trailParticles.length)){
