@@ -2,13 +2,12 @@
 // Auto-generated during build/packaging process
 
 export const BUILD_INFO = {
-  version: "5.5.0-rc.140",
-  build: "5.5-traffic-detours-subway-flooding-sandbox-lock-rc140",
+  version: "5.5.0-rc.141",
+  build: "5.5-material-rigidity-implosion-live-wire-sparks-rc141",
   date: "2026-11-24",
-  releaseName: "5.5-traffic-detours-subway-flooding-sandbox-lock-rc140"
+  releaseName: "5.5-material-rigidity-implosion-live-wire-sparks-rc141"
 };
 
 export const GAME_VERSION = BUILD_INFO.version;
 export const BUILD_ID = BUILD_INFO.build;
-
-export default BUILD_INFO;
+export const RELEASE_NAME = BUILD_INFO.releaseName;

@@ -19,7 +19,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95,metalness:0,envMapIntensity:0.02}), // masonry backer
   new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96,metalness:0,envMapIntensity:0}) // industrial dark roof
  ];
- const MAX=1800;
+ const MAX=2200;
  const unitBox=new THREE.BoxGeometry(1,1,1);
  // A broken pane becomes thin, irregular shards with its own motion.
  const shards=new THREE.BufferGeometry();
@@ -370,7 +370,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
     // In overlay mode, keep internal structural elements (floor slabs, columns, beams, atrium trusses,
     // interior classroom partitions, ceiling lights, desks, roof HVAC equipment) visible inside the building!
     // Omit duplicate exterior facade brick that would conflict with the intact FBX exterior.
-    const isInternal=['floor','beam','column','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','roof-hvac'].includes(p.zone);
+    const isInternal=['floor','beam','column','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','classroom-chair','classroom-whiteboard','classroom-bookshelf','roof-hvac','basement-column','basement-floor','basement-wall'].includes(p.zone);
     if(!isInternal)continue;
    }
    const kind=p.profile==='glass'?shardBatch:p.kind;

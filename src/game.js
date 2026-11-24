@@ -1011,6 +1011,44 @@ function updateEmergencyLighting(){
   lamp.intensity=(.28+displayedDarkness*.85)*(Math.sin(elapsed*13+i*Math.PI)>0?3.1:.25);
  }
 }
+let electricalShortsCount=0;
+function updateBuildingElectricalShorts(dt){
+ if(!performanceLab.isEnabled('particles'))return;
+ const damagedBldgs=neighborhood.targetBuildings?.filter(b=>!b.school&&(b.damage||0)>=0.18)||[];
+ for(const bldg of damagedBldgs){
+  if(Math.random()<dt*3.2*Math.min(1.0,bldg.damage)){
+   const spX=bldg.x+(Math.random()-0.5)*bldg.w*0.82;
+   const spY=Math.max(1.2,Math.random()*bldg.h*0.82);
+   const spZ=bldg.z+(Math.random()-0.5)*bldg.d*0.82;
+   cinematicFX.sparks(new THREE.Vector3(spX,spY,spZ),Math.round(8+Math.random()*12),1.4);
+   flashAt(spX,spY,spZ,0.85);
+   electricalShortsCount++;
+   if(Math.random()<0.28)sound('electric',{x:spX});
+  }
+ }
+ if(northBroadModels&&northBroadModels.entries){
+  for(const entry of northBroadModels.entries){
+   if((entry.damage||0)>=0.15&&Math.random()<dt*3.2*Math.min(1.0,entry.damage)){
+    const spX=entry.anchor?.x||(entry.box?(entry.box.min.x+entry.box.max.x)*0.5:0);
+    const spY=Math.max(1.5,Math.random()*9.0);
+    const spZ=entry.anchor?.z||(entry.box?(entry.box.min.z+entry.box.max.z)*0.5:0);
+    cinematicFX.sparks(new THREE.Vector3(spX,spY,spZ),Math.round(8+Math.random()*12),1.4);
+    flashAt(spX,spY,spZ,0.85);
+    electricalShortsCount++;
+    if(Math.random()<0.28)sound('electric',{x:spX});
+   }
+  }
+ }
+ if(schoolDamage>=0.15&&Math.random()<dt*3.8*Math.min(1.0,schoolDamage)){
+  const spX=(Math.random()-0.5)*24.0;
+  const spY=1.5+Math.random()*13.0;
+  const spZ=-46.0+Math.random()*44.0;
+  cinematicFX.sparks(new THREE.Vector3(spX,spY,spZ),Math.round(10+Math.random()*14),1.6);
+  flashAt(spX,spY,spZ,1.1);
+  electricalShortsCount++;
+  if(Math.random()<0.32)sound('electric',{x:spX});
+ }
+}
 const cars=[];let carTimer=0;const nextLaneByDirection={east:0,west:0};const craters=[];let streetStop=0;const waterDropletGeometry=new THREE.SphereGeometry(.10,5,4);
 const waterMat=new THREE.MeshBasicMaterial({color:0x71caff,transparent:true,opacity:.8});
 const headlampMat=new THREE.MeshBasicMaterial({color:0xfff2c5});
@@ -5142,7 +5180,7 @@ function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remai
  meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
 },(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
  if(trainingMissions?.isActive()){hp=100;schoolDamage=0;remaining=0;spawnTimer=9999;} trainingMissions?.update(dt,{dragonPos:dragon.position,dragonVelX,dragonVelY,dragonSpeed:Math.hypot(dragonVelX,dragonVelY),isGasDeployed:gasPose>0,hasBusterCollided:busterRamCollided,meteorsList:meteors,schoolFiresCount:schoolFire.length,carsList:cars});
- if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
+ if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting();updateBuildingElectricalShorts(dt);}if(!active||paused){
 if(!freeFlightMode&&active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
  if(!active&&impactMarker)impactMarker.visible=false;
  if(targetingReticle)targetingReticle.visible=false;
@@ -6298,7 +6336,8 @@ window.__DD_QA={snap,
  setPedestriansEnabled:(on)=>run('setPedestriansEnabled',()=>{setPedestriansEnabled(on);return snap();}),
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
- audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+ audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,
+  getElectricalShortsCount:()=>electricalShortsCount,getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);
