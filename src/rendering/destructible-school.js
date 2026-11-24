@@ -19,7 +19,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95,metalness:0,envMapIntensity:0.02}), // masonry backer
   new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96,metalness:0,envMapIntensity:0}) // industrial dark roof
  ];
- const MAX=1200;
+ const MAX=1800;
  const unitBox=new THREE.BoxGeometry(1,1,1);
  // A broken pane becomes thin, irregular shards with its own motion.
  const shards=new THREE.BufferGeometry();
@@ -166,6 +166,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
    for(const fx of [-width*.32,-width*.12,width*.12,width*.32]){
     piece(4,centerX+fx,y0+h-.22,front-2.8,width*.14,.08,1.4,{zone:'classroom-light',strength:.3});
     piece(3,centerX+fx,y0+.42,front-2.6,width*.12,.48,.75,{zone:'classroom-desk',strength:.4});
+    piece(5,centerX+fx,y0+.32,front-3.3,width*.08,.62,.45,{zone:'classroom-chair',strength:.35});
+    piece(4,centerX+fx,y0+h*.48,front-4.2,width*.12,1.05,.08,{zone:'classroom-whiteboard',strength:.4});
+    piece(5,centerX+fx+width*.07,y0+.72,front-3.8,.65,1.42,.38,{zone:'classroom-bookshelf',strength:.5});
    }
   }
  }
@@ -431,6 +434,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
  return {group:batches,impact,collapse,update,reset,restore:reset,syncDestruction,stats,
+  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting})),
   setEffectsHooks:hooks=>{effectsHooks=hooks;},
   getFlamingDebris:()=>pieces.filter(p=>p.resting&&p.isFlaming).map(p=>({x:p.x,y:p.y,z:p.z,scale:Math.max(p.w,p.h)})),
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},

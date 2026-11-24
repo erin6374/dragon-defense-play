@@ -1467,10 +1467,13 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
-  if(obstruction&&!c.rearStreet&&!c.emergency){
-   const detour=choosePassingLane(c,cars,craters,{allowWithoutLeader:true});
-   if(detour!==null){
-    c.laneZ=detour;c.overtakeUntil=elapsed+4.5;
+  if(obstruction){
+   c.hazardLights=true;
+   if(!c.rearStreet&&!c.emergency){
+    const detour=choosePassingLane(c,cars,craters,{allowWithoutLeader:true});
+    if(detour!==null){
+     c.laneZ=detour;c.overtakeUntil=elapsed+4.5;
+    }
    }
   }
   if(Math.abs(c.root.position.z-c.laneZ)>0.05){
@@ -1485,7 +1488,19 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
-  for(const lamp of c.root.userData.brakes||[])lamp.material=c.braking?c.root.userData.tailBright:c.root.userData.tailDim;
+  const hazardOn=c.hazardLights&&(Math.sin(elapsed*16.0)>0);
+  for(const lamp of c.root.userData.brakes||[])lamp.material=(c.braking||hazardOn)?c.root.userData.tailBright:c.root.userData.tailDim;
+  if(blockedAhead&&c.speed<0.25&&!c.emergency&&!c.rearStreet){
+   c.blockedTimer=(c.blockedTimer||0)+dt;
+   if(c.blockedTimer>2.2&&!c.turningAround){
+    c.turningAround=true;
+    c.dir=-c.dir;
+    c.root.rotation.y+=Math.PI;
+    c.laneZ=c.dir>0?17.5:29.5;
+    c.blockedTimer=0;
+    c.overtakeUntil=elapsed+7.0;
+   }
+  }
   if(!c.emergency&&!c.rearStreet&&!c.turnPath?.length&&!c.routing&&c.stun===0&&!(c.windSettle>0)&&!chapterSettlement.active&&!obstruction){
    const passing=choosePassingLane(c,cars,craters);
    if(passing!==null&&elapsed>=(c.overtakeUntil||0)){
@@ -2179,6 +2194,66 @@ function addCrater(x,z,radius=3,opts={}){
   carGroup.rotation.z=-0.04;
   carGroup.rotation.y=0.03;
   subwayGroup.add(carGroup);
+
+  // RC140: Subterranean subway flood water pooling on track bed
+  const floodWaterMat=new THREE.MeshStandardMaterial({
+   color:0x1b4858,roughness:0.12,metalness:0.25,transparent:true,opacity:0.80,emissive:0x09222c,emissiveIntensity:0.35
+  });
+  const floodWaterPool=new THREE.Mesh(new THREE.BoxGeometry(W*1.08,0.18,D*1.08),floodWaterMat);
+  floodWaterPool.name='subway-flood-water-pool';
+  floodWaterPool.position.set(0,-H+0.12,0);
+  subwayGroup.add(floodWaterPool);
+
+  // RC140: Boiling electric arcs where water contacts the 600V third rail
+  const thirdRailArcMat=new THREE.MeshStandardMaterial({
+   color:0xd0ffff,emissive:0x44ddff,emissiveIntensity:2.2,roughness:0.1
+  });
+  for(const trackZ of [-D*0.25, D*0.25]){
+   for(const arcX of [-W*0.32, -W*0.12, W*0.15, W*0.35]){
+    const arc=new THREE.Mesh(new THREE.SphereGeometry(0.16,6,6),thirdRailArcMat);
+    arc.name='third-rail-arc';
+    arc.position.set(arcX,-H+0.28,trackZ+1.18);
+    subwayGroup.add(arc);
+    const arcSpark=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.38,4),thirdRailArcMat);
+    arcSpark.position.set(arcX+(Math.random()-0.5)*0.2,-H+0.38,trackZ+1.18);
+    arcSpark.rotation.z=(Math.random()-0.5)*1.2;
+    subwayGroup.add(arcSpark);
+   }
+  }
+
+  // RC140: High-visibility orange safety cones with reflective collars & flashers cordoning off breach rim
+  const coneMat=new THREE.MeshStandardMaterial({color:0xff5500,roughness:0.45});
+  const collarMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.25});
+  const flasherMat=new THREE.MeshStandardMaterial({color:0xffaa00,emissive:0xffaa00,emissiveIntensity:1.8});
+  const numCones=8;
+  const coneRadius=radius*1.15;
+  for(let cIdx=0;cIdx<numCones;cIdx++){
+   const cAngle=(cIdx/numCones)*Math.PI*2;
+   const cX=Math.cos(cAngle)*coneRadius;
+   const cZ=Math.sin(cAngle)*coneRadius;
+
+   const coneRoot=new THREE.Group();
+   coneRoot.name='safety-cone-station';
+   coneRoot.position.set(cX,0.14,cZ);
+
+   const coneGeom=new THREE.ConeGeometry(0.16,0.65,8);
+   const coneMesh=new THREE.Mesh(coneGeom,coneMat);
+   coneMesh.name='safety-cone';
+   coneMesh.position.y=0.325;
+   coneRoot.add(coneMesh);
+
+   const collarMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.13,0.16,8),collarMat);
+   collarMesh.name='cone-collar';
+   collarMesh.position.y=0.36;
+   coneRoot.add(collarMesh);
+
+   const flasherMesh=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6),flasherMat);
+   flasherMesh.name='breach-flasher';
+   flasherMesh.position.y=0.68;
+   coneRoot.add(flasherMesh);
+
+   subwayGroup.add(coneRoot);
+  }
 
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
@@ -5068,7 +5143,7 @@ function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remai
 },(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
  if(trainingMissions?.isActive()){hp=100;schoolDamage=0;remaining=0;spawnTimer=9999;} trainingMissions?.update(dt,{dragonPos:dragon.position,dragonVelX,dragonVelY,dragonSpeed:Math.hypot(dragonVelX,dragonVelY),isGasDeployed:gasPose>0,hasBusterCollided:busterRamCollided,meteorsList:meteors,schoolFiresCount:schoolFire.length,carsList:cars});
  if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting()}if(!active||paused){
-if(active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
+if(!freeFlightMode&&active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
  if(!active&&impactMarker)impactMarker.visible=false;
  if(targetingReticle)targetingReticle.visible=false;
  if(!paused&&neighborhoodHealth()===0&&performanceLab.isEnabled('backgroundMeteors')){
@@ -6196,10 +6271,12 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  closeSettings:()=>closeUnifiedSettings()
 };
 window.__DD_QA={snap,
-  stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return snap();},
+  stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return true;},
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
   schoolReconstruction:()=>schoolReconstruction?.stats()||null,
+  getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],
+  getCars:()=>cars,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
  spawnTestMeteorAt:(x,y,z,size,kind)=>run('spawnTestMeteorAt',()=>{spawnTestMeteorAt(x,y,z,size,kind);return snap();}),
  spawnMeteorBarrage:(count,x,z)=>run('spawnMeteorBarrage',()=>{spawnMeteorBarrage(count,x,z);return snap();}),
