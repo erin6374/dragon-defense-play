@@ -447,6 +447,35 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     churchRubbleProxy = rubbleRoot;
   }
 
+  const rubbleBox = new THREE.BoxGeometry(1, 1, 1);
+  const rubbleWood = new THREE.MeshStandardMaterial({ color: 0x5a3e28, roughness: 0.88, metalness: 0.05 });
+  const rubbleStone = new THREE.MeshStandardMaterial({ color: 0x8c8982, roughness: 0.95, metalness: 0.0 });
+
+  function buildBuildingRubbleProxy(entry) {
+    if (entry.def.isChurch) return;
+    const rubbleRoot = new THREE.Group();
+    rubbleRoot.name = `rubble-${entry.def.id}`;
+    const pos = entry.def.position;
+    rubbleRoot.position.set(pos[0], pos[1], pos[2]);
+    const width = entry.def.frontWidth || 6.0;
+    const depth = entry.targetBuilding?.d || 18.0;
+    const count = Math.max(14, Math.round(width * 2.5));
+    for (let i = 0; i < count; i++) {
+      const chunk = new THREE.Mesh(rubbleBox, i % 3 === 0 ? rubbleWood : rubbleStone);
+      const rx = (Math.random() - 0.5) * (width * 0.85);
+      const rz = -depth * 0.45 + (Math.random() - 0.5) * (depth * 0.7);
+      const ry = 0.35 + Math.random() * 0.85;
+      chunk.scale.set(0.6 + Math.random() * 0.9, 0.4 + Math.random() * 0.6, 0.6 + Math.random() * 0.9);
+      chunk.position.set(rx, ry, rz);
+      chunk.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+      chunk.castShadow = true;
+      rubbleRoot.add(chunk);
+    }
+    rubbleRoot.visible = false;
+    root.add(rubbleRoot);
+    entry.rubbleProxy = rubbleRoot;
+  }
+
   // Load each replacement model
   for (const def of NORTH_BROAD_DEFINITIONS) {
     if (!def.position || !def.file || def.id === 'watts-example') continue;
@@ -461,6 +490,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       damageStage: 0,
       sectionDamage: { floor0: 0, floor1: 0, floor2: 0, roof: 0, cornice: 0, sign: 0, roseWindow: 0, churchRoof: 0, churchWalls: 0 },
       churchFeatures: null,
+      rubbleProxy: null,
       groups: {},
       glassMeshes: [],
       signMeshes: [],
@@ -471,6 +501,8 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
     if (def.isChurch) {
       buildChurchInteriorAndRubble(def.position);
       entry.churchFeatures = buildBereanRoseWindowAndSpires(THREE, root, def.position);
+    } else {
+      buildBuildingRubbleProxy(entry);
     }
 
     loader.load(
@@ -743,14 +775,16 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       // Roof and top level (floor2) remain standing overhead until catastrophic damage (90%+)!
       if (entry.groups.roof) entry.groups.roof.visible = entry.damage < 0.90;
       if (entry.groups.floor2) entry.groups.floor2.visible = entry.damage < 0.92;
-      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.95;
-      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.98;
+      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.90;
+      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.95;
 
       // Complete collapse
-      if (entry.damage >= 0.99) {
+      if (entry.damage >= 0.95) {
         entry.model.visible = false;
+        if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
       } else {
         entry.model.visible = true;
+        if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
       }
     }
 
@@ -843,7 +877,14 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       return { id: entry.def.id, address: entry.def.address, damage: entry.damage };
     },
     collapseBuilding(idOrAddress) {
-      return this.damageBuilding(idOrAddress, 1.0);
+      const res = this.damageBuilding(idOrAddress, 1.0);
+      const entry = entries.find(e => e.def.id === idOrAddress || e.def.address.includes(idOrAddress) || e.def.name.includes(idOrAddress));
+      if (entry) {
+        if (entry.model) entry.model.visible = false;
+        if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
+        if (entry.def.isChurch && churchRubbleProxy) churchRubbleProxy.visible = true;
+      }
+      return res;
     },
     setEffectsHooks(hooks) {
       effectsHooks = hooks;
@@ -888,6 +929,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = true;
         if (entry.churchFeatures?.roseRoot) entry.churchFeatures.roseRoot.visible = true;
         if (entry.churchFeatures?.spiresGroup) entry.churchFeatures.spiresGroup.visible = true;
+        if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
         if (entry.targetBuilding) {
           entry.targetBuilding.damage = 0;
           city.setIntactBuildingVisible(entry.def.gameBuilding, false);

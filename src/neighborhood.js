@@ -58,9 +58,10 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  b(nearStatic,207.0,-.39,-12.0,12.0,.14,24.0,asphalt);
  // Authentic McDonald's Landmark Accent (2109 N Broad - Studio E-031):
  // Red mansard accent fascia band along front roof edge
- b(nearStatic, 190.0, 5.95, -0.9, 14.0, 0.42, 0.35, mat(0xba4033));
+ const mcdFascia = b(nearStatic, 190.0, 5.95, -0.9, 14.0, 0.42, 0.35, mat(0xba4033));
  // Iconic Golden Arches double-curve 'M' perched above restaurant entrance
  const goldMat = mat(0xf4bd27);
+ const mcdArches = [];
  for (const ax of [-0.62, 0.62]) {
   const cX = 190.0 + ax;
   const curve = new THREE.CatmullRomCurve3([
@@ -72,6 +73,7 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
   ]);
   const archMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.12, 8, false), goldMat);
   nearStatic.add(archMesh);
+  mcdArches.push(archMesh);
  }
  // ArchWell / Former CVS customer parking apron (x in [92, 116], z in [-4, 10])
  b(nearStatic,104.0,-.39,3.0,24.0,.14,14.0,asphalt);
@@ -105,8 +107,19 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  roofBreach(x,y,z,radius=2.3){const b=nearest(x,z,1);if(!b||y<b.h-1||b.roofBreached)return false;b.roofBreached=true;city.impact(b,new THREE.Vector3(x,b.h,z),radius,.45);return true},
  aftershock(x,y,z,radius=10){const primary=nearest(x,z,1);let n=0;for(const b of buildings){if(b===primary||b.damage>=1)continue;const distance=Math.hypot(Math.max(0,Math.abs(b.x-x)-b.w/2),Math.max(0,Math.abs(b.z-z)-b.d/2));if(distance<radius){n+=city.impact(b,new THREE.Vector3(x,y,z),radius*.55,.42*(1-distance/radius))}}return n},
  levelAll(){for(const b of buildings)city.forceDamage(b,1)},
- update(dt){city.update(dt);longRange.update(dt);},
- restore(){city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false},setAtmosphere(phase,darkness){city.setAtmosphere(darkness)},setDistantHealth(health){longRange.setHealth(health)},
+ update(dt){
+  city.update(dt);longRange.update(dt);
+  const mcd=buildings.find(b=>b.name==='mcdonalds-2109-broad');
+  if(mcd&&mcd.damage>=0.55){
+   if(mcdFascia)mcdFascia.visible=false;
+   for(const a of mcdArches)a.visible=false;
+  }
+ },
+ restore(){
+  city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false;
+  if(mcdFascia)mcdFascia.visible=true;
+  for(const a of mcdArches)a.visible=true;
+ },setAtmosphere(phase,darkness){city.setAtmosphere(darkness)},setDistantHealth(health){longRange.setHealth(health)},
  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;nearStatic.visible=on;longRange.setVisible(on);},
  streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,
   city.groups.backFar,...longRange.tiers.map(tier=>tier.group)].map(group=>group.getWorldPosition(new THREE.Vector3()).toArray());},

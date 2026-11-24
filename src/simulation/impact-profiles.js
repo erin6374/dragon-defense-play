@@ -1,6 +1,6 @@
 // Impact profiles distinguish small penetrators from destructive and incendiary rocks.
 export const METEOR_TYPES={stone:{radius:1,strength:1,fire:.15},iron:{radius:.65,strength:1.6,fire:.08},molten:{radius:1.3,strength:1.35,fire:1},flaming:{radius:1.1,strength:1,fire:1.4}};
-export function impactProfile(size=1,type='stone'){const t=METEOR_TYPES[type]||METEOR_TYPES.stone;return {radius:Math.max(.65,Math.min(7,size*2.4))*t.radius,strength:Math.max(.18,Math.min(2.3,size*.9))*t.strength,fire:t.fire,penetrates:type==='iron'||size<.8,shockRadius:Math.max(1.6,size*4.2)};}
+export function impactProfile(size=1,type='stone'){const t=METEOR_TYPES[type]||METEOR_TYPES.stone;return {radius:Math.max(.65,Math.min(24,size*2.4))*t.radius,strength:Math.max(.18,Math.min(8.0,size*.9))*t.strength,fire:t.fire,penetrates:type==='iron'||size<.8,shockRadius:Math.max(1.6,size*4.5)};}
 // Opening-wave molten descendants carry 35% extra structural force in addition
 // to the ordinary molten material profile. Bosses and later waves are unchanged.
 export function openingMoltenHeat(meteor){return meteor?.opening&&meteor.kind==='molten'?1.35:1;}

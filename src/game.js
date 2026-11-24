@@ -1997,86 +1997,158 @@ function updateSkyBursts(dt){
 }
 function disposeCrater(c){
  if(!c)return;
- scene.remove(c.mesh,c.inner,c.ember);
- c.mesh?.geometry?.dispose();c.inner?.geometry?.dispose();c.ember?.geometry?.dispose();
+ if(c.mesh){scene.remove(c.mesh);c.mesh.geometry?.dispose();c.mesh.material?.dispose();}
+ if(c.inner){scene.remove(c.inner);c.inner.geometry?.dispose();c.inner.material?.dispose();}
+ if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
  if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.geometry?.dispose();c.rimMesh.material?.dispose();}
+ if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.geometry?.dispose();c.bowlMesh.material?.dispose();}
  if(c.subwayGroup){
   scene.remove(c.subwayGroup);
   c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
  }
 }
 function addCrater(x,z,radius=3,opts={}){
- const mesh=new THREE.Mesh(new THREE.RingGeometry(radius*.55,radius,20),new THREE.MeshBasicMaterial({color:0x23180e,side:THREE.DoubleSide,depthWrite:false}));
- mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.11,z);scene.add(mesh);
- const inner=new THREE.Mesh(new THREE.CircleGeometry(radius*.56,20),new THREE.MeshBasicMaterial({color:0x0d0c0c,side:THREE.DoubleSide}));inner.rotation.x=-Math.PI/2;inner.position.set(x,.105,z);scene.add(inner);
- const ember=new THREE.Mesh(new THREE.RingGeometry(radius*.12,radius*.36,16),new THREE.MeshBasicMaterial({color:0xfff4cc,side:THREE.DoubleSide,transparent:true,opacity:.85,depthWrite:false}));
- ember.rotation.x=-Math.PI/2;ember.position.set(x,.112,z);scene.add(ember);
+ const isBroadStreetCorridor=z>=13&&z<=34&&Math.abs(x)<260;
+ const isSubwayBreach=isBroadStreetCorridor&&(radius>=2.8||opts.isSubway||(opts.size||0)>=2.6);
 
- const rimMesh=new THREE.Mesh(new THREE.RingGeometry(radius*0.80,radius*1.18,18),new THREE.MeshStandardMaterial({color:0x1b1715,roughness:0.96,metalness:0.02,side:THREE.DoubleSide}));
- rimMesh.rotation.x=-Math.PI/2;rimMesh.position.set(x,0.13,z);scene.add(rimMesh);
+ let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null;
 
- const isBroadStreetCorridor=Math.abs(x)<55&&z>=14&&z<=31;
- const isSubwayBreach=isBroadStreetCorridor&&(radius>=3.2||opts.isSubway||(opts.size||0)>=2.7);
-
- let subwayGroup=null;
  if(isSubwayBreach){
+  // 3D BROAD STREET SUBWAY CHASM & CAVERN
+  // Road deck is completely punched through into the SEPTA Broad Street line!
+  // NO opaque inner disc covering the hole!
+  const apertureW=Math.max(4.6,radius*1.85);
+  const apertureD=Math.max(4.0,radius*1.55);
+
+  // Surface collar: raised 3D fractured asphalt lip around opening
+  rimMesh=new THREE.Mesh(
+   new THREE.RingGeometry(radius*0.82,radius*1.32,24),
+   new THREE.MeshStandardMaterial({color:0x221e1a,roughness:0.95,metalness:0.04,side:THREE.DoubleSide})
+  );
+  rimMesh.rotation.x=-Math.PI/2;
+  rimMesh.position.set(x,0.14,z);
+  scene.add(rimMesh);
+
+  // Subterranean Subway Cavern
   subwayGroup=new THREE.Group();
   subwayGroup.position.set(x,0,z);
-  const W=radius*2.2,D=radius*1.9,H=4.6;
-  const wallMat=new THREE.MeshStandardMaterial({color:0x3c3833,roughness:0.96,metalness:0.05});
-  const floorMat=new THREE.MeshStandardMaterial({color:0x1b1918,roughness:0.98,metalness:0});
-  const steelMat=new THREE.MeshStandardMaterial({color:0x515860,roughness:0.42,metalness:0.80});
-  const tieMat=new THREE.MeshStandardMaterial({color:0x2c221a,roughness:0.92,metalness:0});
-  const slabMat=new THREE.MeshStandardMaterial({color:0x252423,roughness:0.94,metalness:0.05});
-  const thirdRailMat=new THREE.MeshStandardMaterial({color:0xd97526,roughness:0.35,metalness:0.85,emissive:0xff7722,emissiveIntensity:0.65});
+  const W=Math.max(11.0,radius*2.6), D=Math.max(8.5,radius*2.2), H=5.2;
 
-  const floor=new THREE.Mesh(new THREE.BoxGeometry(W,0.4,D),floorMat);
-  floor.position.set(0,-H-0.2,0);subwayGroup.add(floor);
-  const wallN=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.35),wallMat);
-  wallN.position.set(0,-H*0.5,-D*0.5);subwayGroup.add(wallN);
-  const wallS=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.35),wallMat);
-  wallS.position.set(0,-H*0.5,D*0.5);subwayGroup.add(wallS);
-  const wallW=new THREE.Mesh(new THREE.BoxGeometry(0.35,H,D),wallMat);
-  wallW.position.set(-W*0.5,-H*0.5,0);subwayGroup.add(wallW);
-  const wallE=new THREE.Mesh(new THREE.BoxGeometry(0.35,H,D),wallMat);
-  wallE.position.set(W*0.5,-H*0.5,0);subwayGroup.add(wallE);
+  // Materials
+  const ballastMat=new THREE.MeshStandardMaterial({color:0x1e1b18,roughness:0.98,metalness:0.02});
+  const subwayTileMat=new THREE.MeshStandardMaterial({color:0xedebe6,roughness:0.38,metalness:0.04}); // Historic white ceramic subway tiles
+  const septaGreenMat=new THREE.MeshStandardMaterial({color:0x1b5832,roughness:0.45,metalness:0.05}); // Authentic SEPTA green accent stripe
+  const steelMat=new THREE.MeshStandardMaterial({color:0x5e6670,roughness:0.35,metalness:0.85}); // Polished steel rails & I-beams
+  const tieMat=new THREE.MeshStandardMaterial({color:0x271f18,roughness:0.92,metalness:0}); // Creosote wooden ties
+  const slabMat=new THREE.MeshStandardMaterial({color:0x2b2826,roughness:0.92,metalness:0.04}); // Broken reinforced concrete road deck
+  const rebarMat=new THREE.MeshStandardMaterial({color:0x594c42,roughness:0.65,metalness:0.75}); // Exposed twisted steel rebar
+  const thirdRailMat=new THREE.MeshStandardMaterial({color:0xdf6d1f,roughness:0.35,metalness:0.85,emissive:0xff6611,emissiveIntensity:0.75}); // 600V DC third rail
 
-  for(const trackZ of [-D*0.22, D*0.22]){
-   for(const rz of [-0.65, 0.65]){
-    const rail=new THREE.Mesh(new THREE.BoxGeometry(W,0.14,0.08),steelMat);
-    rail.position.set(0,-H+0.16,trackZ+rz);subwayGroup.add(rail);
-   }
-   const tieSteps=Math.max(4,Math.floor(W/0.75));
-   for(let k=0;k<=tieSteps;k++){
-    const tx=-W*0.5+(k+0.5)*(W/tieSteps);
-    const tie=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.10,1.75),tieMat);
-    tie.position.set(tx,-H+0.06,trackZ);subwayGroup.add(tie);
-   }
-   const thirdRailL=new THREE.Mesh(new THREE.BoxGeometry(W*0.42,0.12,0.10),thirdRailMat);
-   thirdRailL.position.set(-W*0.28,-H+0.22,trackZ+0.95);subwayGroup.add(thirdRailL);
-   const thirdRailR=new THREE.Mesh(new THREE.BoxGeometry(W*0.42,0.12,0.10),thirdRailMat);
-   thirdRailR.position.set(W*0.28,-H+0.22,trackZ+0.95);subwayGroup.add(thirdRailR);
+  // Cavern Ballast Floor
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(W*1.15,0.45,D*1.15),ballastMat);
+  floor.position.set(0,-H-0.22,0);subwayGroup.add(floor);
+
+  // Cavern Subway Walls with White Tile and SEPTA Green Trim
+  for(const dir of [-1, 1]){
+   // South / North subway tunnel walls along Broad Street
+   const wallTile=new THREE.Mesh(new THREE.BoxGeometry(W*1.1,H*0.82,0.35),subwayTileMat);
+   wallTile.position.set(0,-H*0.5+H*0.09,dir*D*0.5);subwayGroup.add(wallTile);
+
+   const septaBand=new THREE.Mesh(new THREE.BoxGeometry(W*1.1,0.48,0.38),septaGreenMat);
+   septaBand.position.set(0,-0.65,dir*D*0.5);subwayGroup.add(septaBand);
+
+   // End bulkheads (East/West)
+   const endWall=new THREE.Mesh(new THREE.BoxGeometry(0.35,H,D*1.1),ballastMat);
+   endWall.position.set(dir*W*0.5,-H*0.5,0);subwayGroup.add(endWall);
   }
 
-  for(const colX of [-W*0.26, W*0.26]){
-   const col=new THREE.Mesh(new THREE.BoxGeometry(0.32,H,0.32),steelMat);
+  // Dual Steel Tracks (Northbound & Southbound Broad Street Line)
+  for(const trackZ of [-D*0.25, D*0.25]){
+   // 2 Steel rails per track
+   for(const rz of [-0.75, 0.75]){
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(W*1.1,0.18,0.09),steelMat);
+    rail.position.set(0,-H+0.18,trackZ+rz);subwayGroup.add(rail);
+   }
+   // Creosote cross-ties spaced every 0.65m
+   const tieSteps=Math.max(6,Math.floor(W/0.65));
+   for(let k=0;k<=tieSteps;k++){
+    const tx=-W*0.52+(k+0.5)*(W*1.04/tieSteps);
+    const tie=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.12,2.05),tieMat);
+    tie.position.set(tx,-H+0.06,trackZ);subwayGroup.add(tie);
+   }
+   // Orange 600V Third Rail with ceramic insulators
+   const thirdRail=new THREE.Mesh(new THREE.BoxGeometry(W*1.05,0.14,0.12),thirdRailMat);
+   thirdRail.position.set(0,-H+0.25,trackZ+1.18);subwayGroup.add(thirdRail);
+   for(let ins=-W*0.45;ins<=W*0.45;ins+=3.2){
+    const insulator=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,0.22,8),new THREE.MeshStandardMaterial({color:0xeeeade,roughness:0.25}));
+    insulator.position.set(ins,-H+0.11,trackZ+1.18);subwayGroup.add(insulator);
+   }
+  }
+
+  // Steel I-Beam Support Columns along the centerline between tracks
+  for(const colX of [-W*0.30, 0, W*0.30]){
+   const col=new THREE.Mesh(new THREE.BoxGeometry(0.36,H,0.36),steelMat);
    col.position.set(colX,-H*0.5,0);subwayGroup.add(col);
-   const flange=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.18,0.65),steelMat);
+   const flange=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.18,0.72),steelMat);
    flange.position.set(colX,-0.10,0);subwayGroup.add(flange);
   }
 
-  const slabW=new THREE.Mesh(new THREE.BoxGeometry(W*0.38,0.22,D*0.65),slabMat);
-  slabW.position.set(-W*0.32,-1.4,0);slabW.rotation.z=-0.48;subwayGroup.add(slabW);
-  const slabE=new THREE.Mesh(new THREE.BoxGeometry(W*0.38,0.22,D*0.65),slabMat);
-  slabE.position.set(W*0.32,-1.4,0);slabE.rotation.z=0.48;subwayGroup.add(slabE);
+  // Drooping fractured asphalt road deck slabs hanging down into tunnel
+  const slabW=new THREE.Mesh(new THREE.BoxGeometry(W*0.32,0.24,D*0.55),slabMat);
+  slabW.position.set(-apertureW*0.42,-1.3,0);slabW.rotation.z=-0.52;subwayGroup.add(slabW);
+  const slabE=new THREE.Mesh(new THREE.BoxGeometry(W*0.32,0.24,D*0.55),slabMat);
+  slabE.position.set(apertureW*0.42,-1.3,0);slabE.rotation.z=0.52;subwayGroup.add(slabE);
+  const slabN=new THREE.Mesh(new THREE.BoxGeometry(apertureW*0.65,0.24,D*0.28),slabMat);
+  slabN.position.set(0,-1.2,-apertureD*0.42);slabN.rotation.x=0.45;subwayGroup.add(slabN);
+  const slabS=new THREE.Mesh(new THREE.BoxGeometry(apertureW*0.65,0.24,D*0.28),slabMat);
+  slabS.position.set(0,-1.2,apertureD*0.42);slabS.rotation.x=-0.45;subwayGroup.add(slabS);
+
+  // Exposed rebar rods dangling into void
+  for(let r=0;r<8;r++){
+   const rebar=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.2+Math.random()*0.8,6),rebarMat);
+   const ra=(r/8)*Math.PI*2;
+   rebar.position.set(Math.cos(ra)*apertureW*0.38,-1.1+Math.sin(r)*0.3,Math.sin(ra)*apertureD*0.38);
+   rebar.rotation.set(Math.random()*0.4,Math.random()*2,Math.random()*0.4);
+   subwayGroup.add(rebar);
+  }
+
+  // Subterranean amber tunnel lighting illuminating tracks & walls from within
+  const tunnelLight=new THREE.PointLight(0xffaa44,1.8,18.0);
+  tunnelLight.position.set(0,-H*0.5+0.8,0);subwayGroup.add(tunnelLight);
 
   scene.add(subwayGroup);
-  cinematicFX.sparks(new THREE.Vector3(x,-H+0.4,z),22,1.6);
+  cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
   message('🚇 BROAD STREET SUBWAY BREACH! SUBTERRANEAN TUNNEL CAVERN COLLAPSED');
+ } else {
+  // TRUE 3D VOLUMETRIC DEPRESSED CRATER BOWL (Non-subway)
+  const depth=Math.min(2.2,0.85+radius*0.22);
+  const bowlGeo=new THREE.CylinderGeometry(radius*0.92,radius*0.35,depth,18,1,true);
+  const bowlMat=new THREE.MeshStandardMaterial({color:0x1e1916,roughness:0.96,metalness:0.04,side:THREE.DoubleSide});
+  bowlMesh=new THREE.Mesh(bowlGeo,bowlMat);
+  bowlMesh.position.set(x,-depth*0.5+0.12,z);
+  scene.add(bowlMesh);
+
+  // Raised 3D asphalt rim collar around top
+  rimMesh=new THREE.Mesh(
+   new THREE.RingGeometry(radius*0.82,radius*1.22,18),
+   new THREE.MeshStandardMaterial({color:0x2a2420,roughness:0.95,metalness:0.02,side:THREE.DoubleSide})
+  );
+  rimMesh.rotation.x=-Math.PI/2;
+  rimMesh.position.set(x,0.14,z);
+  scene.add(rimMesh);
+
+  // Molten magma bed at bottom of crater bowl
+  ember=new THREE.Mesh(
+   new THREE.CircleGeometry(radius*0.36,16),
+   new THREE.MeshBasicMaterial({color:0xfff4cc,side:THREE.DoubleSide,transparent:true,opacity:0.85})
+  );
+  ember.rotation.x=-Math.PI/2;
+  ember.position.set(x,-depth+0.16,z);
+  scene.add(ember);
  }
 
- craters.push({x,z,radius,mesh,inner,ember,rimMesh,subwayGroup,isSubway:isSubwayBreach,sparkTimer:0,life:120,initialLife:120});
+ craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,subwayGroup,isSubway:isSubwayBreach,sparkTimer:0,life:120,initialLife:120});
  streetStop=Math.max(streetStop,1.5);
  sound('steam',{x});
  if(craters.length>8){const c=craters.shift();disposeCrater(c);}
@@ -3625,9 +3697,11 @@ function damage(x,z,y=7,meteor=null){
 
  const roadStrike=hitZ>13&&hitZ<36&&targetY<3;
  if(roadStrike){
-  strikeParkedCars(targetX,hitZ,profile.radius);shake=Math.max(shake,Math.min(1.2,profile.strength));emitImpact(targetX,1,hitZ,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,hitZ,profile.shockRadius);flashAt(targetX,1.8,hitZ,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,hitZ),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,hitZ),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,hitZ);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,hitZ+(Math.random()-.5)*2.5);
+  strikeParkedCars(targetX,hitZ,profile.radius);shake=Math.max(shake,Math.min(1.4,profile.strength));emitImpact(targetX,1,hitZ,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,hitZ,profile.shockRadius);flashAt(targetX,1.8,hitZ,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,hitZ),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,hitZ),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,hitZ);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,hitZ+(Math.random()-.5)*2.5);
   for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-hitZ)<5)explodeCar(c);
   neighborhood.aftershock(targetX,targetY,hitZ,shockRadius*0.75,p=>debrisPiece(p,'brick'),blastStrength*0.6);
+  const mSz=meteor?.size||(profile.radius*0.45);
+  addCrater(targetX,hitZ,Math.min(9.5,2.4+mSz*0.65),{isSubway:mSz>=2.6,size:mSz});
   sound('impact');return;
  }
 
@@ -4365,11 +4439,12 @@ function spawnTestMeteorAt(hitX,hitY,hitZ,size=3.6,kind='molten'){
  else if(kind==='purple_crystal')mesh.material=purpleCrystalMaterial;
  else mesh.material=rockMaterialVariants[0];
 
- const spawnY=hitY+28.0;
+ const isSuperMassive=size>=9.0;
+ const spawnY=hitY+Math.max(28.0,size*3.2);
  mesh.position.set(hitX,spawnY,hitZ);
  scene.add(mesh);
 
- const vel=new THREE.Vector3(0,-28.0,0);
+ const vel=new THREE.Vector3(0,-Math.max(28.0,size*2.6),0);
  const target=new THREE.Vector3(hitX,hitY,hitZ);
 
  meteors.push({
@@ -4379,7 +4454,7 @@ function spawnTestMeteorAt(hitX,hitY,hitZ,size=3.6,kind='molten'){
   opening:false,
   fastImpact:true,
   isMassive:size>=5.0,
-  colossus:false,
+  colossus:isSuperMassive,
   largeSplitter:false,
   burning:kind==='flaming'||kind==='molten',
   mesh,
@@ -4388,7 +4463,7 @@ function spawnTestMeteorAt(hitX,hitY,hitZ,size=3.6,kind='molten'){
   trail:0,
   hp:1,
   size,
-  damage:size>=5.0?3.5:(size>=3.0?2.5:1.5),
+  damage:isSuperMassive?9.0:(size>=5.0?3.5:(size>=3.0?2.5:1.5)),
   baseScale:mesh.scale.clone(),
   hitFlash:0
  });
@@ -5531,7 +5606,9 @@ if(m.grounded){
    // Bounded damage budget distributed strictly proportionally over vertical distance
    const totalDist=Math.max(1.0,(m.crunchStartY||currY)-(m.crunchStopY||0.5));
    const stepDist=Math.abs(m.vel.y*dt);
-   const maxBudget=sz>=4.5?0.11:(sz>=3.0?0.07:(sz>=1.8?0.036:0.015));
+   const maxBudget=b?.school
+    ? (sz>=8.0?0.22:(sz>=4.5?0.08:(sz>=3.0?0.05:(sz>=1.8?0.025:0.012))))
+    : (sz>=8.0?1.0:(sz>=4.5?0.85:(sz>=3.0?0.50:(sz>=1.8?0.25:0.10))));
    const stepDmg=Math.min(m.crunchDamageBudget||0,(stepDist/totalDist)*maxBudget);
    m.crunchDamageBudget=Math.max(0,(m.crunchDamageBudget||0)-stepDmg);
    m.crunchDamageDealt=(m.crunchDamageDealt||0)+stepDmg;
@@ -5541,21 +5618,32 @@ if(m.grounded){
    const shouldPunchFloor=Math.abs((m.lastPunchY||currY)-currY)>=punchInterval;
    if(shouldPunchFloor){
     m.lastPunchY=currY;
-    const punchRad=Math.min(2.4,Math.max(1.2,sz*0.48));
+    const punchRad=Math.min(3.2,Math.max(1.2,sz*0.48));
     if(b&&!b.school){
-     neighborhood.city.impact(b,m.mesh.position,punchRad,0.35);
-     northBroadModels.impact(m.mesh.position,punchRad*1.1,0.38);
+     neighborhood.city.impact(b,m.mesh.position,punchRad,0.38);
+     northBroadModels.impact(m.mesh.position,punchRad*1.15,0.42);
     }else if(b?.school){
+     carveSchool(m.mesh.position.x,currY,m.mesh.position.z,punchRad,0.38,m.kind,16);
      neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
     }
    }
 
    if(b&&!b.school){
-    b.damage=Math.min(0.96,(b.damage||0)+stepDmg);
+    b.damage=Math.min(1.0,(b.damage||0)+stepDmg);
+    if(b.damage>=0.95){
+     neighborhood.city.forceDamage(b,1.0);
+     northBroadModels?.collapseBuilding?.(b.name);
+    }
    }else if(b?.school){
     schoolDamage=Math.min(0.98,schoolDamage+stepDmg);
     hp=Math.max(2,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
+   }
+
+   // Live electrical wire shorts and sparking within collapsing building
+   if(Math.random()<dt*12){
+    cinematicFX.sparks(m.mesh.position,5,1.1);
+    if(Math.random()<0.2)sound('spark',{x:m.mesh.position.x});
    }
 
    // Shards giving way directly beneath the meteor as it crunches through
@@ -5655,8 +5743,8 @@ if(m.grounded){
    }
    if(!sweepHit&&neighborhood?.targetBuildings){
     for(const b of neighborhood.targetBuildings){
-     if(b.damage>=0.98)continue;
-     if(curr.x>=b.x-b.w*0.5-0.6&&curr.x<=b.x+b.w*0.5+0.6&&curr.z>=b.z-b.d*0.5-0.6&&curr.z<=b.front+0.6&&curr.y<=b.h&&meteorStart.y>=b.h-1.2){
+     if(b.damage>=0.999)continue;
+     if(curr.x>=b.x-b.w*0.5-0.8&&curr.x<=b.x+b.w*0.5+0.8&&curr.z>=b.z-b.d*0.5-0.8&&curr.z<=b.front+0.8&&curr.y<=b.h+0.8&&meteorStart.y>=b.h-2.2){
       sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
       hitBuilding=b;
       break;
@@ -5671,7 +5759,9 @@ if(m.grounded){
    m.crunchBuilding=hitBuilding||(hitSchool?neighborhood.school:null);
    m.crunchStartY=m.mesh.position.y;
    const sz=m.size||1;
-   const maxMeteorDmg=sz>=4.5?0.11:(sz>=3.0?0.07:(sz>=1.8?0.036:0.015));
+   const maxMeteorDmg=hitSchool
+    ? (sz>=8.0?0.22:(sz>=4.5?0.08:(sz>=3.0?0.05:(sz>=1.8?0.025:0.012))))
+    : (sz>=8.0?1.0:(sz>=4.5?0.85:(sz>=3.0?0.50:(sz>=1.8?0.25:0.10))));
    m.crunchDamageBudget=maxMeteorDmg;
    m.crunchDamageDealt=0;
    m.lastPunchY=m.mesh.position.y;

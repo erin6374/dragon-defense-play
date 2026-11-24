@@ -388,15 +388,27 @@ export function createDestructibleSchool(THREE,scene,bounds){
  function syncDestruction(ratio){
   currentRatio=ratio;
   if(ratio<=0)return;
+  if(ratio>=0.97){collapse();return;}
   const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
   const targetDetached=Math.floor(pieces.length*Math.min(1.0,ratio*0.92));
   const currentDetached=pieces.filter(p=>p.falling||p.resting).length;
   const needed=targetDetached-currentDetached;
   if(needed>0){
-   // Sort candidates: top floors collapse downward first under gravity & blast overpressure
-   const candidates=[...attachedPieces].sort((a,b)=>b.homeY-a.homeY);
+   // Physically-calibrated failure: damage concentrates near meteor impacts,
+   // interior lightweight partitions/desks fail first, followed by pancake slabs
+   const candidates=[...attachedPieces].map(p=>{
+    const distToImpact=Math.hypot(p.homeX-lastImpact.x,p.homeY-lastImpact.y,p.homeZ-lastImpact.z);
+    const isInterior=['classroom-light','classroom-desk','partition'].includes(p.zone);
+    const isGlass=p.zone==='glass'||p.kind===2;
+    const isSlab=p.zone==='floor'||p.zone==='basement-floor';
+    const isColumn=['column','pier','atrium-column'].includes(p.zone);
+    const fragilityScore=isGlass?-5.0:(isInterior?-3.0:(isSlab?0.5:(isColumn?4.5:1.5)));
+    const topBias=(p.homeY-(min.y+height))*0.25; // slight upper gravity bias
+    const noise=Math.sin(p.homeX*3.1+p.homeY*2.7+p.homeZ*4.3)*1.2;
+    return {piece:p,score:distToImpact+fragilityScore+topBias+noise};
+   }).sort((a,b)=>a.score-b.score);
    for(let i=0;i<Math.min(needed,candidates.length);i++){
-    detach(candidates[i],i*7.31+ratio*19.1,0.03+Math.random()*0.18,ratio>0.35);
+    detach(candidates[i].piece,i*7.31+ratio*19.1,0.03+Math.random()*0.18,ratio>0.35);
    }
    flush();
   }
