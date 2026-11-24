@@ -1,5 +1,5 @@
 export function createCinematicEffects(T,scene,camera,bank){
- const dummy=new T.Object3D(),puffs=[],rings=[],dustPuffs=[];let clock=0;
+ const dummy=new T.Object3D(),puffs=[],rings=[],dustPuffs=[],sparkPuffs=[];let clock=0;
  const windOrigin=new T.Vector3(),windDirection=new T.Vector3(1,0,0);
  let windStrength=0;
  function pool(capacity,material,geometry=new T.PlaneGeometry(1,1)){
@@ -14,9 +14,25 @@ export function createCinematicEffects(T,scene,camera,bank){
  const spray=pool(900,new T.MeshBasicMaterial({map:waterMap,color:0xe3eff2,transparent:true,opacity:.65,depthWrite:false}));
  const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
  const dust=pool(640,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
- const pools=[flame,smoke,spray,ring,dust];
+ const sparkPixels=new Uint8Array(16*16*4);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const i=(y*16+x)*4,r=Math.hypot((x-7.5)/7.5,(y-7.5)/7.5);sparkPixels[i]=180;sparkPixels[i+1]=235;sparkPixels[i+2]=255;sparkPixels[i+3]=Math.round(255*Math.max(0,1-r)**1.8);}const sparkMap=new T.DataTexture(sparkPixels,16,16,T.RGBAFormat);sparkMap.needsUpdate=true;
+ const spark=pool(360,new T.MeshBasicMaterial({map:sparkMap,color:0xaeeaff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+ const pools=[flame,smoke,spray,ring,dust,spark];
  function burst(pos,power=1){for(let i=0;i<Math.min(32,12*power)&&puffs.length<180;i++)puffs.push({p:pos.clone(),v:new T.Vector3((Math.random()-.5)*power*5,Math.random()*3+1,(Math.random()-.5)*power*4),age:0,life:2+Math.random()*3,size:.5+Math.random()*power});shock(pos,power*4)}
  function shock(pos,radius=5){if(rings.length<48)rings.push({p:pos.clone(),radius,age:0});}
+ function sparks(pos,count=10,power=1.0){
+  const num=Math.min(32,Math.max(3,Math.round(count)));
+  for(let i=0;i<num&&sparkPuffs.length<280;i++){
+   const angle=Math.random()*Math.PI*2;
+   const speed=(3.0+Math.random()*9.0)*power;
+   sparkPuffs.push({
+    p:pos.clone().add(new T.Vector3((Math.random()-.5)*.35,(Math.random()-.5)*.35,(Math.random()-.5)*.35)),
+    v:new T.Vector3(Math.cos(angle)*speed,(Math.random()*6.0+2.0)*power,Math.sin(angle)*speed),
+    age:0,life:0.18+Math.random()*0.28,
+    size:0.12+Math.random()*0.22*power,
+    power
+   });
+  }
+ }
  function dustBurst(pos,power=1,opts={}){
   const num=opts.count||Math.min(48,Math.max(10,Math.round(14*power)));
   const originY=Math.max(0.2,pos.y);
@@ -76,6 +92,17 @@ export function createCinematicEffects(T,scene,camera,bank){
    dust.add(d.p,currentSize,currentSize,alpha,d.rot);
    if(d.age>=d.life)dustPuffs.splice(i,1);
   }
+  for(let i=sparkPuffs.length-1;i>=0;i--){
+   const s=sparkPuffs[i];s.age+=dt;
+   s.p.addScaledVector(s.v,dt);
+   s.v.y-=dt*19.0;s.v.x*=Math.max(0,1-dt*3.0);s.v.z*=Math.max(0,1-dt*3.0);
+   s.p.x+=(Math.random()-.5)*0.08*s.power;s.p.z+=(Math.random()-.5)*0.08*s.power;
+   const progress=s.age/s.life;
+   const size=s.size*(1-progress*.6);
+   const alpha=(1-progress)*(.75+Math.random()*.25);
+   spark.add(s.p,size,size*2.2,alpha,Math.atan2(s.v.y,s.v.x));
+   if(s.age>=s.life)sparkPuffs.splice(i,1);
+  }
   for(let i=rings.length-1;i>=0;i--){
    const r=rings[i];r.age+=dt;const size=r.radius*Math.min(1,r.age/.55);
    ring.add(r.p,size,size,Math.max(0,1-r.age/.65));
@@ -112,18 +139,19 @@ export function createCinematicEffects(T,scene,camera,bank){
    const cycle=fastTrail?2.6:12.0;
    const t=fastTrail?(age*.75+i*.43)%cycle:(age*.42+i*.85)%cycle;
    const wandering=Math.sin(age*1.2+i*2.3)*size*(fastTrail?.28:.85);
-   const scale=fastTrail?size*(.78+t*.29):size*(1.8+Math.pow(t,1.15)*1.35);
+   const scale=fastTrail?size*(.78+t*.29):size*(1.6+Math.pow(t,1.10)*1.18);
    const y=fastTrail?.6+t*.75:2.2+Math.pow(t,1.48)*3.6;
    const highWind=fastTrail?0:Math.min(25.0,Math.pow(t,1.2)*1.6);
    const smokePosition=pos.clone().add(new T.Vector3(
     wandering+t*(fastTrail?.13:.35)+windDirection.x*windAtFire*t*2.2-highWind,
     y+windDirection.y*windAtFire*t*.8,
     .3+Math.cos(i)*.25+windDirection.z*windAtFire*t*2.2));
+   const altitudeDissipation=fastTrail?1.0:Math.max(0.08,1.0-Math.pow(t/cycle,1.22)*0.82);
    smoke.add(smokePosition,scale,scale*(fastTrail?1.25:1.35),
     Math.sin(t/cycle*Math.PI)*
-      (fastTrail?.24:.88-.3*suppression)*(1-windAtFire*.55),Math.sin(i+age*.3)*.4);
+      (fastTrail?.24:(.65-.25*suppression)*altitudeDissipation)*(1-windAtFire*.55),Math.sin(i+age*.3)*.4);
   }
  }
  function water(from,to,width=.12){const delta=to.clone().sub(from),length=delta.length(),steps=Math.min(56,Math.max(12,Math.ceil(length*2)));for(let i=0;i<steps;i++){const t=(i+(clock*9%1))/steps;const p=from.clone().addScaledVector(delta,t);p.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),angle=Math.atan2(-delta.dot(right),delta.dot(up));spray.add(p,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle)}for(let i=0;i<12;i++){const a=clock*7+i*2.4,r=.2+(i%4)*.18;spray.add(to.clone().add(new T.Vector3(Math.cos(a)*r,Math.abs(Math.sin(a))*r,Math.sin(a)*r)),.23,.32,.4)}}
- return {begin,fire,setWind,water,burst,shock,dustBurst,demolitionDustWave,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;dustPuffs.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:pools.length,puffs:puffs.length,dustPuffs:dustPuffs.length,shockwaves:rings.length,windStrength})};
+ return {begin,fire,setWind,water,burst,shock,dustBurst,demolitionDustWave,sparks,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;dustPuffs.length=0;sparkPuffs.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:pools.length,puffs:puffs.length,dustPuffs:dustPuffs.length,shockwaves:rings.length,windStrength})};
 }

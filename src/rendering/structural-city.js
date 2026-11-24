@@ -284,9 +284,24 @@ export function createStructuralCity(THREE,scene,bank){
  function detach(p,origin,power=1,blast=false){
   if(p.state!=='attached'||p.type==='foundation')return 0;
   if(p.type==='window'){p.state='removed';write(p);fragmentBurst(p.position,14,true,power);return 1}
-  p.state='falling';p.age=0;const dx=p.position.x-origin.x,dz=p.position.z-origin.z;
+  p.state='falling';p.age=0;
   const weight=Math.sqrt(Math.max(1,p.mass));
-  p.velocity.set(blast?dx*.9*power/weight:(Math.random()-.5)*.25,blast?Math.min(.7,2*power/weight):-.25,blast?(dz*.6+2)*power/weight:(Math.random()-.5)*.25);
+  const b=p.building;
+  const toBX=(b?.x||0)-p.position.x, toBZ=(b?.z||0)-p.position.z;
+  const distB=Math.hypot(toBX,toBZ)||1.0;
+  const isInterior=['slab','partition','furniture','stair','column'].includes(p.type);
+
+  if(isInterior&&b){
+   const implodeP=(power/weight)*(blast?2.2:1.1);
+   p.velocity.set(
+    (toBX/distB)*implodeP+(Math.random()-.5)*0.35,
+    blast?-0.8:-0.3,
+    (toBZ/distB)*implodeP+(Math.random()-.5)*0.35
+   );
+  }else{
+   const dx=p.position.x-origin.x,dz=p.position.z-origin.z;
+   p.velocity.set(blast?dx*.9*power/weight:(Math.random()-.5)*.25,blast?Math.min(.7,2*power/weight):-.25,blast?(dz*.6+2)*power/weight:(Math.random()-.5)*.25);
+  }
   const turn=blast?.65:.18;p.spin.set((Math.random()-.5)*turn,(Math.random()-.5)*turn,(Math.random()-.5)*turn);
   if(p.size.y>p.size.z*2)p.spin.x=(Math.random()<.5?-1:1)*.28;
   if(p.type==='furniture'){
@@ -392,7 +407,7 @@ export function createStructuralCity(THREE,scene,bank){
    b.damage=Math.max(b.damage,lost);
    if(lost>.97)b.damage=1;
   }
-  for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const ground=.08+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
+  for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const b=p.building;const insideB=b&&Math.abs(p.position.x-b.x)<b.w*0.48&&Math.abs(p.position.z-b.z)<b.d*0.48;const basementDepth=insideB?1.8:0;const ground=(.08-basementDepth)+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
    // Floor collisions: falling heavy slabs break supports below them; furniture lands.
    if(p.velocity.y<0&&p.age>.15){const b=p.building;for(let f=b.stories-1;f>=0;f--){const y=f*b.floorHeight+.28;if(oldBottom>=y&&p.position.y-p.size.y*.5<y){const slab=b.slabs.find(s=>s.floor===f&&s.state==='attached'&&Math.abs(s.position.x-p.position.x)<s.size.x*.5&&Math.abs(s.position.z-p.position.z)<s.size.z*.5);if(slab){if(p.mass>2.5&&Math.abs(p.velocity.y)>3){detach(slab,p.position,.8);fragmentBurst(p.position,8)}else{p.position.y=y+p.size.y*.5;p.velocity.y*=-.12;p.velocity.x*=.5;p.velocity.z*=.5;if(Math.abs(p.velocity.y)<.3){p.state='settled';moving.delete(p)}}break}}}}
    if(asleep)settle(p);write(p);

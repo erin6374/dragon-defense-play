@@ -42,15 +42,27 @@ export function createDestructibleSchool(THREE,scene,bounds){
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
  let collapsing=false,supportClock=0,impactSerial=0;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
- function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false}={}){
+ function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
-   protectedZone,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+   protectedZone,mass,rigidity,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
  }
- const wall=(x,y,z,w,h,d,kind=0,zone='facade',strength=1)=>piece(kind,x,y,z,w,h,d,{zone,strength});
- const slab=(x,y,z,w,d,kind=1)=>piece(kind,x,y,z,w,.23,d,{zone:'floor',strength:1.1});
- const pier=(x,y,z,w,h,d)=>piece(0,x,y,z,w,h,d,{zone:'pier',strength:2.15});
- const beam=(x,y,z,w,h,d)=>piece(3,x,y,z,w,h,d,{zone:'beam',strength:2.3});
+ const wall=(x,y,z,w,h,d,kind=0,zone='facade',strength=1,mass=2.2,rigidity=1.8)=>piece(kind,x,y,z,w,h,d,{zone,strength,mass,rigidity});
+ const slab=(x,y,z,w,d,kind=1,zone='floor',mass=5.2,rigidity=3.2)=>piece(kind,x,y,z,w,.23,d,{zone,strength:1.1,mass,rigidity});
+ const pier=(x,y,z,w,h,d)=>piece(0,x,y,z,w,h,d,{zone:'pier',strength:2.15,mass:3.8,rigidity:2.2});
+ const beam=(x,y,z,w,h,d)=>piece(3,x,y,z,w,h,d,{zone:'beam',strength:2.3,mass:3.5,rigidity:4.5});
+ const basementY=min.y-2.2;
+ const bSect=9, bRows=Math.max(2,Math.ceil((front-back)/6));
+ for(let col=0;col<bSect;col++)for(let row=0;row<bRows;row++){
+  const x=min.x+(col+.5)*width/bSect;
+  const z=back+(row+.5)*(front-back)/bRows;
+  slab(x,basementY+.12,z,width/bSect-.07,(front-back)/bRows-.07,1,'basement-floor',6.0,4.0);
+ }
+ wall(centerX,basementY+1.1,front-.15,width-.3,2.2,.6,1,'basement-wall',6.0,8.0,6.0);
+ wall(centerX,basementY+1.1,back+.15,width-.3,2.2,.6,1,'basement-wall',6.0,8.0,6.0);
+ for(const side of [-1,1]){
+  wall(centerX+side*(width/2-.25),basementY+1.1,(front+back)/2,.5,2.2,front-back-.4,1,'basement-wall',6.0,8.0,6.0);
+ }
  // Full five-story exterior proportions, but NO floor across the front atrium
  // between levels 1 and 2. The tall void is the project's recognition anchor.
  for(let story=0;story<5;story++){
@@ -190,14 +202,35 @@ export function createDestructibleSchool(THREE,scene,bounds){
   p.falling=true;p.delay=delay;
   const a=Math.sin(seed*11.37+p.x*1.41+p.y*7.3+p.z*.27);
   const b=Math.cos(seed*13.21+p.z*.83-p.x*2.17);
-  p.vx=a*(violent?7:3);p.vy=1.3+Math.abs(b)*(violent?7:3.5);
-  p.vz=1.5+Math.abs(a)*(violent?5:2.7);
-  const glass=p.kind===2,frame=structural.has(p)||p.zone==='floor';
-  p.profile=glass?'glass':frame?'structure':'facade';
-  const impulse=glass?1.35:frame?.45:1;
-  p.vx*=impulse;p.vz*=impulse;
-  p.vy*=glass?1.15:frame?.25:.65;
-  p.vr=(a+b)*(glass?5:frame?1.3:3);
+
+  const centerZ=(front+back)*0.5;
+  const toCenterX=centerX-p.x;
+  const toCenterZ=centerZ-p.z;
+  const distCenter=Math.hypot(toCenterX,toCenterZ)||1.0;
+  const implodeDirX=toCenterX/distCenter;
+  const implodeDirZ=toCenterZ/distCenter;
+
+  const isInterior=['floor','column','beam','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','basement-column','basement-floor','basement-wall'].includes(p.zone);
+  const isGlass=p.kind===2||p.zone==='glass';
+  const rigidity=p.rigidity||(isGlass?0.1:isInterior?4.0:1.8);
+  const mass=p.mass||(isGlass?0.25:p.zone==='floor'?5.2:isInterior?4.0:2.2);
+
+  if(isInterior){
+   const implodeSpeed=(violent?4.8:2.4)/Math.sqrt(mass);
+   p.vx=implodeDirX*implodeSpeed+a*1.2;
+   p.vz=implodeDirZ*implodeSpeed+b*1.2;
+   p.vy=(violent?-1.8:-0.6)-Math.abs(b)*(violent?2.8:1.2)/Math.sqrt(mass);
+   p.vr=(a+b)*(1.8/rigidity);
+  }else{
+   const explodeSpeed=(violent?(isGlass?8.5:6.2):(isGlass?4.8:3.2))/Math.sqrt(mass);
+   p.vx=-implodeDirX*explodeSpeed+a*2.2;
+   p.vz=-implodeDirZ*explodeSpeed+b*2.2;
+   p.vy=1.2+Math.abs(b)*(violent?5.5:2.8)/Math.sqrt(mass);
+   p.vr=(a+b)*(isGlass?6.0:3.2);
+  }
+
+  const frame=structural.has(p)||p.zone==='floor'||p.zone==='basement-floor';
+  p.profile=isGlass?'glass':frame?'structure':'facade';
   return true;
  }
  function impact({x,y,z,radius=3.8,strength=1,type='stone',speed=0}){
@@ -305,13 +338,14 @@ export function createDestructibleSchool(THREE,scene,bounds){
    p.vy-=17*dt;p.vx*=Math.exp(-.6*dt);p.vz*=Math.exp(-.6*dt);
    p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.rot+=p.vr*dt;
    dimensions(p);
-   const floor=min.y+scale.y*.5;
+   const insideFootprint=p.x>=min.x+0.6&&p.x<=max.x-0.6&&p.z>=back+0.6&&p.z<=front-0.6;
+   const floor=insideFootprint?(min.y-2.2+scale.y*.5):(min.y+scale.y*.5);
    if(p.y<=floor){
-    p.y=floor;p.vy*= -.18;p.vx*=.35;p.vz*=.35;p.vr*=.4;
-    if(Math.abs(p.vy)<1.5){
+    p.y=floor;p.vy*= -.16;p.vx*=.32;p.vz*=.32;p.vr*=.35;
+    if(Math.abs(p.vy)<1.4){
      p.resting=true;
      dimensions(p);
-     p.y=min.y+scale.y*.5;
+     p.y=floor;
     }
    }
   }

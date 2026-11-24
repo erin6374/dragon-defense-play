@@ -407,16 +407,30 @@ const fireSpriteTexture=visualBank.images.flame,smokeSpriteTexture=visualBank.im
 const flameMats=[0xffffff,0xfff6e8,0xffe2be].map(color=>new THREE.SpriteMaterial({map:fireSpriteTexture,color,transparent:true,opacity:.91,depthWrite:false,blending:THREE.NormalBlending}));
 const smokeSpriteMat=new THREE.SpriteMaterial({map:smokeSpriteTexture,color:0x626369,transparent:true,opacity:.33,depthWrite:false});
 function ignite(x,y,z){
- if(schoolFire.length>=42)return;
+ if(schoolFire.length>=64)return;
  for(const f of schoolFire){if(f.root.position.distanceToSquared(new THREE.Vector3(x,y,z))<2.25)return;}
  const root=new THREE.Group();root.position.set(x,y,z);fireGroup.add(root);
  const initialSize=.35+Math.random()*.25;
  schoolFire.push({root,tongues:[],age:0,suppression:0,initialSize,size:initialSize,spreadTimer:0,burnTimer:0});
 }
 function updateFires(dt){
+ for(let i=0;i<schoolFire.length;i++){
+  const f1=schoolFire[i];
+  for(let j=schoolFire.length-1;j>i;j--){
+   const f2=schoolFire[j];
+   if(f1.root.position.distanceToSquared(f2.root.position)<12.25){
+    f1.size=Math.min(5.5,f1.size+f2.size*0.45);
+    f1.initialSize=Math.min(4.8,f1.initialSize+f2.initialSize*0.35);
+    f1.suppression=Math.max(0,(f1.suppression+f2.suppression)*0.5-0.08);
+    fireGroup.remove(f2.root);
+    schoolFire.splice(j,1);
+   }
+  }
+ }
+
  for(let i=schoolFire.length-1;i>=0;i--){
   const f=schoolFire[i];f.age+=dt;
-  f.size=Math.min(3.2,f.initialSize+f.age*.09);
+  f.size=Math.min(5.2,f.initialSize+f.age*.12);
   f.anchorClock=(f.anchorClock||0)-dt;
   if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
@@ -425,26 +439,42 @@ function updateFires(dt){
   const bldg=neighborhood.targetBuildings?.find(b=>!b.school&&Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
   const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=1.2;
 
+  // Electrical short sparking on damaged building framework
+  if(bldg&&bldg.damage>0.10&&Math.random()<dt*2.2){
+   const spX=bldg.x+(Math.random()-.5)*bldg.w*0.85;
+   const spY=Math.min(bldg.h*0.88,1.5+Math.random()*(bldg.h-2.0));
+   const spZ=bldg.z+(Math.random()-.5)*bldg.d*0.8;
+   cinematicFX.sparks(new THREE.Vector3(spX,spY,spZ),Math.round(6+Math.random()*8),1.2);
+   if(Math.random()<0.22)sound('electric',{x:spX});
+  }
+  if(onSchoolStructure&&schoolDamage>0.10&&Math.random()<dt*2.5){
+   const spX=(Math.random()-.5)*24;
+   const spY=2.0+Math.random()*12.0;
+   const spZ=-45+Math.random()*42;
+   cinematicFX.sparks(new THREE.Vector3(spX,spY,spZ),Math.round(8+Math.random()*10),1.3);
+   if(Math.random()<0.25)sound('electric',{x:spX});
+  }
+
   // Realistic intra-building & neighborhood fire spread
   f.spreadTimer=(f.spreadTimer||0)+dt;
-  if(f.spreadTimer>3.2&&schoolFire.length<40&&f.suppression<.35){
+  if(f.spreadTimer>2.4&&schoolFire.length<58&&f.suppression<.35){
    f.spreadTimer=0;
    if(bldg){
     const bFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x-bldg.x)<bldg.w*.5+1.5&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*.5+1.5).length;
-    if(bFires<5){
+    if(bFires<6){
      // Spread vertically to higher floors or horizontally to adjacent rooms
      const climbY=Math.min(bldg.h-0.8,f.root.position.y+2.6+Math.random()*1.4);
-     const spreadX=bldg.x+(Math.random()-.5)*bldg.w*.75;
-     const spreadZ=bldg.z+(Math.random()-.5)*bldg.d*.75;
+     const spreadX=bldg.x+(Math.random()-.5)*bldg.w*.8;
+     const spreadZ=bldg.z+(Math.random()-.5)*bldg.d*.8;
      ignite(spreadX,climbY,spreadZ);
-    }else if(Math.random()<0.45){
+    }else{
      // Spread to adjacent building if current building is heavily ablaze
-     const nearB=neighborhood.targetBuildings.find(b=>b!==bldg&&!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<20&&Math.abs(b.z-f.root.position.z)<18&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+     const nearB=neighborhood.targetBuildings.find(b=>b!==bldg&&!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<28&&Math.abs(b.z-f.root.position.z)<26&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
      if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
     }
    }else if(onSchoolStructure){
     const sFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x)<=14&&sf.root.position.z>=-58.4&&sf.root.position.z<=0.4).length;
-    if(sFires<8){
+    if(sFires<10){
      const climbY=Math.min(15.0,f.root.position.y+2.8+Math.random()*1.5);
      const spreadX=(Math.random()-.5)*22;
      const spreadZ=-48+Math.random()*42;
@@ -452,25 +482,25 @@ function updateFires(dt){
     }
    }else{
     // Spread along street / ground
-    const nearB=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<18&&Math.abs(b.z-f.root.position.z)<16&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
+    const nearB=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<25&&Math.abs(b.z-f.root.position.z)<22&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
     if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
    }
   }
 
   // Sustained untended burning gradually consumes structural framework
   f.burnTimer=(f.burnTimer||0)+dt;
-  if(f.burnTimer>=0.75){
+  if(f.burnTimer>=0.70){
    f.burnTimer=0;
    const unsuppressed=Math.max(0,1-f.suppression);
    if(bldg){
-    bldg.fireDamage=(bldg.fireDamage||0)+dt*0.038*unsuppressed;
+    bldg.fireDamage=(bldg.fireDamage||0)+dt*0.045*unsuppressed;
     bldg.damage=Math.max(bldg.damage||0,bldg.fireDamage);
     // Periodically weaken and detach localized structural parts
-    if(Math.random()<0.35){
+    if(Math.random()<0.38){
      neighborhood.city.impact(bldg,f.root.position,2.8,0.24);
      debrisPiece(f.root.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.6,-0.5,(Math.random()-.5)*1.6)),Math.random()<0.3?'glass':'brick',f.root.position);
     }
-    // Catastrophic collapse from untended fire
+    // Catastrophic collapse from untended fire & neighborhood fire cascade
     if(!bldg.fireCollapsed&&(bldg.fireDamage>=0.70||bldg.damage>=0.96)){
      bldg.fireCollapsed=true;
      bldg.damage=1.0;
@@ -485,6 +515,12 @@ function updateFires(dt){
      sound('collapse',{x:bldg.x});
      message(`🔥 UNTENDED FIRE CONSUMED ${bldg.name||'BUILDING'}! FULL COLLAPSE`);
      shake=Math.max(shake,0.60);
+     // Cascading neighborhood conflagration: collapse throws fiery embers to surrounding buildings
+     for(const nb of neighborhood.targetBuildings){
+      if(nb!==bldg&&!nb.school&&(nb.damage||0)<0.90&&Math.abs(nb.x-bldg.x)<32&&Math.abs(nb.z-bldg.z)<28){
+       ignite(nb.x+(Math.random()-.5)*nb.w*.6,Math.max(2,nb.h*.75),nb.front-1.2);
+      }
+     }
      for(const sf of schoolFire){
       if(Math.abs(sf.root.position.x-bldg.x)<bldg.w*.6&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*.6){
        sf.anchorY=0.4;
@@ -492,7 +528,7 @@ function updateFires(dt){
      }
     }
    }else if(onSchoolStructure){
-    schoolDamage=Math.min(1.0,schoolDamage+dt*0.020*unsuppressed);
+    schoolDamage=Math.min(1.0,schoolDamage+dt*0.024*unsuppressed);
     hp=Math.min(hp,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
@@ -1430,13 +1466,27 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
-  const obstruction=craters.find(q=>Math.abs(q.x-c.root.position.x)<q.radius+5&&Math.abs(q.z-c.root.position.z)<5);
+  const obstruction=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
+  if(obstruction&&!c.rearStreet&&!c.emergency){
+   const detour=choosePassingLane(c,cars,craters,{allowWithoutLeader:true});
+   if(detour!==null){
+    c.laneZ=detour;c.overtakeUntil=elapsed+4.5;
+   }
+  }
+  if(Math.abs(c.root.position.z-c.laneZ)>0.05){
+   const latError=c.laneZ-c.root.position.z;
+   const steerRate=obstruction?4.2:2.4;
+   c.root.position.z+=Math.sign(latError)*Math.min(Math.abs(latError),dt*steerRate);
+   c.steerAngle=(c.steerAngle||0)+Math.sign(latError)*0.14;
+  }
+  const closeCrater=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+8&&Math.abs(q.z-c.root.position.z)<q.radius+1.5&&((q.x-c.root.position.x)*c.dir)>-0.5);
+  const blockedAhead=closeCrater&&Math.abs(c.root.position.z-closeCrater.z)<closeCrater.radius+0.8;
   const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&[-270,-102,78,256].some(cx=>Math.abs(c.root.position.x-cx)<13);
-  const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,streetStop>0||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
+  const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
   for(const lamp of c.root.userData.brakes||[])lamp.material=c.braking?c.root.userData.tailBright:c.root.userData.tailDim;
-  if(!c.emergency&&!c.rearStreet&&!c.turnPath?.length&&!c.routing&&c.stun===0&&!(c.windSettle>0)&&!chapterSettlement.active){
+  if(!c.emergency&&!c.rearStreet&&!c.turnPath?.length&&!c.routing&&c.stun===0&&!(c.windSettle>0)&&!chapterSettlement.active&&!obstruction){
    const passing=choosePassingLane(c,cars,craters);
    if(passing!==null&&elapsed>=(c.overtakeUntil||0)){
      c.laneZ=passing;c.overtakeUntil=elapsed+6;c.laneChangeTime=0;
@@ -1935,7 +1985,8 @@ function updateSkyBursts(dt){
     }
    }
    b.m.scale.multiplyScalar(1+dt*.12);
-   b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.62*(1-(b.windThin||0));
+   const altDissipate=Math.max(0.08,1.0-Math.min(1.0,Math.max(0,b.m.position.y-12)/65)*0.82);
+   b.m.material.opacity=Math.max(0,b.life/b.initialLife)*.58*altDissipate*(1-(b.windThin||0));
   }else{
    b.m.scale.setScalar(b.scale*(1+(1-b.life/.8)*5));
    b.m.material.opacity=Math.max(0,b.life/.8)*.75;
@@ -1946,15 +1997,91 @@ function updateSkyBursts(dt){
   }
  }
 }
-function addCrater(x,z,radius=3){
+function disposeCrater(c){
+ if(!c)return;
+ scene.remove(c.mesh,c.inner,c.ember);
+ c.mesh?.geometry?.dispose();c.inner?.geometry?.dispose();c.ember?.geometry?.dispose();
+ if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.geometry?.dispose();c.rimMesh.material?.dispose();}
+ if(c.subwayGroup){
+  scene.remove(c.subwayGroup);
+  c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
+ }
+}
+function addCrater(x,z,radius=3,opts={}){
  const mesh=new THREE.Mesh(new THREE.RingGeometry(radius*.55,radius,20),new THREE.MeshBasicMaterial({color:0x23180e,side:THREE.DoubleSide,depthWrite:false}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.11,z);scene.add(mesh);
  const inner=new THREE.Mesh(new THREE.CircleGeometry(radius*.56,20),new THREE.MeshBasicMaterial({color:0x0d0c0c,side:THREE.DoubleSide}));inner.rotation.x=-Math.PI/2;inner.position.set(x,.105,z);scene.add(inner);
  const ember=new THREE.Mesh(new THREE.RingGeometry(radius*.12,radius*.36,16),new THREE.MeshBasicMaterial({color:0xfff4cc,side:THREE.DoubleSide,transparent:true,opacity:.85,depthWrite:false}));
  ember.rotation.x=-Math.PI/2;ember.position.set(x,.112,z);scene.add(ember);
- craters.push({x,z,radius,mesh,inner,ember,life:120,initialLife:120});streetStop=Math.max(streetStop,20);
+
+ const rimMesh=new THREE.Mesh(new THREE.RingGeometry(radius*0.80,radius*1.18,18),new THREE.MeshStandardMaterial({color:0x1b1715,roughness:0.96,metalness:0.02,side:THREE.DoubleSide}));
+ rimMesh.rotation.x=-Math.PI/2;rimMesh.position.set(x,0.13,z);scene.add(rimMesh);
+
+ const isBroadStreetCorridor=Math.abs(x)<55&&z>=14&&z<=31;
+ const isSubwayBreach=isBroadStreetCorridor&&(radius>=3.2||opts.isSubway||(opts.size||0)>=2.7);
+
+ let subwayGroup=null;
+ if(isSubwayBreach){
+  subwayGroup=new THREE.Group();
+  subwayGroup.position.set(x,0,z);
+  const W=radius*2.2,D=radius*1.9,H=4.6;
+  const wallMat=new THREE.MeshStandardMaterial({color:0x3c3833,roughness:0.96,metalness:0.05});
+  const floorMat=new THREE.MeshStandardMaterial({color:0x1b1918,roughness:0.98,metalness:0});
+  const steelMat=new THREE.MeshStandardMaterial({color:0x515860,roughness:0.42,metalness:0.80});
+  const tieMat=new THREE.MeshStandardMaterial({color:0x2c221a,roughness:0.92,metalness:0});
+  const slabMat=new THREE.MeshStandardMaterial({color:0x252423,roughness:0.94,metalness:0.05});
+  const thirdRailMat=new THREE.MeshStandardMaterial({color:0xd97526,roughness:0.35,metalness:0.85,emissive:0xff7722,emissiveIntensity:0.65});
+
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(W,0.4,D),floorMat);
+  floor.position.set(0,-H-0.2,0);subwayGroup.add(floor);
+  const wallN=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.35),wallMat);
+  wallN.position.set(0,-H*0.5,-D*0.5);subwayGroup.add(wallN);
+  const wallS=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.35),wallMat);
+  wallS.position.set(0,-H*0.5,D*0.5);subwayGroup.add(wallS);
+  const wallW=new THREE.Mesh(new THREE.BoxGeometry(0.35,H,D),wallMat);
+  wallW.position.set(-W*0.5,-H*0.5,0);subwayGroup.add(wallW);
+  const wallE=new THREE.Mesh(new THREE.BoxGeometry(0.35,H,D),wallMat);
+  wallE.position.set(W*0.5,-H*0.5,0);subwayGroup.add(wallE);
+
+  for(const trackZ of [-D*0.22, D*0.22]){
+   for(const rz of [-0.65, 0.65]){
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(W,0.14,0.08),steelMat);
+    rail.position.set(0,-H+0.16,trackZ+rz);subwayGroup.add(rail);
+   }
+   const tieSteps=Math.max(4,Math.floor(W/0.75));
+   for(let k=0;k<=tieSteps;k++){
+    const tx=-W*0.5+(k+0.5)*(W/tieSteps);
+    const tie=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.10,1.75),tieMat);
+    tie.position.set(tx,-H+0.06,trackZ);subwayGroup.add(tie);
+   }
+   const thirdRailL=new THREE.Mesh(new THREE.BoxGeometry(W*0.42,0.12,0.10),thirdRailMat);
+   thirdRailL.position.set(-W*0.28,-H+0.22,trackZ+0.95);subwayGroup.add(thirdRailL);
+   const thirdRailR=new THREE.Mesh(new THREE.BoxGeometry(W*0.42,0.12,0.10),thirdRailMat);
+   thirdRailR.position.set(W*0.28,-H+0.22,trackZ+0.95);subwayGroup.add(thirdRailR);
+  }
+
+  for(const colX of [-W*0.26, W*0.26]){
+   const col=new THREE.Mesh(new THREE.BoxGeometry(0.32,H,0.32),steelMat);
+   col.position.set(colX,-H*0.5,0);subwayGroup.add(col);
+   const flange=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.18,0.65),steelMat);
+   flange.position.set(colX,-0.10,0);subwayGroup.add(flange);
+  }
+
+  const slabW=new THREE.Mesh(new THREE.BoxGeometry(W*0.38,0.22,D*0.65),slabMat);
+  slabW.position.set(-W*0.32,-1.4,0);slabW.rotation.z=-0.48;subwayGroup.add(slabW);
+  const slabE=new THREE.Mesh(new THREE.BoxGeometry(W*0.38,0.22,D*0.65),slabMat);
+  slabE.position.set(W*0.32,-1.4,0);slabE.rotation.z=0.48;subwayGroup.add(slabE);
+
+  scene.add(subwayGroup);
+  cinematicFX.sparks(new THREE.Vector3(x,-H+0.4,z),22,1.6);
+  sound('spark',{x});
+  message('🚇 BROAD STREET SUBWAY BREACH! SUBTERRANEAN TUNNEL CAVERN COLLAPSED');
+ }
+
+ craters.push({x,z,radius,mesh,inner,ember,rimMesh,subwayGroup,isSubway:isSubwayBreach,sparkTimer:0,life:120,initialLife:120});
+ streetStop=Math.max(streetStop,1.5);
  sound('steam',{x});
- if(craters.length>7){const c=craters.shift();scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();}
+ if(craters.length>8){const c=craters.shift();disposeCrater(c);}
 }
 function updateCraters(dt){
  streetStop=Math.max(0,streetStop-dt);
@@ -1968,6 +2095,17 @@ function updateCraters(dt){
    else if(heatRatio>0.20)c.ember.material.color.setHex(0xd43204);
    else c.ember.material.color.setHex(0x3a1208);
   }
+  if(c.isSubway&&c.subwayGroup){
+   c.sparkTimer=(c.sparkTimer||0)+dt;
+   if(c.sparkTimer>0.55){
+    c.sparkTimer=0;
+    cinematicFX.sparks(new THREE.Vector3(c.x+(Math.random()-.5)*1.2,-4.0,c.z+(Math.random()-.5)*1.6),Math.round(8+Math.random()*8),1.2);
+    if(Math.random()<0.25)sound('spark',{x:c.x});
+   }
+   if(Math.random()<dt*3.5){
+    cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*2.0,0.2,c.z+(Math.random()-.5)*2.0),0.7,{count:4,upward:1.4});
+   }
+  }
   if(heatRatio>0.25&&Math.random()<dt*7&&quality.allowTrail(trailParticles.length)){
    emitTrail(new THREE.Vector3(c.x+(Math.random()-.5)*c.radius*.5,0.5,c.z+(Math.random()-.5)*c.radius*.5),true);
   }
@@ -1975,8 +2113,7 @@ function updateCraters(dt){
    cinematicFX.fire(new THREE.Vector3(c.x,.35,c.z),elapsed,c.radius*.65,.28,'structure');
   }
   if(c.life<=0){
-   scene.remove(c.mesh,c.inner,c.ember);
-   c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();
+   disposeCrater(c);
    craters.splice(i,1);
   }
  }
@@ -3671,7 +3808,7 @@ function applyResidualChapterDamage(){
  for(const b of [...neighborhood.targetBuildings].filter(b=>!b.school).slice(3,6))
   neighborhood.city.forceDamage?.(b,.07+Math.random()*.045);
  schoolDamage=0;hp=100;schoolRubblePlaced=false;settledRubble.length=0;rubblePool.clear();
- for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry.dispose();c.inner.geometry.dispose();c.ember?.geometry?.dispose();}craters.length=0;streetStop=0;
+ for(const c of craters){disposeCrater(c);}craters.length=0;streetStop=0;
  for(const b of burningVehicles){if(b.driver)scene.remove(b.driver);}burningVehicles.length=0;
  resetSchoolDamageMasks();schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;
  syncStructuralDamage();syncDamageHoles();updateHud();
@@ -4089,7 +4226,7 @@ function repairAllBuildings(){
  schoolReconstruction?.restore?.();
  if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage();}
  if(voxelReady&&architecture?.restore)architecture.restore();
- for(const c of craters){scene.remove(c.mesh,c.inner,c.ember);c.mesh.geometry?.dispose();c.inner.geometry?.dispose();c.ember?.geometry?.dispose();}
+ for(const c of craters){disposeCrater(c);}
  craters.length=0;
  hp=100;
  updateHud();
@@ -5433,7 +5570,7 @@ if(m.grounded){
     // Size-dependent resting or disintegration
     if((m.size||1)>=3.2||m.isMassive){
      // Big meteors: reach foundation/ground, crunch ground pavement into crater & shockwave
-     addCrater(m.mesh.position.x,m.mesh.position.z,2.6+(m.size||1)*0.45);
+     addCrater(m.mesh.position.x,m.mesh.position.z,2.6+(m.size||1)*0.45,{isSubway:(m.size||1)>=2.8,size:m.size||1});
      blast(m.mesh.position.x,0.4,m.mesh.position.z,4.8*(m.size||1));
      cinematicFX.demolitionDustWave(
       m.mesh.position,
@@ -5544,7 +5681,7 @@ if(m.grounded){
    if(sweepHit)m.target.copy(sweepHit);
    if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}
    const heat=openingMoltenHeat(m);
-   if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat);
+   if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat,{isSubway:(m.size*heat)>=2.8,size:m.size*heat});
    if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
    if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
    groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);
