@@ -467,7 +467,9 @@ function updateFires(dt){
   }
 
   // Realistic intra-building & neighborhood fire spread
-  f.spreadTimer=(f.spreadTimer||0)+dt;
+  // Firestorm acceleration: clustered fires spread faster via thermal updraft radiation
+  const spreadRateMultiplier=1.0+(clusterFires.length*0.35);
+  f.spreadTimer=(f.spreadTimer||0)+dt*spreadRateMultiplier;
   if(f.spreadTimer>2.4&&schoolFire.length<58&&f.suppression<.35){
    f.spreadTimer=0;
    if(bldg){
@@ -5123,7 +5125,14 @@ function initUnifiedSettingsEvents(){
  document.getElementById('dd-tb-meteor-tool')?.addEventListener('click',()=>{
   sandboxTool='meteor';
   document.getElementById('dd-tb-meteor-tool')?.classList.add('active');
+  document.getElementById('dd-tb-ignite')?.classList.remove('active');
   message('🎯 METEOR DROPPER ACTIVE — CLICK ANY BUILDING OR STREET');
+ });
+ document.getElementById('dd-tb-ignite')?.addEventListener('click',()=>{
+  sandboxTool=(sandboxTool==='ignite'?'meteor':'ignite');
+  document.getElementById('dd-tb-ignite')?.classList.toggle('active',sandboxTool==='ignite');
+  document.getElementById('dd-tb-meteor-tool')?.classList.toggle('active',sandboxTool==='meteor');
+  message(sandboxTool==='ignite'?'🔥 FIRE IGNITER ACTIVE — CLICK ANY BUILDING OR STREET TO START FIRE':'🎯 METEOR DROPPER ACTIVE');
  });
  document.getElementById('dd-tb-barrage')?.addEventListener('click',()=>spawnMeteorBarrage());
  document.getElementById('dd-modal-barrage-btn')?.addEventListener('click',()=>spawnMeteorBarrage());
