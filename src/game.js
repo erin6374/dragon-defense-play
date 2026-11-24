@@ -433,6 +433,17 @@ function updateFires(dt){
   f.size=Math.min(5.2,f.initialSize+f.age*.12);
   f.anchorClock=(f.anchorClock||0)-dt;
   if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
+
+  // Multi-fire convective thermal updraft & firestorm convection wind
+  const clusterFires=schoolFire.filter(other=>other!==f&&other.root.position.distanceTo(f.root.position)<28);
+  if(clusterFires.length>=2){
+   if(Math.hypot(dragon.position.x-f.root.position.x,dragon.position.z-f.root.position.z)<16&&dragon.position.y>f.root.position.y+2&&dragon.position.y<f.root.position.y+48){
+    dragonVelY=Math.min(24.0,dragonVelY+dt*16.0*(1+clusterFires.length*0.35));
+   }
+   if(Math.random()<dt*1.2*clusterFires.length){
+    cinematicFX.sparks(f.root.position.clone().add(new THREE.Vector3(0,f.size*1.2,0)),Math.round(4+clusterFires.length*2),0.9);
+   }
+  }
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
 
   // Identify building beneath or around fire
@@ -5852,12 +5863,20 @@ if(m.grounded){
    const shouldPunchFloor=Math.abs((m.lastPunchY||currY)-currY)>=punchInterval;
    if(shouldPunchFloor){
     m.lastPunchY=currY;
-    const punchRad=Math.min(3.2,Math.max(1.2,sz*0.48));
+    const punchRad=Math.min(3.8,Math.max(1.4,sz*(m.kind==='iron'?0.42:0.52)));
     if(b&&!b.school){
      neighborhood.city.impact(b,m.mesh.position,punchRad,0.38);
      northBroadModels.impact(m.mesh.position,punchRad*1.15,0.42);
     }else if(b?.school){
      carveSchool(m.mesh.position.x,currY,m.mesh.position.z,punchRad,0.38,m.kind,16);
+     schoolReconstruction?.punchBorehole?.({
+      x:m.mesh.position.x,
+      y:currY,
+      z:m.mesh.position.z,
+      radius:punchRad,
+      isHeavyIron:m.kind==='iron',
+      isMassive:!!(m.isMassive||sz>=3.8)
+     });
      neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
     }
    }
@@ -5909,19 +5928,35 @@ if(m.grounded){
     m.mesh.position.y=Math.max(0.4,m.crunchStopY||0.6);
 
     // Size-dependent resting or disintegration
-    if((m.size||1)>=3.2||m.isMassive){
-     // Big meteors: reach foundation/ground, crunch ground pavement into crater & shockwave
-     addCrater(m.mesh.position.x,m.mesh.position.z,2.6+(m.size||1)*0.45,{isSubway:(m.size||1)>=2.8,size:m.size||1});
-     blast(m.mesh.position.x,0.4,m.mesh.position.z,4.8*(m.size||1));
+    if((m.size||1)>=3.2||m.isMassive||m.kind==='iron'){
+     // Big / heavy iron meteors reach basement/foundation: crunch ground pavement into crater & shockwave
+     addCrater(m.mesh.position.x,m.mesh.position.z,2.6+(m.size||1)*0.45,{isSubway:(m.size||1)>=3.5,size:m.size||1});
+     blast(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,4.8*(m.size||1));
      cinematicFX.demolitionDustWave(
       m.mesh.position,
       m.mesh.position.clone().add(new THREE.Vector3(0,0,3.5)),
-      2.2
+      2.4
      );
+     for(let s=0;s<8;s++){
+      debrisPiece(m.mesh.position.clone().add(new THREE.Vector3((Math.random()-.5)*2.5,-0.2,(Math.random()-.5)*2.5)),'concrete',m.mesh.position);
+     }
      shake=Math.max(shake,0.85);
      sound('impact',{x:m.mesh.position.x});
 
-     // Start foundation fire if flaming
+     // Heavy flaming meteor ignites raging basement fire
+     if(m.burning){
+      ignite(m.mesh.position.x,Math.max(-0.5,m.mesh.position.y),m.mesh.position.z);
+      ignite(m.mesh.position.x+1.5,Math.max(-0.5,m.mesh.position.y),m.mesh.position.z-1.2);
+     }
+    }else{
+     // Small or medium meteor remains embedded in roof or middle floor
+     sound('thud',{x:m.mesh.position.x});
+     cinematicFX.dustBurst(m.mesh.position,1.2,{count:8});
+     if(m.burning){
+      ignite(m.mesh.position.x,m.mesh.position.y+0.2,m.mesh.position.z);
+     }
+    }
+    if(false){
      if(m.burning){
       ignite(m.mesh.position.x,0.4,m.mesh.position.z);
      }
@@ -5999,12 +6034,16 @@ if(m.grounded){
    m.crunchDamageBudget=maxMeteorDmg;
    m.crunchDamageDealt=0;
    m.lastPunchY=m.mesh.position.y;
-   if(sz<1.8){
-    m.crunchStopY=Math.max(1.0,(hitBuilding?hitBuilding.h-2.8:(hitSchool?schoolBounds.max.y-2.8:m.mesh.position.y-2.2)));
-   }else if(sz<3.2){
-    m.crunchStopY=Math.max(0.6,(hitBuilding?hitBuilding.h-6.8:(hitSchool?schoolBounds.max.y-6.8:2.5)));
+   const roofY=hitBuilding?hitBuilding.h:(hitSchool?schoolBounds.max.y:m.mesh.position.y);
+   if(sz<1.8&&!m.isMassive&&m.kind!=='iron'){
+    // Small rock meteors embed directly in roof or upper floor deck
+    m.crunchStopY=Math.max(1.2,roofY-1.4);
+   }else if(sz<3.8&&!m.isMassive&&m.kind!=='iron'){
+    // Medium rock meteors penetrate 2-3 floors and get stuck embedded on floor 2 or 1
+    m.crunchStopY=Math.max(0.6,roofY-7.5);
    }else{
-    m.crunchStopY=0.5;
+    // Big / heavy iron / massive / colossal meteors crunch all the way through into basement!
+    m.crunchStopY=(hitSchool||(hitBuilding&&hitBuilding.h>10))?-0.8:0.4;
    }
    m.vel.set(m.vel.x*0.15,-16.0,m.vel.z*0.15);
    neighborhood.roofBreach(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(1.5,sz*1.4));
@@ -6348,7 +6387,7 @@ window.__DD_QA={snap,
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
  audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,
-  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);

@@ -338,6 +338,32 @@ export function createDestructibleSchool(THREE,scene,bounds){
    if(p.integrity<=0)detach(p,p.x*2.7+p.z+impactSerial,.05+Math.random()*.13,true);
   }
  }
+ function punchBorehole({x,y,z,radius=2.8,isHeavyIron=false,isMassive=false}){
+  if(collapsing)return 0;
+  let severed=0;
+  const punchRadiusSq=radius*radius;
+  for(const p of pieces){
+   if(p.falling||p.resting||p.removed)continue;
+   const hDistSq=(p.x-x)*(p.x-x)+(p.z-z)*(p.z-z);
+   if(hDistSq>punchRadiusSq)continue;
+   if(p.y>y+1.2||p.y<y-3.2)continue;
+
+   p.falling=true;
+   p.delay=0;
+   const mass=p.mass||2.0;
+   const a=Math.sin(p.x*7.1+p.y*3.3+p.z);
+   const b=Math.cos(p.z*5.5-p.x*2.2);
+   p.vx=(p.x-x)*1.4+a*0.8;
+   p.vz=(p.z-z)*1.4+b*0.8;
+   p.vy=-(isHeavyIron?11.5:8.0)/Math.sqrt(mass);
+   p.rot=0;
+   p.vr=(a+b)*3.2;
+   p.integrity=0;
+   severed++;
+  }
+  if(severed>0)flush();
+  return severed;
+ }
  function collapse(){
   if(schoolCracksGroup)schoolCracksGroup.visible=false;
   if(collapsing)return;
@@ -474,8 +500,8 @@ export function createDestructibleSchool(THREE,scene,bounds){
    byMaterial:Object.fromEntries(['glass','structure','facade'].map(profile=>[profile,pieces.filter(p=>p.profile===profile).length])),
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
- return {group:batches,impact,collapse,update,reset,restore:reset,syncDestruction,stats,
-  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting})),
+ return {group:batches,impact,punchBorehole,collapse,update,reset,restore:reset,syncDestruction,stats,
+  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass})),
   setEffectsHooks:hooks=>{effectsHooks=hooks;},
   getFlamingDebris:()=>pieces.filter(p=>p.resting&&p.isFlaming).map(p=>({x:p.x,y:p.y,z:p.z,scale:Math.max(p.w,p.h)})),
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
