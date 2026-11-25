@@ -93,6 +93,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
  for(const side of [-1,1]){
   wall(centerX+side*(width/2-.25),basementY+1.1,(front+back)/2,.5,2.2,front-back-.4,1,'basement-wall',6.0,8.0,6.0);
  }
+ for(let cCol=1;cCol<=3;cCol++){
+  for(let cRow=1;cRow<=2;cRow++){
+   const cx=min.x+cCol*width/4;
+   const cz=back+cRow*(front-back)/3;
+   piece(3,cx,basementY+1.1,cz,0.55,2.2,0.55,{zone:'basement-column',strength:4.5,mass:6.5,rigidity:6.0});
+  }
+ }
  // Full five-story exterior proportions, but NO floor across the front atrium
  // between levels 1 and 2. The tall void is the project's recognition anchor.
  for(let story=0;story<5;story++){
