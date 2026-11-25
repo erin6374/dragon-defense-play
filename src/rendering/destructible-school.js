@@ -347,11 +347,12 @@ export function createDestructibleSchool(THREE,scene,bounds){
   if(collapsing)return 0;
   let severed=0;
   const punchRadiusSq=radius*radius;
+  const bottomY=isMassive?(min.y-2.2):(isHeavyIron?(min.y+0.4):(y-3.4));
   for(const p of pieces){
    if(p.falling||p.resting||p.removed)continue;
    const hDistSq=(p.x-x)*(p.x-x)+(p.z-z)*(p.z-z);
    if(hDistSq>punchRadiusSq)continue;
-   if(p.y>y+1.2||p.y<y-3.2)continue;
+   if(p.y>y+1.2||p.y<bottomY)continue;
 
    p.falling=true;
    p.delay=0;
@@ -360,7 +361,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const b=Math.cos(p.z*5.5-p.x*2.2);
    p.vx=(p.x-x)*1.4+a*0.8;
    p.vz=(p.z-z)*1.4+b*0.8;
-   p.vy=-(isHeavyIron?11.5:8.0)/Math.sqrt(mass);
+   p.vy=-(isHeavyIron?13.5:(isMassive?16.0:8.5))/Math.sqrt(mass);
    p.rot=0;
    p.vr=(a+b)*3.2;
    p.integrity=0;
