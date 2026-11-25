@@ -888,6 +888,7 @@ schoolReconstruction.setEffectsHooks?.({
  onFloorPancake:(x,y,z)=>{
   sound('crash',{x});
   cinematicFX.demolitionDustWave(new THREE.Vector3(x-3.2,0.4,z),new THREE.Vector3(x+3.2,0.4,z),1.8);
+  buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y+0.6,z),new THREE.Vector3(x+(Math.random()-0.5)*3.2,Math.max(0.4,y-1.8),z+(Math.random()-0.5)*3.2),1.6,cinematicFX,sound);
   shake=Math.max(shake,0.55);
  },
  onStructuralCreak:(x,y,z)=>{
@@ -5021,6 +5022,14 @@ function runPresetWaterMain(){
  message('💧 PRESET: MUNICIPAL WATER MAIN RUPTURE ACTIVATED!');
 }
 
+function runPresetFloorPancake(){
+ basementCamActive=true;
+ schoolReconstruction?.punchBorehole?.({
+  x:0,y:22.0,z:-16.0,radius:5.2,isHeavyIron:true,isMassive:true
+ });
+ message('🥞 PRESET: INTERNAL FLOOR SLAB PANCAKE COLLAPSE TRIGGERED!');
+}
+
 function runPresetConflagration(){
  igniteBlock();
  message('🔥 PRESET: 4TH ALARM NEIGHBORHOOD CONFLAGRATION INITIATED!');
@@ -5526,6 +5535,7 @@ function initUnifiedSettingsEvents(){
  document.getElementById('dd-tb-preset-borehole')?.addEventListener('click',()=>runPresetBorehole());
  document.getElementById('dd-tb-preset-subway')?.addEventListener('click',()=>runPresetSubway());
  document.getElementById('dd-tb-preset-water')?.addEventListener('click',()=>runPresetWaterMain());
+ document.getElementById('dd-tb-preset-pancake')?.addEventListener('click',()=>runPresetFloorPancake());
  document.getElementById('dd-tb-preset-fire')?.addEventListener('click',()=>runPresetConflagration());
  document.getElementById('dd-tb-ignite-block')?.addEventListener('click',()=>igniteBlock());
  document.getElementById('dd-setting-dragon')?.addEventListener('click',()=>toggleDragon());
@@ -6831,6 +6841,7 @@ window.__DD_QA={snap,
   runPresetBorehole:()=>runPresetBorehole(),
   runPresetSubway:()=>runPresetSubway(),
   runPresetWaterMain:()=>runPresetWaterMain(),
+  runPresetFloorPancake:()=>runPresetFloorPancake(),
   getEmergencyExitSignsCount:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.children.filter(ch=>ch.name==='subway-emergency-exit-sign').length:0;},
   getSubwayEmergencyBeacon:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.getObjectByName('subway-emergency-beacon'):null;},
   triggerBrickDustBurst:(x=0,y=2.0,z=0,p=1.5)=>{cinematicFX.dustBurst(new THREE.Vector3(x,y,z),p,{brick:true});return true;},
