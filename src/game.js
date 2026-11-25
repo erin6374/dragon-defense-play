@@ -864,9 +864,17 @@ schoolBounds.set(new THREE.Vector3(-13.5,0,-58.4),new THREE.Vector3(13.5,28.0,.4
 schoolReconstruction=createDestructibleSchool(THREE,scene,schoolBounds);
 schoolReconstruction.setEffectsHooks?.({
  onGlassShatter:(x,y,z)=>{
-  if(Math.random()<0.40){
-   sound('glass',{x});
-   cinematicFX.sparks(new THREE.Vector3(x,y,z),5,0.45);
+  sound('glass',{x,volume:0.62});
+  cinematicFX.sparks(new THREE.Vector3(x,y,z),10,0.85);
+  const shardCount=Math.floor(Math.random()*6)+8;
+  for(let s=0;s<shardCount;s++){
+   const sPos=new THREE.Vector3(
+    x+(Math.random()-0.5)*1.8,
+    y+(Math.random()-0.5)*1.2,
+    z+0.12+Math.random()*0.35
+   );
+   const sOrigin=new THREE.Vector3(x,y,z-1.2);
+   debrisPiece(sPos,'glass',sOrigin);
   }
  },
  onColumnBuckle:(x,y,z)=>{
@@ -4085,14 +4093,15 @@ function spawnFurnitureDebris(pos,type='wood',origin=null){
  });
 }
 function debrisPiece(pos,type,origin=null){
- if(debris.length>96)return;
- const mesh=new THREE.Mesh(type==='glass'?glassShardGeometry:cube,mats[type]||mats.stone);
+ if(debris.length>220)return;
+ const isGlass=type==='glass';
+ const mesh=new THREE.Mesh(isGlass?glassShardGeometry:cube,mats[type]||mats.stone);
  mesh.position.copy(pos);
  const large=Math.random()<.05;
- mesh.scale.setScalar(cell*(large?.48+Math.random()*.30:.08+Math.random()*.16));
+ mesh.scale.setScalar(cell*(large?.48+Math.random()*.30:(isGlass?0.12+Math.random()*0.24:0.08+Math.random()*.16)));
  scene.add(mesh);
- const implode=Math.random()<0.38;
- let vx=(Math.random()-.5)*10,vy=3.5+Math.random()*8.0,vz=2.0+Math.random()*7.0;
+ const implode=!isGlass&&Math.random()<0.38;
+ let vx=(Math.random()-.5)*(isGlass?16.0:10.0),vy=3.5+Math.random()*(isGlass?12.0:8.0),vz=2.0+Math.random()*(isGlass?14.0:7.0);
  if(origin){
   const dir=pos.clone().sub(origin);
   if(dir.lengthSq()>0.001){
@@ -4102,13 +4111,15 @@ function debrisPiece(pos,type,origin=null){
     vy=-(1.2+Math.random()*2.8);
     vz=-dir.z*(3.2+Math.random()*4.5);
    }else{
-    vx=dir.x*(5.0+Math.random()*8.0);
-    vy=Math.max(2.5,dir.y*(4.0+Math.random()*7.0)+Math.random()*4.0);
-    vz=Math.max(1.8,dir.z*(5.0+Math.random()*8.0)+Math.random()*3.5);
+    const speedMult=isGlass?1.65:1.0;
+    vx=dir.x*(5.0+Math.random()*8.0)*speedMult;
+    vy=Math.max(2.5,(dir.y*(4.0+Math.random()*7.0)+Math.random()*4.0)*speedMult);
+    vz=Math.max(1.8,(dir.z*(5.0+Math.random()*8.0)+Math.random()*3.5)*speedMult);
    }
   }
  }
- debris.push({mesh,v:new THREE.Vector3(vx,vy,vz),angVel:new THREE.Vector3(Math.random()*12,Math.random()*12,Math.random()*12),life:3.5+Math.random()*2.5,bounces:0,rubble:!large&&Math.random()<.65,isImploding:implode,trail:false});
+ const angSpeed=isGlass?22.0:12.0;
+ debris.push({mesh,v:new THREE.Vector3(vx,vy,vz),angVel:new THREE.Vector3((Math.random()-.5)*angSpeed,(Math.random()-.5)*angSpeed,(Math.random()-.5)*angSpeed),life:isGlass?5.5+Math.random()*2.5:3.5+Math.random()*2.5,bounces:0,rubble:!large&&Math.random()<.65,isImploding:implode,type,isGlass,trail:false});
 }
 function spawnHelicopterCrashDebris(pos,variant=0){
  const colors=[0x294f70,0xe6e5dc,0xb83525];
@@ -4912,6 +4923,25 @@ window.toggleMusic=()=>{window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMute
 window.toggleSfx=()=>{window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());refreshAudioButtons();};
 window.startSandboxDirect=()=>{document.getElementById('overlay').style.display='none';if(!active){try{reset();}catch(e){}}toggleFreeFlight(true);toggleDragon(false);};
 
+
+function runPresetBorehole(){
+ subwayCamActive=false;
+ basementCamActive=false;
+ spawnTestMeteorAt(0,16.0,-16.0,5.2,'iron');
+ message('💥 PRESET: HEAVY DENSE IRON KINETIC PENETRATOR LAUNCHED!');
+}
+
+function runPresetSubway(){
+ basementCamActive=false;
+ spawnTestMeteorAt(0,16.0,23.5,6.8,'molten');
+ message('🚇 PRESET: BROAD STREET SUBWAY CAVERN RUPTURE LAUNCHED!');
+}
+
+function runPresetConflagration(){
+ igniteBlock();
+ message('🔥 PRESET: 4TH ALARM NEIGHBORHOOD CONFLAGRATION INITIATED!');
+}
+
 function toggleFreeFlight(enable){
  freeFlightMode=(enable!==undefined)?!!enable:!freeFlightMode;
  const toolbar=document.getElementById('dd-sandbox-toolbar');
@@ -5409,6 +5439,9 @@ function initUnifiedSettingsEvents(){
   spawnFurnitureBurst(px,12,pz,6);
   message('🪑 DYNAMIC FURNITURE BURST SPAWNED');
  });
+ document.getElementById('dd-tb-preset-borehole')?.addEventListener('click',()=>runPresetBorehole());
+ document.getElementById('dd-tb-preset-subway')?.addEventListener('click',()=>runPresetSubway());
+ document.getElementById('dd-tb-preset-fire')?.addEventListener('click',()=>runPresetConflagration());
  document.getElementById('dd-tb-ignite-block')?.addEventListener('click',()=>igniteBlock());
  document.getElementById('dd-setting-dragon')?.addEventListener('click',()=>toggleDragon());
  document.getElementById('dd-tb-music')?.addEventListener('click',()=>{
@@ -6707,7 +6740,12 @@ window.__DD_QA={snap,
   getActiveArcsCount:()=>buildingElectricalShorts.getActiveArcsCount(),
   triggerElectricalShort:(x=0,y=4.5,z=-15,power=1.0)=>{buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y,z),new THREE.Vector3(x+(Math.random()-0.5)*1.5,y-0.3-Math.random()*0.8,z+(Math.random()-0.5)*1.5),power,cinematicFX,sound);return true;},
   dropMeteorWithMaterial:(kind='iron',size=4.5,x=0,z=-15)=>{spawnTestMeteorAt(x,14.0,z,size,kind);return meteors.at(-1);},
-  getIronMeteorsCount:()=>meteors.filter(m=>m.kind==='iron').length,isSubwayTrainDerailed:()=>craters.some(c=>c.subwayGroup?.getObjectByName('septa-b4-subway-car')?.userData?.derailed),getSubwayCarsCount:()=>craters.filter(c=>c.subwayGroup?.getObjectByName('septa-b4-subway-car')).length,getCratersWithSteam:()=>craters.filter(c=>c.isSubway&&c.subwayGroup).length,getCraters:()=>craters,getImplodingDebrisCount:()=>debris.filter(d=>d.isImploding).length,getBasementDebrisCount:()=>debris.filter(d=>d.mesh.position.y<0.0).length,getEmbeddedMeteorsCount:()=>meteors.filter(m=>m.crunched||m.grounded).length,igniteAt:(x,y,z)=>ignite(x,y,z),getSmokeStats:()=>cinematicFX.stats?.(),getFurnitureDebrisCount:()=>debris.filter(d=>d.isFurnitureDebris).length,isBuildingDestructible:(idOrName)=>!!neighborhood?.targetBuildings?.find(b=>b.name===idOrName||(b.name&&b.name.includes(idOrName))),getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
+  getIronMeteorsCount:()=>meteors.filter(m=>m.kind==='iron').length,
+  runPresetBorehole:()=>runPresetBorehole(),
+  runPresetSubway:()=>runPresetSubway(),
+  runPresetConflagration:()=>runPresetConflagration(),
+  getGlassDebrisCount:()=>debris.filter(d=>d.type==='glass'||d.isGlass).length,
+  getDebrisCount:()=>debris.length,isSubwayTrainDerailed:()=>craters.some(c=>c.subwayGroup?.getObjectByName('septa-b4-subway-car')?.userData?.derailed),getSubwayCarsCount:()=>craters.filter(c=>c.subwayGroup?.getObjectByName('septa-b4-subway-car')).length,getCratersWithSteam:()=>craters.filter(c=>c.isSubway&&c.subwayGroup).length,getCraters:()=>craters,getImplodingDebrisCount:()=>debris.filter(d=>d.isImploding).length,getBasementDebrisCount:()=>debris.filter(d=>d.mesh.position.y<0.0).length,getEmbeddedMeteorsCount:()=>meteors.filter(m=>m.crunched||m.grounded).length,igniteAt:(x,y,z)=>ignite(x,y,z),getSmokeStats:()=>cinematicFX.stats?.(),getFurnitureDebrisCount:()=>debris.filter(d=>d.isFurnitureDebris).length,isBuildingDestructible:(idOrName)=>!!neighborhood?.targetBuildings?.find(b=>b.name===idOrName||(b.name&&b.name.includes(idOrName))),getFires:()=>schoolFire.map(f=>({x:f.root.position.x,y:f.root.position.y,z:f.root.position.z,age:f.age,suppression:f.suppression,size:f.size})),igniteAt:(x,y,z)=>ignite(x,y,z),dispatchFirefighters:(x)=>dispatchFirefighters(x),repairAllBuildings:()=>repairAllBuildings(),groundedMeteorsCount:()=>meteors.filter(m=>m.grounded).length,collapseNorthBroad:(idOrAddr)=>run('collapseNorthBroad',()=>northBroadModels?.collapseBuilding?.(idOrAddr)),meteorsList:()=>meteors.map(m=>({size:m.size,hp:m.hp,isMassive:!!m.isMassive,colossus:!!m.colossus,x:m.mesh?.position?.x??0,y:m.mesh?.position?.y??0,z:m.mesh?.position?.z??0,crunching:!!m.crunching,grounded:!!m.grounded,crunchStopY:m.crunchStopY})),log:()=>qaLog.slice(),run,startTrial:startTacticalTrial,isTrialActive:()=>tacticalTrialActive,bubbleShield:()=>({visible:purpleRamShieldMesh?.visible||false,impact:purpleShieldImpact,type:purpleRamShieldMat?.uniforms?.uShieldType?.value||0}),neighborhoodHealth:()=>neighborhoodHealth(),gameOver:()=>gameOver(),winGame:()=>winGame(),taikoStats:()=>soundEngine.getTaikoStats(),roarStats:()=>soundEngine.getRoarStats(),triggerRoar:(v='furious')=>sound('dragonRoar',{variant:v,x:dragon.position.x}),cameraZoom:()=>({zoom:camera.zoom,introZoomProgress,waveClearZoomBlend}),dragonPose:()=>({x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,rx:dragon.rotation.x,ry:dragon.rotation.y,rz:dragon.rotation.z,rearUpBlend,perched:!dragonLeavingRoof}),carsList:()=>cars.map(c=>({x:c.root.position.x,y:c.root.position.y,z:c.root.position.z,laneZ:c.laneZ,fireTruck:!!c.fireTruck,speed:c.speed,serviceTarget:!!c.serviceTarget})),spawnCar:(x,z,dir,type)=>spawnCar(x,z,dir,type),
   stageFluidFire:()=>run('stageFluidFire',()=>{
    const initial=visualBank.fireVisualStats();
    visualBank.advanceFireVisuals(124.15);

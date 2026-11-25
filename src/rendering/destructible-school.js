@@ -502,7 +502,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
    position.set(p.x,p.y,p.z);
    const tumble=p.resting?0:p.rot;
-   rotation.set(tumble,p.rot,tumble*.63);
+   let rx=tumble,ry=p.rot,rz=tumble*.63;
+   if(!p.falling&&!p.resting&&(p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column')&&p.integrity<0.92){
+    const sag=(1.0-p.integrity)*0.32;
+    position.y-=sag*0.45;
+    rz+=Math.sin(p.homeX*2.8)*sag*0.42;
+   }
+   rotation.set(rx,ry,rz);
    quat.setFromEuler(rotation);
    dimensions(p);
    matrix.compose(position,quat,scale);
