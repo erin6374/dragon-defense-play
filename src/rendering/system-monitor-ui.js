@@ -4,7 +4,7 @@ export function setupSystemMonitorUI(){
  const section=document.getElementById('dd-system-monitor');if(!section)return;
  const status=section.querySelector('[data-host-status]'),canvas=section.querySelector('canvas');
  const ctx=canvas?.getContext('2d');const hist=[];const MAX=120;
- const nice=v=>Number.isFinite(Number(v))?Number(v).toFixed(1):'n/a';
+ const nice=v=>v==null?'n/a':Number.isFinite(Number(v))?Number(v).toFixed(1):'n/a';
  const graph=()=>{
   if(!ctx)return;const w=canvas.width,h=canvas.height;
   ctx.fillStyle='#0a182c';ctx.fillRect(0,0,w,h);
@@ -25,10 +25,11 @@ export function setupSystemMonitorUI(){
  // Only our Python launcher supports these diagnostic endpoints. A stale browser
  // tab must not hammer a dead localhost port every two seconds indefinitely.
  let endpointsAvailable=false, endpointsChecked=false, stopped=false;
+ window.__DD_HOST_MONITOR_READY=false;
  const requestOptions={cache:'no-store'};
  const disconnect=()=>{
-  endpointsAvailable=false;stopped=true;
-  if(status)status.textContent='Local game server is no longer reachable. Close this tab and relaunch START_GAME.bat; the game may be an old tab.';
+  endpointsAvailable=false;stopped=true;window.__DD_HOST_MONITOR_READY=false;
+  if(status)status.textContent='Local game server is no longer reachable. Close this tab and relaunch PLAY-PREVIEW.cmd; the game may be an old tab.';
  };
  const checkServer=async()=>{
   if(!onLocalServer||stopped)return false;
@@ -39,7 +40,7 @@ export function setupSystemMonitorUI(){
    if(!resp.ok || !(resp.headers.get('content-type')||'').includes('application/json'))throw Error('Python game endpoint unavailable');
    const build=await resp.json();
    if(!build.version||!build.directory)throw Error('Server is not the Dragon Defense launcher');
-   endpointsAvailable=true;
+   endpointsAvailable=true;window.__DD_HOST_MONITOR_READY=true;
   }catch(e){disconnect();}
   return endpointsAvailable;
  };
@@ -55,15 +56,14 @@ export function setupSystemMonitorUI(){
     if(m.disabled){status.textContent='Windows system monitor disabled (Safe Mode / No Monitor); gameplay remains available.';}
     else status.textContent=`System CPU ${nice(m.cpuPercent)}% · RAM ${nice(m.ramPercent)}% (${nice(m.ramAvailableGB)} GB free) · `+
     `GPU 3D ${m.gpuPercent==null?'unsupported*':nice(m.gpuPercent)+'%'} · Video decode ${m.videoDecodePercent==null?'n/a':nice(m.videoDecodePercent)+'%'} · Browser RAM ${nice(m.browserRSSMB)} MB · `+
-    `game ${nice(metrics.fps)} FPS / ${metrics.drawCalls??'—'} draws · Wave ${metrics.wave??'—'}`;
+    `game ${nice(metrics.fps)} FPS / ${metrics.drawCalls??'—'} draws · Wave ${metrics.wave??'—'} · `+
+    `heartbeat ${m.telemetryAgeMs==null?'not received':m.telemetryAgeMs+'ms ago'} · `+
+    `last rendered ${m.renderAgeMs==null?'not received':m.renderAgeMs+'ms ago'}`+
+    ` · tab ${m.documentHidden==null?'unknown':m.documentHidden?'hidden':m.documentHasFocus===false?'unfocused':'visible'}`;
    }catch(e){if(status)status.textContent='System monitor unavailable; gameplay can continue without it.';}
   }
-  try{
-   const r=await fetch('./__game_telemetry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    wave:metrics.wave??null,fps:metrics.fps??null,drawCalls:metrics.drawCalls??null,frameMs:metrics.frameMs??null,
-    recording:metrics.recording??null,stallCount:metrics.stallCount??null})});
-   if(!r.ok)disconnect();
-  }catch(e){disconnect();}
+  // Game loop owns the single 1-second heartbeat. Do not duplicate rows
+  // from the 2-second UI refresh; the host sampler logs independently.
  };
  if(!onLocalServer){status.textContent='OS monitor only available in the local Windows launcher.';}
  setInterval(update,2000);update();

@@ -1,0 +1,62 @@
+{
+  "license": "CC0-1.0",
+  "original_publisher": "Unity Labs Paris / Thomas Iche",
+  "source_page": "https://unity.com/blog/engine-platform/free-vfx-image-sequences-flipbooks",
+  "conversion": "Pillow 1024x1024 8x8 WEBP RGBA",
+  "assets": [
+    {
+      "asset": "Flame03",
+      "source": "https://unity3d.com/files/labs/downloads/vfx/assets01/Flame03/Flame03-flipbooks.zip",
+      "zip_sha256": "248c2d09c6599ded36085633d4c7fdb9a9a05bdf1a98ab34b8f14d282cef87a9",
+      "member": "Flame03_16x4.tga",
+      "member_sha256": "570b4ebb2d15e2ba5f205df34a45db9bdff8d106cbfa07ae9bf6e320a9e5d68f",
+      "native_dimensions": [
+        1024,
+        512
+      ],
+      "source_grid": [
+        16,
+        4
+      ],
+      "source_cell": [
+        64,
+        128
+      ],
+      "grid": [
+        8,
+        8
+      ],
+      "frames": 64,
+      "converted": "flame03.webp",
+      "converted_bytes": 333694,
+      "converted_sha256": "f0a5e760f37dd6a33f24463c674a1b9c3b11e767a33236a652edb40b0111834a"
+    },
+    {
+      "asset": "WispySmoke03",
+      "source": "https://unity3d.com/files/labs/downloads/vfx/assets01/WispySmoke03/WispySmoke03-flipbooks.zip",
+      "zip_sha256": "489e3158a5c082fa87d5f768bb4bd3065b595c0a0768ba63706d46cce883c69b",
+      "member": "WispySmoke03_8x8.tga",
+      "member_sha256": "05d8462b8b4b24265c1d924e6f23d5574dbdeef7cd5af6430c4205cbf821d49d",
+      "native_dimensions": [
+        1024,
+        1024
+      ],
+      "source_grid": [
+        8,
+        8
+      ],
+      "source_cell": [
+        128,
+        128
+      ],
+      "grid": [
+        8,
+        8
+      ],
+      "frames": 64,
+      "converted": "wispy-smoke03.webp",
+      "converted_bytes": 354794,
+      "converted_sha256": "c7880917a9710e02f206af2d7bc6dd81f21816fa24d6bd8eb28883a4cd400b2a"
+    }
+  ]
+}

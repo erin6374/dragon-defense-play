@@ -40,11 +40,12 @@ export function createPerformanceLab({onChange=()=>{},now=()=>Date.now()}={}){
   states(){return {...switches};},
   subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},
   begin(label='sample',seconds=8,meta={}){if(active)throw Error('A performance sample is already running');
-   active={label,seconds:Math.max(2,Math.min(30,seconds)),startedAt:now(),meta,states:{...switches},samples:[],elapsed:0};signal();},
+   active={label,seconds:Math.max(2,Math.min(60,seconds)),startedAt:now(),meta,states:{...switches},samples:[],elapsed:0};signal();},
   record(frame){if(!active)return;const ms=frame.dt*1000;
    if(!Number.isFinite(ms)||ms<=0)return;
-   // Preserve real long frames: hiding 250ms spikes would mask the issue.
-   const sample={dt:Math.min(ms,15000),drawCalls:frame.drawCalls||0,simMs:frame.simMs||0,renderMs:frame.renderMs||0};
+   // Preserve genuine long frame gaps, including stalls beyond 15 seconds;
+   // clipping them would overstate FPS during the reported slideshow.
+   const sample={dt:ms,drawCalls:frame.drawCalls||0,simMs:frame.simMs||0,renderMs:frame.renderMs||0};
    active.samples.push(sample);active.elapsed+=sample.dt/1000;
    if(active.elapsed>=active.seconds){
     const completed={label:active.label,date:new Date(active.startedAt).toISOString(),states:active.states,meta:active.meta,summary:summarizePerformance(active.samples)};

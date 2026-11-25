@@ -1,0 +1,11 @@
+# RC54 QA-tool HEAD independent verification — November 13, 2026
+
+Source/PR #2 HEAD: `f4f73c21beeed2191f4ed0b930fa9f11fa665d37`. Version `5.5.0-rc.54`; build `5.5-async-smoke-silhouette-rc54`. This verifies the previous QA-tool commit, **not RC55**.
+
+Five exact-HEAD GitHub Actions successful: [browser 43510751786](https://github.com/erin6374/dragon-defense-play/actions/runs/43510751786), [cinematic 43510751806](https://github.com/erin6374/dragon-defense-play/actions/runs/43510751806), [focused fire 43510751842](https://github.com/erin6374/dragon-defense-play/actions/runs/43510751842), [licensed CC0 43510751811](https://github.com/erin6374/dragon-defense-play/actions/runs/43510751811), [genuine motion 43510751838](https://github.com/erin6374/dragon-defense-play/actions/runs/43510751838).
+
+Independently downloaded actual artifacts and CRC checked: browser **78/78**, cinematic **6/6**, focused fire **7/7**, motion **33/33**, Windows preview **150/150**. Browser report has `errors=[]`, `warnings=[]`; cinematic/focused/motion `errors=[]`; their report SHAs match source. Windows `PREVIEW-BUILD.txt` identifies `f4f73c21beeed2191f4ed0b930fa9f11fa665d37`, RC54 version/build and browser workflow URL. Licensed CC0-1.0 manifest hashes match packaged `flame03.webp` (`f0a5e760f37dd6a33f24463c674a1b9c3b11e767a33236a652edb40b0111834a`) and `wispy-smoke03.webp` (`c7880917a9710e02f206af2d7bc6dd81f21816fa24d6bd8eb28883a4cd400b2a`).
+
+Actual ffprobe results: `skyline-long.mp4` **600 frames, 30 seconds, 20 FPS, 796x448**; five shorter MP4s **100 frames, 5 seconds, 20 FPS, 960x540**. Actual skyline frames inspected. Meteor-linked fire and reset evidenced in browser diagnostics; skyline combustion pool clock=3, sourceBufferWrites=198, unchangedSetSkips=36. The browser report shows software WebGL FPS ~0.3 and long unattributed rAF gaps; **not a Windows hardware benchmark**. No physical Windows FPS/CPU/RAM capture exists. **ART FAIL** remains for smoke repetition and stylized architectural destruction; technical workflows do not imply visual approval.
+
+**Next action:** verify RC55's exact-head workflows and real rendered plume motion, then obtain a physical Windows heavy-destruction Performance Lab CSV before any performance optimization claim.
