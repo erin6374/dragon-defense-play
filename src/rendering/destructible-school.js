@@ -19,7 +19,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   new THREE.MeshStandardMaterial({color:0x725c4b,roughness:.95,metalness:0,envMapIntensity:0.02}), // masonry backer
   new THREE.MeshStandardMaterial({color:0x373b3d,roughness:.96,metalness:0,envMapIntensity:0}) // industrial dark roof
  ];
- const MAX=2200;
+ const MAX=3400;
  const unitBox=new THREE.BoxGeometry(1,1,1);
  // A broken pane becomes thin, irregular shards with its own motion.
  const shards=new THREE.BufferGeometry();
@@ -40,6 +40,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
   scene.add(mesh);return mesh;
  });
 
+ const boreholeCharGroup = new THREE.Group();
+ boreholeCharGroup.name = 'TECH-FREIRE-BOREHOLE-CHAR';
+ scene.add(boreholeCharGroup);
  const schoolCracksGroup = new THREE.Group();
  schoolCracksGroup.name = 'TECH-FREIRE-FACADE-CRACKS';
  const schoolCrackPoints = [];
@@ -98,6 +101,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const cx=min.x+cCol*width/4;
    const cz=back+cRow*(front-back)/3;
    piece(3,cx,basementY+1.1,cz,0.55,2.2,0.55,{zone:'basement-column',strength:4.5,mass:6.5,rigidity:6.0});
+   piece(3,cx,basementY+1.1,cz,0.18,2.2,0.18,{zone:'rebar',strength:5.8,mass:2.4,rigidity:7.2});
   }
  }
  // Full five-story exterior proportions, but NO floor across the front atrium
@@ -108,8 +112,10 @@ export function createDestructibleSchool(THREE,scene,bounds){
   for(let bay=0;bay<=7;bay++){
    const x=min.x+bay*width/7;
    pier(x,cy,front-.14,.44,sh,.75);
+   piece(3,x,cy,front-.14,.12,sh*.92,.12,{zone:'rebar',strength:3.6,mass:1.6,rigidity:5.2});
    // Rear shell and its smaller clerestory openings.
    pier(x,cy,back+.15,.39,sh,.75);
+   piece(3,x,cy,back+.15,.12,sh*.92,.12,{zone:'rebar',strength:3.6,mass:1.6,rigidity:5.2});
   }
   for(let bay=0;bay<7;bay++){
    const x=min.x+(bay+.5)*width/7,bayW=width/7-.6;
@@ -258,7 +264,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   const implodeDirX=toCenterX/distCenter;
   const implodeDirZ=toCenterZ/distCenter;
 
-  const isInterior=['floor','column','beam','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','basement-column','basement-floor','basement-wall'].includes(p.zone);
+  const isInterior=['floor','column','beam','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','basement-column','basement-floor','basement-wall','rebar'].includes(p.zone);
   const isGlass=p.kind===2||p.zone==='glass';
   const rigidity=p.rigidity||(isGlass?0.1:isInterior?4.0:1.8);
   const mass=p.mass||(isGlass?0.25:p.zone==='floor'?5.2:isInterior?4.0:2.2);
@@ -395,7 +401,18 @@ export function createDestructibleSchool(THREE,scene,bounds){
    p.integrity=0;
    severed++;
   }
-  if(severed>0)flush();
+  if(severed>0){
+    // Spawn scorched carbon soot blast ring at borehole entry lip
+    if(boreholeCharGroup && boreholeCharGroup.children.length < 24){
+     const ringGeo = new THREE.RingGeometry(radius * 0.88, radius * 1.55, 18);
+     const ringMat = new THREE.MeshBasicMaterial({color: 0x0f0b08, transparent: true, opacity: 0.82, depthWrite: false, side: THREE.DoubleSide});
+     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+     ringMesh.rotation.x = -Math.PI / 2;
+     ringMesh.position.set(x, y + 0.04, z);
+     boreholeCharGroup.add(ringMesh);
+    }
+    flush();
+   }
   return severed;
  }
  function collapse(){
@@ -556,7 +573,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
  }
  function reset(){
-  if(schoolCracksGroup){schoolCracksGroup.visible=false;schoolCrackMat.opacity=0;}
+  if(schoolCracksGroup){schoolCracksGroup.visible=false;schoolCrackMat.opacity=0;}if(boreholeCharGroup){while(boreholeCharGroup.children.length>0){const c=boreholeCharGroup.children[0];c.geometry?.dispose();c.material?.dispose();boreholeCharGroup.remove(c);}}
   collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
