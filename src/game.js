@@ -549,7 +549,8 @@ function updateFires(dt){
      cinematicFX.demolitionDustWave(
       new THREE.Vector3(bldg.x-bldg.w*.45,.3,bldg.front),
       new THREE.Vector3(bldg.x+bldg.w*.45,.3,bldg.front),
-      2.4
+      2.4,
+      {brick:true}
      );
      sound('collapse',{x:bldg.x});
      message(`🔥 UNTENDED FIRE CONSUMED ${bldg.name||'BUILDING'}! FULL COLLAPSE`);
@@ -2501,6 +2502,38 @@ function addCrater(x,z,radius=3,opts={}){
    subwayGroup.add(coneRoot);
   }
 
+  // RC157: Subterranean emergency evacuation illuminated EXIT signs on tunnel bulkheads
+  const exitHousingMat=new THREE.MeshStandardMaterial({color:0x1b2024,roughness:0.7,metalness:0.2});
+  const exitSignMat=new THREE.MeshStandardMaterial({color:0x22ee55,emissive:0x00cc33,emissiveIntensity:1.2,roughness:0.25});
+  for(const dir of [-1, 1]){
+   const exitBox=new THREE.Group();
+   exitBox.name='subway-emergency-exit-sign';
+   const housing=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.55,1.15),exitHousingMat);
+   exitBox.add(housing);
+   const face=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.45,1.05),exitSignMat);
+   exitBox.add(face);
+   exitBox.position.set(dir*(W*0.5-0.22),-H*0.5+0.8,0);
+   subwayGroup.add(exitBox);
+  }
+
+  // RC157: Subterranean emergency red warning beacon light
+  const beaconGroup=new THREE.Group();
+  beaconGroup.name='subway-emergency-beacon';
+  const beaconBase=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.26,0.18,12),steelMat);
+  beaconBase.position.set(0,-0.09,0);
+  beaconGroup.add(beaconBase);
+  const beaconDomeMat=new THREE.MeshStandardMaterial({color:0xff1100,emissive:0xff2200,emissiveIntensity:1.8,transparent:true,opacity:0.85});
+  const beaconDome=new THREE.Mesh(new THREE.SphereGeometry(0.18,12,12),beaconDomeMat);
+  beaconDome.name='subway-beacon-dome';
+  beaconDome.position.set(0,0.10,0);
+  beaconGroup.add(beaconDome);
+  const beaconLight=new THREE.PointLight(0xff2200,2.5,16.0);
+  beaconLight.name='subway-beacon-light';
+  beaconLight.position.set(0,0.25,0);
+  beaconGroup.add(beaconLight);
+  beaconGroup.position.set(W*0.35,-H+platH+0.09,platZ+0.5);
+  subwayGroup.add(beaconGroup);
+
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
@@ -2605,6 +2638,14 @@ function updateCraters(dt){
     _craterV1.set(c.x-2.4,-3.8,c.z);
     _craterV2.set(1.0,0.22,0.18).normalize();
     cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:3,power:0.85});
+   }
+   const beacon=c.subwayGroup.getObjectByName('subway-emergency-beacon');
+   if(beacon){
+    const bl=beacon.getObjectByName('subway-beacon-light');
+    const bd=beacon.getObjectByName('subway-beacon-dome');
+    const pulse=(Math.sin(elapsed*9.0)>0.1)?1.0:0.12;
+    if(bl)bl.intensity=2.5*pulse;
+    if(bd&&bd.material)bd.material.emissiveIntensity=1.8*pulse;
    }
   }
   if(c.geyserGroup){
@@ -4228,6 +4269,7 @@ function damage(x,z,y=7,meteor=null){
  if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
   lost=neighborhood.impact(targetX,targetY,hitZ,blastRadius,p=>debrisPiece(p,'brick'),blastStrength);
+  cinematicFX.dustBurst(new THREE.Vector3(targetX,targetY,hitZ),Math.min(2.5,blastStrength*1.2),{brick:true,count:16});
   if(!effectiveTarget.roofBreached&&(targetY>=effectiveTarget.h-3.5||hitZ<effectiveTarget.front-2.0)){
    neighborhood.roofBreach(targetX,targetY,hitZ,blastRadius*(diffMode==='hard'?1.5:0.85));
   }
@@ -4945,6 +4987,12 @@ function runPresetSubway(){
  message('🚇 PRESET: BROAD STREET SUBWAY CAVERN RUPTURE LAUNCHED!');
 }
 
+function runPresetWaterMain(){
+ basementCamActive=false;
+ addCrater(0,23.5,4.5,{isSubway:true,size:6.8});
+ message('💧 PRESET: MUNICIPAL WATER MAIN RUPTURE ACTIVATED!');
+}
+
 function runPresetConflagration(){
  igniteBlock();
  message('🔥 PRESET: 4TH ALARM NEIGHBORHOOD CONFLAGRATION INITIATED!');
@@ -5449,6 +5497,7 @@ function initUnifiedSettingsEvents(){
  });
  document.getElementById('dd-tb-preset-borehole')?.addEventListener('click',()=>runPresetBorehole());
  document.getElementById('dd-tb-preset-subway')?.addEventListener('click',()=>runPresetSubway());
+ document.getElementById('dd-tb-preset-water')?.addEventListener('click',()=>runPresetWaterMain());
  document.getElementById('dd-tb-preset-fire')?.addEventListener('click',()=>runPresetConflagration());
  document.getElementById('dd-tb-ignite-block')?.addEventListener('click',()=>igniteBlock());
  document.getElementById('dd-setting-dragon')?.addEventListener('click',()=>toggleDragon());
@@ -6753,6 +6802,10 @@ window.__DD_QA={snap,
   getIronMeteorsCount:()=>meteors.filter(m=>m.kind==='iron').length,
   runPresetBorehole:()=>runPresetBorehole(),
   runPresetSubway:()=>runPresetSubway(),
+  runPresetWaterMain:()=>runPresetWaterMain(),
+  getEmergencyExitSignsCount:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.children.filter(ch=>ch.name==='subway-emergency-exit-sign').length:0;},
+  getSubwayEmergencyBeacon:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.getObjectByName('subway-emergency-beacon'):null;},
+  triggerBrickDustBurst:(x=0,y=2.0,z=0,p=1.5)=>{cinematicFX.dustBurst(new THREE.Vector3(x,y,z),p,{brick:true});return true;},
    triggerWaterMain:(x=0,z=23.5,r=4.2)=>{addCrater(x,z,r,{isSubway:true,size:6.8});return craters.at(-1);},
   runPresetConflagration:()=>runPresetConflagration(),
   getGlassDebrisCount:()=>debris.filter(d=>d.type==='glass'||d.isGlass).length,
