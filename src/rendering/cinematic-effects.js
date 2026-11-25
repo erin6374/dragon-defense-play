@@ -155,8 +155,8 @@ export function createCinematicEffects(T,scene,camera,bank){
     wandering+swirlX+t*(fastTrail?.12:.28)+windDirection.x*windAtFire*t*2.0-highWind,
     y+windDirection.y*windAtFire*t*.75,
     swirlZ+.3+Math.cos(i*.8)*.25+windDirection.z*windAtFire*t*2.0));
-   const altitudeDissipation=fastTrail?1.0:Math.max(0.03,Math.pow(1.0-progress,1.45));
-   const puffAlpha=Math.sin(Math.pow(progress,0.65)*Math.PI)*(fastTrail?.26:(.54-.18*suppression)*altitudeDissipation)*(1-windAtFire*.55);
+   const altitudeDissipation=fastTrail?1.0:Math.max(0.015,Math.pow(1.0-progress,1.72));
+   const puffAlpha=Math.sin(Math.pow(progress,0.65)*Math.PI)*(fastTrail?.22:(.42-.14*suppression)*altitudeDissipation)*(1-windAtFire*.55);
    const sootLerp=Math.min(1.0,Math.max(0.0,sootFactor));
    const currentSmokeCol=sootLerp>0.04?defaultSmokeColor.clone().lerp(sootColor,sootLerp):defaultSmokeColor;
    smoke.add(smokePosition,scale,scale*(fastTrail?1.20:1.28),puffAlpha,Math.sin(i*1.2+age*.25)*0.5,currentSmokeCol);
