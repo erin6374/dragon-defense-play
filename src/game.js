@@ -2559,6 +2559,16 @@ function updateCraters(dt){
     cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*2.0,0.2,c.z+(Math.random()-.5)*2.0),0.7,{count:4,upward:1.4});
    }
   }
+  if(c.subwayGroup){
+   const floodWater=c.subwayGroup.getObjectByName('subway-flood-water-pool');
+   if(floodWater){
+    floodWater.position.y=-5.2+0.12+Math.sin(elapsed*4.8+c.x*0.4)*0.05;
+   }
+   if(c.isSubway&&Math.random()<dt*4.8){
+    cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*c.radius*0.7,1.2,c.z+(Math.random()-.5)*c.radius*0.7),1.2,{count:3,upward:2.8,radial:true});
+    if(Math.random()<0.25)sound('whoosh_launch',{x:c.x,volume:0.25,pitch:1.8});
+   }
+  }
   if(c.geyserGroup){
    c.geyserTimer=(c.geyserTimer||0)+dt;
    if(c.geyserGroup.children[1]) c.geyserGroup.children[1].scale.y=0.92+0.22*Math.sin(elapsed*11.0);
@@ -3999,6 +4009,15 @@ function settleMeteorAsPermanentSlag(m){
  }
  if(m.mesh.parent)scene.remove(m.mesh);
 }
+function spawnFurnitureBurst(x,y,z,count=6){
+ const types=['desk','chair','filing_cabinet','whiteboard','monitor'];
+ for(let i=0;i<count;i++){
+  const t=types[i%types.length];
+  const offset=new THREE.Vector3((Math.random()-.5)*3.5,(Math.random()-.5)*1.8,(Math.random()-.5)*3.5);
+  spawnFurnitureDebris(new THREE.Vector3(x,y,z).add(offset),t==='desk'?'wood':(t==='filing_cabinet'?'metal':'furniture'),new THREE.Vector3(x,y,z));
+ }
+ sound('thud',{x,volume:0.45});
+}
 function spawnFurnitureDebris(pos,type='wood',origin=null){
  if(debris.length>96)return;
  const geo=cube;
@@ -5320,6 +5339,12 @@ function initUnifiedSettingsEvents(){
  // Bottom Bar Sandbox Button
  document.getElementById('sandbox-btn')?.addEventListener('click',()=>toggleFreeFlight());
  document.getElementById('dd-tb-dragon')?.addEventListener('click',()=>toggleDragon());
+ document.getElementById('dd-tb-subway-cam')?.addEventListener('click',()=>toggleSubwayCam());
+ document.getElementById('dd-tb-spawn-furniture')?.addEventListener('click',()=>{
+  const px=pointer?.x||0, pz=pointer?.z||22;
+  spawnFurnitureBurst(px,12,pz,6);
+  message('🪑 DYNAMIC FURNITURE BURST SPAWNED');
+ });
  document.getElementById('dd-setting-dragon')?.addEventListener('click',()=>toggleDragon());
  document.getElementById('dd-tb-music')?.addEventListener('click',()=>{
   window.__DD_AUDIO.setMusicMuted(!soundEngine.isMusicMuted());
@@ -6580,7 +6605,7 @@ window.__DD_QA={snap,
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
   schoolReconstruction:()=>schoolReconstruction?.stats()||null,
-  getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],punchSchoolBorehole:(x=0,y=14.5,z=-15,r=3.5,iron=true,massive=false)=>schoolReconstruction?.punchBorehole?.({x,y,z,radius:r,isHeavyIron:iron,isMassive:massive})||0,addCraterAt:(x,z,r=4.5,opts={})=>addCrater(x,z,r,opts),hasStationMezzanine:()=>craters.some(c=>c.subwayGroup?.getObjectByName('subway-station-mezzanine')),hasTurnstiles:()=>craters.some(c=>c.subwayGroup?.getObjectByName('station-turnstile')),hasFallenSeptaSign:()=>craters.some(c=>c.subwayGroup?.getObjectByName('fallen-septa-station-sign')),getEvadingCarsCount:()=>cars.filter(c=>c.evadingCrater).length,hasRadioDispatchTriggered:()=>(elapsed-lastRadioDispatchTime)<30.0,
+  getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],punchSchoolBorehole:(x=0,y=14.5,z=-15,r=3.5,iron=true,massive=false)=>schoolReconstruction?.punchBorehole?.({x,y,z,radius:r,isHeavyIron:iron,isMassive:massive})||0,addCraterAt:(x,z,r=4.5,opts={})=>addCrater(x,z,r,opts),hasStationMezzanine:()=>craters.some(c=>c.subwayGroup?.getObjectByName('subway-station-mezzanine')),hasTurnstiles:()=>craters.some(c=>c.subwayGroup?.getObjectByName('station-turnstile')),hasFallenSeptaSign:()=>craters.some(c=>c.subwayGroup?.getObjectByName('fallen-septa-station-sign')),getEvadingCarsCount:()=>cars.filter(c=>c.evadingCrater).length,hasRadioDispatchTriggered:()=>(elapsed-lastRadioDispatchTime)<30.0,spawnFurnitureBurst:(x=0,y=12,z=22,count=6)=>spawnFurnitureBurst(x,y,z,count),getSchoolFurnitureCount:()=>(schoolReconstruction?.getPieces?.()||[]).filter(p=>p.isFurniture).length,getImplosionPiecesCount:()=>(schoolReconstruction?.getPieces?.()||[]).filter(p=>p.isImploded).length,hasSubwaySteamGeyser:()=>craters.some(c=>c.isSubway&&c.subwayGroup),
   getCars:()=>cars,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
  spawnTestMeteorAt:(x,y,z,size,kind)=>run('spawnTestMeteorAt',()=>{spawnTestMeteorAt(x,y,z,size,kind);return snap();}),

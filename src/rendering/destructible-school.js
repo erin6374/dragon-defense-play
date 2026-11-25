@@ -72,10 +72,10 @@ export function createDestructibleSchool(THREE,scene,bounds){
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
  let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0,effectsHooks=null;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
- function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1}={}){
+ function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1,isFurniture=false}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
   pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
-   protectedZone,mass,rigidity,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+   protectedZone,mass,rigidity,isFurniture,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
  }
  const wall=(x,y,z,w,h,d,kind=0,zone='facade',strength=1,mass=2.2,rigidity=1.8)=>piece(kind,x,y,z,w,h,d,{zone,strength,mass,rigidity});
  const slab=(x,y,z,w,d,kind=1,zone='floor',mass=5.2,rigidity=3.2)=>piece(kind,x,y,z,w,.23,d,{zone,strength:1.1,mass,rigidity});
@@ -192,13 +192,21 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
   // Repeating corridor soffits and classroom sightlines visible after impact.
   beam(centerX,y0+h*.85,back+depth*.42,width-3,.21,.31);
-  if(level>=2){
-   for(const fx of [-width*.32,-width*.12,width*.12,width*.32]){
-    piece(4,centerX+fx,y0+h-.22,front-2.8,width*.14,.08,1.4,{zone:'classroom-light',strength:.3});
-    piece(3,centerX+fx,y0+.42,front-2.6,width*.12,.48,.75,{zone:'classroom-desk',strength:.4});
-    piece(5,centerX+fx,y0+.32,front-3.3,width*.08,.62,.45,{zone:'classroom-chair',strength:.35});
-    piece(4,centerX+fx,y0+h*.48,front-4.2,width*.12,1.05,.08,{zone:'classroom-whiteboard',strength:.4});
-    piece(5,centerX+fx+width*.07,y0+.72,front-3.8,.65,1.42,.38,{zone:'classroom-bookshelf',strength:.5});
+  // RC151: Populated classroom, office, and computer lab furniture across building depth bays
+  const depthBays = [front - 3.2, front - 14.0, front - 26.0, back + 10.0];
+  for (const bZ of depthBays) {
+   for (const fx of [-width * 0.32, -width * 0.12, width * 0.12, width * 0.32]) {
+    // Teacher workstation & PC monitor
+    piece(3, centerX + fx, y0 + 0.42, bZ + 0.4, width * 0.11, 0.48, 0.72, { zone: 'classroom-desk', strength: 0.4, mass: 1.1, rigidity: 1.5, isFurniture: true });
+    piece(4, centerX + fx, y0 + 0.88, bZ + 0.4, 0.55, 0.36, 0.22, { zone: 'lab-monitor', strength: 0.2, mass: 0.35, rigidity: 0.8, isFurniture: true });
+    // Student dual desks & molded chairs
+    piece(5, centerX + fx, y0 + 0.32, bZ - 0.75, width * 0.08, 0.62, 0.45, { zone: 'classroom-chair', strength: 0.35, mass: 0.45, rigidity: 1.1, isFurniture: true });
+    piece(3, centerX + fx, y0 + 0.42, bZ - 1.85, width * 0.11, 0.48, 0.72, { zone: 'student-desk', strength: 0.4, mass: 0.95, rigidity: 1.4, isFurniture: true });
+    piece(5, centerX + fx, y0 + 0.32, bZ - 2.65, width * 0.08, 0.62, 0.45, { zone: 'classroom-chair', strength: 0.35, mass: 0.45, rigidity: 1.1, isFurniture: true });
+    // Wall whiteboard & metal filing cabinet
+    piece(4, centerX + fx, y0 + h * 0.48, bZ - 3.5, width * 0.12, 1.05, 0.08, { zone: 'classroom-whiteboard', strength: 0.4, mass: 0.65, rigidity: 1.8, isFurniture: true });
+    piece(5, centerX + fx + width * 0.07, y0 + 0.72, bZ - 3.2, 0.65, 1.42, 0.38, { zone: 'classroom-bookshelf', strength: 0.5, mass: 1.4, rigidity: 2.2, isFurniture: true });
+    piece(3, centerX + fx - width * 0.07, y0 + 0.65, bZ - 3.2, 0.52, 1.25, 0.45, { zone: 'filing-cabinet', strength: 0.6, mass: 1.8, rigidity: 3.2, isFurniture: true });
    }
   }
  }
@@ -359,9 +367,22 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const mass=p.mass||2.0;
    const a=Math.sin(p.x*7.1+p.y*3.3+p.z);
    const b=Math.cos(p.z*5.5-p.x*2.2);
-   p.vx=(p.x-x)*1.4+a*0.8;
-   p.vz=(p.z-z)*1.4+b*0.8;
-   p.vy=-(isHeavyIron?13.5:(isMassive?16.0:8.5))/Math.sqrt(mass);
+   const hDist = Math.sqrt(hDistSq);
+   const isCoreImplosion = hDist < (radius * 0.55);
+
+   if (isCoreImplosion) {
+    // RC151: Internal Implosion Core — pieces sucked inward toward penetration axis
+    p.isImploded = true;
+    p.vx = (x - p.x) * 1.8 + a * 0.4;
+    p.vz = (z - p.z) * 1.8 + b * 0.4;
+    p.vy = -(isHeavyIron ? 17.5 : (isMassive ? 21.0 : 12.5)) / Math.sqrt(mass);
+   } else {
+    // RC151: Outer Spall Explosion — facade bricks, stone and glass blasted outward
+    p.isExploded = true;
+    p.vx = (p.x - x) * 2.2 + a * 1.1;
+    p.vz = (p.z - z) * 2.2 + b * 1.1;
+    p.vy = (3.5 + Math.random() * 5.0) / Math.sqrt(mass);
+   }
    p.rot=0;
    p.vr=(a+b)*3.2;
    p.integrity=0;
@@ -540,7 +561,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
  return {group:batches,impact,punchBorehole,collapse,update,reset,restore:reset,syncDestruction,stats,
-  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass})),
+  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass,isFurniture:!!p.isFurniture,isImploded:!!p.isImploded,isExploded:!!p.isExploded})),
   setEffectsHooks:hooks=>{effectsHooks=hooks;},
   getFlamingDebris:()=>pieces.filter(p=>p.resting&&p.isFlaming).map(p=>({x:p.x,y:p.y,z:p.z,scale:Math.max(p.w,p.h)})),
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},
