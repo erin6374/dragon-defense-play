@@ -74,6 +74,8 @@ export function createDestructibleSchool(THREE,scene,bounds){
  scene.add(schoolCracksGroup);
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
+ let activeFallingPieces=0;
+ const batchCounts=new Int32Array(materials.length);
  let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0,effectsHooks=null;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1,isFurniture=false}={}){
   // Pieces have a simple physically-inspired falling state, not hidden floors.
@@ -253,7 +255,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function detach(p,seed=0,delay=0,violent=false){
   if(p.falling||p.resting||p.removed)return false;
-  p.falling=true;p.delay=delay;
+  p.falling=true;p.delay=delay;activeFallingPieces++;
   const a=Math.sin(seed*11.37+p.x*1.41+p.y*7.3+p.z*.27);
   const b=Math.cos(seed*13.21+p.z*.83-p.x*2.17);
 
@@ -400,6 +402,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    p.vr=(a+b)*3.2;
    p.integrity=0;
    severed++;
+   activeFallingPieces++;
   }
   if(severed>0){
     // Spawn scorched carbon soot blast ring at borehole entry lip
@@ -443,6 +446,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function update(dt){
   if(dt<=0)return;
+  if(!collapsing&&activeFallingPieces===0)return;
   supportClock+=dt;
   if(!collapsing&&supportClock>=.18){propagateSupportFailure(supportClock);if(Math.random()<0.25&&effectsHooks)effectsHooks.onStructuralCreak?.(centerX,min.y+height*0.5,front);supportClock=0;}
   let changed=false;
@@ -481,7 +485,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
 
     if(impactVy>3.0&&effectsHooks){
      if(isGlass){
-      p.resting=true;
+      if(!p.resting){p.resting=true;activeFallingPieces=Math.max(0,activeFallingPieces-1);}
       if(Math.random()<0.65)p.removed=true;
       effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
      }else if(isFloor&&impactVy>4.0){
@@ -492,7 +496,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
     }
 
     if(Math.abs(p.vy)<1.4){
-     p.resting=true;
+     if(!p.resting){p.resting=true;activeFallingPieces=Math.max(0,activeFallingPieces-1);}
      dimensions(p);
      p.y=floor;
     }
@@ -503,7 +507,8 @@ export function createDestructibleSchool(THREE,scene,bounds){
  let detachedOnly=false;
  let overlayMode=false;
  function flush(){
-  const counts=new Array(materials.length).fill(0);
+  batchCounts.fill(0);
+  const counts=batchCounts;
   for(const p of pieces){
    if(p.removed)continue;
    if(detachedOnly&&!p.falling)continue;
@@ -574,7 +579,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function reset(){
   if(schoolCracksGroup){schoolCracksGroup.visible=false;schoolCrackMat.opacity=0;}if(boreholeCharGroup){while(boreholeCharGroup.children.length>0){const c=boreholeCharGroup.children[0];c.geometry?.dispose();c.material?.dispose();boreholeCharGroup.remove(c);}}
-  collapsing=false;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
+  collapsing=false;activeFallingPieces=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
      integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,profile:null,isFlaming:false,hitGround:false});

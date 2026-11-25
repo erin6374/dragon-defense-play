@@ -2192,6 +2192,7 @@ function disposeCrater(c){
   c.geyserGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
  }
 }
+const _craterV1=new THREE.Vector3(),_craterV2=new THREE.Vector3(),_craterV3=new THREE.Vector3();
 function addCrater(x,z,radius=3,opts={}){
  const isBroadStreetCorridor=z>=13&&z<=34&&Math.abs(x)<260;
  const isSubwayBreach=isBroadStreetCorridor&&(radius>=2.8||opts.isSubway||(opts.size||0)>=2.6);
@@ -2540,24 +2541,23 @@ function addCrater(x,z,radius=3,opts={}){
   const gz=z+(Math.random()-0.5)*(radius*0.75);
   geyserGroup.position.set(gx,0,gz);
 
-  const pipeMat=new THREE.MeshStandardMaterial({color:0x3a3835,roughness:0.85,metalness:0.65});
-  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.25,1.4,10),pipeMat);
-  pipe.position.set(0,-0.6,0);
-  pipe.rotation.z=(Math.random()-0.5)*0.35;
+  const pipeMat=new THREE.MeshStandardMaterial({color:0x2c2927,roughness:0.88,metalness:0.65});
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.32,1.3,12),pipeMat);
+  pipe.position.set(0,-0.45,0);
+  pipe.rotation.z=(Math.random()-0.5)*0.25;
   geyserGroup.add(pipe);
 
-  const waterMat=new THREE.MeshStandardMaterial({
-   color:0x88d0ff,roughness:0.12,metalness:0.1,transparent:true,opacity:0.78,emissive:0x1b5a8c,emissiveIntensity:0.35
-  });
-  const geyserMesh=new THREE.Mesh(new THREE.ConeGeometry(0.85,11.0,12,1,true),waterMat);
-  geyserMesh.position.set(0,5.5,0);
-  geyserGroup.add(geyserMesh);
+  // Cast-iron municipal water main flange collar and asphalt rupture rim
+  const flange=new THREE.Mesh(new THREE.TorusGeometry(0.36,0.07,8,16),pipeMat);
+  flange.position.set(0,0.12,0);
+  flange.rotation.x=Math.PI*0.5;
+  geyserGroup.add(flange);
 
-  const crest=new THREE.Mesh(new THREE.SphereGeometry(1.4,8,8),new THREE.MeshStandardMaterial({
-   color:0xddf4ff,roughness:0.3,transparent:true,opacity:0.72
-  }));
-  crest.position.set(0,10.8,0);
-  geyserGroup.add(crest);
+  const rimMat=new THREE.MeshStandardMaterial({color:0x1b1918,roughness:0.96});
+  const asphaltRim=new THREE.Mesh(new THREE.TorusGeometry(0.62,0.16,6,12),rimMat);
+  asphaltRim.position.set(0,0.04,0);
+  asphaltRim.rotation.x=Math.PI*0.5;
+  geyserGroup.add(asphaltRim);
 
   scene.add(geyserGroup);
   sound('water');
@@ -2582,51 +2582,49 @@ function updateCraters(dt){
   }
   if(c.isSubway&&c.subwayGroup){
    c.sparkTimer=(c.sparkTimer||0)+dt;
-   if(c.sparkTimer>0.48){
+   if(c.sparkTimer>0.50){
     c.sparkTimer=0;
-    cinematicFX.sparks(new THREE.Vector3(c.x+(Math.random()-.5)*1.4,-4.2,c.z+(Math.random()-.5)*1.8),Math.round(8+Math.random()*8),1.2);
-    if(Math.random()<0.40)sound('electric',{x:c.x});
+    _craterV1.set(c.x+(Math.random()-.5)*1.4,-4.2,c.z+(Math.random()-.5)*1.8);
+    cinematicFX.sparks(_craterV1,Math.round(6+Math.random()*6),1.1);
+    if(Math.random()<0.35)sound('electric',{x:c.x});
    }
    c.steamTimer=(c.steamTimer||0)+dt;
-   if(c.steamTimer>0.24){
+   if(c.steamTimer>0.28){
     c.steamTimer=0;
-    cinematicFX.steamBurst?.(new THREE.Vector3(c.x+(Math.random()-.5)*1.8,-4.8,c.z+(Math.random()-.5)*1.6),1.25);
-    if(Math.random()<0.35)sound('steam',{x:c.x});
-   }
-   if(Math.random()<dt*3.5){
-    cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*2.0,0.2,c.z+(Math.random()-.5)*2.0),0.7,{count:4,upward:1.4});
+    _craterV1.set(c.x+(Math.random()-.5)*1.8,-4.8,c.z+(Math.random()-.5)*1.6);
+    cinematicFX.steamBurst?.(_craterV1,1.0);
+    if(Math.random()<0.30)sound('steam',{x:c.x});
    }
   }
   if(c.subwayGroup){
-   const floodWater=c.subwayGroup.getObjectByName('subway-flood-water-pool');
+   const floodWater=c.subwayGroup.getObjectByName('subway-flooded-water');
    if(floodWater){
-    floodWater.position.y=-5.2+0.12+Math.sin(elapsed*4.8+c.x*0.4)*0.05;
+    floodWater.position.y=-5.2+0.14+Math.sin(elapsed*3.5+c.x*0.3)*0.04;
    }
-   if(c.isSubway&&Math.random()<dt*4.8){
-    cinematicFX.dustBurst(new THREE.Vector3(c.x+(Math.random()-.5)*c.radius*0.7,1.2,c.z+(Math.random()-.5)*c.radius*0.7),1.2,{count:3,upward:2.8,radial:true});
-    if(Math.random()<0.25)sound('whoosh_launch',{x:c.x,volume:0.25,pitch:1.8});
+   if(c.isSubway&&cinematicFX.waterSpray){
+    _craterV1.set(c.x-2.4,-3.8,c.z);
+    _craterV2.set(1.0,0.22,0.18).normalize();
+    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:3,power:0.85});
    }
   }
   if(c.geyserGroup){
    c.geyserTimer=(c.geyserTimer||0)+dt;
-   if(c.geyserGroup.children[1]) c.geyserGroup.children[1].scale.y=0.92+0.22*Math.sin(elapsed*11.0);
-   if(c.geyserGroup.children[2]) c.geyserGroup.children[2].position.y=10.2+1.8*Math.sin(elapsed*11.0);
-   if(c.geyserTimer>0.35){
-    c.geyserTimer=0;
-    cinematicFX.dustBurst?.(new THREE.Vector3(c.geyserGroup.position.x,1.0,c.geyserGroup.position.z),0.6,{count:3,upward:2.5});
-    if(c.ember) cinematicFX.dustBurst?.(new THREE.Vector3(c.geyserGroup.position.x,0.4,c.geyserGroup.position.z),0.8,{count:4,upward:1.8});
+   if(cinematicFX.waterJet){
+    cinematicFX.waterJet(c.geyserGroup.position,dt,{rate:9,power:1.0,spread:0.20});
    }
    for(const f of schoolFire){
-    if(f.root.position.distanceTo(c.geyserGroup.position)<14.0){
-     f.suppression=Math.min(1.0,f.suppression+dt*1.2);
+    if(f.root.position.distanceTo(c.geyserGroup.position)<16.0){
+     f.suppression=Math.min(1.0,f.suppression+dt*2.2);
     }
    }
   }
-  if(heatRatio>0.25&&Math.random()<dt*7&&quality.allowTrail(trailParticles.length)){
-   emitTrail(new THREE.Vector3(c.x+(Math.random()-.5)*c.radius*.5,0.5,c.z+(Math.random()-.5)*c.radius*.5),true);
+  if(heatRatio>0.25&&Math.random()<dt*5&&quality.allowTrail(trailParticles.length)){
+   _craterV1.set(c.x+(Math.random()-.5)*c.radius*.5,0.5,c.z+(Math.random()-.5)*c.radius*.5);
+   emitTrail(_craterV1,true);
   }
   if(c.life>0&&Math.abs(c.x)<25&&c.z>10&&c.z<32){
-   cinematicFX.fire(new THREE.Vector3(c.x,.35,c.z),elapsed,c.radius*.65,.28,'structure');
+   _craterV1.set(c.x,.35,c.z);
+   cinematicFX.fire(_craterV1,elapsed,c.radius*.65,.28,'structure');
   }
   if(c.life<=0){
    disposeCrater(c);
@@ -6746,6 +6744,8 @@ window.__DD_QA={snap,
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
  audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,
   getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getInteriorProxiesVisibleCount:()=>northBroadModels?.entries?.filter(e=>e.interiorProxy?.visible).length||0,isSchoolEffectsHooked:()=>!!schoolReconstruction,getSchoolStats:()=>schoolReconstruction?.stats?.(),collapseSchool:()=>schoolReconstruction?.collapse(),hasFloodedSubwayWater:()=>craters.some(c=>c.subwayGroup?.getObjectByName?.('subway-flooded-water')),setSubwayCam:(active)=>{subwayCamActive=!!active;const b=document.getElementById('dd-tb-subway-cam');if(b)b.classList.toggle('active',subwayCamActive);return subwayCamActive;},isSubwayCamActive:()=>subwayCamActive,setBasementCam:(active)=>{basementCamActive=!!active;if(basementCamActive)subwayCamActive=false;const b=document.getElementById('dd-tb-basement-cam');if(b)b.classList.toggle('active',basementCamActive);return basementCamActive;},isBasementCamActive:()=>basementCamActive,igniteBlock:()=>igniteBlock(),getBurningBuildingsCount:()=>neighborhood.targetBuildings.filter(b=>schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<b.w*0.6&&Math.abs(sf.root.position.z-b.z)<b.d*0.6)).length,hasWaterMainGeyser:()=>craters.some(c=>c.geyserGroup),
+   getWaterParticleCount:()=>cinematicFX.getWaterParticleCount?cinematicFX.getWaterParticleCount():0,
+   getCinematicStats:()=>cinematicFX.stats?cinematicFX.stats():null,
   getElectricalShortsCount:()=>buildingElectricalShorts.getTotalShortsTriggered(),
   getActiveArcsCount:()=>buildingElectricalShorts.getActiveArcsCount(),
   triggerElectricalShort:(x=0,y=4.5,z=-15,power=1.0)=>{buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y,z),new THREE.Vector3(x+(Math.random()-0.5)*1.5,y-0.3-Math.random()*0.8,z+(Math.random()-0.5)*1.5),power,cinematicFX,sound);return true;},
@@ -6753,6 +6753,7 @@ window.__DD_QA={snap,
   getIronMeteorsCount:()=>meteors.filter(m=>m.kind==='iron').length,
   runPresetBorehole:()=>runPresetBorehole(),
   runPresetSubway:()=>runPresetSubway(),
+   triggerWaterMain:(x=0,z=23.5,r=4.2)=>{addCrater(x,z,r,{isSubway:true,size:6.8});return craters.at(-1);},
   runPresetConflagration:()=>runPresetConflagration(),
   getGlassDebrisCount:()=>debris.filter(d=>d.type==='glass'||d.isGlass).length,
   getDebrisCount:()=>debris.length,
