@@ -20,7 +20,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    s.vertexShader='attribute float fxAlpha;attribute vec3 fxColor;varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.vertexShader;
    s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFxAlpha=fxAlpha;vFxColor=fxColor;vFxUv=uv;');
    s.fragmentShader='varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.fragmentShader;
-   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxFeather=1.0-smoothstep(0.08,0.92,fxEdgeR);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
+   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxRaw=clamp(1.0-smoothstep(0.06,0.94,fxEdgeR),0.0,1.0);float fxFeather=fxRaw*fxRaw*(3.0-2.0*fxRaw);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
   };
   return {
    m,alpha,colors,capacity,n:0,
@@ -53,6 +53,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterFoamColor=new T.Color(0xe6f4fc);
  const defaultDustColor=new T.Color(0xbab09e);
  const brickDustColor=new T.Color(0xb2533e);
+ const hazeSmokeColor=new T.Color(0xb0b8c2);
 
  const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
  const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
@@ -297,8 +298,19 @@ export function createCinematicEffects(T,scene,camera,bank){
    p.p.addScaledVector(p.v,dt);
    p.v.multiplyScalar(Math.max(0,1-dt*.6));
    p.v.y+=dt*.35;
-   const col=p.isSteam?steamColor:defaultSmokeColor;
-   smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*(p.isSteam?0.62:0.7),p.age*.1,col);
+   const alt=p.p.y;
+   const altFade=Math.max(0.08,1.0-Math.max(0,alt-6.0)*0.042);
+   const altExpand=1.0+Math.min(2.2,Math.max(0,alt-5.0)*0.075);
+   const currentSize=(p.size+p.age*1.2)*altExpand;
+   const progress=Math.min(1.0,p.age/p.life);
+   const smokeAlpha=(1-progress)*(p.isSteam?0.55:0.62)*altFade;
+   if(p.isSteam){
+    _col1.copy(steamColor);
+   }else{
+    const altLerp=Math.min(1.0,Math.max(0,(alt-8.0)*0.05));
+    _col1.copy(defaultSmokeColor).lerp(hazeSmokeColor,altLerp*0.5);
+   }
+   smoke.add(p.p,currentSize,currentSize,smokeAlpha,p.age*.1,_col1);
   }
 
   // Update dust puffs
@@ -432,8 +444,10 @@ export function createCinematicEffects(T,scene,camera,bank){
    );
    _v1.copy(pos).add(_offset);
 
-   const altitudeDissipation=fastTrail?1.0:Math.max(0.015,Math.pow(1.0-progress,1.72));
-   const puffAlpha=Math.sin(Math.pow(progress,0.65)*Math.PI)*(fastTrail?.22:(.42-.14*suppression)*altitudeDissipation)*(1-windAtFire*.55);
+   const alt=Math.max(0,_v1.y-pos.y);
+   const altFade=Math.max(0.05,Math.pow(Math.max(0,1.0-progress),2.1));
+   const altitudeDissipation=fastTrail?1.0:altFade;
+   const puffAlpha=Math.sin(Math.pow(progress,0.60)*Math.PI)*(fastTrail?.20:(.38-.12*suppression)*altitudeDissipation)*(1-windAtFire*.55);
    const sootLerp=Math.min(1.0,Math.max(0.0,sootFactor));
 
    if(sootLerp>0.04){
