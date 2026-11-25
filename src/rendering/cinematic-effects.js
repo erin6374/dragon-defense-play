@@ -51,6 +51,8 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterWhiteColor=new T.Color(0xffffff);
  const waterMistColor=new T.Color(0xf0f7ff);
  const waterFoamColor=new T.Color(0xe6f4fc);
+ const defaultDustColor=new T.Color(0xbab09e);
+ const brickDustColor=new T.Color(0xb2533e);
 
  const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
  const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
@@ -103,7 +105,7 @@ export function createCinematicEffects(T,scene,camera,bank){
 
  const MAX_DUST_PUFFS=240;
  const dustPuffs=[];
- for(let i=0;i<MAX_DUST_PUFFS;i++)dustPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,initialSize:1,targetSize:3,rot:0,rotSpeed:0,maxOpacity:0.6});
+ for(let i=0;i<MAX_DUST_PUFFS;i++)dustPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,initialSize:1,targetSize:3,rot:0,rotSpeed:0,maxOpacity:0.6,col:defaultDustColor});
  let dustHead=0;
 
  const MAX_SPARK_PUFFS=200;
@@ -174,6 +176,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  function dustBurst(pos,power=1,opts={}){
   const num=opts.count||Math.min(32,Math.max(8,Math.round(12*power)));
   const originY=Math.max(0.2,pos.y);
+  const dustCol=(opts.brick||opts.kind==='brick'||opts.color==='brick')?brickDustColor:(opts.col||defaultDustColor);
   for(let i=0;i<num;i++){
    const angle=Math.random()*Math.PI*2;
    const speed=(opts.radial!==false?4.0+Math.random()*7.0:2.0+Math.random()*4.0)*power;
@@ -190,11 +193,12 @@ export function createCinematicEffects(T,scene,camera,bank){
    d.age=0;d.life=life;d.initialSize=initialSize;d.targetSize=targetSize;
    d.rot=Math.random()*Math.PI*2;d.rotSpeed=(Math.random()-0.5)*1.5;
    d.maxOpacity=0.50+Math.random()*0.25;
+   d.col=dustCol;
   }
   if(opts.shock)shock(pos,Math.min(18,power*3.5));
  }
 
- function demolitionDustWave(fromPos,toPos,power=1.8){
+ function demolitionDustWave(fromPos,toPos,power=1.8,opts={}){
   _delta.subVectors(toPos,fromPos);
   const len=_delta.length();
   const steps=Math.max(4,Math.round(len/3.5));
@@ -202,7 +206,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    const t=i/steps;
    _v1.copy(fromPos).addScaledVector(_delta,t);
    _v1.y=Math.max(0.3,_v1.y);
-   dustBurst(_v1,power,{count:12,radial:true,upward:0.75});
+   dustBurst(_v1,power,{count:12,radial:true,upward:0.75,...opts});
   }
  }
 
@@ -313,7 +317,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    const progress=Math.min(1,d.age/d.life);
    const currentSize=d.initialSize+(d.targetSize-d.initialSize)*Math.pow(progress,0.65);
    const alpha=d.maxOpacity*Math.max(0,Math.sin(progress*Math.PI));
-   dust.add(d.p,currentSize,currentSize,alpha,d.rot);
+   dust.add(d.p,currentSize,currentSize,alpha,d.rot,d.col);
   }
 
   // Update spark puffs
@@ -491,6 +495,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    drawBatches:pools.length,
    activeWaterParticles:waterParticles.filter(p=>p.active).length,
    activeDustPuffs:dustPuffs.filter(d=>d.active).length,
+   activeBrickDustPuffs:dustPuffs.filter(d=>d.active&&d.col===brickDustColor).length,
    activeSparks:sparkPuffs.filter(s=>s.active).length,
    smokePuffs:smoke.n
   })
