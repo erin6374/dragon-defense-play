@@ -5,11 +5,14 @@ export function createCinematicEffects(T,scene,camera,bank){
  function pool(capacity,material,geometry=new T.PlaneGeometry(1,1)){
   const m=new T.InstancedMesh(geometry,material,capacity);m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(m);
   const alpha=new T.InstancedBufferAttribute(new Float32Array(capacity),1);m.geometry.setAttribute('fxAlpha',alpha);
-  material.onBeforeCompile=s=>{s.vertexShader='attribute float fxAlpha;varying float vFxAlpha;varying vec2 vFxUv;\n'+s.vertexShader;s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFxAlpha=fxAlpha;vFxUv=uv;');s.fragmentShader='varying float vFxAlpha;varying vec2 vFxUv;\n'+s.fragmentShader;s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxFeather=1.0-smoothstep(0.20,0.98,fxEdgeR);diffuseColor.a*=vFxAlpha*fxFeather;')};
-  return {m,alpha,capacity,n:0,add(pos,w,h,opacity=1,rotation=0){if(this.n>=capacity)return;dummy.position.copy(pos);dummy.quaternion.copy(camera.quaternion);dummy.rotateZ(rotation);dummy.scale.set(w,h,1);dummy.updateMatrix();m.setMatrixAt(this.n,dummy.matrix);alpha.setX(this.n++,opacity)},flush(){m.count=this.n;m.instanceMatrix.needsUpdate=true;alpha.needsUpdate=true}};
+  material.onBeforeCompile=s=>{s.vertexShader='attribute float fxAlpha;varying float vFxAlpha;varying vec2 vFxUv;\n'+s.vertexShader;s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFxAlpha=fxAlpha;vFxUv=uv;');s.fragmentShader='varying float vFxAlpha;varying vec2 vFxUv;\n'+s.fragmentShader;s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxFeather=1.0-smoothstep(0.08,0.88,fxEdgeR);diffuseColor.a*=vFxAlpha*fxFeather;')};
+  return {m,alpha,capacity,n:0,add(pos,w,h,opacity=1,rotation=0,col=null){if(this.n>=capacity)return;dummy.position.copy(pos);dummy.quaternion.copy(camera.quaternion);dummy.rotateZ(rotation);dummy.scale.set(w,h,1);dummy.updateMatrix();m.setMatrixAt(this.n,dummy.matrix);if(col&&m.setColorAt)m.setColorAt(this.n,col);alpha.setX(this.n++,opacity)},flush(){m.count=this.n;m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;alpha.needsUpdate=true}};
  }
+ const defaultSmokeColor=new T.Color(0x605c56);
+ const sootColor=new T.Color(0x181512);
+ const steamColor=new T.Color(0xe6f0fa);
  const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
- const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0x3c3b39,transparent:true,opacity:.85,depthWrite:false}));
+ const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
  const waterPixels=new Uint8Array(32*32*4);for(let y=0;y<32;y++)for(let x=0;x<32;x++){const i=(y*32+x)*4,r=Math.hypot((x-15.5)/15.5,(y-15.5)/15.5);waterPixels[i]=waterPixels[i+1]=waterPixels[i+2]=255;waterPixels[i+3]=Math.round(255*Math.max(0,1-r)**1.4)}const waterMap=new T.DataTexture(waterPixels,32,32,T.RGBAFormat);waterMap.needsUpdate=true;
  const spray=pool(900,new T.MeshBasicMaterial({map:waterMap,color:0xe3eff2,transparent:true,opacity:.65,depthWrite:false}));
  const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
@@ -73,7 +76,8 @@ export function createCinematicEffects(T,scene,camera,bank){
   for(const p of pools)p.n=0;
   for(let i=puffs.length-1;i>=0;i--){
    const p=puffs[i];p.age+=dt;p.p.addScaledVector(p.v,dt);p.v.multiplyScalar(1-dt*.6);p.v.y+=dt*.35;
-   smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*.7,p.age*.1);
+   const col=p.isSteam?steamColor:defaultSmokeColor;
+   smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*(p.isSteam?0.62:0.7),p.age*.1,col);
    if(p.age>=p.life)puffs.splice(i,1);
   }
   for(let i=dustPuffs.length-1;i>=0;i--){
@@ -113,7 +117,7 @@ export function createCinematicEffects(T,scene,camera,bank){
   windStrength=Math.max(0,Math.min(1,strength));
   if(windStrength&&origin&&direction){windOrigin.copy(origin);windDirection.copy(direction);}
  }
- function fire(pos,age,size=1,suppression=0,style='structure'){
+ function fire(pos,age,size=1,suppression=0,style='structure',sootFactor=0){
   const intensity=Math.max(0,1-suppression);
   const relX=pos.x-windOrigin.x,relY=pos.y-windOrigin.y,relZ=pos.z-windOrigin.z;
   const along=relX*windDirection.x+relY*windDirection.y+relZ*windDirection.z;
@@ -153,9 +157,24 @@ export function createCinematicEffects(T,scene,camera,bank){
     swirlZ+.3+Math.cos(i*.8)*.25+windDirection.z*windAtFire*t*2.0));
    const altitudeDissipation=fastTrail?1.0:Math.max(0.03,Math.pow(1.0-progress,1.45));
    const puffAlpha=Math.sin(Math.pow(progress,0.65)*Math.PI)*(fastTrail?.26:(.54-.18*suppression)*altitudeDissipation)*(1-windAtFire*.55);
-   smoke.add(smokePosition,scale,scale*(fastTrail?1.20:1.28),puffAlpha,Math.sin(i*1.2+age*.25)*0.5);
+   const sootLerp=Math.min(1.0,Math.max(0.0,sootFactor));
+   const currentSmokeCol=sootLerp>0.04?defaultSmokeColor.clone().lerp(sootColor,sootLerp):defaultSmokeColor;
+   smoke.add(smokePosition,scale,scale*(fastTrail?1.20:1.28),puffAlpha,Math.sin(i*1.2+age*.25)*0.5,currentSmokeCol);
+  }
+ }
+ function steamBurst(pos,power=1){
+  const num=Math.min(24,Math.max(4,Math.round(8*power)));
+  for(let i=0;i<num&&puffs.length<220;i++){
+   puffs.push({
+    p:pos.clone().add(new T.Vector3((Math.random()-.5)*1.8,0.2,(Math.random()-.5)*1.8)),
+    v:new T.Vector3((Math.random()-.5)*1.4,3.2+Math.random()*3.8,(Math.random()-.5)*1.4),
+    age:0,
+    life:1.2+Math.random()*1.5,
+    size:1.2+Math.random()*power*1.1,
+    isSteam:true
+   });
   }
  }
  function water(from,to,width=.12){const delta=to.clone().sub(from),length=delta.length(),steps=Math.min(56,Math.max(12,Math.ceil(length*2)));for(let i=0;i<steps;i++){const t=(i+(clock*9%1))/steps;const p=from.clone().addScaledVector(delta,t);p.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),angle=Math.atan2(-delta.dot(right),delta.dot(up));spray.add(p,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle)}for(let i=0;i<12;i++){const a=clock*7+i*2.4,r=.2+(i%4)*.18;spray.add(to.clone().add(new T.Vector3(Math.cos(a)*r,Math.abs(Math.sin(a))*r,Math.sin(a)*r)),.23,.32,.4)}}
- return {begin,fire,setWind,water,burst,shock,dustBurst,demolitionDustWave,sparks,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;dustPuffs.length=0;sparkPuffs.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:pools.length,puffs:puffs.length,dustPuffs:dustPuffs.length,shockwaves:rings.length,windStrength})};
+ return {begin,fire,setWind,water,burst,shock,dustBurst,demolitionDustWave,sparks,steamBurst,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;dustPuffs.length=0;sparkPuffs.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:pools.length,puffs:puffs.length,dustPuffs:dustPuffs.length,shockwaves:rings.length,windStrength,smokePuffs:smoke.n})};
 }
