@@ -1,9 +1,43 @@
+import * as THREE from 'three';
 import {createDistantNeighborhood} from './rendering/distant-neighborhood.js';
 import {populateCity} from './simulation/city-layout.js';
 import {createStructuralCity} from './rendering/structural-city.js';
 import {addForegroundPlanting,addStreetSetDressing} from './rendering/urban-detail.js';
+
+ const craterHolesUniform = {
+  value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0))
+ };
+
+ function patchCraterDiscardShader(mat, id = 'crater-discard') {
+  if (!mat) return mat;
+  mat.customProgramCacheKey = () => id;
+  mat.onBeforeCompile = (shader) => {
+   shader.uniforms.uCraterHoles = craterHolesUniform;
+   shader.vertexShader = 'varying vec3 vCraterWorldPos;\n' + shader.vertexShader;
+   shader.vertexShader = shader.vertexShader.replace(
+    '#include <begin_vertex>',
+    '#include <begin_vertex>\nvCraterWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;'
+   );
+   shader.fragmentShader = 'uniform vec4 uCraterHoles[8];\nvarying vec3 vCraterWorldPos;\n' + shader.fragmentShader;
+   shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <clipping_planes_fragment>',
+    `#include <clipping_planes_fragment>
+    for (int i = 0; i < 8; i++) {
+     if (uCraterHoles[i].z > 0.01) {
+      float dx = vCraterWorldPos.x - uCraterHoles[i].x;
+      float dz = vCraterWorldPos.z - uCraterHoles[i].y;
+      if (dx * dx + dz * dz < uCraterHoles[i].z) {
+       discard;
+      }
+     }
+    }`
+   );
+  };
+  return mat;
+ }
+
 export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,mats,rand,visualBank}){
- const mat=material,walk=mat(0xa9a8a0),asphalt=mat(0x34373b),white=mat(0xe3e0d5);
+ const mat=material,walk=patchCraterDiscardShader(mat(0xa9a8a0),'walk-discard'),asphalt=patchCraterDiscardShader(mat(0x34373b),'asphalt-discard'),white=patchCraterDiscardShader(mat(0xe3e0d5),'white-discard');
  const nearStatic=new THREE.Group();
  nearStatic.name='Broad Street and sidewalks';
  g.add(nearStatic);
@@ -12,7 +46,7 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  b(nearStatic,0,-.65,-18,2400,.32,160,walk); // extended ground including several rear blocks
  b(nearStatic,0,-.45,24,2400,.13,24,asphalt); // Broad Street frontage
  b(nearStatic,0,-.45,40,2400,.13,8,asphalt); // near curb lane, z=36..44
- const westSidewalk=mat(0x555b60),westCurb=mat(0x898d8c),westJoint=mat(0x41474c);
+ const westSidewalk=patchCraterDiscardShader(mat(0x555b60),'west-sw-discard'),westCurb=patchCraterDiscardShader(mat(0x898d8c),'west-curb-discard'),westJoint=mat(0x41474c);
  for(const surface of [westSidewalk,westCurb,westJoint])surface.fog=false;
  b(nearStatic,0,-.43,108,2400,.12,128,westSidewalk); // west side, z=44..172
  b(nearStatic,0,-.30,44.2,2400,.17,.38,westCurb); // street-facing curb
@@ -36,7 +70,7 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
   }
  }
  // Broad Street's double yellow center markings and white lane dividers.
- const yellow=mat(0xb88d41);
+ const yellow=patchCraterDiscardShader(mat(0xb88d41),'yellow-discard');
  const crossings=[-270,-102,78,256];
  for(const [left,right] of [[-1150,-278],[-262,-110],[-94,70],[86,248],[264,1150]]){
   for(const z of [23.7,24.3])b(nearStatic,(left+right)/2,-.352,z,right-left,.015,.13,yellow);
@@ -117,12 +151,25 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
  },
  restore(){
   city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false;
+   for(let i=0;i<8;i++)craterHolesUniform.value[i].set(0,0,0,0);
   if(mcdFascia)mcdFascia.visible=true;
   for(const a of mcdArches)a.visible=true;
  },setAtmosphere(phase,darkness){city.setAtmosphere(darkness)},setDistantHealth(health){longRange.setHealth(health)},
  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;nearStatic.visible=on;longRange.setVisible(on);},
  streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,
   city.groups.backFar,...longRange.tiers.map(tier=>tier.group)].map(group=>group.getWorldPosition(new THREE.Vector3()).toArray());},
- setRubbleVisible:city.setRubbleVisible,setParticlesEnabled:city.setParticlesEnabled
+ syncCraterHoles(activeCraters = []) {
+   for (let i = 0; i < 8; i++) {
+    const cr = activeCraters[i];
+    if (cr && cr.life > 0) {
+     const holeRadius = cr.radius * (cr.isSubway ? 0.90 : 0.85);
+     craterHolesUniform.value[i].set(cr.x, cr.z, holeRadius * holeRadius, cr.isSubway ? 1.0 : 0.5);
+    } else {
+     craterHolesUniform.value[i].set(0, 0, 0, 0);
+    }
+   }
+  },
+  getCraterUniforms: () => craterHolesUniform.value.map(v => ({ x: v.x, z: v.y, rSq: v.z, active: v.w })),
+  setRubbleVisible:city.setRubbleVisible,setParticlesEnabled:city.setParticlesEnabled
  };
 }

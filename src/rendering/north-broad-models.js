@@ -884,6 +884,31 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         }
       }
 
+      // Super-colossal / Titanic / Extinction kinetic shock wave propagation
+      if (strength >= 6.0 || radius >= 11.0) {
+        // Catastrophic collapse: all floors pulverized
+        entry.sectionDamage.roof = 1.0;
+        entry.sectionDamage.floor2 = 1.0;
+        entry.sectionDamage.floor1 = 1.0;
+        entry.sectionDamage.floor0 = 1.0;
+        if (entry.groups.roof) entry.groups.roof.visible = false;
+        if (entry.groups.facade2) entry.groups.facade2.visible = false;
+        if (entry.groups.floor2) entry.groups.floor2.visible = false;
+        if (entry.groups.facade1) entry.groups.facade1.visible = false;
+        if (entry.groups.floor1) entry.groups.floor1.visible = false;
+        if (entry.groups.facade0) entry.groups.facade0.visible = false;
+        if (entry.groups.floor0) entry.groups.floor0.visible = false;
+        if (entry.groups.sign) entry.groups.sign.visible = false;
+      } else if (strength >= 2.5 || radius >= 6.0) {
+        // Colossal meteor: widespread structural shock across adjacent floors
+        entry.sectionDamage.roof = Math.min(1.0, entry.sectionDamage.roof + strength * 0.45);
+        entry.sectionDamage.floor2 = Math.min(1.0, entry.sectionDamage.floor2 + strength * 0.55);
+        entry.sectionDamage.floor1 = Math.min(1.0, entry.sectionDamage.floor1 + strength * 0.65);
+        entry.sectionDamage.floor0 = Math.min(1.0, entry.sectionDamage.floor0 + strength * 0.45);
+        if (entry.sectionDamage.floor1 >= 0.28 && entry.groups.facade1) entry.groups.facade1.visible = false;
+        if (entry.sectionDamage.floor2 >= 0.28 && entry.groups.facade2) entry.groups.facade2.visible = false;
+      }
+
       entry.damage = (entry.sectionDamage.floor0 + entry.sectionDamage.floor1 + entry.sectionDamage.floor2 + entry.sectionDamage.roof) / 4.0;
       if (entry.damage >= 0.85) {
         entry.model.visible = false;
