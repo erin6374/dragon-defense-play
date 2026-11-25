@@ -1707,6 +1707,19 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
   if(c.root.userData.ladder)c.root.userData.ladder.rotation.z=THREE.MathUtils.lerp(c.root.userData.ladder.rotation.z,c.serviceStop?.35:0,Math.min(1,dt*.8));
   if(streetStop<=0&&obstruction&&obstruction.life>0){const laneZ=c.laneZ;c.root.position.z=THREE.MathUtils.lerp(c.root.position.z,laneZ+(c.dir>0?2:-2),Math.min(1,dt*1.2));}
   else if(!c.turnPath?.length&&!c.crossStreet){const laneZ=c.laneZ;const error=laneZ-c.root.position.z;const lateralStep=Math.min(1,dt*(c.windRecovery>0?.05:c.windSettle>0?.48:1.65));c.root.position.z+=error*lateralStep;vehicleYawTowards(c,(c.dir<0?Math.PI:0)+laneChangeYaw(error,c.dir,c.speed),dt);c.laneChangeTime=(c.laneChangeTime||0)+dt;}
+  // RC158: Vehicle tire water spray splash when driving through wet asphalt/puddle zones
+  if(c.speed>1.5&&c.stun===0){
+   for(const cr of craters){
+    if(cr.geyserGroup&&Math.hypot(c.root.position.x-cr.x,c.root.position.z-cr.z)<cr.radius*1.45){
+     if(Math.random()<dt*18.0){
+      _craterV1.set(c.root.position.x-c.dir*1.2,0.15,c.root.position.z+(Math.random()-0.5)*1.2);
+      _craterV2.set(-c.dir*0.4+Math.random()*0.2,0.85,(Math.random()-0.5)*1.4).normalize();
+      cinematicFX.waterSpray?.(_craterV1,_craterV2,dt,{rate:2,power:0.65});
+     }
+     break;
+    }
+   }
+  }
  }if(!c.frozen)c.life-=dt;c.blink+=dt;if(c.beacon)c.beacon.material=(Math.floor(c.blink*7)%2)?redLamp:blueLamp;
   if(c.hostile&&c.police&&!c.frozen&&c.stun===0&&c.speed<.5&&Math.abs(c.root.position.x)<25){
    c.attackTimer-=dt;if(c.attackTimer<=0){c.attackTimer=c.police?2.8:1.6;
@@ -2592,6 +2605,16 @@ function addCrater(x,z,radius=3,opts={}){
   asphaltRim.rotation.x=Math.PI*0.5;
   geyserGroup.add(asphaltRim);
 
+  // RC158: Specular water puddle runoff sheet pooling on asphalt around fractured main
+  const puddleMat=new THREE.MeshStandardMaterial({
+   color:0x152838,roughness:0.06,metalness:0.55,transparent:true,opacity:0.75,depthWrite:false
+  });
+  const puddleMesh=new THREE.Mesh(new THREE.CircleGeometry(radius*1.15,24),puddleMat);
+  puddleMesh.name='asphalt-water-puddle';
+  puddleMesh.rotation.x=-Math.PI*0.5;
+  puddleMesh.position.set(0,0.06,0);
+  geyserGroup.add(puddleMesh);
+
   scene.add(geyserGroup);
   sound('water');
  }
@@ -2632,7 +2655,8 @@ function updateCraters(dt){
   if(c.subwayGroup){
    const floodWater=c.subwayGroup.getObjectByName('subway-flooded-water');
    if(floodWater){
-    floodWater.position.y=-5.2+0.14+Math.sin(elapsed*3.5+c.x*0.3)*0.04;
+    c.floodLevel=Math.min(0.55,(c.floodLevel||0.14)+dt*0.015);
+    floodWater.position.y=-5.2+c.floodLevel+Math.sin(elapsed*3.5+c.x*0.3)*0.03;
    }
    if(c.isSubway&&cinematicFX.waterSpray){
     _craterV1.set(c.x-2.4,-3.8,c.z);
@@ -2650,6 +2674,10 @@ function updateCraters(dt){
   }
   if(c.geyserGroup){
    c.geyserTimer=(c.geyserTimer||0)+dt;
+   const puddle=c.geyserGroup.getObjectByName('asphalt-water-puddle');
+   if(puddle){
+    puddle.scale.setScalar(1.0+Math.sin(elapsed*2.0)*0.04);
+   }
    if(cinematicFX.waterJet){
     cinematicFX.waterJet(c.geyserGroup.position,dt,{rate:9,power:1.0,spread:0.20});
    }
@@ -6806,6 +6834,8 @@ window.__DD_QA={snap,
   getEmergencyExitSignsCount:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.children.filter(ch=>ch.name==='subway-emergency-exit-sign').length:0;},
   getSubwayEmergencyBeacon:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.getObjectByName('subway-emergency-beacon'):null;},
   triggerBrickDustBurst:(x=0,y=2.0,z=0,p=1.5)=>{cinematicFX.dustBurst(new THREE.Vector3(x,y,z),p,{brick:true});return true;},
+  hasAsphaltWaterPuddle:()=>{return craters.some(c=>c.geyserGroup?.getObjectByName('asphalt-water-puddle'));},
+  getSubwayFloodLevel:()=>{const c=craters.find(cr=>cr.isSubway);return c?c.floodLevel||0.14:0;},
    triggerWaterMain:(x=0,z=23.5,r=4.2)=>{addCrater(x,z,r,{isSubway:true,size:6.8});return craters.at(-1);},
   runPresetConflagration:()=>runPresetConflagration(),
   getGlassDebrisCount:()=>debris.filter(d=>d.type==='glass'||d.isGlass).length,
