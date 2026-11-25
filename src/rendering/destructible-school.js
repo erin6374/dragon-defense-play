@@ -399,20 +399,53 @@ export function createDestructibleSchool(THREE,scene,bounds){
  function update(dt){
   if(dt<=0)return;
   supportClock+=dt;
-  if(!collapsing&&supportClock>=.18){propagateSupportFailure(supportClock);supportClock=0;}
+  if(!collapsing&&supportClock>=.18){propagateSupportFailure(supportClock);if(Math.random()<0.25&&effectsHooks)effectsHooks.onStructuralCreak?.(centerX,min.y+height*0.5,front);supportClock=0;}
   let changed=false;
   for(const p of pieces){
    if(!p.falling||p.resting||p.removed)continue;
    p.delay=Math.max(0,p.delay-dt);
    if(p.delay>0)continue;
    changed=true;
-   p.vy-=17*dt;p.vx*=Math.exp(-.6*dt);p.vz*=Math.exp(-.6*dt);
+   const isFloor=p.zone==='floor'||p.zone==='basement-floor';
+   const isSteel=p.kind===3||p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column';
+   const isGlass=p.kind===2||p.zone==='glass';
+   const isDrywall=p.kind===4||p.zone==='partition'||p.zone==='classroom-whiteboard'||p.zone==='classroom-light';
+   const isFurniture=p.kind===5||p.zone==='classroom-desk'||p.zone==='classroom-chair'||p.zone==='classroom-bookshelf';
+   const isFacade=p.kind===0||p.zone==='facade'||p.zone==='pier';
+
+   const grav=isFloor?21.0:isSteel?18.5:isFacade?16.5:isFurniture?13.5:isDrywall?10.8:isGlass?9.6:15.0;
+   const dragRate=isGlass?2.4:isDrywall?1.8:isFurniture?0.95:isFacade?0.65:isSteel?0.32:0.40;
+
+   p.vy-=grav*dt;
+   p.vx*=Math.exp(-dragRate*dt);
+   p.vz*=Math.exp(-dragRate*dt);
    p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.rot+=p.vr*dt;
+   if(isSteel)p.vr+=Math.sin(p.y*2.0)*0.35*dt;
+
    dimensions(p);
    const insideFootprint=p.x>=min.x+0.6&&p.x<=max.x-0.6&&p.z>=back+0.6&&p.z<=front-0.6;
    const floor=insideFootprint?(min.y-2.2+scale.y*.5):(min.y+scale.y*.5);
    if(p.y<=floor){
-    p.y=floor;p.vy*= -.16;p.vx*=.32;p.vz*=.32;p.vr*=.35;
+    p.y=floor;
+    const impactVy=Math.abs(p.vy);
+    const restitution=isFloor?-0.06:isSteel?-0.22:isFacade?-0.16:isFurniture?-0.12:isGlass?-0.02:-0.14;
+    p.vy*=restitution;
+    p.vx*=(isFloor?0.15:isSteel?0.45:0.32);
+    p.vz*=(isFloor?0.15:isSteel?0.45:0.32);
+    p.vr*=0.35;
+
+    if(impactVy>3.0&&effectsHooks){
+     if(isGlass){
+      p.resting=true;
+      if(Math.random()<0.65)p.removed=true;
+      effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
+     }else if(isFloor&&impactVy>4.0){
+      effectsHooks.onFloorPancake?.(p.x,p.y,p.z);
+     }else if(isSteel&&impactVy>3.2){
+      effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
+     }
+    }
+
     if(Math.abs(p.vy)<1.4){
      p.resting=true;
      dimensions(p);

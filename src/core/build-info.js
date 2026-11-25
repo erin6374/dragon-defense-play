@@ -1,13 +1,8 @@
-// Dragon Defense Build Information
-// Auto-generated during build/packaging process
-
 export const BUILD_INFO = {
-  version: "5.5.0-rc.148",
-  build: "5.5-basement-crunch-internal-implosion-meteor-embedding-rc148",
-  date: "2026-11-25",
-  releaseName: "5.5-basement-crunch-internal-implosion-meteor-embedding-rc148"
+  version: "5.5.0-rc.149",
+  build: "5.5-material-rigidity-subway-train-derailment-cavern-cam-rc149",
+  branch: "agent/google-lead-rc48",
+  commit: "rc149"
 };
-
 export const GAME_VERSION = BUILD_INFO.version;
 export const BUILD_ID = BUILD_INFO.build;
-export const BUILD_NUMBER = "5.5-basement-crunch-internal-implosion-meteor-embedding-rc148";
