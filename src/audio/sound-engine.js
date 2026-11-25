@@ -454,6 +454,12 @@ export function createSoundEngine() {
       }
 
       // 15. Emergency Sirens with Dynamic Doppler Pitch & Panning
+      case 'radioDispatch': {
+        playSample('alarm_warning', { volume: 0.18, playbackRate: 2.85, pan });
+        playSample('whoosh_launch', { volume: 0.22, playbackRate: 0.45, delay: 0.08, pan, bus: ambientBus });
+        break;
+      }
+
       case 'siren': {
         const rate = (opt && (opt.playbackRate || opt.doppler)) || 1.0;
         playSample('siren_loop', { volume: 0.35, bus: ambientBus, pan, playbackRate: rate });

@@ -544,6 +544,26 @@ function updateFires(dt){
     }
    }else if(onSchoolStructure){
     schoolDamage=Math.min(1.0,schoolDamage+dt*0.024*unsuppressed);
+     f.unattendedBurnTime=(f.unattendedBurnTime||0)+dt*unsuppressed;
+     if(f.unattendedBurnTime>14.0&&!f.causedPancake){
+      f.causedPancake=true;
+      const punchY=Math.max(2.2,f.root.position.y-1.4);
+      schoolReconstruction?.punchBorehole?.({
+       x:f.root.position.x,
+       y:punchY,
+       z:f.root.position.z,
+       radius:2.6,
+       isHeavyIron:false,
+       isMassive:false
+      });
+      cinematicFX.demolitionDustWave(
+       f.root.position,
+       f.root.position.clone().add(new THREE.Vector3(0,0,3.2)),
+       1.8
+      );
+      sound('buildingCollapse',{volume:0.42,pitch:1.18});
+      message('🔥 UNTENDED FIRE BURNED THROUGH FLOOR — CEILING PANCAKE COLLAPSE!');
+     }
     hp=Math.min(hp,Math.round((1-schoolDamage)*100));
     syncStructuralDamage();updateHud();
    }
@@ -1094,7 +1114,7 @@ function updateBuildingElectricalShorts(dt){
   if(Math.random()<0.32)sound('electric',{x:spX});
  }
 }
-const cars=[];let carTimer=0;const nextLaneByDirection={east:0,west:0};const craters=[];let streetStop=0;const waterDropletGeometry=new THREE.SphereGeometry(.10,5,4);
+const cars=[];let carTimer=0;const nextLaneByDirection={east:0,west:0};const craters=[];let lastRadioDispatchTime=-999;let streetStop=0;const waterDropletGeometry=new THREE.SphereGeometry(.10,5,4);
 const waterMat=new THREE.MeshBasicMaterial({color:0x71caff,transparent:true,opacity:.8});
 const headlampMat=new THREE.MeshBasicMaterial({color:0xfff2c5});
 const redLamp=new THREE.MeshBasicMaterial({color:0xff3434});
@@ -1555,6 +1575,24 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
+   if(obstruction){
+    c.hazardLights=true;
+    c.evadingCrater=true;
+    if(!c.hasSkidded){
+     c.hasSkidded=true;
+     sound('skid',{volume:0.32,pitch:1.15});
+     c.speed=Math.max(1.8,c.speed*0.52);
+    }
+    const lateralShift=(obstruction.z>=c.root.position.z)?-(obstruction.radius+2.4):(obstruction.radius+2.4);
+    const targetEvadeZ=THREE.MathUtils.clamp(obstruction.z+lateralShift,15.2,32.8);
+    c.laneZ=targetEvadeZ;
+    c.overtakeUntil=elapsed+5.0;
+   }else if(c.evadingCrater){
+    c.evadingCrater=false;
+    c.hasSkidded=false;
+    c.laneZ=c.dir>0?19.5:27.5;
+    c.hazardLights=false;
+   }
   if(obstruction){
    c.hazardLights=true;
    if(!c.rearStreet&&!c.emergency){
@@ -2232,6 +2270,65 @@ function addCrater(x,z,radius=3,opts={}){
   // Subterranean amber tunnel lighting illuminating tracks & walls from within
   const tunnelLight=new THREE.PointLight(0xffaa44,1.8,18.0);
   tunnelLight.position.set(0,-H*0.5+0.8,0);subwayGroup.add(tunnelLight);
+
+  // Subterranean Station Platform Mezzanine (North edge of cavern at z = D*0.38)
+  const platformGroup=new THREE.Group();
+  platformGroup.name='subway-station-mezzanine';
+  const platW=W*0.98, platD=2.4, platH=1.15;
+  const platY=-H+platH*0.5, platZ=D*0.38;
+
+  const platMat=new THREE.MeshStandardMaterial({color:0x94a3b8,roughness:0.88,metalness:0.05});
+  const platformMesh=new THREE.Mesh(new THREE.BoxGeometry(platW,platH,platD),platMat);
+  platformMesh.position.set(0,platY,platZ);
+  platformGroup.add(platformMesh);
+
+  // Yellow tactile warning edge strip (ADA compliant 4" bumpy yellow safety edge)
+  const tactileMat=new THREE.MeshStandardMaterial({color:0xf59e0b,roughness:0.55,metalness:0.1,emissive:0x92400e,emissiveIntensity:0.25});
+  const tactileStrip=new THREE.Mesh(new THREE.BoxGeometry(platW,0.04,0.28),tactileMat);
+  tactileStrip.name='station-yellow-tactile-strip';
+  tactileStrip.position.set(0,-H+platH+0.02,platZ-platD*0.5+0.14);
+  platformGroup.add(tactileStrip);
+
+  // Bank of stainless steel fare turnstiles
+  const turnstileMat=new THREE.MeshStandardMaterial({color:0xd1d5db,roughness:0.28,metalness:0.92});
+  const turnstileArmMat=new THREE.MeshStandardMaterial({color:0x9ca3af,roughness:0.22,metalness:0.95});
+  const turnstileCount=Math.max(2,Math.floor(platW/3.2));
+  for(let t=0;t<turnstileCount;t++){
+   const tx=-platW*0.35+(t+0.5)*(platW*0.70/turnstileCount);
+   const turnGroup=new THREE.Group();
+   turnGroup.name='station-turnstile';
+   const stanchion=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.95,0.75),turnstileMat);
+   stanchion.position.set(tx,-H+platH+0.48,platZ+0.45);
+   turnGroup.add(stanchion);
+   for(let a=0;a<3;a++){
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.62,8),turnstileArmMat);
+    arm.rotation.z=Math.PI/2+(a*Math.PI*2/3);
+    arm.position.set(tx+0.22,-H+platH+0.65,platZ+0.45);
+    turnGroup.add(arm);
+   }
+   platformGroup.add(turnGroup);
+  }
+
+  // Fallen illuminated SEPTA station entrance sign tilted against tunnel wall
+  const signGroup=new THREE.Group();
+  signGroup.name='fallen-septa-station-sign';
+  const signMat=new THREE.MeshStandardMaterial({color:0x0f2c59,roughness:0.32,emissive:0x07162c,emissiveIntensity:0.5});
+  const signBack=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.75,0.10),signMat);
+  signGroup.add(signBack);
+  const stripeMat=new THREE.MeshStandardMaterial({color:0xf59e0b,roughness:0.4,emissive:0xd97706,emissiveIntensity:0.6});
+  const accentStripe=new THREE.Mesh(new THREE.BoxGeometry(3.5,0.08,0.12),stripeMat);
+  accentStripe.position.set(0,-0.26,0.02);
+  signGroup.add(accentStripe);
+  const logoBadge=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.45,0.14),new THREE.MeshStandardMaterial({color:0xd9381e,roughness:0.4}));
+  logoBadge.position.set(-1.4,0.05,0.02);
+  signGroup.add(logoBadge);
+  signGroup.position.set(W*0.28,-H+platH+0.45,platZ+0.75);
+  signGroup.rotation.set(0.22,-0.35,-0.42);
+  platformGroup.add(signGroup);
+
+  subwayGroup.add(platformGroup);
+  lastRadioDispatchTime=elapsed;
+  sound('radioDispatch',{x,volume:0.65});
 
   // Authentic SEPTA Broad Street Line (B-IV) Subway Train Car on Tracks
   const carGroup=new THREE.Group();
@@ -6483,7 +6580,7 @@ window.__DD_QA={snap,
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
   schoolReconstruction:()=>schoolReconstruction?.stats()||null,
-  getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],punchSchoolBorehole:(x=0,y=14.5,z=-15,r=3.5,iron=true,massive=false)=>schoolReconstruction?.punchBorehole?.({x,y,z,radius:r,isHeavyIron:iron,isMassive:massive})||0,addCraterAt:(x,z,r=4.5,opts={})=>addCrater(x,z,r,opts),
+  getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],punchSchoolBorehole:(x=0,y=14.5,z=-15,r=3.5,iron=true,massive=false)=>schoolReconstruction?.punchBorehole?.({x,y,z,radius:r,isHeavyIron:iron,isMassive:massive})||0,addCraterAt:(x,z,r=4.5,opts={})=>addCrater(x,z,r,opts),hasStationMezzanine:()=>craters.some(c=>c.subwayGroup?.getObjectByName('subway-station-mezzanine')),hasTurnstiles:()=>craters.some(c=>c.subwayGroup?.getObjectByName('station-turnstile')),hasFallenSeptaSign:()=>craters.some(c=>c.subwayGroup?.getObjectByName('fallen-septa-station-sign')),getEvadingCarsCount:()=>cars.filter(c=>c.evadingCrater).length,hasRadioDispatchTriggered:()=>(elapsed-lastRadioDispatchTime)<30.0,
   getCars:()=>cars,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
  spawnTestMeteorAt:(x,y,z,size,kind)=>run('spawnTestMeteorAt',()=>{spawnTestMeteorAt(x,y,z,size,kind);return snap();}),
