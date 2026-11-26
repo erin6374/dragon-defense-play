@@ -38,9 +38,11 @@ export function createCinematicEffects(T,scene,camera,bank){
    },
    flush(){
     m.count=this.n;
-    m.instanceMatrix.needsUpdate=true;
-    colors.needsUpdate=true;
-    alpha.needsUpdate=true;
+    if(this.n>0){
+     m.instanceMatrix.needsUpdate=true;
+     colors.needsUpdate=true;
+     alpha.needsUpdate=true;
+    }
    }
   };
  }
@@ -75,7 +77,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterMap=new T.DataTexture(waterPixels,64,64,T.RGBAFormat);
  waterMap.needsUpdate=true;
 
- const spray=pool(1400,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.82,depthWrite:false}));
+ const spray=pool(1000,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.82,depthWrite:false}));
  const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
  const dust=pool(640,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
 
@@ -115,7 +117,11 @@ export function createCinematicEffects(T,scene,camera,bank){
  let sparkHead=0;
 
  // DEDICATED HIGH-VELOCITY PARTICLE WATER ENGINE
- const MAX_WATER=480;
+ const MAX_WATER=320;
+ let subwayCraters=[];
+ function syncSubwayCraters(craters=[]){
+  subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0);
+ }
  const waterParticles=[];
  for(let i=0;i<MAX_WATER;i++){
   waterParticles.push({
@@ -212,75 +218,75 @@ export function createCinematicEffects(T,scene,camera,bank){
  }
 
  function waterJet(pos,dt,opts={}){
-  const rate=opts.rate||8;
+  const rate=opts.rate||4;
   const power=opts.power||1.0;
   const originY=pos.y||0.2;
 
-  // High-velocity upward pressurized water droplets
+  // High-velocity upward pressurized water droplets (fast, white, transparent)
   for(let i=0;i<rate;i++){
-   const spreadR=Math.random()*0.22*power;
+   const spreadR=Math.random()*0.18*power;
    const angle=Math.random()*Math.PI*2;
    const ox=pos.x+Math.cos(angle)*spreadR;
    const oz=pos.z+Math.sin(angle)*spreadR;
-   const speed=(18.0+Math.random()*12.0)*power;
-   const tiltAngle=Math.random()*(opts.spread||0.18);
+   const speed=(24.0+Math.random()*12.0)*power;
+   const tiltAngle=Math.random()*(opts.spread||0.15);
    const tiltDir=Math.random()*Math.PI*2;
    const vx=Math.cos(tiltDir)*Math.sin(tiltAngle)*speed*0.35;
    const vz=Math.sin(tiltDir)*Math.sin(tiltAngle)*speed*0.35;
    const vy=Math.cos(tiltAngle)*speed;
-   const life=0.9+Math.random()*0.55;
-   const initSize=0.32+Math.random()*0.30;
-   const targetSize=initSize*(3.2+Math.random()*2.2);
-   const alpha=0.68+Math.random()*0.22;
+   const life=0.85+Math.random()*0.45;
+   const initSize=0.22+Math.random()*0.20;
+   const targetSize=initSize*(3.2+Math.random()*2.0);
+   const alpha=0.45+Math.random()*0.25;
    spawnWaterParticle(ox,originY,oz,vx,vy,vz,life,initSize,targetSize,alpha,false,waterWhiteColor);
   }
 
   // Soft billowing white mist canopy at apex
-  if(Math.random()<0.85){
+  if(Math.random()<0.65){
    const mistAngle=Math.random()*Math.PI*2;
-   const mistR=Math.random()*0.55;
+   const mistR=Math.random()*0.45;
    const mx=pos.x+Math.cos(mistAngle)*mistR;
    const mz=pos.z+Math.sin(mistAngle)*mistR;
-   const mvy=(13.0+Math.random()*9.0)*power;
-   const mvx=(Math.random()-0.5)*3.2;
-   const mvz=(Math.random()-0.5)*3.2;
-   const life=1.5+Math.random()*0.9;
-   const initSize=0.75+Math.random()*0.55;
-   const targetSize=initSize*(3.8+Math.random()*2.8);
-   const alpha=0.35+Math.random()*0.25;
+   const mvy=(15.0+Math.random()*8.0)*power;
+   const mvx=(Math.random()-0.5)*2.5;
+   const mvz=(Math.random()-0.5)*2.5;
+   const life=1.2+Math.random()*0.7;
+   const initSize=0.65+Math.random()*0.45;
+   const targetSize=initSize*(3.2+Math.random()*2.2);
+   const alpha=0.25+Math.random()*0.18;
    spawnWaterParticle(mx,originY+0.4,mz,mvx,mvy,mvz,life,initSize,targetSize,alpha,true,waterMistColor);
   }
 
   // Ground churning boiling foam around rupture
-  if(Math.random()<0.70){
+  if(Math.random()<0.55){
    const foamAngle=Math.random()*Math.PI*2;
-   const foamDist=Math.random()*1.1*power;
+   const foamDist=Math.random()*0.9*power;
    const fx=pos.x+Math.cos(foamAngle)*foamDist;
    const fz=pos.z+Math.sin(foamAngle)*foamDist;
-   const fvx=Math.cos(foamAngle)*(2.0+Math.random()*2.5);
-   const fvz=Math.sin(foamAngle)*(2.0+Math.random()*2.5);
-   const fvy=0.5+Math.random()*1.0;
-   const life=0.40+Math.random()*0.30;
-   const initSize=0.65+Math.random()*0.45;
-   const targetSize=initSize*2.0;
-   const alpha=0.62+Math.random()*0.26;
+   const fvx=Math.cos(foamAngle)*(2.0+Math.random()*2.0);
+   const fvz=Math.sin(foamAngle)*(2.0+Math.random()*2.0);
+   const fvy=0.4+Math.random()*0.8;
+   const life=0.35+Math.random()*0.25;
+   const initSize=0.55+Math.random()*0.35;
+   const targetSize=initSize*1.8;
+   const alpha=0.48+Math.random()*0.22;
    spawnWaterParticle(fx,originY+0.1,fz,fvx,fvy,fvz,life,initSize,targetSize,alpha,false,waterFoamColor);
   }
  }
 
  function waterSpray(pos,dir,dt,opts={}){
-  const rate=opts.rate||4;
+  const rate=opts.rate||3;
   const power=opts.power||1.0;
   for(let i=0;i<rate;i++){
-   const speed=(14.0+Math.random()*8.0)*power;
-   const spread=0.22;
+   const speed=(18.0+Math.random()*10.0)*power;
+   const spread=0.18;
    const vx=(dir.x+(Math.random()-0.5)*spread)*speed;
-   const vy=(dir.y+(Math.random()-0.5)*spread)*speed*0.5+1.8;
+   const vy=(dir.y+(Math.random()-0.5)*spread)*speed*0.6+1.2;
    const vz=(dir.z+(Math.random()-0.5)*spread)*speed;
-   const life=0.65+Math.random()*0.45;
-   const initSize=0.28+Math.random()*0.22;
-   const targetSize=initSize*3.0;
-   const alpha=0.55+Math.random()*0.25;
+   const life=0.60+Math.random()*0.35;
+   const initSize=0.20+Math.random()*0.18;
+   const targetSize=initSize*3.2;
+   const alpha=0.42+Math.random()*0.20;
    spawnWaterParticle(pos.x,pos.y,pos.z,vx,vy,vz,life,initSize,targetSize,alpha,false,waterWhiteColor);
   }
  }
@@ -380,12 +386,28 @@ export function createCinematicEffects(T,scene,camera,bank){
 
    wp.p.addScaledVector(wp.v,dt);
 
-   // Ground collision bounce / pavement splash mist
-   if(wp.p.y<0.22){
-    wp.p.y=0.22;
-    wp.v.y=Math.abs(wp.v.y)*0.16;
+   // Dynamic subway chasm check: if over an open breach, water cascades down into tunnel!
+   let chasmFloorY=0.22;
+   for(let scIdx=0;scIdx<subwayCraters.length;scIdx++){
+    const sc=subwayCraters[scIdx];
+    const dx=wp.p.x-sc.x,dz=wp.p.z-sc.z;
+    const rSq=sc.radius*sc.radius*0.82;
+    if(dx*dx+dz*dz<rSq){
+     chasmFloorY=-5.0; // Broad Street Line track bed depth
+     break;
+    }
+   }
+
+   // Ground or subterranean track bed collision
+   if(wp.p.y<chasmFloorY){
+    wp.p.y=chasmFloorY;
+    wp.v.y=Math.abs(wp.v.y)*0.15;
     wp.v.x*=0.55;
     wp.v.z*=0.55;
+    if(chasmFloorY<0&&Math.random()<0.25){
+     wp.isMist=true;
+     wp.color.copy(waterFoamColor);
+    }
    }
 
    wp.rot+=wp.rotSpeed*dt;
@@ -473,26 +495,37 @@ export function createCinematicEffects(T,scene,camera,bank){
  function water(from,to,width=.12){
   _delta.subVectors(to,from);
   const length=_delta.length();
-  const steps=Math.min(48,Math.max(10,Math.ceil(length*2)));
   _right.set(1,0,0).applyQuaternion(camera.quaternion);
   _up.set(0,1,0).applyQuaternion(camera.quaternion);
   const angle=Math.atan2(-_delta.dot(_right),_delta.dot(_up));
 
+  // High-velocity ballistic stream projectile droplets (moving fast, white, transparent)
+  const streamSpeed=28.0+Math.random()*6.0;
+  const flightTime=length/streamSpeed;
+  const pvx=(_delta.x/length)*streamSpeed+(Math.random()-0.5)*0.8;
+  const pvz=(_delta.z/length)*streamSpeed+(Math.random()-0.5)*0.8;
+  const pvy=(_delta.y/length)*streamSpeed+Math.min(5.5,length*0.14);
+  spawnWaterParticle(from.x,from.y,from.z,pvx,pvy,pvz,flightTime*1.15,width*1.2,width*4.2,0.42,false,waterWhiteColor);
+
+  // Continuous visual stream core (compact 6 quads instead of 48)
+  const steps=Math.min(7,Math.max(3,Math.ceil(length*0.45)));
   for(let i=0;i<steps;i++){
-   const t=(i+(clock*9%1))/steps;
+   const t=(i+(clock*8.5%1))/steps;
    _v1.copy(from).addScaledVector(_delta,t);
-   _v1.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);
-   spray.add(_v1,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle,waterWhiteColor);
+   _v1.y+=Math.sin(t*Math.PI)*Math.min(4.2,length*0.11);
+   const w=width*(1.0+t*1.6);
+   spray.add(_v1,w,w*1.3,0.42*(1.0-t*0.25),angle,waterWhiteColor);
   }
-  for(let i=0;i<10;i++){
-   const a=clock*7+i*2.4,r=.2+(i%4)*.18;
+  // Terminal foaming impact mist at target
+  for(let i=0;i<2;i++){
+   const a=clock*8.0+i*3.14,r=0.22+Math.random()*0.32;
    _v1.set(to.x+Math.cos(a)*r,to.y+Math.abs(Math.sin(a))*r,to.z+Math.sin(a)*r);
-   spray.add(_v1,.23,.32,.4,0,waterWhiteColor);
+   spray.add(_v1,0.28,0.28,0.32,0,waterFoamColor);
   }
  }
 
  return {
-  begin,fire,setWind,water,waterJet,waterSpray,burst,shock,dustBurst,demolitionDustWave,sparks,steamBurst,
+  begin,fire,setWind,water,waterJet,waterSpray,syncSubwayCraters,burst,shock,dustBurst,demolitionDustWave,sparks,steamBurst,
   getWaterParticleCount:()=>waterParticles.filter(p=>p.active).length,
   flush(){for(const p of pools)p.flush();},
   reset(){
