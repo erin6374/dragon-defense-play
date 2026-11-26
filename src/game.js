@@ -368,7 +368,7 @@ function damageOrCollapseNorthBroad(bldg, damage, collapse = false) {
   if (!northBroadModels || !bldg) return;
   const idOrName = bldg.id || bldg.name;
   if (!idOrName) return;
-  if (collapse || damage >= 0.80) {
+  if (collapse || damage >= 1.0) {
     northBroadModels.collapseBuilding(idOrName);
   } else {
     northBroadModels.damageBuilding(idOrName, damage);
@@ -6435,8 +6435,10 @@ if(m.grounded){
      if(hp===0){gameOver();break;}
     }
    }else if(b){
-    b.damage=Math.min(1.0,(b.damage||0)+stepDmg);
-    if(b.damage>=0.95){
+    // Physical impacts already update the damage ratio. Reconcile against
+    // the original health and cumulative budget instead of charging twice.
+    b.damage=Math.max(b.damage||0,Math.min(1.0,m.crunchInitialDamage+m.crunchDamageDealt));
+    if(b.damage>=1.0){
      northBroadModels?.collapseBuilding?.(b.id||b.name);
     }
    }
@@ -6559,6 +6561,7 @@ if(m.grounded){
    m.crunchMaxBudget=maxMeteorDmg;
    m.crunchDamageBudget=maxMeteorDmg;
    m.crunchDamageDealt=0;
+   m.crunchInitialDamage=hitBuilding?.damage??0;
    m.crunchShardClock=0;
    m.lastPunchY=m.mesh.position.y;
    const roofY=hitBuilding?hitBuilding.h:(hitSchool?schoolBounds.max.y:m.mesh.position.y);
