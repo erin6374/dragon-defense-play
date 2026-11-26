@@ -3,38 +3,7 @@ import {createDistantNeighborhood} from './rendering/distant-neighborhood.js';
 import {populateCity} from './simulation/city-layout.js';
 import {createStructuralCity} from './rendering/structural-city.js';
 import {addForegroundPlanting,addStreetSetDressing} from './rendering/urban-detail.js';
-
- const craterHolesUniform = {
-  value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0))
- };
-
- function patchCraterDiscardShader(mat, id = 'crater-discard') {
-  if (!mat) return mat;
-  mat.customProgramCacheKey = () => id;
-  mat.onBeforeCompile = (shader) => {
-   shader.uniforms.uCraterHoles = craterHolesUniform;
-   shader.vertexShader = 'varying vec3 vCraterWorldPos;\n' + shader.vertexShader;
-   shader.vertexShader = shader.vertexShader.replace(
-    '#include <begin_vertex>',
-    '#include <begin_vertex>\nvCraterWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;'
-   );
-   shader.fragmentShader = 'uniform vec4 uCraterHoles[8];\nvarying vec3 vCraterWorldPos;\n' + shader.fragmentShader;
-   shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <clipping_planes_fragment>',
-    `#include <clipping_planes_fragment>
-    for (int i = 0; i < 8; i++) {
-     if (uCraterHoles[i].z > 0.01) {
-      float dx = vCraterWorldPos.x - uCraterHoles[i].x;
-      float dz = vCraterWorldPos.z - uCraterHoles[i].y;
-      if (dx * dx + dz * dz < uCraterHoles[i].z) {
-       discard;
-      }
-     }
-    }`
-   );
-  };
-  return mat;
- }
+import {craterHolesUniform,patchCraterDiscardShader} from './rendering/crater-holes.js';
 
 export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,mats,rand,visualBank}){
  const mat=material,walk=patchCraterDiscardShader(mat(0xa9a8a0),'walk-discard'),asphalt=patchCraterDiscardShader(mat(0x34373b),'asphalt-discard'),white=patchCraterDiscardShader(mat(0xe3e0d5),'white-discard');
@@ -200,7 +169,7 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
    for (let i = 0; i < 8; i++) {
     const cr = activeCraters[i];
     if (cr && cr.life > 0) {
-     const holeRadius = cr.radius * (cr.isSubway ? 0.90 : 0.85);
+     const holeRadius = cr.radius * (cr.isSubway ? 1.05 : 0.92);
      craterHolesUniform.value[i].set(cr.x, cr.z, holeRadius * holeRadius, cr.isSubway ? 1.0 : 0.5);
     } else {
      craterHolesUniform.value[i].set(0, 0, 0, 0);

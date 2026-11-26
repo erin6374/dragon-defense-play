@@ -1,3 +1,5 @@
+import {craterHolesUniform} from './crater-holes.js';
+
 // Distant catastrophe atmosphere is a screen-space shader treatment, not a
 // new light, draw call or collision effect. Damage remains a separate system.
 export function disasterSkyIntensity(wave=1,skylineDamage=0){
@@ -64,6 +66,7 @@ export function createCinematicSky(THREE,scene){
 function pavementMaterial(THREE,color,kind){
  const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='road'?.38:.84,metalness:kind==='road'?.18:0});
  mat.onBeforeCompile=(shader)=>{
+  shader.uniforms.uCraterHoles=craterHolesUniform;
   shader.vertexShader='varying vec3 vRoadPos;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>
  vec4 roadLocal=vec4(transformed,1.0);
@@ -71,7 +74,17 @@ function pavementMaterial(THREE,color,kind){
  roadLocal=instanceMatrix*roadLocal;
  #endif
  vRoadPos=(modelMatrix*roadLocal).xyz;`);
-  shader.fragmentShader='varying vec3 vRoadPos;\n'+shader.fragmentShader;
+  shader.fragmentShader='uniform vec4 uCraterHoles[8];\nvarying vec3 vRoadPos;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+ for(int i=0;i<8;i++){
+  if(uCraterHoles[i].z>0.01){
+   float dx=vRoadPos.x-uCraterHoles[i].x;
+   float dz=vRoadPos.z-uCraterHoles[i].y;
+   if(dx*dx+dz*dz<uCraterHoles[i].z){
+    discard;
+   }
+  }
+ }`);
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
  float grain=fract(sin(dot(floor(vRoadPos.xz*20.),vec2(12.9898,78.233)))*43758.5453);
  float grain2=fract(sin(dot(floor(vRoadPos.xz*4.2),vec2(54.1,21.7)))*21457.1);
@@ -82,7 +95,7 @@ function pavementMaterial(THREE,color,kind){
  `float joint=max(step(fract(vRoadPos.x*.58),.012),step(fract(vRoadPos.z*.55),.012)); diffuseColor.rgb*=1.-joint*.20;`}
  `);
  };
- mat.customProgramCacheKey=()=>`dragon-pavement-${kind}-v42`;
+ mat.customProgramCacheKey=()=>`dragon-pavement-${kind}-v43`;
  return mat;
 }
 export function addStreetSurfaceDetail(THREE,root){

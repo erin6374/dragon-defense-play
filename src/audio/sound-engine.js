@@ -143,7 +143,26 @@ export function createSoundEngine() {
       roarEngine = createDragonRoarEngine(ctx, sfxBus, playSample);
 
       loadAllAudioBuffers();
-      startTitanCelestialRumble();
+
+      const onUserGesture = () => {
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().then(() => {
+            startTitanCelestialRumble();
+          }).catch(() => {});
+        } else {
+          startTitanCelestialRumble();
+        }
+        ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+          window.removeEventListener(evt, onUserGesture, true);
+        });
+      };
+      if (ctx.state === 'suspended') {
+        ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+          window.addEventListener(evt, onUserGesture, { capture: true, once: true });
+        });
+      } else {
+        startTitanCelestialRumble();
+      }
     } catch (e) {
       console.warn('SoundEngine AudioContext init failed', e);
     }
@@ -311,7 +330,10 @@ export function createSoundEngine() {
     if (!isMusic && sfxMuted) return;
     initContext();
     if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+      return;
+    }
 
     // Stereophonic spatial panning: maps world X coordinate (-85 to +85) to stereo field (-0.95 to +0.95)
     const pan = typeof opt.x === 'number'

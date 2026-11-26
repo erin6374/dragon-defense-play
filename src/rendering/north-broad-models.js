@@ -934,18 +934,18 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
         entry.groups.churchRoof.visible = entry.damage < 0.85;
       }
       if (churchInterior) {
-        churchInterior.visible = entry.damage >= 0.35 && entry.damage < 0.99;
+        churchInterior.visible = entry.damage >= 0.35 && entry.damage < 0.88;
       }
       if (entry.churchFeatures?.spiresGroup) {
-        entry.churchFeatures.spiresGroup.visible = entry.damage < 0.80;
+        entry.churchFeatures.spiresGroup.visible = entry.damage < 0.75;
       }
       if (entry.churchFeatures?.roseRoot) {
-        entry.churchFeatures.roseRoot.visible = entry.damage < 0.92;
+        entry.churchFeatures.roseRoot.visible = entry.damage < 0.82;
       }
       if (entry.groups.churchWalls) {
-        entry.groups.churchWalls.visible = entry.damage < 0.96;
+        entry.groups.churchWalls.visible = entry.damage < 0.86;
       }
-      if (entry.damage >= 0.99) {
+      if (entry.damage >= 0.88) {
         entry.model.visible = false;
         if (entry.churchFeatures?.group) entry.churchFeatures.group.visible = false;
         if (churchInterior) churchInterior.visible = false;
@@ -966,18 +966,18 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       if (entry.groups.cornice) entry.groups.cornice.visible = entry.damage < 0.40;
       // Mid-level facade breaches first, creating a huge cavity through the middle
       if (entry.groups.facade1) entry.groups.facade1.visible = entry.damage < 0.55;
-      if (entry.groups.floor1) entry.groups.floor1.visible = entry.damage < 0.75;
-      // Upper facade breaches next, but roof and floor2 stay intact
-      if (entry.groups.facade2) entry.groups.facade2.visible = entry.damage < 0.82;
-      if (entry.groups.facade0) entry.groups.facade0.visible = entry.damage < 0.88;
-      // Roof and top level (floor2) remain standing overhead until catastrophic damage (90%+)!
-      if (entry.groups.roof) entry.groups.roof.visible = entry.damage < 0.90;
-      if (entry.groups.floor2) entry.groups.floor2.visible = entry.damage < 0.92;
-      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.90;
-      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.95;
+      if (entry.groups.floor1) entry.groups.floor1.visible = entry.damage < 0.70;
+      // Upper facade breaches next
+      if (entry.groups.facade2) entry.groups.facade2.visible = entry.damage < 0.78;
+      if (entry.groups.facade0) entry.groups.facade0.visible = entry.damage < 0.80;
+      // Roof and top level (floor2) remain standing overhead until major damage (82%+)!
+      if (entry.groups.roof) entry.groups.roof.visible = entry.damage < 0.82;
+      if (entry.groups.floor2) entry.groups.floor2.visible = entry.damage < 0.84;
+      if (entry.groups.floor0) entry.groups.floor0.visible = entry.damage < 0.82;
+      if (entry.groups.shell) entry.groups.shell.visible = entry.damage < 0.85;
 
-      // Complete collapse
-      if (entry.damage >= 0.95) {
+      // Complete collapse into smoldering rubble
+      if (entry.damage >= 0.85) {
         entry.model.visible = false;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
       } else {
@@ -986,13 +986,13 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
           entry.facadeCracks.visible = false;
           entry.facadeCracksMat.opacity = 0.0;
         }
-        if (entry.interiorProxy) entry.interiorProxy.visible = entry.damage >= 0.20 && entry.damage < 0.95;
+        if (entry.interiorProxy) entry.interiorProxy.visible = entry.damage >= 0.20 && entry.damage < 0.85;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = false;
       }
     }
 
     if (entry.facadeCracks) {
-      if (entry.damage >= 0.15 && entry.damage < 0.95) {
+      if (entry.damage >= 0.15 && entry.damage < 0.85) {
         entry.facadeCracks.visible = true;
         const crackProgress = THREE.MathUtils.clamp((entry.damage - 0.15) / 0.55, 0.0, 1.0);
         entry.facadeCracksMat.opacity = 0.25 + crackProgress * 0.70;
@@ -1001,7 +1001,7 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       }
     }
 
-    if (entry.damage >= 0.90 && !entry.collapsedCascadeTriggered) {
+    if (entry.damage >= 0.82 && !entry.collapsedCascadeTriggered) {
       entry.collapsedCascadeTriggered = true;
       const wb = entry.worldBounds;
       const cx = wb ? (wb.minX + wb.maxX) * 0.5 : entry.def.position[0];

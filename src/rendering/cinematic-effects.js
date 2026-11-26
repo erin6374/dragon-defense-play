@@ -87,7 +87,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterMap=new T.DataTexture(waterPixels,waterSize,waterSize,T.RGBAFormat);
  waterMap.needsUpdate=true;
 
- const spray=pool(350,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.78,depthWrite:false}));
+ const spray=pool(350,new T.MeshBasicMaterial({map:bank.images.smoke||waterMap,color:0xffffff,transparent:true,opacity:.70,depthWrite:false}));
  const ring=pool(32,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
  const dust=pool(240,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
 

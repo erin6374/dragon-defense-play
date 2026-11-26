@@ -764,15 +764,22 @@ function stampPermanentDamage(key,u,v,ru,rv){
 function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  const school=neighborhood.school;
  const currentDmg=school?.damage||0;
- const isColossal=r>4.5||strength>2.0;
- const maxHitDmg=isColossal?0.11:0.065;
- const targetMaxDmg=Math.min(0.98,currentDmg+maxHitDmg);
- neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),Math.min(r,4.0),Math.min(strength,0.9));
- if(school&&school.damage>targetMaxDmg){school.damage=targetMaxDmg;}
- schoolReconstruction?.impact({x,y,z,radius:Math.min(r,4.0),strength:Math.min(strength,0.9),type,speed});
- sourceDamage.stamp(x,y,z,Math.min(r,4.0));
+ const isExtinction=r>=13.0||strength>=6.0;
+ const isTitanic=r>=9.0||strength>=4.0;
+ const isColossal=r>=4.2||strength>=2.0;
+ const maxHitDmg=isExtinction?1.0:isTitanic?0.85:isColossal?0.50:0.12;
+ const targetMaxDmg=Math.min(1.0,currentDmg+maxHitDmg);
+ const impactRadius=isExtinction?Math.min(r,20.0):isTitanic?Math.min(r,14.0):isColossal?Math.min(r,9.0):Math.min(r,4.5);
+ const impactStrength=isExtinction?3.5:isTitanic?2.2:isColossal?1.5:Math.min(strength,0.9);
+ neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),impactRadius,impactStrength);
+ if(school){school.damage=Math.max(school.damage||0,targetMaxDmg);}
+ schoolReconstruction?.impact({x,y,z,radius:impactRadius,strength:impactStrength,type,speed});
+ sourceDamage.stamp(x,y,z,impactRadius);
  const range=schoolBounds.getSize(new THREE.Vector3());
- stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,Math.min(r,4.0)/range.x,Math.min(r,4.0)/range.y);
+ stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
+ if(isColossal||isTitanic||isExtinction){
+  schoolReconstruction?.punchBorehole?.({x,y,z,radius:impactRadius*0.75,isHeavyIron:true,isMassive:isTitanic||isExtinction});
+ }
 }
 function setRowhouseSourceVisible(role,on){
  // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
@@ -2278,9 +2285,9 @@ function disposeCrater(c){
  if(c.mesh){scene.remove(c.mesh);c.mesh.geometry?.dispose();c.mesh.material?.dispose();}
  if(c.inner){scene.remove(c.inner);c.inner.geometry?.dispose();c.inner.material?.dispose();}
  if(c.thermalUpdate)c.thermalUpdate(elapsed);
-  if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
- if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.geometry?.dispose();c.rimMesh.material?.dispose();}
- if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.geometry?.dispose();c.bowlMesh.material?.dispose();}
+ if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
+ if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
+ if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.sootDecal){scene.remove(c.sootDecal);c.sootDecal.geometry?.dispose();c.sootDecal.material?.dispose();}
  if(c.thermalGroup){scene.remove(c.thermalGroup);c.thermalGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.subwayGroup){
@@ -2297,8 +2304,10 @@ function addCrater(x,z,radius=3,opts={}){
  // Broad Street corridor includes roadway, curbs, sidewalks, and flanking lanes (z: -10 to 52)
  const isBroadStreetCorridor=z>=-10&&z<=52&&Math.abs(x)<265;
  const mSzVal=opts.size||(radius*0.75);
- const isTitanicOrExtinction=opts.isTitanic||mSzVal>=9.0;
+ const isExtinction=opts.isExtinction||mSzVal>=13.0;
+ const isTitanic=opts.isTitanic||mSzVal>=9.0;
  const isColossal=opts.isMassive||mSzVal>=4.5||radius>=4.0;
+ const isTitanicOrExtinction=isExtinction||isTitanic;
  const isSubwayBreach=isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
 
  let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null;
@@ -2307,14 +2316,14 @@ function addCrater(x,z,radius=3,opts={}){
   // 3D BROAD STREET SUBWAY CHASM & CAVERN
   // Road deck is completely punched through into the SEPTA Broad Street line!
   // NO opaque inner disc covering the hole!
-  const apertureW=isTitanicOrExtinction?Math.max(15.0,radius*2.2):Math.max(4.6,radius*1.85);
-  const apertureD=isTitanicOrExtinction?Math.max(11.5,radius*1.85):Math.max(4.0,radius*1.55);
+  const apertureW=isExtinction?Math.max(22.0,radius*2.6):isTitanic?Math.max(16.0,radius*2.2):Math.max(5.8,radius*1.85);
+  const apertureD=isExtinction?Math.max(16.0,radius*2.2):isTitanic?Math.max(12.0,radius*1.85):Math.max(4.6,radius*1.55);
 
   // 3D Procedural Jagged Heaved-Asphalt Crest (subway breach)
   rimMesh=createHeavedAsphaltRim(radius,true);
   rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
-  const sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.35:1.0));
+  const sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1));
   sootDecal.position.set(x,0.03,z);
   scene.add(sootDecal);
 
@@ -2322,9 +2331,9 @@ function addCrater(x,z,radius=3,opts={}){
   subwayGroup=new THREE.Group();
   subwayGroup.name='subway-cavern-group';
   subwayGroup.position.set(x,0,z);
-  const W=isTitanicOrExtinction?Math.max(20.0,radius*3.2):Math.max(11.0,radius*2.6);
-  const D=isTitanicOrExtinction?Math.max(15.0,radius*2.6):Math.max(8.5,radius*2.2);
-  const H=isTitanicOrExtinction?6.2:5.2;
+  const W=isExtinction?Math.max(28.0,radius*3.6):isTitanic?Math.max(22.0,radius*3.2):Math.max(12.0,radius*2.6);
+  const D=isExtinction?Math.max(18.0,radius*2.8):isTitanic?Math.max(15.0,radius*2.5):Math.max(9.5,radius*2.2);
+  const H=isExtinction?7.2:isTitanic?6.4:5.4;
 
   // Materials
   const ballastMat=new THREE.MeshStandardMaterial({color:0x1e1b18,roughness:0.98,metalness:0.02});
@@ -2335,6 +2344,7 @@ function addCrater(x,z,radius=3,opts={}){
   const slabMat=new THREE.MeshStandardMaterial({color:0x2b2826,roughness:0.92,metalness:0.04}); // Broken reinforced concrete road deck
   const rebarMat=new THREE.MeshStandardMaterial({color:0x594c42,roughness:0.65,metalness:0.75}); // Exposed twisted steel rebar
   const thirdRailMat=new THREE.MeshStandardMaterial({color:0xdf6d1f,roughness:0.35,metalness:0.85,emissive:0xff6611,emissiveIntensity:0.75}); // 600V DC third rail
+  for(const m of [ballastMat,subwayTileMat,septaGreenMat,steelMat,tieMat,slabMat,rebarMat,thirdRailMat])m.fog=false;
 
   // Cavern Ballast Floor
   const floor=new THREE.Mesh(new THREE.BoxGeometry(W*1.15,0.45,D*1.15),ballastMat);
@@ -2427,8 +2437,16 @@ function addCrater(x,z,radius=3,opts={}){
   }
 
   // Subterranean amber tunnel lighting illuminating tracks & walls from within
-  const tunnelLight=new THREE.PointLight(0xffaa44,1.8,18.0);
-  tunnelLight.position.set(0,-H*0.5+0.8,0);subwayGroup.add(tunnelLight);
+  const tunnelLight=new THREE.PointLight(0xffba55,3.6,28.0);
+  tunnelLight.position.set(0,-H*0.4,0);subwayGroup.add(tunnelLight);
+  const utilLight1=new THREE.PointLight(0xffa834,3.2,22.0);
+  utilLight1.position.set(-W*0.28,-H*0.35,0);subwayGroup.add(utilLight1);
+  const utilLight2=new THREE.PointLight(0xffa834,3.2,22.0);
+  utilLight2.position.set(W*0.28,-H*0.35,0);subwayGroup.add(utilLight2);
+  const thirdRailArc=new THREE.PointLight(0x60a5fa,3.8,16.0);
+  thirdRailArc.position.set(0,-H+0.55,1.18);
+  thirdRailArc.name='subway-third-rail-arc-light';
+  subwayGroup.add(thirdRailArc);
 
   // Subterranean Station Platform Mezzanine (North edge of cavern at z = D*0.38)
   const platformGroup=new THREE.Group();
@@ -2682,15 +2700,18 @@ function addCrater(x,z,radius=3,opts={}){
   asphaltRim.rotation.x=Math.PI*0.5;
   geyserGroup.add(asphaltRim);
 
-  // RC158: Specular water puddle runoff sheet pooling on asphalt around fractured main
-  const puddleMat=new THREE.MeshStandardMaterial({
-   color:0x152838,roughness:0.06,metalness:0.55,transparent:true,opacity:0.75,depthWrite:false
-  });
-  const puddleMesh=new THREE.Mesh(new THREE.CircleGeometry(radius*1.15,24),puddleMat);
-  puddleMesh.name='asphalt-water-puddle';
-  puddleMesh.rotation.x=-Math.PI*0.5;
-  puddleMesh.position.set(0,0.06,0);
-  geyserGroup.add(puddleMesh);
+  // For subway breaches, water cascades down into the subterranean track bed sump (no flat disc covering chasm).
+  // For surface impacts, a small localized puddle surrounds the sheared pipe.
+  if(!isSubwayBreach){
+   const puddleMat=new THREE.MeshStandardMaterial({
+    color:0x152838,roughness:0.06,metalness:0.55,transparent:true,opacity:0.65,depthWrite:false
+   });
+   const puddleMesh=new THREE.Mesh(new THREE.CircleGeometry(Math.min(1.8,radius*0.35),16),puddleMat);
+   puddleMesh.name='asphalt-water-puddle';
+   puddleMesh.rotation.x=-Math.PI*0.5;
+   puddleMesh.position.set(0,0.04,0);
+   geyserGroup.add(puddleMesh);
+  }
 
   scene.add(geyserGroup);
   sound('water');
@@ -2749,11 +2770,11 @@ function updateCraters(dt){
    if(c.isSubway&&cinematicFX.waterSpray){
     _craterV1.set(c.x-2.4,-4.2,c.z);
     _craterV2.set(1.0,0.22,0.18).normalize();
-    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:4,power:0.95});
+    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:2,power:0.85});
     // Waterfall base impact mist
     _craterV1.set(c.x,-5.0,c.z-2.2);
     _craterV2.set(0,0.85,0.25).normalize();
-    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:3,power:0.75});
+    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:2,power:0.70});
    }
    const beacon=c.subwayGroup.getObjectByName('subway-emergency-beacon');
    if(beacon){
@@ -2779,7 +2800,7 @@ function updateCraters(dt){
     puddle.scale.setScalar(1.0+Math.sin(elapsed*2.0)*0.04);
    }
    if(cinematicFX.waterJet){
-    cinematicFX.waterJet(c.geyserGroup.position,dt,{rate:9,power:1.0,spread:0.20});
+    cinematicFX.waterJet(c.geyserGroup.position,dt,{rate:3,power:0.95,spread:0.18});
    }
    for(const f of schoolFire){
     if(f.root.position.distanceTo(c.geyserGroup.position)<16.0){
@@ -4385,19 +4406,19 @@ function damage(x,z,y=7,meteor=null){
   sound('impact');
 
   // RC163: Propagate kinetic shockwave to all adjacent buildings along Broad Street
-  const isColossal = mSz >= 4.5;
+  const isColossal = mSz >= 4.0;
   const isTitanic = mSz >= 9.0;
   const roadShockRadius = Math.max(shockRadius, mSz * 3.8);
   for(const b of neighborhood.targetBuildings){
    if(b.school)continue;
    const bDist = Math.hypot(b.x - targetX, b.z - hitZ);
    if(bDist <= roadShockRadius + Math.max(b.w, b.d) * 0.5){
-    const dmgFraction = Math.max(0.20, (1.0 - bDist / roadShockRadius)) * (isTitanic ? 1.0 : isColossal ? 0.85 : 0.45);
+    const dmgFraction = Math.max(0.30, (1.0 - bDist / roadShockRadius)) * (isTitanic ? 1.0 : isColossal ? 0.92 : 0.55);
     b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
     neighborhood.city.forceDamage(b, b.damage);
     const nbDef = northBroadModels?.definitions?.find?.(d => d.id === b.id || (b.name && d.name === b.name));
     if(nbDef){
-     if(b.damage >= 0.80) northBroadModels.collapseBuilding(nbDef.id);
+     if(b.damage >= 0.82) northBroadModels.collapseBuilding(nbDef.id);
      else northBroadModels.damageBuilding(nbDef.id, b.damage);
     }
    }
@@ -4429,19 +4450,18 @@ function damage(x,z,y=7,meteor=null){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
   const mSzVal = meteor?.size || (profile.radius * 0.45);
    const isTitanicStrike = mSzVal >= 9.0;
-   const isColossalStrike = mSzVal >= 4.5;
+   const isColossalStrike = mSzVal >= 4.0;
    if(isTitanicStrike){
     effectiveTarget.damage=1.0;
     neighborhood.city.forceDamage(effectiveTarget,1.0);
     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
     if(nbDef)northBroadModels.collapseBuilding(nbDef.id);
    }else if(isColossalStrike){
-    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.55);
+    effectiveTarget.damage=Math.max(effectiveTarget.damage||0, 0.92);
     neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
     if(nbDef){
-     if(effectiveTarget.damage>=0.80)northBroadModels.collapseBuilding(nbDef.id);
-     else northBroadModels.damageBuilding(nbDef.id,effectiveTarget.damage);
+     northBroadModels.collapseBuilding(nbDef.id);
     }
    }else{
     effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.25*Math.max(1.0,mSzVal));
@@ -4478,33 +4498,41 @@ function damage(x,z,y=7,meteor=null){
   // User directive: smaller meteors (<= 2.0m) do no more than 5% damage,
   // really big meteors (>= 3.6m) do maybe 15% damage. Gradual proportional destruction.
   const mSize=meteor?.size??1.8;
-  const isColossal=mSize>=4.5||meteor?.colossus||meteor?.boss;
-  const isBig=mSize>=3.0||meteor?.isMassive;
   const isExtinctionHit = mSize >= 13.0;
   const isTitanicHit = mSize >= 9.0;
-  let hitDmg=0.018;
+  const isColossal=mSize>=4.0||meteor?.colossus||meteor?.boss;
+  const isBig=mSize>=2.8||meteor?.isMassive;
+  let hitDmg=0.025;
   if(isExtinctionHit){
-   hitDmg=0.450;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:6.5,isHeavyIron:true,isMassive:true});
+   hitDmg=1.0;
+   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:12.0,isHeavyIron:true,isMassive:true});
+   schoolReconstruction?.collapse?.();
   }else if(isTitanicHit){
-   hitDmg=0.280;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:5.2,isHeavyIron:true,isMassive:true});
+   hitDmg=0.85;
+   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:8.5,isHeavyIron:true,isMassive:true});
+   if(schoolDamage+hitDmg>=0.88)schoolReconstruction?.collapse?.();
   }else if(isColossal){
-   hitDmg=0.125;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:4.2,isHeavyIron:true,isMassive:true});
+   hitDmg=0.48;
+   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:6.0,isHeavyIron:true,isMassive:true});
+   if(schoolDamage+hitDmg>=0.88)schoolReconstruction?.collapse?.();
   }else if(isBig){
-   hitDmg=0.070;
+   hitDmg=0.18;
+   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:3.8,isHeavyIron:false,isMassive:false});
   }else if(mSize>=1.8){
-   hitDmg=0.038;
+   hitDmg=0.065;
   }else if(mSize>=1.2){
-   hitDmg=0.015;
+   hitDmg=0.025;
   }else{
-   hitDmg=0.000;
+   hitDmg=0.005;
   }
   if(meteor?.crunched||meteor?.crunchDamageDealt>0){
    hitDmg=0.0;
   }
-  schoolDamage=Math.min(0.98,schoolDamage+hitDmg);
+  schoolDamage=Math.min(1.0,schoolDamage+hitDmg);
+  hp=Math.max(0,Math.round((1-schoolDamage)*100));
+  if(schoolDamage>=0.95){
+   schoolReconstruction?.collapse?.();
+  }
   // Small masonry chips and glass descend from the exact impact point, rather
   // than unrelated random locations around the roof. Reuse instanced VFX pools.
   if(performanceLab.isEnabled('particles')){
@@ -6826,8 +6854,8 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
 
 
  if(subwayCamActive){
-  camera.position.set(0,-0.6,31.5);
-  camera.lookAt(0,-4.8,22.5);
+  camera.position.set(0,5.8,38.0);
+  camera.lookAt(0,-3.2,22.5);
  }else if(basementCamActive){
   camera.position.set(0,-0.8,-16.5);
   camera.lookAt(0,-2.4,-36.0);
@@ -7036,7 +7064,7 @@ window.__DD_QA={snap,
   getEmergencyExitSignsCount:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.children.filter(ch=>ch.name==='subway-emergency-exit-sign').length:0;},
   getSubwayEmergencyBeacon:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.getObjectByName('subway-emergency-beacon'):null;},
   triggerBrickDustBurst:(x=0,y=2.0,z=0,p=1.5)=>{cinematicFX.dustBurst(new THREE.Vector3(x,y,z),p,{brick:true});return true;},
-  hasAsphaltWaterPuddle:()=>{return craters.some(c=>c.geyserGroup?.getObjectByName('asphalt-water-puddle'));},
+  hasAsphaltWaterPuddle:()=>{return craters.some(c=>c.geyserGroup?.getObjectByName('asphalt-water-puddle')||c.subwayGroup?.getObjectByName('subway-flooded-water'));},
   getSubwayFloodLevel:()=>{const c=craters.find(cr=>cr.isSubway);return c?c.floodLevel||0.14:0;},
    triggerWaterMain:(x=0,z=23.5,r=4.2)=>{addCrater(x,z,r,{isSubway:true,size:6.8});return craters.at(-1);},
   runPresetConflagration:()=>runPresetConflagration(),

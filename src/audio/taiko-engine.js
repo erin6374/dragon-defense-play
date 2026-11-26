@@ -380,7 +380,7 @@ export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   }
 
   function schedulerTick() {
-    if (!isRunning || !ctx) return;
+    if (!isRunning || !ctx || ctx.state === 'suspended') return;
 
     while (nextNoteTime < ctx.currentTime + scheduleAheadTime) {
       scheduleStep(currentStep, nextNoteTime);

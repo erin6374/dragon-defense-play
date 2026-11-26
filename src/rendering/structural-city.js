@@ -368,13 +368,17 @@ export function createStructuralCity(THREE,scene,bank){
       if (d < minDist) minDist = d;
     }
     const isTopRoof = p.type === 'roof' || p.original.position.y > b.h * 0.82;
-    const roofBias = isTopRoof ? 8.0 : 0.0;
+    const roofBias = (isTopRoof && target < 0.82) ? 8.0 : 0.0;
     const noise = Math.sin(p.original.position.x * 2.1 + p.original.position.y * 1.7 + p.original.position.z * 3.3) * 1.5;
     return { part: p, score: minDist + roofBias + noise };
   });
   partScores.sort((a, b) => a.score - b.score);
   for (let i = 0; i < count; i++) detach(partScores[i].part, partScores[i].part.position, 0.5);
-  if(target>=1)for(const p of b.parts)detach(p,p.position,.6);
+  if(target>=0.88){
+    for(const p of b.parts){
+      if(p.state==='attached'&&p.type!=='foundation')detach(p,p.position,.6);
+    }
+  }
  }
  function update(dt){time+=dt;
   for(const b of buildings){

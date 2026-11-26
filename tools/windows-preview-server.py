@@ -246,8 +246,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description='Dragon Defense local Windows performance preview')
     parser.add_argument('--port', type=int, default=8769)
+    parser.add_argument('--host', type=str, default='0.0.0.0')
+    parser.add_argument('--root', type=str, default=str(ROOT))
     args = parser.parse_args()
-    with PreviewServer(('127.0.0.1', args.port)) as server:
+    with PreviewServer((args.host, args.port), root=args.root) as server:
         print(f'Dragon Defense preview: http://127.0.0.1:{server.server_port}/', flush=True)
         print(f'Performance CSV: {server.log_path}', flush=True)
         print('GPU utilization is not measured; do not infer it from game FPS.', flush=True)

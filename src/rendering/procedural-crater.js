@@ -1,88 +1,135 @@
 import * as THREE from 'three';
 
-// Cached scorch decal texture
-let _cachedScorchTexture = null;
-function getScorchDecalTexture() {
-  if (_cachedScorchTexture) return _cachedScorchTexture;
+// Cached annular scorch decal textures with 100% transparent center aperture
+let _cachedSubwayScorchTexture = null;
+let _cachedSurfaceScorchTexture = null;
+
+function getAnnularScorchDecalTexture(isSubway = false) {
+  if (isSubway && _cachedSubwayScorchTexture) return _cachedSubwayScorchTexture;
+  if (!isSubway && _cachedSurfaceScorchTexture) return _cachedSurfaceScorchTexture;
+
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
-  const cx = 128, cy = 128;
-  const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 126);
-  grad.addColorStop(0.0, 'rgba(8, 6, 5, 0.92)');
-  grad.addColorStop(0.45, 'rgba(12, 10, 8, 0.85)');
-  grad.addColorStop(0.70, 'rgba(18, 16, 14, 0.55)');
-  grad.addColorStop(0.88, 'rgba(25, 22, 20, 0.22)');
-  grad.addColorStop(1.0, 'rgba(30, 28, 25, 0.0)');
+  const cx = 256, cy = 256;
+
+  // Aperture radius in pixels (relative to canvas radius 256):
+  // For subway breach: aperture is ~45% of decal diameter (rHole ≈ 114px).
+  // For surface crater: parabolic bowl is ~38% of decal diameter (rHole ≈ 96px).
+  const rHole = isSubway ? 114 : 96;
+  const rRim = rHole + 16;
+  const rOuter = 252;
+
+  // Clear entire canvas to transparent
+  ctx.clearRect(0, 0, 512, 512);
+
+  // Annular radial gradient: 100% transparent at center, ramping up at rim, then feathering out
+  const grad = ctx.createRadialGradient(cx, cy, rHole - 6, cx, cy, rOuter);
+  grad.addColorStop(0.0, 'rgba(0, 0, 0, 0.0)'); // Center aperture is 100% transparent
+  grad.addColorStop(0.08, 'rgba(0, 0, 0, 0.0)'); // Inner lip transparent
+  grad.addColorStop(0.14, 'rgba(10, 8, 7, 0.82)'); // Jet-black charred rim lip
+  grad.addColorStop(0.35, 'rgba(16, 13, 11, 0.68)'); // Heavy soot blanket
+  grad.addColorStop(0.60, 'rgba(28, 24, 22, 0.38)'); // Mid-distance ash fallout
+  grad.addColorStop(0.85, 'rgba(38, 34, 32, 0.12)'); // Outer singe
+  grad.addColorStop(1.0, 'rgba(40, 36, 34, 0.0)'); // Soft asymptotic fade
+
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.arc(cx, cy, 126, 0, Math.PI * 2);
+  ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
   ctx.fill();
 
-  // Add random scorched soot splatters around edges
-  for (let s = 0; s < 48; s++) {
-    const angle = (s / 48) * Math.PI * 2 + Math.random() * 0.15;
-    const dist = 60 + Math.random() * 58;
-    const spX = cx + Math.cos(angle) * dist;
-    const spY = cy + Math.sin(angle) * dist;
-    const spR = 3 + Math.random() * 9;
-    const spAlpha = 0.25 + Math.random() * 0.45;
-    ctx.fillStyle = `rgba(10, 8, 6, ${spAlpha})`;
+  // Explicitly punch out inner hole with destination-out so center is guaranteed 100% empty
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(cx, cy, rHole, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Add scorched soot splatters & supersonic radial blast spall rays radiating outward from rim
+  const numRays = isSubway ? 64 : 48;
+  for (let s = 0; s < numRays; s++) {
+    const angle = (s / numRays) * Math.PI * 2 + (Math.sin(s * 4.3) * 0.08);
+    const startDist = rHole + 2 + Math.abs(Math.sin(s * 2.7)) * 12;
+    const endDist = startDist + 35 + Math.abs(Math.cos(s * 5.1)) * 95;
+
+    ctx.strokeStyle = `rgba(10, 8, 7, ${0.28 + (s % 5) * 0.08})`;
+    ctx.lineWidth = 1.5 + (s % 4) * 0.8;
     ctx.beginPath();
-    ctx.arc(spX, spY, spR, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(cx + Math.cos(angle) * startDist, cy + Math.sin(angle) * startDist);
+    ctx.lineTo(cx + Math.cos(angle) * endDist, cy + Math.sin(angle) * endDist);
+    ctx.stroke();
+
+    // Occasional soot deposit clot
+    if (s % 3 === 0) {
+      const spDist = (startDist + endDist) * 0.5;
+      const spX = cx + Math.cos(angle) * spDist;
+      const spY = cy + Math.sin(angle) * spDist;
+      ctx.fillStyle = `rgba(8, 7, 6, ${0.20 + (s % 4) * 0.07})`;
+      ctx.beginPath();
+      ctx.arc(spX, spY, 3 + (s % 4) * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
-  _cachedScorchTexture = new THREE.CanvasTexture(canvas);
-  return _cachedScorchTexture;
+  const tex = new THREE.CanvasTexture(canvas);
+  if (isSubway) _cachedSubwayScorchTexture = tex;
+  else _cachedSurfaceScorchTexture = tex;
+  return tex;
 }
 
+const _boxGeo = new THREE.BoxGeometry(1, 1, 1);
+const _cylinderGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.2, 6);
+const _asphaltChunkMat = new THREE.MeshStandardMaterial({ color: 0x1c1a18, roughness: 0.96, metalness: 0.04 });
+const _rebarSteelMat = new THREE.MeshStandardMaterial({ color: 0x5a4d42, roughness: 0.65, metalness: 0.82 });
+
 /**
- * Creates 3D procedural jagged heaved-asphalt crest geometry.
- * Displaces inner rim vertices upward by +0.28m to +0.44m (buckled pavement thrust upward by shockwave).
- * Outer rim slopes down to +0.02m to touch street pavement.
- * Inner vertices colored charred jet-black; outer vertices colored weathered asphalt grey.
+ * Creates 3D realistic fractured asphalt rim with inward-drooping broken slabs,
+ * protruding rebar rods, and radial tensile pavement fracture cracks.
  */
 export function createHeavedAsphaltRim(radius, isSubway = false) {
-  const segments = 32;
+  const root = new THREE.Group();
+  root.name = 'crater-heaved-asphalt-rim';
+
+  const segments = 36;
   const positions = [];
   const colors = [];
   const indices = [];
 
-  const rInnerBase = radius * (isSubway ? 0.84 : 0.80);
-  const rOuterBase = radius * (isSubway ? 1.38 : 1.42);
+  const rInnerBase = radius * (isSubway ? 0.98 : 0.82);
+  const rOuterBase = radius * (isSubway ? 1.55 : 1.42);
 
   // Charred jet-black soot color for inner lip
-  const sootR = 0.045, sootG = 0.038, sootB = 0.032;
+  const sootR = 0.04, sootG = 0.035, sootB = 0.03;
   // Weathered asphalt grey for outer edge
-  const roadR = 0.165, roadG = 0.180, roadB = 0.200;
+  const roadR = 0.16, roadG = 0.175, roadB = 0.19;
 
   for (let i = 0; i <= segments; i++) {
     const seg = i % segments;
     const angle = (seg / segments) * Math.PI * 2;
-    // High-frequency pseudo-random radial perturbation for jagged fractured edge
-    const jaggedNoise = Math.sin(seg * 3.7 + 1.2) * 0.12 + Math.cos(seg * 7.1) * 0.06;
+    const jaggedNoise = Math.sin(seg * 3.7 + 1.2) * 0.14 + Math.cos(seg * 7.1) * 0.07;
     const rIn = rInnerBase * (1.0 + jaggedNoise);
-    const rOut = rOuterBase * (1.0 + jaggedNoise * 0.5);
+    const rOut = rOuterBase * (1.0 + jaggedNoise * 0.45);
 
-    // Inner lip buckled upward from kinetic blast
-    const yIn = 0.26 + (Math.sin(seg * 4.3 + 0.8) * 0.08 + Math.cos(seg * 8.9) * 0.04) * radius * 0.08;
+    // If subway breach, pavement droops inward/downward (-0.18m to -0.32m);
+    // If surface crater, kinetic shock buckles inner lip slightly upward (+0.18m to +0.28m).
+    const yIn = isSubway
+      ? (-0.22 - (Math.sin(seg * 4.3 + 0.8) * 0.06 + Math.cos(seg * 8.9) * 0.04))
+      : (0.22 + (Math.sin(seg * 4.3 + 0.8) * 0.06 + Math.cos(seg * 8.9) * 0.04) * radius * 0.06);
     const yOut = 0.02;
 
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
 
-    // Vertex 2*i: Inner vertex
+    // Inner vertex
     positions.push(cosA * rIn, yIn, sinA * rIn);
     colors.push(sootR, sootG, sootB);
 
-    // Vertex 2*i + 1: Outer vertex
+    // Outer vertex
     positions.push(cosA * rOut, yOut, sinA * rOut);
     colors.push(roadR, roadG, roadB);
   }
 
-  // Generate quad triangle indices
   for (let i = 0; i < segments; i++) {
     const i0 = i * 2;
     const i1 = i0 + 1;
@@ -106,46 +153,118 @@ export function createHeavedAsphaltRim(radius, isSubway = false) {
     side: THREE.DoubleSide
   });
 
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = 'crater-heaved-asphalt-rim';
-  return mesh;
+  const rimMesh = new THREE.Mesh(geometry, material);
+  rimMesh.name = 'crater-rim-lip';
+  root.add(rimMesh);
+
+  // Radial pavement crack fracture lines radiating across street and curbs
+  const crackPoints = [];
+  const numCracks = isSubway ? 14 : 9;
+  for (let c = 0; c < numCracks; c++) {
+    const startAngle = (c / numCracks) * Math.PI * 2 + (Math.sin(c * 2.3) * 0.2);
+    let curX = Math.cos(startAngle) * rInnerBase * 1.05;
+    let curZ = Math.sin(startAngle) * rInnerBase * 1.05;
+    const crackLength = radius * (1.2 + (c % 4) * 0.45);
+    const crackSteps = 4 + (c % 3) * 2;
+    for (let st = 0; st < crackSteps; st++) {
+      const stepAngle = startAngle + (Math.sin(c * 5.1 + st * 2.1) - 0.48) * 0.45;
+      const stepDist = (crackLength / crackSteps);
+      const nextX = curX + Math.cos(stepAngle) * stepDist;
+      const nextZ = curZ + Math.sin(stepAngle) * stepDist;
+
+      crackPoints.push(curX, 0.035, curZ);
+      crackPoints.push(nextX, 0.035, nextZ);
+
+      // Occasional branch crack
+      if (st === 2 && (c % 2 === 0)) {
+        const branchAngle = stepAngle + (c % 4 === 0 ? 0.75 : -0.75);
+        crackPoints.push(curX, 0.035, curZ);
+        crackPoints.push(curX + Math.cos(branchAngle) * stepDist * 0.8, 0.035, curZ + Math.sin(branchAngle) * stepDist * 0.8);
+      }
+
+      curX = nextX;
+      curZ = nextZ;
+    }
+  }
+
+  if (crackPoints.length > 0) {
+    const crackGeo = new THREE.BufferGeometry();
+    crackGeo.setAttribute('position', new THREE.Float32BufferAttribute(crackPoints, 3));
+    const crackMat = new THREE.LineBasicMaterial({
+      color: 0x141210,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false
+    });
+    const cracks = new THREE.LineSegments(crackGeo, crackMat);
+    cracks.name = 'crater-radial-cracks';
+    root.add(cracks);
+  }
+
+  // Broken reinforced asphalt slab chunks and exposed steel rebar
+  const numChunks = isSubway ? Math.min(16, Math.max(8, Math.round(radius * 1.8))) : 6;
+  for (let k = 0; k < numChunks; k++) {
+    const chunkAngle = (k / numChunks) * Math.PI * 2 + (Math.sin(k * 3.1) * 0.15);
+    const chunkDist = rInnerBase * (0.94 + (k % 3) * 0.06);
+    const cx = Math.cos(chunkAngle) * chunkDist;
+    const cz = Math.sin(chunkAngle) * chunkDist;
+
+    const slab = new THREE.Mesh(_boxGeo, _asphaltChunkMat);
+    const sw = 0.75 + (k % 4) * 0.35;
+    const sh = 0.18 + (k % 3) * 0.08;
+    const sd = 0.65 + (k % 5) * 0.30;
+    slab.scale.set(sw, sh, sd);
+
+    // Slabs tilt inward and downward into the crater or breach
+    const tiltZ = Math.sin(chunkAngle) * (isSubway ? 0.55 : -0.25);
+    const tiltX = -Math.cos(chunkAngle) * (isSubway ? 0.55 : -0.25);
+    slab.position.set(cx, isSubway ? -0.28 - (k % 3) * 0.12 : 0.12 + (k % 3) * 0.04, cz);
+    slab.rotation.set(tiltX + (k % 3) * 0.1, chunkAngle, tiltZ + (k % 4) * 0.1);
+    slab.castShadow = true;
+    slab.receiveShadow = true;
+    root.add(slab);
+
+    // Protruding twisted rebar rod extending from broken slab
+    if (k % 2 === 0) {
+      const rebar = new THREE.Mesh(_cylinderGeo, _rebarSteelMat);
+      rebar.position.set(cx * 0.95, isSubway ? -0.38 - (k % 3) * 0.15 : 0.14, cz * 0.95);
+      rebar.rotation.set(tiltX * 1.4, chunkAngle + 0.4, tiltZ * 1.4);
+      root.add(rebar);
+    }
+  }
+
+  return root;
 }
 
 /**
- * Creates true 3D volumetric parabolic bowl for non-subway impacts.
+ * Creates true 3D volumetric parabolic bowl for non-subway impacts with granular basaltic interior.
  */
 export function createVolumetricImpactBowl(radius) {
-  const depth = Math.min(2.4, 0.95 + radius * 0.26);
-  const rings = 4;
-  const segments = 24;
+  const depth = Math.min(3.2, 1.1 + radius * 0.32);
+  const rings = 5;
+  const segments = 28;
 
   const positions = [];
   const colors = [];
   const indices = [];
 
-  // Ring 0: top inner rim connecting to asphalt lip (y = 0.22)
-  // Ring 1: steep upper descent (y = -depth * 0.38)
-  // Ring 2: fractured mid bowl (y = -depth * 0.75)
-  // Ring 3: flat molten crater basin floor (y = -depth)
-  // Center vertex: epicenter floor center (y = -depth)
-
   for (let r = 0; r < rings; r++) {
     const frac = r / (rings - 1); // 0 to 1
-    const rRad = radius * (0.82 - frac * 0.52); // radius * 0.82 down to radius * 0.30
-    const yDepth = (r === 0) ? 0.22 : (-depth * Math.pow(frac, 1.4));
+    const rRad = radius * (0.84 - frac * 0.56);
+    const yDepth = (r === 0) ? 0.18 : (-depth * Math.pow(frac, 1.35));
 
     for (let s = 0; s < segments; s++) {
       const angle = (s / segments) * Math.PI * 2;
       const noise = (r === 0) ? 0 : (Math.sin(s * 4.7 + r * 2.1) * 0.08 * radius);
       const px = Math.cos(angle) * (rRad + noise);
       const pz = Math.sin(angle) * (rRad + noise);
-      const py = yDepth + (r > 0 ? (Math.cos(s * 3.3) * 0.05 * depth) : 0);
+      const py = yDepth + (r > 0 ? (Math.cos(s * 3.3) * 0.06 * depth) : 0);
 
       positions.push(px, py, pz);
 
-      // Charred rock color: darker with depth
-      const shade = 0.06 - frac * 0.035;
-      colors.push(shade, shade * 0.9, shade * 0.8);
+      // Charred granular rock color: darker with depth
+      const shade = 0.055 - frac * 0.038;
+      colors.push(shade, shade * 0.88, shade * 0.78);
     }
   }
 
@@ -168,7 +287,7 @@ export function createVolumetricImpactBowl(radius) {
   // Center bottom cap
   const centerIdx = positions.length / 3;
   positions.push(0, -depth, 0);
-  colors.push(0.02, 0.018, 0.015);
+  colors.push(0.018, 0.015, 0.012);
 
   const bottomRingStart = (rings - 1) * segments;
   for (let s = 0; s < segments; s++) {
@@ -184,9 +303,8 @@ export function createVolumetricImpactBowl(radius) {
 
   const material = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.96,
-    metalness: 0.08,
-    flatShading: true,
+    roughness: 0.94,
+    metalness: 0.06,
     side: THREE.DoubleSide
   });
 
@@ -210,7 +328,7 @@ export function createPulsatingThermalFissures(radius, depth) {
 
   // Multi-tier radial veins: center white-hot, branches orange, outer cooling black
   positions.push(0, 0.02, 0);
-  colors.push(1.0, 0.94, 0.82); // Core white-hot (r, g, b)
+  colors.push(1.0, 0.94, 0.82);
 
   for (let i = 0; i < segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
@@ -221,10 +339,8 @@ export function createPulsatingThermalFissures(radius, depth) {
     positions.push(px, 0.02, pz);
 
     if (isVein) {
-      // Magma incandescent orange vein
       colors.push(1.0, 0.32, 0.02);
     } else {
-      // Scorched basalt crust ridge
       colors.push(0.12, 0.06, 0.04);
     }
   }
@@ -253,7 +369,6 @@ export function createPulsatingThermalFissures(radius, depth) {
   mesh.name = 'crater-magma-fissure-mesh';
   group.add(mesh);
 
-  // Deep subterranean magma glow light
   const light = new THREE.PointLight(0xff5511, 2.2, Math.max(8.0, radius * 3.5));
   light.position.set(0, 0.35, 0);
   light.name = 'crater-thermal-glow-light';
@@ -275,12 +390,12 @@ export function createPulsatingThermalFissures(radius, depth) {
 }
 
 /**
- * Creates smooth feathered radial soot blast decal.
+ * Creates smooth feathered radial soot blast decal with annular aperture.
  */
-export function createFeatheredRadialSootDecal(radius) {
-  const decalR = radius * 2.2;
+export function createFeatheredRadialSootDecal(radius, isSubway = false) {
+  const decalR = radius * (isSubway ? 2.3 : 2.1);
   const geom = new THREE.PlaneGeometry(decalR * 2, decalR * 2);
-  const texture = getScorchDecalTexture();
+  const texture = getAnnularScorchDecalTexture(isSubway);
   const mat = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
@@ -293,7 +408,7 @@ export function createFeatheredRadialSootDecal(radius) {
 
   const mesh = new THREE.Mesh(geom, mat);
   mesh.rotation.x = -Math.PI / 2;
-  mesh.position.y = 0.04;
+  mesh.position.y = 0.038;
   mesh.name = 'crater-feathered-radial-soot-decal';
   return mesh;
 }
