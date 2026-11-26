@@ -56,4 +56,30 @@ test('Ground and collapsed building collision',()=>{
  const b={id:'test',x:14,z:-10,w:5,d:12,h:8,damage:1};
  assert.equal(collision.traceMeteorCollision({x:14,y:30,z:-10},{x:14,y:0,z:-10},[b],school).kind,'ground');
 });
+test('Penetration budget does not double-charge measured structural damage',()=>{
+ const line=game.match(/b\.damage=Math\.max\(b\.damage\|\|0,Math\.min\(1\.0,m\.crunchInitialDamage\+m\.crunchDamageDealt\)\);/);
+ assert.ok(line);
+ const apply=new Function('b','m',line[0]+'return b.damage;');
+ const b={damage:.3},m={crunchInitialDamage:.1,crunchDamageDealt:.2};
+ assert.ok(Math.abs(apply(b,m)-.3)<1e-8);
+ m.crunchDamageDealt=.5;
+ assert.ok(Math.abs(apply(b,m)-.6)<1e-8);
+ assert.ok(Math.abs(apply(b,m)-.6)<1e-8);
+ b.damage=.8;assert.equal(apply(b,m),.8);
+});
+test('Forced damage detaches only its missing quota, without premature flattening',()=>{
+ const structural=read('src/rendering/structural-city.js');
+ const start=structural.indexOf(' function forceDamage('),end=structural.indexOf(' function update(',start);
+ assert.ok(start>=0&&end>start);
+ class V{constructor(x,y,z){Object.assign(this,{x,y,z});}distanceTo(v){return Math.hypot(this.x-v.x,this.y-v.y,this.z-v.z);}}
+ let detaches=0;
+ const force=new Function('THREE','detach',structural.slice(start,end)+'return forceDamage;')({Vector3:V},p=>{p.state='falling';detaches++;});
+ const parts=Array.from({length:100},(_,i)=>({type:'wall',state:i<20?'settled':'attached',original:{position:new V(i%5,i%10,0)},position:new V(i%5,i%10,0)}));
+ const b={x:0,z:0,w:10,h:10,d:10,damage:.2,pressure:.2,structuralParts:parts,parts};
+ force(b,.5);assert.equal(detaches,30);
+ force(b,.5);assert.equal(detaches,30);
+ force(b,.9);assert.equal(parts.filter(p=>p.state==='attached').length,10);
+ force(b,1);assert.equal(detaches,80);
+ force(b,1);assert.equal(detaches,80);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
