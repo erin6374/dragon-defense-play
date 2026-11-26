@@ -8,7 +8,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // (dragon, vehicles, school, rowhouses and landmark towers) reuse these maps.
 // Fixed 128x192/96x128 RGBA buffers upload at 12/7 Hz, independent of fires.
 function createFluidCombustionAtlases(THREE){
- const FW=128,FH=192,SW=96,SH=128;
+ const FW=128,FH=192,SW=128,SH=128;
  const fireCanvas=document.createElement('canvas');fireCanvas.width=FW;fireCanvas.height=FH;
  const smokeCanvas=document.createElement('canvas');smokeCanvas.width=SW;smokeCanvas.height=SH;
  const fc=fireCanvas.getContext('2d',{willReadFrequently:false}),sc=smokeCanvas.getContext('2d',{willReadFrequently:false});
@@ -65,27 +65,26 @@ function createFluidCombustionAtlases(THREE){
   fc.putImageData(fi,0,0);flame.needsUpdate=true;
  }
  function drawSmoke(t){
-  const p=si.data,flow=t*.50;
+  const p=si.data,flow=t*.42;
   for(let y=0;y<SH;y++){
-   const h=1-(y+.5)/SH;
+   const h=1-(y+.5)/SH,v=(y+.5)/SH-.5;
    for(let x=0;x<SW;x++){
     const u=(x+.5)/SW-.5,i=(y*SW+x)*4;
-    const uNorm=Math.abs(u)*2.0,hNorm=Math.abs(h-0.5)*2.0;
-    const rDist=Math.hypot(uNorm*1.08,hNorm*1.08);
-    if(rDist>=1.0||uNorm>=0.97||hNorm>=0.97){p[i]=180;p[i+1]=180;p[i+2]=180;p[i+3]=0;continue;}
-    const low=noise(u*5.6+2.3,h*7.2-flow),mid=noise(u*16+low*2.7,h*16-flow*1.9);
-    const high=noise(u*35+mid*2,h*31-flow*3.1);
-    const center=Math.sin(t*.28+h*5.2)*.065+(low-.5)*.16;
-    const spread=.20+.23*h+.11*low;
+    const rDist=Math.hypot(u*2.0,v*2.0);
+    if(rDist>=0.98){p[i]=180;p[i+1]=180;p[i+2]=180;p[i+3]=0;continue;}
+    const low=noise(u*5.2+2.3,h*6.8-flow),mid=noise(u*14+low*2.5,h*15-flow*1.8);
+    const high=noise(u*32+mid*1.8,h*28-flow*2.8);
+    const center=Math.sin(t*.25+h*4.8)*.08+(low-.5)*.18;
+    const spread=.26+.22*h+.12*low;
     const rad=Math.abs(u-center)/spread;
-    const wisps=clamp((1.14-rad+(mid-.5)*.68+(high-.5)*.24)*1.95);
-    let density=clamp((.14+.54*low+.32*mid)*wisps);
-    // Continuous analytical feathering envelope guaranteeing seamless asymptotic fade to 0
-    const borderFade=clamp((1.0-rDist)*2.4)*clamp((0.97-uNorm)*3.4)*clamp((0.97-hNorm)*3.4);
-    density*=Math.pow(borderFade,1.65);
-    // White atlas, colored by existing grayscale/soot sprite materials.
-    const v=Math.round(177+55*high);
-    p[i]=v;p[i+1]=v;p[i+2]=v;p[i+3]=Math.round(255*density*.72);
+    const wisps=clamp((1.18-rad+(mid-.5)*.62+(high-.5)*.22)*1.85);
+    let density=clamp((.18+.50*low+.32*mid)*wisps);
+    // Continuous asymptotic Gaussian falloff: zero quad boundary clipping
+    const softEdge=Math.max(0.0,1.0-rDist*rDist);
+    const gaussian=Math.exp(-3.6*rDist*rDist)*Math.pow(softEdge,1.75);
+    density*=gaussian;
+    const vColor=Math.round(175+58*high);
+    p[i]=vColor;p[i+1]=vColor;p[i+2]=vColor;p[i+3]=Math.round(255*density*.68);
    }
   }
   sc.putImageData(si,0,0);smoke.needsUpdate=true;

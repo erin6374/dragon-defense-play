@@ -13,7 +13,8 @@ try{const params=new URLSearchParams(location.search);
 }catch{}
 function apply(){
  for(const u of registry){
-  u.useFlipbook.value=state.ready&&mode==='flipbook'?1:0;
+  // RC164: Flame uses Houdini atlas; smoke uses continuous volumetric FBM plume
+  u.useFlipbook.value=(state.ready&&mode==='flipbook'&&!u.isSmokePlume)?1:0;
   if(u.plumeMode)u.plumeMode.value=smokeMode==='plume'?1:0;
   if(state.ready){u.flameAtlas.value=state.fire;u.smokeAtlas.value=state.smoke;}
  }
@@ -57,7 +58,7 @@ export function prepareFlipbookMaterial(material,kind){
  if(kind===2)return;
  const u=material.uniforms;
  if(!u.useFlipbook){u.useFlipbook={value:0};u.flameAtlas={value:null};u.smokeAtlas={value:null};registry.add(u);}
- if(kind===1&&!u.plumeMode)u.plumeMode={value:smokeMode==='plume'?1:0};
+ if(kind===1){u.isSmokePlume=true;u.useFlipbook.value=0;if(!u.plumeMode)u.plumeMode={value:smokeMode==='plume'?1:0};}
  if(kind===3){
   const marker='color=mix(color,vec3(.025,.013,.008),opening*.85);';
   if(!material.fragmentShader.includes(marker))throw Error('Opening shader changed; review flipbook contact glow');

@@ -4346,10 +4346,21 @@ function damage(x,z,y=7,meteor=null){
     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
     if(nbDef)northBroadModels.collapseBuilding(nbDef.id);
    }else if(isColossalStrike){
-    effectiveTarget.damage=Math.max(effectiveTarget.damage||0,0.78);
+    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.55);
     neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
-    if(nbDef)northBroadModels.damageBuilding(nbDef.id,0.78);
+    if(nbDef){
+     if(effectiveTarget.damage>=0.80)northBroadModels.collapseBuilding(nbDef.id);
+     else northBroadModels.damageBuilding(nbDef.id,effectiveTarget.damage);
+    }
+   }else{
+    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.25*Math.max(1.0,mSzVal));
+    neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
+    const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
+    if(nbDef){
+     if(effectiveTarget.damage>=0.80)northBroadModels.collapseBuilding(nbDef.id);
+     else northBroadModels.damageBuilding(nbDef.id,effectiveTarget.damage);
+    }
    }
    lost=neighborhood.impact(targetX,targetY,hitZ,blastRadius,p=>debrisPiece(p,'brick'),blastStrength);
   cinematicFX.dustBurst(new THREE.Vector3(targetX,targetY,hitZ),Math.min(2.5,blastStrength*1.2),{brick:true,count:16});
