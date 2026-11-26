@@ -60,24 +60,34 @@ export function createCinematicEffects(T,scene,camera,bank){
  const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
  const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
 
- // Soft feathered cubic smoothstep alpha texture for photorealistic water droplets and vapor
- const waterPixels=new Uint8Array(64*64*4);
- for(let y=0;y<64;y++){
-  for(let x=0;x<64;x++){
-   const idx=(y*64+x)*4;
-   const r=Math.hypot((x-31.5)/31.5,(y-31.5)/31.5);
-   const a=Math.max(0,1.0-r);
-   const smooth=a*a*(3.0-2.0*a);
+ // RC165: Photorealistic aerated water droplet & vapor mist texture (fast, white, transparent)
+ // Dual-lobe Gaussian core with micro-turbulent internal droplets and guaranteed asymptotic zero edge falloff
+ const waterSize=128;
+ const waterPixels=new Uint8Array(waterSize*waterSize*4);
+ const halfW=(waterSize-1)*0.5;
+ for(let y=0;y<waterSize;y++){
+  for(let x=0;x<waterSize;x++){
+   const idx=(y*waterSize+x)*4;
+   const nx=(x-halfW)/halfW;
+   const ny=(y-halfW)/halfW;
+   const r=Math.hypot(nx,ny);
+   if(r>=1.0){
+    waterPixels[idx]=255;waterPixels[idx+1]=255;waterPixels[idx+2]=255;waterPixels[idx+3]=0;
+    continue;
+   }
+   const env=Math.exp(-3.6*r*r)*Math.pow(Math.max(0,1.0-r*r),1.65);
+   const subNoise=Math.sin(nx*14.2+ny*18.7)*Math.cos(nx*21.3-ny*12.5)*0.14;
+   const density=Math.min(1.0,Math.max(0,env+subNoise*env));
    waterPixels[idx]=255;
    waterPixels[idx+1]=255;
    waterPixels[idx+2]=255;
-   waterPixels[idx+3]=Math.round(255*Math.pow(smooth,1.35));
+   waterPixels[idx+3]=Math.round(255*density);
   }
  }
- const waterMap=new T.DataTexture(waterPixels,64,64,T.RGBAFormat);
+ const waterMap=new T.DataTexture(waterPixels,waterSize,waterSize,T.RGBAFormat);
  waterMap.needsUpdate=true;
 
- const spray=pool(1000,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.82,depthWrite:false}));
+ const spray=pool(1200,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.78,depthWrite:false}));
  const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
  const dust=pool(640,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
 
@@ -117,7 +127,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  let sparkHead=0;
 
  // DEDICATED HIGH-VELOCITY PARTICLE WATER ENGINE
- const MAX_WATER=320;
+ const MAX_WATER=480;
  let subwayCraters=[];
  function syncSubwayCraters(craters=[]){
   subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0);
@@ -492,35 +502,41 @@ export function createCinematicEffects(T,scene,camera,bank){
   }
  }
 
- function water(from,to,width=.12){
+ function water(from,to,width=.14){
   _delta.subVectors(to,from);
   const length=_delta.length();
+  if(length<0.1)return;
   _right.set(1,0,0).applyQuaternion(camera.quaternion);
   _up.set(0,1,0).applyQuaternion(camera.quaternion);
   const angle=Math.atan2(-_delta.dot(_right),_delta.dot(_up));
 
-  // High-velocity ballistic stream projectile droplets (moving fast, white, transparent)
-  const streamSpeed=28.0+Math.random()*6.0;
+  // RC165: High-speed aerated stream droplets (fast, white, transparent)
+  const streamSpeed=32.0+Math.random()*8.0;
   const flightTime=length/streamSpeed;
-  const pvx=(_delta.x/length)*streamSpeed+(Math.random()-0.5)*0.8;
-  const pvz=(_delta.z/length)*streamSpeed+(Math.random()-0.5)*0.8;
-  const pvy=(_delta.y/length)*streamSpeed+Math.min(5.5,length*0.14);
-  spawnWaterParticle(from.x,from.y,from.z,pvx,pvy,pvz,flightTime*1.15,width*1.2,width*4.2,0.42,false,waterWhiteColor);
-
-  // Continuous visual stream core (compact 6 quads instead of 48)
-  const steps=Math.min(7,Math.max(3,Math.ceil(length*0.45)));
-  for(let i=0;i<steps;i++){
-   const t=(i+(clock*8.5%1))/steps;
-   _v1.copy(from).addScaledVector(_delta,t);
-   _v1.y+=Math.sin(t*Math.PI)*Math.min(4.2,length*0.11);
-   const w=width*(1.0+t*1.6);
-   spray.add(_v1,w,w*1.3,0.42*(1.0-t*0.25),angle,waterWhiteColor);
+  for(let k=0;k<3;k++){
+   const pvx=(_delta.x/length)*streamSpeed+(Math.random()-0.5)*1.2;
+   const pvz=(_delta.z/length)*streamSpeed+(Math.random()-0.5)*1.2;
+   const pvy=(_delta.y/length)*streamSpeed+Math.min(6.5,length*0.16)+(Math.random()-0.5)*0.8;
+   const dropletWidth=width*(0.9+Math.random()*0.6);
+   spawnWaterParticle(from.x,from.y,from.z,pvx,pvy,pvz,flightTime*(1.0+k*0.1),dropletWidth,dropletWidth*3.6,0.45,false,waterWhiteColor);
   }
-  // Terminal foaming impact mist at target
-  for(let i=0;i<2;i++){
-   const a=clock*8.0+i*3.14,r=0.22+Math.random()*0.32;
-   _v1.set(to.x+Math.cos(a)*r,to.y+Math.abs(Math.sin(a))*r,to.z+Math.sin(a)*r);
-   spray.add(_v1,0.28,0.28,0.32,0,waterFoamColor);
+
+  // Aerodynamically-elongated continuous stream core
+  const steps=Math.min(9,Math.max(4,Math.ceil(length*0.55)));
+  for(let i=0;i<steps;i++){
+   const t=(i+(clock*12.0%1))/steps;
+   _v1.copy(from).addScaledVector(_delta,t);
+   _v1.y+=Math.sin(t*Math.PI)*Math.min(4.8,length*0.13);
+   const w=width*(1.0+t*1.8);
+   const lenFactor=1.8+t*1.2; // Forward droplet elongation
+   spray.add(_v1,w,w*lenFactor,0.40*(1.0-t*0.28),angle,waterWhiteColor);
+  }
+
+  // Terminal foaming splash and fine atomized white mist
+  for(let i=0;i<3;i++){
+   const a=clock*10.0+i*2.09,r=0.25+Math.random()*0.45;
+   _v1.set(to.x+Math.cos(a)*r,to.y+Math.abs(Math.sin(a))*r*0.6+0.1,to.z+Math.sin(a)*r);
+   spray.add(_v1,0.36,0.36,0.34,0,waterFoamColor);
   }
  }
 

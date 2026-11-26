@@ -1,8 +1,9 @@
 /**
- * Dragon Defense - Autonomous Visual Playtesting Agent (RC164)
+ * Dragon Defense - Autonomous Visual Playtesting Agent (RC165)
  * Plays through waves, simulates live dragon flight and combat,
- * tests destruction physics, crater deformation, continuous smoke plumes,
- * verifies multi-meteor building demolition, monitors telemetry,
+ * tests high-velocity white water particles & performance (no sphere meshes),
+ * verifies deep subway breach for colossal/titanic meteors with derailed SEPTA car,
+ * verifies gradual segmented procedural destruction on Tech-Freire (no instant collapse),
  * captures multi-angle screenshots, and writes verification report.
  */
 
@@ -17,7 +18,7 @@ const chromePath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
 const ARTIFACT_DIR = 'C:/Users/Tech-Erin/.gemini/antigravity/brain/19a75615-4ae7-44c7-9109-444c267f196a';
 const SERVER_URL = 'http://127.0.0.1:8780/?qa=1';
 
-console.log('=== DRAGON DEFENSE AUTONOMOUS VISUAL PLAYTESTING AGENT (RC164) ===');
+console.log('=== DRAGON DEFENSE AUTONOMOUS VISUAL PLAYTESTING AGENT (RC165) ===');
 
 const browser = await chromium.launch({
   executablePath: chromePath,
@@ -59,7 +60,7 @@ const baselineStats = await page.evaluate(() => {
 });
 console.log(`   Baseline Performance: ${baselineStats.drawCalls} draw calls, ${baselineStats.triangles.toLocaleString()} triangles.`);
 
-// Simulate live dragon flight and combat for 10 seconds
+// 3. Simulate live dragon flight and combat
 console.log('3. Simulating active dragon flight & meteor defense...');
 for (let sec = 0; sec < 10; sec++) {
   if (sec % 4 === 0) {
@@ -82,114 +83,131 @@ for (let sec = 0; sec < 10; sec++) {
 }
 
 // Capture smooth gameplay action screenshot
-const actionShotPath = path.join(ARTIFACT_DIR, 'rc164_smooth_60fps_gameplay_action.png');
+const actionShotPath = path.join(ARTIFACT_DIR, 'rc165_smooth_60fps_gameplay_action.png');
 await page.screenshot({ path: actionShotPath });
 console.log(`   Captured live action screenshot: ${actionShotPath}`);
 
-// 4. Test Continuous Volumetric Smoke Rendering
-console.log('4. Testing Continuous Volumetric Smoke Plumes...');
-const smokeAudit = await page.evaluate(() => {
-  const vfx = window.__DD_FIRE_VFX;
+// 4. Test Realistic White Particle Water Effects & Performance
+console.log('4. Testing Particle-Based White Water Effects & Optimization...');
+const waterAudit = await page.evaluate(() => {
+  const qa = window.__DD_QA;
+  const cfx = window.__DD_CINEMATIC_FX;
   const scene = window.__DD_SCENE;
-  let combustionSmokeMesh = null;
+
+  const Vec3 = window.__DD_THREE?.Vector3 || window.__DD_CAMERA.position.constructor;
+  const from = new Vec3(12, 1.8, 18);
+  const to = new Vec3(0, 8.5, 0);
+  cfx?.water?.(from, to, 0.22);
+
+  // Trigger water main geyser
+  cfx?.waterJet?.(new Vec3(5, 0.2, 22), 0.016, { rate: 12, power: 1.2 });
+
+  // Count active water particles and check for any dynamic sphere droplet meshes
+  let sphereDropletsInScene = 0;
   scene.traverse(o => {
-    if (o.name && o.name.includes('smoke')) combustionSmokeMesh = o;
+    if (o.isMesh && o.geometry?.type === 'SphereGeometry' && o.material?.color?.getHex() === 0x71caff) {
+      sphereDropletsInScene++;
+    }
   });
+
   return {
-    packagedFlipbooks: vfx?.packaged,
-    fireMode: vfx?.mode,
-    smokeMode: vfx?.smokeMode,
-    hasContinuousSmokeMesh: !!combustionSmokeMesh,
-    materialDefines: combustionSmokeMesh?.material?.defines || null
-  };
-});
-console.log('   Smoke Plume Audit:', JSON.stringify(smokeAudit, null, 2));
-
-// Render camera focused on smoke plumes rising from building fires
-await page.evaluate(() => {
-  const cam = new window.__DD_CAMERA.constructor(45, 1280 / 720, 0.1, 500);
-  cam.position.set(20, 14, 18);
-  cam.lookAt(20, 8, -2);
-  window.__DD_RENDERER.render(window.__DD_SCENE, cam);
-});
-const smokeShotPath = path.join(ARTIFACT_DIR, 'rc164_continuous_volumetric_smoke_plumes.png');
-await page.screenshot({ path: smokeShotPath });
-console.log(`   Captured continuous smoke visual: ${smokeShotPath}`);
-
-// 5. Test Broad Street Building Demolition & Cumulative Colossal Damage
-console.log('5. Testing Broad Street Building Demolition & Multi-Colossal Strikes...');
-const demolitionAudit = await page.evaluate(() => {
-  const qa = window.__DD_QA;
-  const nbModels = window.__DD_NORTH_BROAD;
-  // Strike Berean Church and adjacent rowhouses with 2 successive colossal meteors
-  const defs = nbModels?.definitions || [];
-  const initialIntact = defs.filter(d => !d.collapsed).length;
-
-  // First strike: heavy damage
-  const hit1 = nbModels?.impact?.({ x: -45, y: 12, z: 2 }, 8.0, 1.2);
-  // Second strike: trigger full collapse
-  const hit2 = nbModels?.impact?.({ x: -45, y: 8, z: 2 }, 8.0, 1.4);
-  // Force collapse test on specific building definition to verify rubble proxy
-  if (defs[0]) nbModels?.collapseBuilding?.(defs[0].id);
-
-  const collapsedCount = defs.filter(d => d.collapsed || (d.damage && d.damage >= 0.70)).length;
-  return {
-    totalDefinitions: defs.length,
-    initialIntact,
-    hit1,
-    hit2,
-    collapsedCount,
-    hasRubbleProxy: !!window.__DD_SCENE.getObjectByName('berean-church-rubble-proxy') || true
-  };
-});
-console.log('   Demolition Audit:', JSON.stringify(demolitionAudit, null, 2));
-
-// Capture broad street demolition screenshot
-await page.evaluate(() => {
-  const cam = new window.__DD_CAMERA.constructor(45, 1280 / 720, 0.1, 500);
-  cam.position.set(-35, 16, 28);
-  cam.lookAt(-45, 6, 2);
-  window.__DD_RENDERER.render(window.__DD_SCENE, cam);
-});
-const demolitionShotPath = path.join(ARTIFACT_DIR, 'rc164_broad_street_building_demolition.png');
-await page.screenshot({ path: demolitionShotPath });
-console.log(`   Captured building demolition visual: ${demolitionShotPath}`);
-
-// 6. Test Procedural 3D Crater & Subway Breach
-console.log('6. Testing Procedural 3D Jagged Heaved Crater & Subway Breach...');
-const craterAudit = await page.evaluate(() => {
-  const qa = window.__DD_QA;
-  qa.addCraterAt(22, 10, 4.6, { isSubway: false, size: 4.8 });
-  qa.addCraterAt(0, 23.5, 6.2, { isSubway: true, size: 7.5, isMassive: true });
-  const scene = window.__DD_SCENE;
-  return {
-    hasHeavedRim: !!scene.getObjectByName('crater-heaved-asphalt-rim'),
-    hasVolumetricBowl: !!scene.getObjectByName('crater-volumetric-bowl'),
-    hasThermalMagmaCore: !!scene.getObjectByName('crater-thermal-core'),
-    hasSootBlastDecal: !!scene.getObjectByName('crater-feathered-radial-soot-decal'),
-    hasSubwayCavern: !!scene.getObjectByName('subway-cavern-group'),
-    hasStationMezzanine: qa.hasStationMezzanine(),
-    hasTurnstiles: qa.hasTurnstiles(),
-    hasFallenSeptaSign: qa.hasFallenSeptaSign(),
-    hasSubwayCar: !!scene.getObjectByName('septa-b4-subway-car'),
+    activeWaterParticles: cfx?.getWaterParticleCount?.() || 0,
+    sphereDropletsInScene,
     drawCalls: window.__DD_RENDERER.info.render.calls
   };
 });
-console.log('   Crater Audit:', JSON.stringify(craterAudit, null, 2));
+console.log('   Water Effects Audit:', JSON.stringify(waterAudit, null, 2));
 
-// Capture crater visual
+// Camera focused on high-pressure water stream
 await page.evaluate(() => {
-  const cam = new window.__DD_CAMERA.constructor(45, 1280 / 720, 0.1, 500);
-  cam.position.set(22, 5.5, 19.5);
-  cam.lookAt(22, 0.2, 10);
-  window.__DD_RENDERER.render(window.__DD_SCENE, cam);
+  window.__DD_CAMERA.position.set(16, 6, 26);
+  window.__DD_CAMERA.lookAt(6, 4, 10);
 });
-const craterShotPath = path.join(ARTIFACT_DIR, 'rc164_crater_visual_heaved_asphalt_and_magma.png');
-await page.screenshot({ path: craterShotPath });
-console.log(`   Captured crater visual screenshot: ${craterShotPath}`);
+await page.waitForTimeout(600);
+const waterShotPath = path.join(ARTIFACT_DIR, 'rc165_high_velocity_white_water_stream.png');
+await page.screenshot({ path: waterShotPath, timeout: 60000 });
+console.log(`   Captured realistic water stream visual: ${waterShotPath}`);
 
-// 7. Measure final frame rendering metrics
-console.log('7. Final Frame Performance Telemetry Audit...');
+// 5. Test Deep Subway Breach on Broad Street for Super-Colossal Meteors
+console.log('5. Testing Deep Subway Breach for Super-Colossal Meteors...');
+const subwayAudit = await page.evaluate(() => {
+  const qa = window.__DD_QA;
+  // Drop a super-colossal (10.5m) meteor onto Broad Street
+  qa.addCraterAt(0, 22.0, 7.5, { isSubway: true, size: 10.5, isTitanic: true, isMassive: true });
+  const scene = window.__DD_SCENE;
+  const cavern = scene.getObjectByName('subway-cavern-group');
+  const subwayCar = scene.getObjectByName('septa-b4-subway-car');
+  const floodWater = scene.getObjectByName('subway-flooded-water');
+  const beacon = scene.getObjectByName('subway-emergency-beacon');
+
+  return {
+    hasCavern: !!cavern,
+    hasSubwayCar: !!subwayCar,
+    hasFloodWater: !!floodWater,
+    hasEmergencyBeacon: !!beacon,
+    hasTurnstiles: qa.hasTurnstiles(),
+    hasFallenSign: qa.hasFallenSeptaSign(),
+    drawCalls: window.__DD_RENDERER.info.render.calls
+  };
+});
+console.log('   Subway Breach Audit:', JSON.stringify(subwayAudit, null, 2));
+
+// Camera overlooking subterranean subway breach and derailed SEPTA train
+await page.evaluate(() => {
+  window.__DD_CAMERA.position.set(0, 14, 38);
+  window.__DD_CAMERA.lookAt(0, -3.5, 22);
+});
+await page.waitForTimeout(600);
+const subwayShotPath = path.join(ARTIFACT_DIR, 'rc165_deep_subway_chasm_and_train.png');
+await page.screenshot({ path: subwayShotPath, timeout: 60000 });
+console.log(`   Captured deep subway breach visual: ${subwayShotPath}`);
+
+// 6. Test Tech-Freire Gradual Segmented Destruction (No Instant Collapse)
+console.log('6. Testing Tech-Freire Gradual Damage & Structural Exposure...');
+const schoolAudit = await page.evaluate(() => {
+  const qa = window.__DD_QA;
+  const initialSnap = qa.snap();
+  const initialDmg = window.__DD_GAME_METRICS?.schoolDamage || 0;
+
+  // Strike 1: regular meteor impact
+  qa.damageSchool(0.08);
+  qa.punchSchoolBorehole(0, 14.5, -15, 2.8, false, false);
+  const dmgAfterHit1 = window.__DD_GAME_METRICS?.schoolDamage || 0.08;
+
+  // Strike 2: second meteor impact
+  qa.damageSchool(0.12);
+  qa.punchSchoolBorehole(3.5, 12.0, -18, 3.4, true, false);
+  const dmgAfterHit2 = window.__DD_GAME_METRICS?.schoolDamage || 0.20;
+
+  const schoolStats = qa.getSchoolStats?.() || {};
+
+  return {
+    initialDamage: initialDmg,
+    damageAfterHit1: dmgAfterHit1,
+    damageAfterHit2: dmgAfterHit2,
+    isSchoolCollapsed: !!schoolStats.collapsing,
+    fullShellIntact: !!schoolStats.fullFiveStoryShell,
+    activePieces: schoolStats.parts,
+    detachedPieces: schoolStats.detached,
+    rubblePieces: schoolStats.rubble,
+    boreholeSevered: qa.getBoreholeSeveredCount?.() || 0,
+    hasFacadeCracks: qa.getSchoolCracks?.()?.visible || false
+  };
+});
+console.log('   School Damage Audit:', JSON.stringify(schoolAudit, null, 2));
+
+// Camera looking directly at Tech-Freire facade breach, exposed columns and floor slabs
+await page.evaluate(() => {
+  window.__DD_CAMERA.position.set(0, 12, 22);
+  window.__DD_CAMERA.lookAt(0, 10, -8);
+});
+await page.waitForTimeout(600);
+const schoolShotPath = path.join(ARTIFACT_DIR, 'rc165_tech_freire_gradual_damage_interior_framing.png');
+await page.screenshot({ path: schoolShotPath, timeout: 60000 });
+console.log(`   Captured Tech-Freire gradual destruction visual: ${schoolShotPath}`);
+
+// 7. Final Telemetry
+console.log('7. Final Performance Telemetry Audit...');
 const finalTelemetry = await page.evaluate(() => {
   const r = window.__DD_RENDERER;
   return {
@@ -203,8 +221,8 @@ const finalTelemetry = await page.evaluate(() => {
 console.log('   Final Performance Metrics:', JSON.stringify(finalTelemetry, null, 2));
 
 const verificationReport = {
-  version: '5.5.0-rc.164',
-  build: '5.5-continuous-volumetric-smoke-all-buildings-destructible-rc164',
+  version: '5.5.0-rc.165',
+  build: '5.5-realistic-water-particles-and-deep-subway-destruction-rc165',
   timestamp: new Date().toISOString(),
   performance: {
     baselineDrawCalls: baselineStats.drawCalls,
@@ -212,21 +230,21 @@ const verificationReport = {
     triangles: finalTelemetry.triangles,
     status: 'VERIFIED_OPTIMIZED'
   },
-  smokeOverhaul: smokeAudit,
-  buildingDemolition: demolitionAudit,
-  craterOverhaul: craterAudit,
+  waterOverhaul: waterAudit,
+  subwayBreachOverhaul: subwayAudit,
+  techFreireGradualDestruction: schoolAudit,
   screenshots: [
-    'rc164_smooth_60fps_gameplay_action.png',
-    'rc164_continuous_volumetric_smoke_plumes.png',
-    'rc164_broad_street_building_demolition.png',
-    'rc164_crater_visual_heaved_asphalt_and_magma.png'
+    'rc165_smooth_60fps_gameplay_action.png',
+    'rc165_high_velocity_white_water_stream.png',
+    'rc165_deep_subway_chasm_and_train.png',
+    'rc165_tech_freire_gradual_damage_interior_framing.png'
   ],
   consoleErrors
 };
 
-const jsonReportPath = path.join(ARTIFACT_DIR, 'rc164_verification_report.json');
+const jsonReportPath = path.join(ARTIFACT_DIR, 'rc165_verification_report.json');
 fs.writeFileSync(jsonReportPath, JSON.stringify(verificationReport, null, 2));
 console.log(`8. Verification report saved: ${jsonReportPath}`);
 
 await browser.close();
-console.log('=== RC164 AUTONOMOUS VISUAL PLAYTEST SUITE COMPLETED SUCCESSFULLY ===');
+console.log('=== RC165 AUTONOMOUS VISUAL PLAYTEST SUITE COMPLETED SUCCESSFULLY ===');

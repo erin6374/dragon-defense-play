@@ -338,7 +338,7 @@ export function createStructuralCity(THREE,scene,bank){
    }
   }
   b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.18));
-  b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
+  if(!b.school) b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
   b.collapseClock=0;
   dustBurst(origin,Math.min(3,radius*.3));
   fragmentBurst(origin,Math.min(120,Math.round(35+radius*9)),false,strength);
@@ -404,8 +404,10 @@ export function createStructuralCity(THREE,scene,bank){
     }
    }
    const lost=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
-   b.damage=Math.max(b.damage,lost);
-   if(lost>.97)b.damage=1;
+   if(!b.school){
+    b.damage=Math.max(b.damage,lost);
+    if(lost>.97)b.damage=1;
+   }
   }
   for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const b=p.building;const insideB=b&&Math.abs(p.position.x-b.x)<b.w*0.48&&Math.abs(p.position.z-b.z)<b.d*0.48;const basementDepth=insideB?1.8:0;const ground=(.08-basementDepth)+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
    // Floor collisions: falling heavy slabs break supports below them; furniture lands.

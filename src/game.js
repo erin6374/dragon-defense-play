@@ -1760,10 +1760,18 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
     if(isDragonTarget||fireTarget){
      const origin=c.root.position.clone().add(new THREE.Vector3(0,1.3,0));
      const hoseTarget=(!c.police&&!isDragonTarget&&fireTarget)?fireTarget.root.getWorldPosition(new THREE.Vector3()):dragon.position.clone();
-     const projectile=new THREE.Mesh(new THREE.SphereGeometry(c.police?.16:.26,7,5),new THREE.MeshBasicMaterial({color:c.police?0xffdf73:0x68cfff,transparent:true,opacity:.9}));
-     projectile.position.copy(origin);scene.add(projectile);
-     shots.push({mesh:projectile,vel:hoseTarget.clone().sub(origin).normalize().multiplyScalar(c.police?17:13),target:hoseTarget.clone(),life:2.4,hostile:isDragonTarget,water:!c.police,fireTarget:fireTarget&&!isDragonTarget?fireTarget:null});
-     if(!c.police)for(let k=1;k<8;k++){const droplet=new THREE.Mesh(waterDropletGeometry,waterMat);droplet.position.copy(origin).add(new THREE.Vector3((Math.random()-.5)*.3,.1,0));scene.add(droplet);const aimDir=hoseTarget.clone().sub(origin).normalize();shots.push({mesh:droplet,vel:aimDir.multiplyScalar(12+k*.8).add(new THREE.Vector3((Math.random()-.5)*1.4,(Math.random()-.5)*1.4,0)),target:hoseTarget.clone(),life:2.1,hostile:isDragonTarget,water:true,fireTarget:fireTarget&&!isDragonTarget?fireTarget:null});}
+     if(c.police){
+      const projectile=new THREE.Mesh(new THREE.SphereGeometry(0.16,7,5),new THREE.MeshBasicMaterial({color:0xffdf73,transparent:true,opacity:.9}));
+      projectile.position.copy(origin);scene.add(projectile);
+      shots.push({mesh:projectile,vel:hoseTarget.clone().sub(origin).normalize().multiplyScalar(17),target:hoseTarget.clone(),life:2.4,hostile:isDragonTarget,water:false});
+     }else{
+      // RC165: Fast, white, translucent particle water stream (zero dynamic sphere meshes)
+      cinematicFX.water(origin,hoseTarget,0.18);
+      const waterDummy=new THREE.Object3D();
+      waterDummy.position.copy(origin);
+      const aimDir=hoseTarget.clone().sub(origin).normalize();
+      shots.push({mesh:waterDummy,vel:aimDir.multiplyScalar(26),target:hoseTarget.clone(),life:1.6,hostile:isDragonTarget,water:true,fireTarget:fireTarget&&!isDragonTarget?fireTarget:null});
+     }
 
     }
    }
@@ -2243,8 +2251,12 @@ function disposeCrater(c){
 }
 const _craterV1=new THREE.Vector3(),_craterV2=new THREE.Vector3(),_craterV3=new THREE.Vector3();
 function addCrater(x,z,radius=3,opts={}){
- const isBroadStreetCorridor=z>=13&&z<=34&&Math.abs(x)<260;
- const isSubwayBreach=isBroadStreetCorridor&&(radius>=2.8||opts.isSubway||(opts.size||0)>=2.6);
+ // Broad Street corridor includes roadway, curbs, sidewalks, and flanking lanes (z: -10 to 52)
+ const isBroadStreetCorridor=z>=-10&&z<=52&&Math.abs(x)<265;
+ const mSzVal=opts.size||(radius*0.75);
+ const isTitanicOrExtinction=opts.isTitanic||mSzVal>=9.0;
+ const isColossal=opts.isMassive||mSzVal>=4.5||radius>=4.0;
+ const isSubwayBreach=isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
 
  let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null;
 
@@ -2252,14 +2264,14 @@ function addCrater(x,z,radius=3,opts={}){
   // 3D BROAD STREET SUBWAY CHASM & CAVERN
   // Road deck is completely punched through into the SEPTA Broad Street line!
   // NO opaque inner disc covering the hole!
-  const apertureW=Math.max(4.6,radius*1.85);
-  const apertureD=Math.max(4.0,radius*1.55);
+  const apertureW=isTitanicOrExtinction?Math.max(15.0,radius*2.2):Math.max(4.6,radius*1.85);
+  const apertureD=isTitanicOrExtinction?Math.max(11.5,radius*1.85):Math.max(4.0,radius*1.55);
 
   // 3D Procedural Jagged Heaved-Asphalt Crest (subway breach)
   rimMesh=createHeavedAsphaltRim(radius,true);
   rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
-  const sootDecal=createFeatheredRadialSootDecal(radius);
+  const sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.35:1.0));
   sootDecal.position.set(x,0.03,z);
   scene.add(sootDecal);
 
@@ -2267,7 +2279,9 @@ function addCrater(x,z,radius=3,opts={}){
   subwayGroup=new THREE.Group();
   subwayGroup.name='subway-cavern-group';
   subwayGroup.position.set(x,0,z);
-  const W=Math.max(11.0,radius*2.6), D=Math.max(8.5,radius*2.2), H=5.2;
+  const W=isTitanicOrExtinction?Math.max(20.0,radius*3.2):Math.max(11.0,radius*2.6);
+  const D=isTitanicOrExtinction?Math.max(15.0,radius*2.6):Math.max(8.5,radius*2.2);
+  const H=isTitanicOrExtinction?6.2:5.2;
 
   // Materials
   const ballastMat=new THREE.MeshStandardMaterial({color:0x1e1b18,roughness:0.98,metalness:0.02});
@@ -5723,7 +5737,7 @@ function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remai
  scene.add(mesh);
  const hp=isGiant?Math.max(4,Math.ceil(size*1.3)):Math.max(2,Math.ceil(size*1.1));
  meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
-},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active&&neighborhood.school.damage>schoolDamage){schoolDamage=neighborhood.school.damage;hp=Math.min(hp,Math.round((1-schoolDamage)*100));syncStructuralDamage();updateHud();if(hp<=0)gameOver()}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
+},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active){neighborhood.school.damage=schoolDamage;hp=Math.max(0,Math.round((1-schoolDamage)*100));}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
  if(trainingMissions?.isActive()){hp=100;schoolDamage=0;remaining=0;spawnTimer=9999;} trainingMissions?.update(dt,{dragonPos:dragon.position,dragonVelX,dragonVelY,dragonSpeed:Math.hypot(dragonVelX,dragonVelY),isGasDeployed:gasPose>0,hasBusterCollided:busterRamCollided,meteorsList:meteors,schoolFiresCount:schoolFire.length,carsList:cars});
  if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting();updateBuildingElectricalShorts(dt);}if(!active||paused){
 if(!freeFlightMode&&active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
@@ -6863,7 +6877,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;window.__DD_CAMERA=camera;
+ window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;window.__DD_CAMERA=camera;window.__DD_THREE=THREE;
  window.__DD_SANDBOX={
  isFreeFlight:()=>freeFlightMode,
  setFreeFlight:(on)=>toggleFreeFlight(on),
