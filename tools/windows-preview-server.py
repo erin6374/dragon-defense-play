@@ -10,7 +10,6 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-import io
 import json
 import math
 import os
@@ -18,14 +17,13 @@ from pathlib import Path
 import tempfile
 import threading
 import time
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 COLUMNS = ('timestampUTC', 'sampleSource', 'telemetryAgeMs', 'renderAgeMs', 'heartbeatIndex',
            'gameFrameCount', 'lastGameFrameUTC', 'phase', 'active',
            'documentHidden', 'documentHasFocus',
            'wave', 'fps', 'drawCalls', 'frameMs', 'recording',
-            'adaptiveResolution', 'adaptiveAdjustments', 'framebufferWidth', 'framebufferHeight',
            'stallCount', 'cpuPercent', 'ramPercent', 'ramAvailableGB',
            'gpuPercent', 'browserRSSMB')
 
@@ -145,6 +143,19 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(args[2].root), **kwargs)
 
+    def send_head(self):
+        if 'If-Modified-Since' in self.headers:
+            del self.headers['If-Modified-Since']
+        if 'If-None-Match' in self.headers:
+            del self.headers['If-None-Match']
+        return super().send_head()
+
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
+
     def send_json(self, data, status=200):
         raw = json.dumps(data, allow_nan=False).encode('utf-8')
         self.send_response(status)
@@ -176,39 +187,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                                 'logFile': self.server.log_path.name})
             return
         if path == '/__system_csv':
-            # Optional server-side time window avoids transferring hours of old
-            # telemetry into the one-click 60-second Windows capture. The
-            # unfiltered endpoint remains backward-compatible for manual export.
-            params = parse_qs(urlsplit(self.path).query)
-            if 'since' in params or 'until' in params:
-                try:
-                    if set(params) != {'since', 'until'} or any(len(params[k]) != 1 for k in params):
-                        raise ValueError('Expected one since and one until timestamp')
-                    since = datetime.fromisoformat(params['since'][0].replace('Z', '+00:00'))
-                    until = datetime.fromisoformat(params['until'][0].replace('Z', '+00:00'))
-                    if (since.tzinfo is None or until.tzinfo is None or
-                            until < since or (until - since).total_seconds() > 180):
-                        raise ValueError('CSV time window must be timezone-aware and <=180 seconds')
-                except (ValueError, KeyError, OverflowError) as exc:
-                    self.send_json({'error': str(exc)}, 400)
-                    return
-                with self.server.lock:
-                    out = io.StringIO(newline='')
-                    with self.server.log_path.open(newline='', encoding='utf-8') as source:
-                        reader = csv.DictReader(source)
-                        writer = csv.DictWriter(out, fieldnames=reader.fieldnames, lineterminator='\n')
-                        writer.writeheader()
-                        for row in reader:
-                            try:
-                                timestamp = datetime.fromisoformat(row['timestampUTC'].replace('Z', '+00:00'))
-                            except (ValueError, KeyError, AttributeError):
-                                continue
-                            if timestamp.tzinfo is not None and since <= timestamp <= until:
-                                writer.writerow(row)
-                    raw = out.getvalue().encode('utf-8')
-            else:
-                with self.server.lock:
-                    raw = self.server.log_path.read_bytes()
+            with self.server.lock:
+                raw = self.server.log_path.read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', 'text/csv; charset=utf-8')
             self.send_header('Content-Disposition', 'attachment; filename="dragon-defense-performance.csv"')
@@ -239,10 +219,6 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                 raise ValueError('Expected JSON object')
             row = {key: safe_number(incoming.get(key), 0, 1000000)
                    for key in ('wave', 'fps', 'drawCalls', 'frameMs', 'stallCount')}
-            row['adaptiveResolution'] = safe_number(incoming.get('adaptiveResolution'), 0, 1)
-            row['adaptiveAdjustments'] = safe_number(incoming.get('adaptiveAdjustments'), 0, 1000000)
-            for key in ('framebufferWidth', 'framebufferHeight'):
-                row[key] = safe_number(incoming.get(key), 0, 32768)
             row['recording'] = bool(incoming.get('recording'))
             row['active'] = bool(incoming.get('active'))
             row['documentHidden'] = (incoming.get('documentHidden')
@@ -270,8 +246,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description='Dragon Defense local Windows performance preview')
     parser.add_argument('--port', type=int, default=8769)
+    parser.add_argument('--host', type=str, default='0.0.0.0')
+    parser.add_argument('--root', type=str, default=str(ROOT))
     args = parser.parse_args()
-    with PreviewServer(('127.0.0.1', args.port)) as server:
+    with PreviewServer((args.host, args.port), root=args.root) as server:
         print(f'Dragon Defense preview: http://127.0.0.1:{server.server_port}/', flush=True)
         print(f'Performance CSV: {server.log_path}', flush=True)
         print('GPU utilization is not measured; do not infer it from game FPS.', flush=True)

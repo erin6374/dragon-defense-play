@@ -11,7 +11,7 @@ function kit(T){if(caches.has(T))return caches.get(T);const mats=new Map(),geo=n
  function profile(g,m,points,width){const key=JSON.stringify([points,width]);if(!geo.has(key)){const shape=new T.Shape();points.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();const e=new T.ExtrudeGeometry(shape,{depth:width,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.055,bevelThickness:.055,curveSegments:12});e.translate(0,0,-width/2);geo.set(key,e)}return part(g,geo.get(key),m,0,0,0)}
  const result={mat,part,block,oval,rod,profile,geo};caches.set(T,result);return result}
 export function buildRoadVehicle(T,root,o){
- const k=kit(T),{mat,block,oval,rod,profile,part,geo}=k,L=o.length,body=mat(o.bodyHex,.32,.36),chrome=mat(0xaeb6ba,.78,.27),rubber=mat(0x171a1e,.03,.95),glass=mat(0x325264,.48,.16),black=mat(0x272e35,.22,.64),white=mat(0xe5e5df,.24,.42);
+ const k=kit(T),{mat,block,oval,rod,profile,part,geo}=k,L=o.length,body=mat(o.bodyHex,.32,.36),chrome=mat(0xaeb6ba,.78,.27),rubber=mat(0x171a1e,.03,.95),glass=mat(0x325264,.48,.16),black=mat(0x272e35,.22,.64),white=mat(0xe5e5df,.24,.42); const busGlass=mat(0xffe2a4,.15,.1); busGlass.emissive.setHex(0xe8be72); busGlass.emissiveIntensity=.38;
  const brakes=[];const tailDim=mat(0x7d1715,.1,.3),tailBright=new T.MeshStandardMaterial({color:0xff3023,emissive:0xff2014,emissiveIntensity:2.2,roughness:.2});
  const frontSteer=[];
  const wheel=(x,z,r=.44)=>{
@@ -41,7 +41,8 @@ export function buildRoadVehicle(T,root,o){
   }else{for(let hose=0;hose<5;hose++)rod(root,mat(0xc3ae88),[-L/2+.5,2.12,-.6+hose*.27],[.1,2.12,-.6+hose*.27],.105);rod(root,chrome,[1,2.1,0],[1,2.65,0],.13);rod(root,chrome,[1,2.65,0],[1.7,2.8,0],.12)}
  }else if(heavy||o.van){
   profile(root,body,[[-L/2,.48],[L/2,.48],[L/2,top-.5],[L/2-.45,top],[-L/2+.18,top],[-L/2,top-.2]],1.75);
-  for(const z of [-.96,.96]){if(o.bus){for(let x=-L/2+.7;x<L/2-.4;x+=.86)block(root,glass,x,1.93,z,.73,.77,.025);block(root,white,0,.88,z,L-.2,.14,.025)}else block(root,glass,L/2-.86,top-.43,z,1.25,.58,.03)}
+  if(o.bus)block(root,new T.MeshBasicMaterial({color:0xffe070}),L/2+.08,top-.24,0,.02,.18,1.05);
+  for(const z of [-.96,.96]){if(o.bus){for(let x=-L/2+.7;x<L/2-.4;x+=.86)block(root,busGlass,x,1.93,z,.73,.77,.025);block(root,white,0,.88,z,L-.2,.14,.025)}else block(root,glass,L/2-.86,top-.43,z,1.25,.58,.03)}
   if(o.ambulance)for(const z of [-.91,.91]){block(root,mat(0xb82824),-.5,1.35,z,.16,.65,.025);block(root,mat(0xb82824),-.5,1.35,z,.65,.16,.03)}
  }else{
   const cabin=o.style==='crossover'?1.78:1.49,rear=o.style==='wagon'||o.style==='crossover'?-L/2+.28:-.97;
@@ -74,7 +75,7 @@ export function buildRoadVehicle(T,root,o){
  root.userData.headlightBeam=beam;root.userData.headlightMaterial=head;
  for(const z of [-.65,.65]){block(root,head,L/2+.08,.88,z,.06,.19,.35);brakes.push(block(root,tailDim,-L/2-.09,.88,z,.06,.18,.31))}
  if(o.taxi)block(root,mat(0xfff2b4),-.4,top+.12,0,.55,.18,.4);
- let beacon=null;if(o.emergency)beacon=block(root,mat(0x287eff),L/2-1.1,top+.13,0,.7,.17,.8);
+ let beacon=null;if(o.emergency){if(o.police){const bar=new T.Group();bar.position.set(L/2-1.1,top+.13,0);root.add(bar);block(bar,chrome,0,-.04,0,.55,.05,.85);block(bar,mat(0xee2211,.1,.2),0,.02,-.28,.28,.14,.32);block(bar,mat(0x1177ee,.1,.2),0,.02,.28,.28,.14,.32);beacon=block(bar,mat(0xffffff,.1,.1),0,.02,0,.26,.14,.22);}else beacon=block(root,mat(0x287eff),L/2-1.1,top+.13,0,.7,.17,.8);}
  root.userData.frontSteer=frontSteer;root.userData.brakes=brakes;root.userData.tailDim=tailDim;root.userData.tailBright=tailBright;
  return {beacon,brakes,tailDim,tailBright};
 }
@@ -99,11 +100,95 @@ export function buildHelicopter(T,root,variant=0){
  const rotor=new T.Group();rotor.position.y=1.5;root.add(rotor);for(let i=0;i<(heavy?5:4);i++){const blade=block(rotor,dark,2.1,.01,0,4.2,.035,.23);blade.rotation.y=i*Math.PI*2/(heavy?5:4);blade.position.set(Math.cos(blade.rotation.y)*2.1,0,-Math.sin(blade.rotation.y)*2.1)}
  const tail=new T.Group();tail.position.set(-5.62,.85,.18);root.add(tail);for(let i=0;i<4;i++){const a=i*Math.PI/2;const blade=block(tail,dark,Math.cos(a)*.43,Math.sin(a)*.43,0,.85,.07,.035);blade.rotation.z=a}
  if(fire){oval(root,white,-.35,-.72,0,1.25,.35,.64);rod(root,metal,[.2,-.85,0],[.5,-1.45,0],.14)}
+ // Authentic aviation lighting: red/green navigation, glowing cockpit, flashing anti-collision strobes, and sweeping searchlight
  for(const [z,c] of [[-.94,0xff2424],[.94,0x35ff8a]]){const nav=new T.MeshBasicMaterial({color:c});oval(root,nav,-1,.1,z,.07,.07,.07)}
  const beacon=oval(root,new T.MeshBasicMaterial({color:0xff3423}),-.4,1.05,0,.10,.10,.10);
- root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,firefighting:fire};
+ const strobe=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-5.6,1.60,0,.11,.11,.11);
+ const cockpitGlow=oval(root,new T.MeshBasicMaterial({color:0xaef0ff,transparent:true,opacity:.72,depthWrite:false}),1.05,.05,0,.65,.45,.55);
+ const searchlightMount=new T.Group();
+ searchlightMount.position.set(1.35,-.62,0);
+ root.add(searchlightMount);
+ const gimbalBracket=part(searchlightMount,new T.CylinderGeometry(.12,.12,.14,12),metal,0,.07,0);
+ const searchlightGimbal=new T.Group();
+ searchlightMount.add(searchlightGimbal);
+ const lampHousing=part(searchlightGimbal,new T.CylinderGeometry(.18,.24,.36,14),dark,0,-.16,0);
+ const lens=new T.Mesh(new T.CircleGeometry(.20,14),new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide}));
+ lens.rotation.x=-Math.PI/2;lens.position.y=-.34;searchlightGimbal.add(lens);
+
+ const beamLength=34,beamRadius=4.2;
+ const beamGeo=new T.CylinderGeometry(.18,beamRadius,beamLength,16,1,true);
+ beamGeo.translate(0,-beamLength/2,0);
+ const searchlightCone=new T.Mesh(beamGeo,new T.MeshBasicMaterial({color:0xdcf2ff,transparent:true,opacity:.08,depthWrite:false,side:T.FrontSide,blending:T.AdditiveBlending}));
+ searchlightCone.position.y=-.34;
+ searchlightGimbal.add(searchlightCone);
+
+ const innerCoreGeo=new T.CylinderGeometry(.10,beamRadius*.48,beamLength*.96,12,1,true);
+ innerCoreGeo.translate(0,-(beamLength*.96)/2,0);
+ const innerCore=new T.Mesh(innerCoreGeo,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.14,depthWrite:false,side:T.FrontSide,blending:T.AdditiveBlending}));
+ searchlightCone.add(innerCore);
+
+ root.userData.strobe=strobe;
+ root.userData.cockpitGlow=cockpitGlow;
+ root.userData.searchlightCone=searchlightCone;
+ root.userData.innerCore=innerCore;
+ root.userData.searchlightGimbal=searchlightGimbal;
+ root.userData.searchlightMount=searchlightMount;
+ root.userData.aircraftVariant=['news-camera-helicopter','police-patrol-helicopter','firefighting-tanker'][variant];return {rotor,tail,beacon,strobe,cockpitGlow,searchlightCone,searchlightGimbal,firefighting:fire};
 }
 export function buildPerson(T,seed=0){const {mat,oval,rod}=kit(T),g=new T.Group(),cloth=mat([0x4f687c,0x865853,0x5e685c,0xada394][seed%4]),skin=mat([0xb98564,0x76503a,0xd5ac87][seed%3]),pants=mat(0x303942),shoe=mat(0x252629);
  oval(g,cloth,0,.93,0,.20,.32,.14);oval(g,skin,0,1.39,0,.125,.16,.12);oval(g,mat(0x45382c),0,1.49,-.02,.128,.09,.12);const limbs=[];
  for(const side of [-1,1]){const leg=new T.Group();leg.position.set(side*.105,.71,0);g.add(leg);rod(leg,pants,[0,0,0],[0,-.58,0],.073);oval(leg,shoe,0,-.6,.055,.09,.06,.16);limbs.push(leg);const arm=new T.Group();arm.position.set(side*.22,1.12,0);g.add(arm);rod(arm,cloth,[0,0,0],[side*.04,-.35,0],.055);oval(arm,skin,side*.04,-.39,0,.055,.07,.05);limbs.push(arm)}g.userData.limbs=limbs;return g}
-export function animatePerson(g,t,moving=true){g.userData.limbs?.forEach((limb,i)=>limb.rotation.x=moving?Math.sin(t)*.32*(i===0||i===3?1:-1):0)}
+export function animatePerson(g,t,moving=true,panicked=false){
+ if(!g.userData.limbs)return;
+ g.userData.limbs.forEach((limb,i)=>{
+  if(i<2){
+   limb.rotation.x=moving?Math.sin(t)*(panicked?.65:.32)*(i===0?1:-1):0;
+  }else{
+   if(panicked){
+    limb.rotation.x=Math.sin(t*1.4+(i===2?0:Math.PI))*.85-.45;
+    limb.rotation.z=(i===2?-.32:.32);
+   }else{
+    limb.rotation.x=moving?Math.sin(t)*.32*(i===3?1:-1):0;
+    limb.rotation.z=0;
+   }
+  }
+ });
+}
+
+export function buildChinookHelicopter(T,root,options={}){
+ const {mat,block,oval,rod,part}=kit(T);
+ const olive=mat(0x384736,.25,.65),darkMetal=mat(0x232726,.45,.55),glass=mat(0x28424e,.65,.15),black=mat(0x1a1e1d,.2,.8),white=mat(0xdfdbcb,.2,.4);
+ block(root,olive,0,1.45,0,9.6,2.1,2.1);
+ const nose=block(root,olive,4.95,1.35,0,1.6,1.8,1.8);nose.rotation.z=-0.15;
+ oval(root,glass,5.25,1.55,0,.85,.65,1.6);
+ for(const z of [-1.22,1.22]){
+  block(root,olive,-.4,.85,z,6.8,.85,.55);
+  for(let w=-3;w<=3;w++)oval(root,glass,w*1.05,1.65,z*.92,.22,.22,.08);
+ }
+ block(root,olive,3.8,2.65,0,1.5,.85,1.1);
+ block(root,olive,-4.2,3.15,0,1.9,1.65,1.2);
+ const rampGroup=new T.Group();rampGroup.position.set(-4.8,.55,0);root.add(rampGroup);
+ const rampDoor=block(rampGroup,darkMetal,-.95,.05,0,1.9,.15,1.6);rampDoor.rotation.z=-0.35;
+ for(const x of [-3.2,2.8]){
+  for(const z of [-1.35,1.35]){
+   rod(root,darkMetal,[x,.85,z],[x,.35,z],.08);
+   const wheel=part(root,new T.CylinderGeometry(.32,.32,.22,16),black,x,.32,z);wheel.rotation.x=Math.PI/2;
+  }
+ }
+ const rotorFront=new T.Group();rotorFront.position.set(3.8,3.2,0);root.add(rotorFront);
+ for(let i=0;i<3;i++){
+  const a=(i*Math.PI*2)/3;
+  const blade=block(rotorFront,black,Math.cos(a)*2.3,.02,Math.sin(a)*2.3,4.6,.035,.32);blade.rotation.y=a;
+ }
+ const rotorAft=new T.Group();rotorAft.position.set(-4.2,4.1,0);root.add(rotorAft);
+ for(let i=0;i<3;i++){
+  const a=(i*Math.PI*2)/3;
+  const blade=block(rotorAft,black,Math.cos(a)*2.3,.02,Math.sin(a)*2.3,4.6,.035,.32);blade.rotation.y=a;
+ }
+ const beaconFront=oval(root,new T.MeshBasicMaterial({color:0xff2020}),3.8,3.35,0,.12,.12,.12);
+ const beaconAft=oval(root,new T.MeshBasicMaterial({color:0xffffff}),-4.2,4.25,0,.14,.14,.14);
+ const cockpitGlow=oval(root,new T.MeshBasicMaterial({color:0xffe299,transparent:true,opacity:0.85}),4.8,1.45,0,0.55,0.40,0.75);
+ const navPort=oval(root,new T.MeshBasicMaterial({color:0xff1010}),0,1.8,-1.35,0.12,0.12,0.12);
+ const navStarboard=oval(root,new T.MeshBasicMaterial({color:0x10ff10}),0,1.8,1.35,0.12,0.12,0.12);
+ return {root,rotorFront,rotorAft,rampGroup,rampDoor,beaconFront,beaconAft,cockpitGlow,navPort,navStarboard};
+}

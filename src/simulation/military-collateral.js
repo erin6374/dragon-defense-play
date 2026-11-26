@@ -59,7 +59,7 @@ export function detectMilitaryCollateral(position,age,structures=[],previousPosi
    z:start.z+(position.z-start.z)*t};
  }
  for(const b of structures){
-  if(!b||b.damage>=1||b.background||![b.x,b.z,b.w,b.d,b.h].every(Number.isFinite)||b.w<=0||b.d<=0||b.h<=0)continue;
+  if(!b||b.damage>=1||(b.background&&b.z<-45)||![b.x,b.z,b.w,b.d,b.h].every(Number.isFinite)||b.w<=0||b.d<=0||b.h<=0)continue;
   consider('structure',b.name||'building',
    {x:b.x-b.w*.5-.45,y:1,z:b.z-b.d*.5-.45},
    {x:b.x+b.w*.5+.45,y:b.h+.7,z:b.z+b.d*.5+.45});

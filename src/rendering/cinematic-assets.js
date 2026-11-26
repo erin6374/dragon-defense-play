@@ -8,7 +8,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // (dragon, vehicles, school, rowhouses and landmark towers) reuse these maps.
 // Fixed 128x192/96x128 RGBA buffers upload at 12/7 Hz, independent of fires.
 function createFluidCombustionAtlases(THREE){
- const FW=128,FH=192,SW=96,SH=128;
+ const FW=128,FH=192,SW=128,SH=128;
  const fireCanvas=document.createElement('canvas');fireCanvas.width=FW;fireCanvas.height=FH;
  const smokeCanvas=document.createElement('canvas');smokeCanvas.width=SW;smokeCanvas.height=SH;
  const fc=fireCanvas.getContext('2d',{willReadFrequently:false}),sc=smokeCanvas.getContext('2d',{willReadFrequently:false});
@@ -65,21 +65,26 @@ function createFluidCombustionAtlases(THREE){
   fc.putImageData(fi,0,0);flame.needsUpdate=true;
  }
  function drawSmoke(t){
-  const p=si.data,flow=t*.50;
+  const p=si.data,flow=t*.42;
   for(let y=0;y<SH;y++){
-   const h=1-(y+.5)/SH;
+   const h=1-(y+.5)/SH,v=(y+.5)/SH-.5;
    for(let x=0;x<SW;x++){
     const u=(x+.5)/SW-.5,i=(y*SW+x)*4;
-    const low=noise(u*5.6+2.3,h*7.2-flow),mid=noise(u*16+low*2.7,h*16-flow*1.9);
-    const high=noise(u*35+mid*2,h*31-flow*3.1);
-    const center=Math.sin(t*.28+h*5.2)*.065+(low-.5)*.16;
-    const spread=.20+.23*h+.11*low;
+    const rDist=Math.hypot(u*2.0,v*2.0);
+    if(rDist>=0.98){p[i]=180;p[i+1]=180;p[i+2]=180;p[i+3]=0;continue;}
+    const low=noise(u*5.2+2.3,h*6.8-flow),mid=noise(u*14+low*2.5,h*15-flow*1.8);
+    const high=noise(u*32+mid*1.8,h*28-flow*2.8);
+    const center=Math.sin(t*.25+h*4.8)*.08+(low-.5)*.18;
+    const spread=.26+.22*h+.12*low;
     const rad=Math.abs(u-center)/spread;
-    const wisps=clamp((1.14-rad+(mid-.5)*.68+(high-.5)*.24)*1.95);
-    const density=clamp((.14+.54*low+.32*mid)*wisps);
-    // White atlas, colored by existing grayscale/soot sprite materials.
-    const v=Math.round(177+55*high);
-    p[i]=v;p[i+1]=v;p[i+2]=v;p[i+3]=Math.round(255*density*.72);
+    const wisps=clamp((1.18-rad+(mid-.5)*.62+(high-.5)*.22)*1.85);
+    let density=clamp((.18+.50*low+.32*mid)*wisps);
+    // Continuous asymptotic Gaussian falloff: zero quad boundary clipping
+    const softEdge=Math.max(0.0,1.0-rDist*rDist);
+    const gaussian=Math.exp(-3.6*rDist*rDist)*Math.pow(softEdge,1.75);
+    density*=gaussian;
+    const vColor=Math.round(175+58*high);
+    p[i]=vColor;p[i+1]=vColor;p[i+2]=vColor;p[i+3]=Math.round(255*density*.68);
    }
   }
   sc.putImageData(si,0,0);smoke.needsUpdate=true;
@@ -110,10 +115,14 @@ export function createVisualMaterials(THREE){
   cache.set(key,t);return t;
  }
  function pbr(name,repeat=[2,2],options={}){
+  const isMasonryOrRoof=['brick','limestone','concrete','roof'].includes(name);
   const material=new THREE.MeshStandardMaterial({
    map:tex(name+'-albedo.jpg',repeat,true),
    normalMap:tex(name+'-normal.png',repeat),normalScale:new THREE.Vector2(.45,.45),
-   roughnessMap:tex(name+'-rough.png',repeat),roughness:.96,metalness:options.metalness??0,
+   roughnessMap:isMasonryOrRoof?null:tex(name+'-rough.png',repeat),
+   roughness:isMasonryOrRoof?.95:(options.roughness??.96),
+   metalness:options.metalness??0,
+   envMapIntensity:isMasonryOrRoof?0.02:1.0,
    color:options.tint??0xffffff,side:THREE.FrontSide,
   });
   material.userData.pbrType=name;return material;
@@ -125,14 +134,14 @@ export function createVisualMaterials(THREE){
   asphalt:pbr('asphalt',[9,3]),asphaltCross:pbr('asphalt',[3,3]),
   meteor:pbr('meteor',[1.5,1.5]),
   sidewalk:pbr('limestone',[10,3],{tint:0xd4d1ca}),
-  window:new THREE.MeshPhysicalMaterial({color:0x66899a,roughness:.10,metalness:.12,transparent:true,opacity:.78,depthWrite:false,side:THREE.DoubleSide}),
+  window:new THREE.MeshPhysicalMaterial({color:0x5e8ca0,roughness:.06,metalness:.32,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.5,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide}),
   blackMetal:new THREE.MeshStandardMaterial({color:0x29323b,roughness:.4,metalness:.70}),
   copper:new THREE.MeshStandardMaterial({color:0x88725b,roughness:.41,metalness:.57}),
   luminous:new THREE.MeshBasicMaterial({color:0xf0deb1}),
   roadStripe:new THREE.MeshBasicMaterial({color:0xe6e2d1,transparent:true,opacity:.86,depthWrite:false}),
   yellowStripe:new THREE.MeshBasicMaterial({color:0xd5aa51,transparent:true,opacity:.9,depthWrite:false})
  };
- bank.asphalt.roughness=.62;bank.asphaltCross.roughness=.62;
+ bank.asphalt.roughness=.88;bank.asphaltCross.roughness=.88;bank.asphalt.metalness=.02;bank.asphaltCross.metalness=.02;bank.roof.roughness=.96;bank.roof.metalness=0;bank.roof.envMapIntensity=0;
  const fluidFire=createFluidCombustionAtlases(THREE);
  bank.images={flame:fluidFire.flame,smoke:fluidFire.smoke,dust:tex('dust.png',[1,1],true),flash:tex('flash.png',[1,1],true),cracks:tex('cracks.png',[1,1],true)};
  bank.advanceFireVisuals=fluidFire.update;
@@ -255,8 +264,22 @@ export function enhanceCar(THREE,root,{length,bus,truck,van,police,ambulance,eme
   tire.rotation.x=Math.PI/2;tire.position.set(x,.26,s*.95);root.add(tire);
   const hub=new THREE.Mesh(kit.hubGeo,chrome);hub.rotation.x=Math.PI/2;hub.position.set(x,.26,s*1.065);root.add(hub);
  }
- if(bus){const stripe=kit.yellow;for(const s of [-1,1])part(0,1.10,s*.96,length*.87,.15,.045,stripe);}
- if(police){const stripe=kit.blue;for(const s of [-1,1])part(-.2,.78,s*.97,length*.72,.22,.04,stripe);}
+ if(bus){
+  // Authentic Philadelphia SEPTA bus livery: bold red accent stripe, royal blue body stripe, and roof HVAC pods
+  for(const s of [-1,1]){
+   part(0,1.22,s*.96,length*.88,.075,.045,kit.red);
+   part(0,1.10,s*.96,length*.88,.09,.045,kit.blue);
+  }
+  part(0,cabY+.46,0,length*.42,.20,.88,trim);
+ }
+ if(police){
+  const stripe=kit.blue;
+  for(const s of [-1,1])part(-.2,.78,s*.97,length*.72,.22,.04,stripe);
+  // Roof-mounted dual-color emergency lightbar (red on driver side, blue on passenger side)
+  part(0,cabY+.22,0,.38,.12,1.05,trim);
+  part(0,cabY+.26,-.32,.32,.10,.40,kit.red);
+  part(0,cabY+.26,.32,.32,.10,.40,kit.blue);
+ }
  if(ambulance){const red=kit.red;for(const s of [-1,1]){part(.18,1.12,s*1.03,.15,.66,.05,red);part(.18,1.12,s*1.08,.72,.15,.05,red);}}
  return root;
 }
@@ -283,13 +306,17 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  const addBox=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(box,mat);m.position.set(x,y,z);m.scale.set(w,h,d);street.add(m);return m;};
  const decal=(x,y,z,w,d,mat)=>{const m=new THREE.Mesh(plane,mat);m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.scale.set(w,d,1);street.add(m);return m;};
  // True four-lane layout: two lanes per direction, yellow center separation.
- for(let x=-88;x<=88;x+=6.6){
-  if(Math.abs(Math.abs(x)-53)<9)continue;
+ const streetCrossings=[-270,-102,78,256];
+ for(let x=-750;x<=750;x+=6.6){
+  if(streetCrossings.some(cx=>Math.abs(x-cx)<9.5))continue;
   decal(x,-.284,18.55,3.8,.095,lineWhite);decal(x,-.283,28.5,3.8,.095,lineWhite);
  }
- for(const z of [23.35,24.35])decal(0,-.283,z,190,.11,lineYellow);
- // Curb caps: dashed curb at the sidewalk edge.
- for(const z of [12.5,35.7])addBox(0,-.18,z,171,.18,.16,concrete);
+ const streetIntervals=[[-780,-174],[-160,-105],[-91,46],[60,238],[252,780]];
+ for(const [left,right] of streetIntervals){
+  for(const z of [23.35,24.35])decal((left+right)/2,-.283,z,right-left,.11,lineYellow);
+  // Curb caps: dashed curb at the sidewalk edge, broken at cross streets
+  for(const z of [12.5,35.7])addBox((left+right)/2,-.18,z,right-left,.18,.16,concrete);
+ }
  // Storm drains, pavement repairs, tire tracks and manholes.
  const drain=bank.metal,paint=new THREE.MeshBasicMaterial({color:0x53575b,transparent:true,opacity:.63,depthWrite:false});
  for(const x of [-64,-43,-14,15,37,65]){
@@ -304,9 +331,20 @@ export function enhanceEnvironment(THREE,scene,root,neighborhood,bank){
  for(const [x,z] of [[-27,27],[-7,20],[43,30]])decal(x,-.280,z,7,1.8,paint);
  // Warm street lamps with height-appropriate arms, light bulbs, but only two dynamic lights.
  const lampMetal=bank.blackMetal;const led=new THREE.MeshBasicMaterial({color:0xffddb0,transparent:true,opacity:.94});
- for(const x of [-75,-45,-22,19,43,73]){
-  addBox(x,3.50,10.5,.14,7.0,.14,lampMetal);addBox(x+1.0,6.97,10.5,2.0,.095,.095,lampMetal);
+ const bannerMat=new THREE.MeshStandardMaterial({color:0x1b3558,roughness:.75,metalness:.05});
+ const bannerGold=new THREE.MeshStandardMaterial({color:0xd4af37,roughness:.55,metalness:.25});
+ for(const x of [-480,-410,-350,-280,-210,-150,-105,-75,-45,-22,19,43,73,105,150,205,280,350,410,480]){
+  addBox(x,3.50,10.5,.14,7.0,.14,lampMetal);
+  // Twin grand-boulevard luminaire arms and lanterns
+  addBox(x+1.0,6.97,10.5,2.0,.095,.095,lampMetal);
   addBox(x+1.9,6.86,10.5,.58,.09,.34,led);
+  addBox(x-1.0,6.97,10.5,2.0,.095,.095,lampMetal);
+  addBox(x-1.9,6.86,10.5,.58,.09,.34,led);
+  // North Broad Street District vertical banner and support mounting rods
+  addBox(x+.46,5.35,10.5,.78,.04,.04,lampMetal);
+  addBox(x+.46,3.15,10.5,.78,.04,.04,lampMetal);
+  addBox(x+.46,4.25,10.5,.74,2.16,.025,bannerMat);
+  addBox(x+.46,4.25,10.5,.76,.12,.03,bannerGold);
  }
  // Bus stop shelters, railings, benches, utility boxes, street trees with organic canopies.
  const bench=boxMaterial(THREE,0x765f4c,.88,.02);
@@ -367,9 +405,8 @@ export function createCinematicWeather(THREE,scene,{mobile=false}={}){
  const rain=new THREE.Points(geometry,material);rain.frustumCulled=false;rain.visible=false;scene.add(rain);
  let clock=0;
  return {rain,update(dt,wave,darkness){
-  const storm=wave%10>=4&&wave%10<=7;
-  rain.visible=storm;
-  if(!storm)return;
+   rain.visible=false;
+   return;
   clock+=dt;
   material.opacity=.16+.14*darkness;
   for(let i=0;i<count;i++){

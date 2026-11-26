@@ -1,0 +1,17 @@
+import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import * as T from './vendor/three.module.js';
+import {buildings} from './district.js';
+import {addDistrict} from './district-geometry.js';
+import {BOSTON_BRICK_EVIDENCE,createBrickWallMaterial} from './boston-masonry.mjs';
+registerHooks({resolve(s,c,next){return s==='three'?{url:new URL('./vendor/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c);}});
+const seen=[];let row=null;
+addDistrict({T,box:()=>{},tree:()=>{},mesh:(g,c)=>new T.Mesh(g,new T.MeshBasicMaterial({color:c})),block:(poly,h,c,base=0,opts={})=>{if(opts.wallFinish){assert.equal(opts.wallFinish,'boston-brick');assert.equal(base,0);assert.equal(h,row.height);assert.ok(row.polys.includes(poly));seen.push(row.name);}},audit:e=>{if(e.type==='record')row=e;}});
+assert.deepEqual(seen.sort(),Object.keys(BOSTON_BRICK_EVIDENCE).sort());
+const ctx=new Proxy({createLinearGradient:()=>({addColorStop:()=>{}}),createRadialGradient:()=>({addColorStop:()=>{}})}, {get:(o,k)=>o[k]??(()=>{}),set:(o,k,v)=>{o[k]=v;return true;}});
+globalThis.document={createElement:()=>({width:1,height:1,getContext:()=>ctx})};
+const {makeFrontages}=await import('./mapped-geometry.js');const data=JSON.parse(readFileSync(new URL('./mapped-data.json',import.meta.url),'utf8'));const scene=new T.Scene();makeFrontages(scene,data.rows,data.streets);
+let meshes=0;const records=[];scene.traverse(o=>{if(o.userData.wallFinish!=='boston-brick')return;meshes++;assert.ok(Array.isArray(o.material));assert.equal(o.material.length,2);assert.ok(o.geometry.groups.some(g=>g.materialIndex===0));assert.ok(o.geometry.groups.some(g=>g.materialIndex===1));assert.ok(o.material[1].map.isDataTexture);const uv=o.geometry.getAttribute('uv');assert.equal(uv.count,o.geometry.getAttribute('position').count);assert.ok(uv.array.every(Number.isFinite));assert.equal(o.material[1].map.generateMipmaps,true);records.push({vertices:uv.count,tile:o.material[1].map.image.width+'x'+o.material[1].map.image.height});});assert.equal(meshes,4);
+const a=createBrickWallMaterial(T,0x996e59),b=createBrickWallMaterial(T,0x996e59);assert.deepEqual(a.map.image.data,b.map.image.data);assert.ok(new Set(a.map.image.data).size>10);assert.equal(a.map.repeat.x,1/(8*.215));assert.equal(a.map.repeat.y,1/(8*.075));
+console.log(JSON.stringify({pass:true,scope:'Source routing and actual Three.js material/UV construction; no GPU render or dated facade photo verification. Illustrative brick pattern and retained prior base color. No geometry changes.',addresses:seen,materials:records,evidence:BOSTON_BRICK_EVIDENCE},null,2));

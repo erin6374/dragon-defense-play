@@ -5,11 +5,11 @@
 // their actual facade section, so destroyed windows cannot float in the air.
 export function enhanceStreetArchitecture(THREE,buildings,root){
  const mats={
-  glass:new THREE.MeshStandardMaterial({color:0x436c82,metalness:.12,roughness:.17,transparent:true,opacity:.84,depthWrite:false,side:THREE.DoubleSide}),
+  glass:new THREE.MeshPhysicalMaterial({color:0x436c82,metalness:.30,roughness:.08,clearcoat:1.0,clearcoatRoughness:.08,envMapIntensity:2.4,transparent:true,opacity:.84,depthWrite:false,side:THREE.DoubleSide}),
   lit:new THREE.MeshStandardMaterial({color:0xb1a080,emissive:0x4e3320,emissiveIntensity:.50,roughness:.64}),
   frame:new THREE.MeshStandardMaterial({color:0x333c43,metalness:.48,roughness:.39}),
-  stone:new THREE.MeshStandardMaterial({color:0xb7a99b,roughness:.85}),
-  dark:new THREE.MeshStandardMaterial({color:0x232a31,roughness:.92})
+  stone:new THREE.MeshStandardMaterial({color:0xb7a99b,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  dark:new THREE.MeshStandardMaterial({color:0x232a31,roughness:.95,metalness:0,envMapIntensity:0})
  };
  const box=new THREE.BoxGeometry(1,1,1),batches=Object.fromEntries(Object.keys(mats).map(k=>[k,[]]));
  let assemblies=0;
@@ -98,9 +98,42 @@ export function addStreetSetDressing(THREE,root){
   add(x+1.5,.46,z,.18,.86,.18,steel);
   if(i%3===1){add(x-1.4,.24,z,.78,.44,.62,orange);add(x-1.4,.51,z,.86,.10,.70,accent);}
  }
- // Two crosswalk approaches: broad, restrained pavement markings.
+ // Crosswalk approaches across York, Dauphin, Susquehanna, and Diamond: broad, restrained pavement markings.
  const paint=new THREE.MeshBasicMaterial({color:0xd5d3c8,transparent:true,opacity:.82,depthWrite:false});
- for(const cx of [-53,53])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+ for(const cx of [-270,-102,78,256])for(let i=0;i<8;i++)add(cx+(i-3.5)*1.42,-.237,12.1,1.02,.012,3.6,paint);
+
+ // Authentic Philadelphia municipal green street-name blade signs at the four cross-street corners.
+ function makeSignMaterial(text){
+  const c=document.createElement('canvas');c.width=256;c.height=64;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#094827';ctx.fillRect(0,0,256,64);
+  ctx.strokeStyle='#ffffff';ctx.lineWidth=4;ctx.strokeRect(4,4,248,56);
+  ctx.fillStyle='#ffffff';ctx.font='bold 21px system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,128,32);
+  const tex=new THREE.CanvasTexture(c);tex.anisotropy=4;
+  return new THREE.MeshBasicMaterial({map:tex});
+ }
+ const broadMat=makeSignMaterial('N BROAD ST');
+ const crossSigns=[
+  {name:'W YORK ST',x:-270},
+  {name:'W DAUPHIN ST',x:-102},
+  {name:'W SUSQUEHANNA AVE',x:78},
+  {name:'W DIAMOND ST',x:256}
+ ];
+ for(const cs of crossSigns){
+  const signMat=makeSignMaterial(cs.name);
+  for(const side of [-7.2,7.2]){
+   const poleX=cs.x+side;
+   add(poleX,1.8,11.2,.12,3.6,.12,steel);
+   add(poleX,3.65,11.2,.22,.15,.22,accent);
+   const crossBlade=new THREE.Mesh(new THREE.BoxGeometry(1.6,.32,.04),signMat);
+   crossBlade.position.set(poleX,3.38,11.2);set.add(crossBlade);
+   const broadBlade=new THREE.Mesh(new THREE.BoxGeometry(.04,.32,1.6),broadMat);
+   broadBlade.position.set(poleX,3.72,11.2);set.add(broadBlade);
+  }
+ }
+
  return set;
 }
 
@@ -108,20 +141,22 @@ export function addStreetSetDressing(THREE,root){
 export function addForegroundPlanting(THREE,root){
  const geometry=new THREE.IcosahedronGeometry(1,1);
  const material=new THREE.MeshLambertMaterial({color:0xffffff});
- const bed=new THREE.InstancedMesh(geometry,material,108);
+ const count=216;
+ const bed=new THREE.InstancedMesh(geometry,material,count);
  bed.name='West sidewalk foreground planting';
  const leaf=new THREE.Object3D();
- const colors=[0x333b28,0x414b2a,0x56613b,0x4a552f];
+ const colors=[0x24331b,0x2e3f22,0x3d522c,0x4a6336,0x354727,0x56723e];
  for(let i=0;i<bed.count;i++){
-  const x=-122+i*2.3;
-  // Keep both crosswalk approaches open.
-  if(Math.abs(Math.abs(x)-53)<9){
+  const x=-130+i*1.22;
+  // Keep all 4 crosswalk approaches open.
+  if([-270,-102,78,256].some(cx=>Math.abs(x-cx)<7.5)){
    leaf.scale.setScalar(0);
   }else{
-   const spread=(i*7%11)/11;
-   leaf.position.set(x,.25+spread*.38,47.7+(i*17%9)*.22);
-   leaf.scale.set(1.8+spread,.67+spread*.72,.93+spread);
-   leaf.rotation.set(spread,i*1.22,spread*.31);
+   const spread=(i*7%13)/13;
+   const row=i%3;
+   leaf.position.set(x,.38+spread*.52+row*.12,45.8+row*1.1+(i*17%7)*.14);
+   leaf.scale.set(1.5+spread*.7,.82+spread*.72+row*.15,1.3+spread*.6);
+   leaf.rotation.set(spread*.4,i*1.18+row*.5,spread*.25);
   }
   leaf.updateMatrix();
   bed.setMatrixAt(i,leaf.matrix);

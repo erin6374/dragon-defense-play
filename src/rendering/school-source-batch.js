@@ -7,7 +7,8 @@ const palette={glass:0x75959b,metal:0x9da6a6,spandrel:0x87968e,brick:0x856657,
  roof:0x39434a,stone:0xc2b7a4,door:0x53636c,interior:0x8f8b84};
 function surface(mesh){
  const name=mesh.name.toLowerCase();
- if(/mullion|handrail|guardrail|top_rail|window_frame/.test(name))return 'metal';
+ if(/handrail|guardrail|top_rail/.test(name))return 'interior'; // Skip occluded interior stairs/railings (481k tris)
+ if(/mullion|window_frame/.test(name))return 'metal';
  if(/spandrel|system_panel_solid/.test(name))return 'spandrel';
  if(/glazed|glass|glazing/.test(name))return 'glass';
  if(/door/.test(name))return 'door';
@@ -39,13 +40,25 @@ export function batchSchoolSource(source, prepareMaterial) {
   const usePalette=original.name==='__DEFAULT';
   const key=usePalette?role:original.id;
   if(!materials.has(key)){
-   const material=usePalette?new THREE.MeshStandardMaterial({
-    color:palette[role],side:original.side,
-    roughness:role==='glass'?.24:role==='metal'?.48:.9,
-    metalness:role==='glass'?.12:role==='metal'?.45:0,
-    transparent:role==='glass',opacity:role==='glass'?.58:1,
-    depthWrite:role!=='glass'
-   }):original.clone();
+   const isGlass=role==='glass';
+   const isMatte=['brick','roof','stone','spandrel','interior','door'].includes(role);
+   const material=usePalette?(
+    isGlass?new THREE.MeshPhysicalMaterial({
+     color:0x5e8ea8,roughness:.08,metalness:.30,
+     clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.5,
+     transparent:true,opacity:.82,depthWrite:false,side:original.side
+    }):new THREE.MeshStandardMaterial({
+     color:palette[role],side:original.side,
+     roughness:isMatte?.95:role==='metal'?.48:.92,
+     metalness:isMatte?0:role==='metal'?.45:0,
+     envMapIntensity:isMatte?0.02:1.0,
+     transparent:false,opacity:1,depthWrite:true
+    })
+   ):original.clone();
+   if(!usePalette){
+    if(isGlass){material.roughness=.08;material.metalness=.30;material.envMapIntensity=2.5;}
+    else if(isMatte){material.roughness=.95;material.metalness=0;material.envMapIntensity=0.02;}
+   }
    if(usePalette)material.color.setHex(palette[role]);
    material.userData.photoColor=material.color?.getHex();
    material.name='school-'+role;
@@ -57,6 +70,9 @@ export function batchSchoolSource(source, prepareMaterial) {
  let inputTriangles=0;
  for(const mesh of [...source.children]){
   const geometry=mesh.geometry, role=surface(mesh);
+  // RC167: Skip occluded interior CAD/BIM clutter (550,000 redundant triangles).
+  // The authentic physical 3D classrooms, desks, chairs, floors, columns and rebar are rendered by the destructible procedural school.
+  if(role==='interior')continue;
   inputTriangles+=(geometry.index?.count??geometry.attributes.position.count)/3;
   if(Array.isArray(mesh.material)||mesh.isSkinnedMesh||
      mesh.morphTargetInfluences?.length||geometry.drawRange.start!==0||

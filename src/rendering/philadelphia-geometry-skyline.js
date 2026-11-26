@@ -130,18 +130,29 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const impactTexture=new THREE.CanvasTexture(impactCanvas);
  impactTexture.colorSpace=THREE.SRGBColorSpace;
  const impactMaterial=new THREE.SpriteMaterial({map:impactTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending});
- const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.28,roughness:.6});
- const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.94});
+ const trimMat=new THREE.MeshStandardMaterial({color:0x9eb8c6,metalness:.02,roughness:.94});
+ const stoneMat=new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.95});
  const gold=new THREE.MeshBasicMaterial({color:0xb29a68});
  const ambientBuildings=[
-  [-99,28,10],[-90,39,7],[-78,33,12],[-65,43,10],[-51,31,11],[-37,36,8],[-21,34,10],[-3,40,12],[17,33,9],[33,36,12],[53,29,9],[68,40,11],[83,31,13],[97,34,9]
+  // Center City core frame ($x \in [-90, 110]$) with authentic Philadelphia urban profile
+  [-99,28,10],[-90,39,7],[-78,33,12],[-65,43,10],[-51,31,11],[-37,36,8],[-21,34,10],
+  [-3,40,12],[17,33,9],[33,36,12],[53,29,9],[68,40,11],[83,31,13],[97,34,9],
+  // Intermediate flanks tapering gracefully into mid-rise commercial and historic masonry
+  [-168,24,12],[-150,22,11],[-134,25,12],[-118,23,10],
+  [112,25,11],[128,23,10],[145,26,13],[162,21,11],
+  // Distant horizon mid-rises with receding perspective depth to prevent flat billboard intersections
+  [-380,14,12],[-345,15,11],[-310,16,12],[-274,17,11],[-238,18,12],[-202,20,12],
+  [180,20,12],[218,18,12],[254,17,11],[290,16,12],[326,15,11],[362,14,12]
  ];
  // Distant intermediate city is part of the geometry, not a photo pasted behind a cutout.
  const farTex=makeFacade(9291,'office');
- const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.86,metalness:.03,side:THREE.DoubleSide});
- const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.89,metalness:.02,side:THREE.DoubleSide});
+ const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.95,metalness:.01,side:THREE.DoubleSide});
+ const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.95,metalness:.01,side:THREE.DoubleSide});
  for(let i=0;i<ambientBuildings.length;i++){
-  const [x,h,w]=ambientBuildings[i];const g=new THREE.Group();g.position.set(x,0,-9-i%3*2);group.add(g);
+  const [x,h,w]=ambientBuildings[i];
+  // Sharper perspective plane: outer buildings recede in depth rather than forming a flat wall
+  const zDepth=-9-Math.max(0,Math.abs(x-15)-60)*.08-(i%3)*2.4;
+  const g=new THREE.Group();g.position.set(x,0,zDepth);group.add(g);
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
   g.add(poly.front,poly.sides);
  }
@@ -192,10 +203,12 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const crownMat=new THREE.MeshBasicMaterial({map:lanternMap,color:0x9eb5c2,transparent:true,opacity:.22,depthWrite:false});
  function beacon(parent,x,y,z,seed=0){const m=new THREE.Mesh(beaconGeo,beaconMat.clone());m.position.set(x,y,z);m.userData.phase=seed;parent.add(m);beacons.push(m);return m;}
  defs.forEach((d,i)=>{
-  const g=new THREE.Group();g.name='landmark-'+d.id;g.position.set(d.x,0,-2-(i%3)*5);group.add(g);
-  const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.67,metalness:d.style==='civic'?.05:.24,side:THREE.DoubleSide});
+  const g=new THREE.Group();g.name='landmark-'+d.id;
+  const depthBias=d.id==='city-hall'?-14:d.id==='comcast-technology'?-6:d.id==='comcast-center'?-10:d.id==='one-liberty-place'?-8:d.id==='two-liberty-place'?-12:d.id==='bny-mellon'?-15:-12-(i%3)*2.5;
+  g.position.set(d.x,0,depthBias);group.add(g);
+  const tex=makeFacade(i*171+381,d.style);const facade=new THREE.MeshStandardMaterial({map:tex.map,emissiveMap:tex.emissive,emissive:0xffd29b,emissiveIntensity:0,color:0xffffff,roughness:.94,metalness:0.02,side:THREE.DoubleSide});
   const facadeDamage=attachFacadeFireDamage(facade,SECONDARY_BURN_SITES_PER_TOWER);
-  const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.72,metalness:.14,side:THREE.DoubleSide});
+  const side=new THREE.MeshStandardMaterial({color:d.style==='civic'?0x8f8476:0x38576a,roughness:.95,metalness:0.01,side:THREE.DoubleSide});
   const poly=polygonMesh(profile(d.w,d.h,d.roof),d.depth,facade,side);g.add(poly.front,poly.sides);
   if(d.id.includes('liberty')){
    // Silver zigzag gable ribs are an important recognizable Liberty Place silhouette.
@@ -376,7 +389,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   return {tower,point:new THREE.Vector3(Math.max(-tower.def.w*.35,Math.min(tower.def.w*.35,localX-tower.group.position.x)),tower.def.h*heightFraction,tower.def.depth/2+.55)};
  }
  function targetPoint(localX){const hit=resolveStrike(localX);return hit?hit.tower.group.localToWorld(hit.point):null;}
- function strikeNearest(localX,intensity=0){
+ function strikeNearest(localX,intensity=0,flaming=true){
   intensity=Math.max(0,Math.min(1,intensity));
   const hit=resolveStrike(localX);if(!hit)return null;
   const tower=hit.tower,impact=tower.impactSprite;
@@ -394,45 +407,47 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   tower.scorchSprite.position.set(tower.impactLocal.x,tower.impactLocal.y,tower.def.depth/2+.62);
   // A new meteor burst must begin at its initial radius, even if the
   // previous burst was partway through fading or had fully expanded.
-  impact.scale.setScalar(5);
+  impact.scale.setScalar(flaming?5:3.2);
   tower.impactAge=1.15;
-  tower.impactEnergy=1;
+  tower.impactEnergy=flaming?1:0.45;
   // This is deliberately a small distant damage contribution: foreground
   // school and neighborhood health continue to use their existing simulation.
   // Repeated strikes scar and burn towers without deforming or collapsing them.
-  tower.strikeDamage=Math.min(.90,tower.strikeDamage+.07+intensity*.04);
-  // Repeated strikes refresh one window, preserving the others' continuity.
-  // An irregular five-floor glass fire rather than four isolated stationary
-  // torches. Each cell maps to a different real window-grid contact. No
-  // hit-time objects: all nine sites exist in the fixed instance buffer.
-  const ignite=(j)=>{
-   const [bay,floor]=BURN_WINDOW_PATTERN[j];
-   // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
-   // Each final contact is snapped to its physical facade window grid.
-   const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
-   const offsetY=floor*tower.def.h*.022;
-   const site=tower.burnSites[j];
-   placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
-   // Damage accelerates lateral spread, while fixed ignition times let the
-   // 30-second recording show a genuine evolving multi-window blaze.
-   // Additional meteor strikes still re-ignite a single existing window.
-   const delay=BURN_IGNITION_DELAYS[j]/(1+tower.strikeDamage*.7);
-   site.ignitedAt=renderClock+delay;
-   if(delay>0)combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
-     site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
-  };
-  if(!tower.burnSites[0].active){
-   for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++)ignite(j);
-  }else{
-   const j=tower.siteCursor;
-   ignite(j);
-   tower.siteCursor=(j+1)%SECONDARY_BURN_SITES_PER_TOWER;
+  tower.strikeDamage=Math.min(.90,tower.strikeDamage+(flaming?(.07+intensity*.04):(.02+intensity*.01)));
+
+  // Skyscraper fire rule: Only flaming meteors trigger sustained window combustion.
+  // Smaller non-flaming meteors cause particle debris, smoke, and scorch, but do NOT ignite windows.
+  if(flaming){
+   const ignite=(j)=>{
+    const [bay,floor]=BURN_WINDOW_PATTERN[j];
+    // Broken, asymmetrical multi-floor firefront, not a luminous rectangle.
+    // Each final contact is snapped to its physical facade window grid.
+    const offsetX=bay*tower.def.w*.165+(j%2?.012:-.012)*tower.def.w;
+    const offsetY=floor*tower.def.h*.022;
+    const site=tower.burnSites[j];
+    placeBurnSite(tower,site,offsetX,offsetY,2.55+Math.abs(bay)*.14);
+    // Damage accelerates lateral spread, while fixed ignition times let the
+    // 30-second recording show a genuine evolving multi-window blaze.
+    // Additional meteor strikes still re-ignite a single existing window.
+    const delay=BURN_IGNITION_DELAYS[j]/(1+tower.strikeDamage*.7);
+    site.ignitedAt=renderClock+delay;
+    site.lastSpread=undefined;site.lastPower=undefined;
+    if(delay>0)combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+      site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
+   };
+   if(!tower.burnSites[0].active){
+    for(let j=0;j<SECONDARY_BURN_SITES_PER_TOWER;j++)ignite(j);
+   }else{
+    const j=tower.siteCursor;
+    ignite(j);
+    tower.siteCursor=(j+1)%SECONDARY_BURN_SITES_PER_TOWER;
+   }
   }
   setDamage(damage); // Atmospheric damage only: landmark geometry remains intact.
   tower.scorchSprite.visible=true;
-  const scorchSize=4+Math.min(1,tower.strikeDamage/.18)*4;
+  const scorchSize=(flaming?4:2.6)+Math.min(1,tower.strikeDamage/.18)*(flaming?4:2.2);
   tower.scorchSprite.scale.set(scorchSize,scorchSize,1);
-  tower.scorchSprite.material.opacity=Math.min(.87,.40+tower.strikeDamage*2.3);
+  tower.scorchSprite.material.opacity=Math.min(.87,(flaming?.40:.24)+tower.strikeDamage*2.3);
   impact.visible=true;
   impact.material.opacity=.93;
   return impactWorld;
@@ -485,10 +500,26 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
      signedAge<0?0:spread*pulse*(
        [4,6,8].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.82:
        [1,3,5].includes(site.index%SECONDARY_BURN_SITES_PER_TOWER)?.65:.42));
-    combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
-     site.renderWidth*(.66+.34*spread),
-     site.renderHeight*(.67+.33*spread),site.seed,
-     (signedAge<0?0:(.12+.78*spread)*pulse),1);
+    // Prevent rewriting instanced GPU buffer attributes every 160ms with CPU pulse.
+    // The building-combustion fragment shader animates temporal flame flicker continuously on the GPU.
+    // Attribute data is only updated when spread evolves during initial growth, stopping once mature.
+    if(signedAge<0){
+     if(site.lastPower!==0){
+      site.lastPower=0;
+      combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+       site.renderWidth*.66,site.renderHeight*.67,site.seed,0,1);
+     }
+    }else{
+     const roundedSpread=spread>=1?1:Math.round(spread*10)/10;
+     if(site.lastSpread!==roundedSpread){
+      site.lastSpread=roundedSpread;
+      site.lastPower=.12+.78*roundedSpread;
+      combustion.set(site.index,site.origin.x,site.origin.y,site.origin.z,
+       site.renderWidth*(.66+.34*roundedSpread),
+       site.renderHeight*(.67+.33*roundedSpread),site.seed,
+       site.lastPower,1);
+     }
+    }
    }
   }
   for(let i=0;i<beacons.length;i++){
@@ -502,7 +533,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    h.group.position.x=h.x0+(orbit<0?orbit+170:orbit)-82;
    h.group.position.y=h.y0+Math.sin(elapsed*.48+h.seed)*2.1;
    h.rotor.rotation.y=elapsed*17;
-   h.group.scale.x=h.speed;
+   h.group.rotation.y=h.speed<0?Math.PI:0;
+   h.group.scale.set(1,1,1);
    h.nav.material.opacity=.28+.67*(.5+.5*Math.sin(elapsed*4.1+h.seed));
   }
   combustion.update(elapsed);
@@ -560,7 +592,8 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
    t.strikeDamage=0;t.impactAge=0;t.impactEnergy=0;t.impactSprite.visible=false;
    t.scorchSprite.visible=false;t.scorchSprite.material.opacity=0;t.siteCursor=0;
    for(const site of t.burnSites){site.active=false;site.width=0;
-    site.height=0;site.renderWidth=0;site.renderHeight=0;site.ignitedAt=0;}
+    site.height=0;site.renderWidth=0;site.renderHeight=0;site.ignitedAt=0;
+    site.lastSpread=undefined;site.lastPower=undefined;}
   }
   setTime(0,0);
  }

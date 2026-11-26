@@ -1,27 +1,439 @@
 export function createCinematicEffects(T,scene,camera,bank){
- const dummy=new T.Object3D(),puffs=[],rings=[];let clock=0;
+ const dummy=new T.Object3D();let clock=0;
  const windOrigin=new T.Vector3(),windDirection=new T.Vector3(1,0,0);
  let windStrength=0;
+
+ // Pre-allocated scratch objects to completely eliminate runtime garbage collection
+ const _v1=new T.Vector3(),_v2=new T.Vector3(),_v3=new T.Vector3(),_v4=new T.Vector3();
+ const _delta=new T.Vector3(),_right=new T.Vector3(),_up=new T.Vector3(),_offset=new T.Vector3();
+ const _col1=new T.Color(),_col2=new T.Color();
+
  function pool(capacity,material,geometry=new T.PlaneGeometry(1,1)){
-  const m=new T.InstancedMesh(geometry,material,capacity);m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(m);
-  const alpha=new T.InstancedBufferAttribute(new Float32Array(capacity),1);m.geometry.setAttribute('fxAlpha',alpha);
-  material.onBeforeCompile=s=>{s.vertexShader='attribute float fxAlpha;varying float vFxAlpha;\n'+s.vertexShader;s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFxAlpha=fxAlpha;');s.fragmentShader='varying float vFxAlpha;\n'+s.fragmentShader;s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a*=vFxAlpha;')};
-  return {m,alpha,capacity,n:0,add(pos,w,h,opacity=1,rotation=0){if(this.n>=capacity)return;dummy.position.copy(pos);dummy.quaternion.copy(camera.quaternion);dummy.rotateZ(rotation);dummy.scale.set(w,h,1);dummy.updateMatrix();m.setMatrixAt(this.n,dummy.matrix);alpha.setX(this.n++,opacity)},flush(){m.count=this.n;m.instanceMatrix.needsUpdate=true;alpha.needsUpdate=true}};
+  const m=new T.InstancedMesh(geometry,material,capacity);
+  m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(T.DynamicDrawUsage);
+  scene.add(m);
+  const alpha=new T.InstancedBufferAttribute(new Float32Array(capacity),1);
+  m.geometry.setAttribute('fxAlpha',alpha);
+  const colors=new T.InstancedBufferAttribute(new Float32Array(capacity*3),3);
+  m.geometry.setAttribute('fxColor',colors);
+  material.onBeforeCompile=s=>{
+   s.vertexShader='attribute float fxAlpha;attribute vec3 fxColor;varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.vertexShader;
+   s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFxAlpha=fxAlpha;vFxColor=fxColor;vFxUv=uv;');
+   s.fragmentShader='varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.fragmentShader;
+   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxRaw=clamp(1.0-smoothstep(0.06,0.94,fxEdgeR),0.0,1.0);float fxFeather=fxRaw*fxRaw*(3.0-2.0*fxRaw);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
+  };
+  return {
+   m,alpha,colors,capacity,n:0,
+   add(pos,w,h,opacity=1,rotation=0,col=null){
+    if(this.n>=capacity)return;
+    dummy.position.copy(pos);
+    dummy.quaternion.copy(camera.quaternion);
+    dummy.rotateZ(rotation);
+    dummy.scale.set(w,h,1);
+    dummy.updateMatrix();
+    m.setMatrixAt(this.n,dummy.matrix);
+    if(col){colors.setXYZ(this.n,col.r,col.g,col.b);}
+    else{colors.setXYZ(this.n,1.0,1.0,1.0);}
+    alpha.setX(this.n++,opacity);
+   },
+   flush(){
+    m.count=this.n;
+    if(this.n>0){
+     m.instanceMatrix.needsUpdate=true;
+     colors.needsUpdate=true;
+     alpha.needsUpdate=true;
+    }
+   }
+  };
  }
- const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.92,depthWrite:false,blending:T.NormalBlending}));
- const smoke=pool(560,new T.MeshBasicMaterial({map:bank.images.smoke,color:0x3c3b39,transparent:true,opacity:.85,depthWrite:false}));
- const waterPixels=new Uint8Array(32*32*4);for(let y=0;y<32;y++)for(let x=0;x<32;x++){const i=(y*32+x)*4,r=Math.hypot((x-15.5)/15.5,(y-15.5)/15.5);waterPixels[i]=waterPixels[i+1]=waterPixels[i+2]=255;waterPixels[i+3]=Math.round(255*Math.max(0,1-r)**1.4)}const waterMap=new T.DataTexture(waterPixels,32,32,T.RGBAFormat);waterMap.needsUpdate=true;
- const spray=pool(900,new T.MeshBasicMaterial({map:waterMap,color:0xe3eff2,transparent:true,opacity:.65,depthWrite:false}));
- const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
- const pools=[flame,smoke,spray,ring];
- function burst(pos,power=1){for(let i=0;i<Math.min(32,12*power)&&puffs.length<180;i++)puffs.push({p:pos.clone(),v:new T.Vector3((Math.random()-.5)*power*5,Math.random()*3+1,(Math.random()-.5)*power*4),age:0,life:2+Math.random()*3,size:.5+Math.random()*power});shock(pos,power*4)}
- function shock(pos,radius=5){if(rings.length<48)rings.push({p:pos.clone(),radius,age:0});}
- function begin(dt){clock+=dt;for(const p of pools)p.n=0;for(let i=puffs.length-1;i>=0;i--){const p=puffs[i];p.age+=dt;p.p.addScaledVector(p.v,dt);p.v.multiplyScalar(1-dt*.6);p.v.y+=dt*.35;smoke.add(p.p,p.size+p.age,p.size+p.age,(1-p.age/p.life)*.7,p.age*.1);if(p.age>=p.life)puffs.splice(i,1)}for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.age+=dt;const size=r.radius*Math.min(1,r.age/.55);ring.add(r.p,size,size,Math.max(0,1-r.age/.65));if(r.age>.65)rings.splice(i,1)}}
+
+ const defaultSmokeColor=new T.Color(0x605c56);
+ const sootColor=new T.Color(0x181512);
+ const steamColor=new T.Color(0xe6f0fa);
+ const waterWhiteColor=new T.Color(0xffffff);
+ const waterMistColor=new T.Color(0xf0f7ff);
+ const waterFoamColor=new T.Color(0xe6f4fc);
+ const defaultDustColor=new T.Color(0xbab09e);
+ const brickDustColor=new T.Color(0xb2533e);
+ const hazeSmokeColor=new T.Color(0xb0b8c2);
+
+ const flame=pool(220,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+ const smoke=pool(450,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
+
+ // RC165: Photorealistic aerated water droplet & vapor mist texture (fast, white, transparent)
+ // Dual-lobe Gaussian core with micro-turbulent internal droplets and guaranteed asymptotic zero edge falloff
+ const waterSize=128;
+ const waterPixels=new Uint8Array(waterSize*waterSize*4);
+ const halfW=(waterSize-1)*0.5;
+ for(let y=0;y<waterSize;y++){
+  for(let x=0;x<waterSize;x++){
+   const idx=(y*waterSize+x)*4;
+   const nx=(x-halfW)/halfW;
+   const ny=(y-halfW)/halfW;
+   const r=Math.hypot(nx,ny);
+   if(r>=1.0){
+    waterPixels[idx]=255;waterPixels[idx+1]=255;waterPixels[idx+2]=255;waterPixels[idx+3]=0;
+    continue;
+   }
+   const env=Math.exp(-3.6*r*r)*Math.pow(Math.max(0,1.0-r*r),1.65);
+   const subNoise=Math.sin(nx*14.2+ny*18.7)*Math.cos(nx*21.3-ny*12.5)*0.14;
+   const density=Math.min(1.0,Math.max(0,env+subNoise*env));
+   waterPixels[idx]=255;
+   waterPixels[idx+1]=255;
+   waterPixels[idx+2]=255;
+   waterPixels[idx+3]=Math.round(255*density);
+  }
+ }
+ const waterMap=new T.DataTexture(waterPixels,waterSize,waterSize,T.RGBAFormat);
+ waterMap.needsUpdate=true;
+
+ const spray=pool(350,new T.MeshBasicMaterial({map:bank.images.smoke||waterMap,color:0xffffff,transparent:true,opacity:.70,depthWrite:false}));
+ const ring=pool(32,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
+ const dust=pool(240,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
+
+ const sparkPixels=new Uint8Array(16*16*4);
+ for(let y=0;y<16;y++){
+  for(let x=0;x<16;x++){
+   const idx=(y*16+x)*4,r=Math.hypot((x-7.5)/7.5,(y-7.5)/7.5);
+   sparkPixels[idx]=180;sparkPixels[idx+1]=235;sparkPixels[idx+2]=255;
+   sparkPixels[idx+3]=Math.round(255*Math.max(0,1-r)**1.8);
+  }
+ }
+ const sparkMap=new T.DataTexture(sparkPixels,16,16,T.RGBAFormat);
+ sparkMap.needsUpdate=true;
+ const spark=pool(160,new T.MeshBasicMaterial({map:sparkMap,color:0xaeeaff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+
+ const pools=[flame,smoke,spray,ring,dust,spark];
+
+ // PRE-ALLOCATED ZERO-GC POOLS
+ const MAX_PUFFS=120;
+ const puffs=[];
+ for(let i=0;i<MAX_PUFFS;i++)puffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,size:1,isSteam:false});
+ let puffHead=0;
+
+ const MAX_RINGS=24;
+ const rings=[];
+ for(let i=0;i<MAX_RINGS;i++)rings.push({active:false,p:new T.Vector3(),radius:5,age:0,life:0.55});
+ let ringHead=0;
+
+ const MAX_DUST_PUFFS=140;
+ const dustPuffs=[];
+ for(let i=0;i<MAX_DUST_PUFFS;i++)dustPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,initialSize:1,targetSize:3,rot:0,rotSpeed:0,maxOpacity:0.6,col:defaultDustColor});
+ let dustHead=0;
+
+ const MAX_SPARK_PUFFS=100;
+ const sparkPuffs=[];
+ for(let i=0;i<MAX_SPARK_PUFFS;i++)sparkPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:0.25,size:0.2,power:1});
+ let sparkHead=0;
+
+ // DEDICATED HIGH-VELOCITY PARTICLE WATER ENGINE
+ const MAX_WATER=120;
+ let subwayCraters=[];
+ function syncSubwayCraters(craters=[]){
+  subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0);
+ }
+ const waterParticles=[];
+ for(let i=0;i<MAX_WATER;i++){
+  waterParticles.push({
+   active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1.0,
+   initialSize:0.4,targetSize:2.0,maxOpacity:0.8,rot:0,rotSpeed:0,
+   isMist:false,color:new T.Color(0xffffff)
+  });
+ }
+ let waterHead=0;
+
+ function spawnWaterParticle(x,y,z,vx,vy,vz,life,initialSize,targetSize,opacity,isMist,col){
+  const wp=waterParticles[waterHead];
+  waterHead=(waterHead+1)%MAX_WATER;
+  wp.active=true;
+  wp.p.set(x,y,z);
+  wp.v.set(vx,vy,vz);
+  wp.age=0;
+  wp.life=life;
+  wp.initialSize=initialSize;
+  wp.targetSize=targetSize;
+  wp.maxOpacity=opacity;
+  wp.rot=Math.random()*Math.PI*2;
+  wp.rotSpeed=(Math.random()-0.5)*3.2;
+  wp.isMist=!!isMist;
+  if(col)wp.color.copy(col);else wp.color.setHex(0xffffff);
+  return wp;
+ }
+
+ function burst(pos,power=1){
+  const num=Math.min(24,Math.round(10*power));
+  for(let i=0;i<num;i++){
+   const p=puffs[puffHead];puffHead=(puffHead+1)%MAX_PUFFS;
+   p.active=true;
+   p.p.copy(pos);
+   p.v.set((Math.random()-.5)*power*5,Math.random()*3+1,(Math.random()-.5)*power*4);
+   p.age=0;p.life=2+Math.random()*2.5;p.size=.5+Math.random()*power;p.isSteam=false;
+  }
+  shock(pos,power*4);
+ }
+
+ function shock(pos,radius=5,life=0.55){
+  const r=rings[ringHead];ringHead=(ringHead+1)%MAX_RINGS;
+  r.active=true;r.p.copy(pos);r.radius=radius;r.age=0;r.life=life;
+ }
+
+ function sparks(pos,count=10,power=1.0){
+  const num=Math.min(24,Math.max(3,Math.round(count)));
+  for(let i=0;i<num;i++){
+   const angle=Math.random()*Math.PI*2;
+   const speed=(3.0+Math.random()*8.0)*power;
+   const s=sparkPuffs[sparkHead];sparkHead=(sparkHead+1)%MAX_SPARK_PUFFS;
+   s.active=true;
+   s.p.set(pos.x+(Math.random()-.5)*.35,pos.y+(Math.random()-.5)*.35,pos.z+(Math.random()-.5)*.35);
+   s.v.set(Math.cos(angle)*speed,(Math.random()*6.0+2.0)*power,Math.sin(angle)*speed);
+   s.age=0;s.life=0.18+Math.random()*0.28;s.size=0.12+Math.random()*0.22*power;s.power=power;
+  }
+ }
+
+ function dustBurst(pos,power=1,opts={}){
+  const num=opts.count||Math.min(32,Math.max(8,Math.round(12*power)));
+  const originY=Math.max(0.2,pos.y);
+  const dustCol=(opts.brick||opts.kind==='brick'||opts.color==='brick')?brickDustColor:(opts.col||defaultDustColor);
+  for(let i=0;i<num;i++){
+   const angle=Math.random()*Math.PI*2;
+   const speed=(opts.radial!==false?4.0+Math.random()*7.0:2.0+Math.random()*4.0)*power;
+   const vx=Math.cos(angle)*speed;
+   const vz=Math.sin(angle)*speed;
+   const vy=(Math.random()*1.6+0.5)*(opts.upward||1.0)*Math.min(2.5,power);
+   const life=1.8+Math.random()*2.4;
+   const initialSize=0.9+Math.random()*1.2*power;
+   const targetSize=initialSize*(3.2+Math.random()*2.8);
+   const d=dustPuffs[dustHead];dustHead=(dustHead+1)%MAX_DUST_PUFFS;
+   d.active=true;
+   d.p.set(pos.x+(Math.random()-0.5)*1.8,originY+Math.random()*0.4,pos.z+(Math.random()-0.5)*1.8);
+   d.v.set(vx,vy,vz);
+   d.age=0;d.life=life;d.initialSize=initialSize;d.targetSize=targetSize;
+   d.rot=Math.random()*Math.PI*2;d.rotSpeed=(Math.random()-0.5)*1.5;
+   d.maxOpacity=0.50+Math.random()*0.25;
+   d.col=dustCol;
+  }
+  if(opts.shock)shock(pos,Math.min(18,power*3.5));
+ }
+
+ function demolitionDustWave(fromPos,toPos,power=1.8,opts={}){
+  _delta.subVectors(toPos,fromPos);
+  const len=_delta.length();
+  const steps=Math.max(4,Math.round(len/3.5));
+  for(let i=0;i<=steps;i++){
+   const t=i/steps;
+   _v1.copy(fromPos).addScaledVector(_delta,t);
+   _v1.y=Math.max(0.3,_v1.y);
+   dustBurst(_v1,power,{count:12,radial:true,upward:0.75,...opts});
+  }
+ }
+
+ function waterJet(pos,dt,opts={}){
+  const rate=opts.rate||4;
+  const power=opts.power||1.0;
+  const originY=pos.y||0.2;
+
+  // High-velocity upward pressurized water droplets (fast, white, transparent)
+  for(let i=0;i<rate;i++){
+   const spreadR=Math.random()*0.18*power;
+   const angle=Math.random()*Math.PI*2;
+   const ox=pos.x+Math.cos(angle)*spreadR;
+   const oz=pos.z+Math.sin(angle)*spreadR;
+   const speed=(24.0+Math.random()*12.0)*power;
+   const tiltAngle=Math.random()*(opts.spread||0.15);
+   const tiltDir=Math.random()*Math.PI*2;
+   const vx=Math.cos(tiltDir)*Math.sin(tiltAngle)*speed*0.35;
+   const vz=Math.sin(tiltDir)*Math.sin(tiltAngle)*speed*0.35;
+   const vy=Math.cos(tiltAngle)*speed;
+   const life=0.85+Math.random()*0.45;
+   const initSize=0.22+Math.random()*0.20;
+   const targetSize=initSize*(3.2+Math.random()*2.0);
+   const alpha=0.45+Math.random()*0.25;
+   spawnWaterParticle(ox,originY,oz,vx,vy,vz,life,initSize,targetSize,alpha,false,waterWhiteColor);
+  }
+
+  // Soft billowing white mist canopy at apex
+  if(Math.random()<0.65){
+   const mistAngle=Math.random()*Math.PI*2;
+   const mistR=Math.random()*0.45;
+   const mx=pos.x+Math.cos(mistAngle)*mistR;
+   const mz=pos.z+Math.sin(mistAngle)*mistR;
+   const mvy=(15.0+Math.random()*8.0)*power;
+   const mvx=(Math.random()-0.5)*2.5;
+   const mvz=(Math.random()-0.5)*2.5;
+   const life=1.2+Math.random()*0.7;
+   const initSize=0.65+Math.random()*0.45;
+   const targetSize=initSize*(3.2+Math.random()*2.2);
+   const alpha=0.25+Math.random()*0.18;
+   spawnWaterParticle(mx,originY+0.4,mz,mvx,mvy,mvz,life,initSize,targetSize,alpha,true,waterMistColor);
+  }
+
+  // Ground churning boiling foam around rupture
+  if(Math.random()<0.55){
+   const foamAngle=Math.random()*Math.PI*2;
+   const foamDist=Math.random()*0.9*power;
+   const fx=pos.x+Math.cos(foamAngle)*foamDist;
+   const fz=pos.z+Math.sin(foamAngle)*foamDist;
+   const fvx=Math.cos(foamAngle)*(2.0+Math.random()*2.0);
+   const fvz=Math.sin(foamAngle)*(2.0+Math.random()*2.0);
+   const fvy=0.4+Math.random()*0.8;
+   const life=0.35+Math.random()*0.25;
+   const initSize=0.55+Math.random()*0.35;
+   const targetSize=initSize*1.8;
+   const alpha=0.48+Math.random()*0.22;
+   spawnWaterParticle(fx,originY+0.1,fz,fvx,fvy,fvz,life,initSize,targetSize,alpha,false,waterFoamColor);
+  }
+ }
+
+ function waterSpray(pos,dir,dt,opts={}){
+  const rate=opts.rate||3;
+  const power=opts.power||1.0;
+  for(let i=0;i<rate;i++){
+   const speed=(18.0+Math.random()*10.0)*power;
+   const spread=0.18;
+   const vx=(dir.x+(Math.random()-0.5)*spread)*speed;
+   const vy=(dir.y+(Math.random()-0.5)*spread)*speed*0.6+1.2;
+   const vz=(dir.z+(Math.random()-0.5)*spread)*speed;
+   const life=0.60+Math.random()*0.35;
+   const initSize=0.20+Math.random()*0.18;
+   const targetSize=initSize*3.2;
+   const alpha=0.42+Math.random()*0.20;
+   spawnWaterParticle(pos.x,pos.y,pos.z,vx,vy,vz,life,initSize,targetSize,alpha,false,waterWhiteColor);
+  }
+ }
+
+ function begin(dt){
+  clock+=dt;
+  for(const p of pools)p.n=0;
+
+  // Update smoke & steam puffs
+  for(let i=0;i<MAX_PUFFS;i++){
+   const p=puffs[i];
+   if(!p.active)continue;
+   p.age+=dt;
+   if(p.age>=p.life){p.active=false;continue;}
+   p.p.addScaledVector(p.v,dt);
+   p.v.multiplyScalar(Math.max(0,1-dt*.6));
+   p.v.y+=dt*.35;
+   const alt=p.p.y;
+   const altFade=Math.max(0.08,1.0-Math.max(0,alt-6.0)*0.042);
+   const altExpand=1.0+Math.min(2.2,Math.max(0,alt-5.0)*0.075);
+   const currentSize=(p.size+p.age*1.2)*altExpand;
+   const progress=Math.min(1.0,p.age/p.life);
+   const smokeAlpha=(1-progress)*(p.isSteam?0.55:0.62)*altFade;
+   if(p.isSteam){
+    _col1.copy(steamColor);
+   }else{
+    const altLerp=Math.min(1.0,Math.max(0,(alt-8.0)*0.05));
+    _col1.copy(defaultSmokeColor).lerp(hazeSmokeColor,altLerp*0.5);
+   }
+   smoke.add(p.p,currentSize,currentSize,smokeAlpha,p.age*.1,_col1);
+  }
+
+  // Update dust puffs
+  for(let i=0;i<MAX_DUST_PUFFS;i++){
+   const d=dustPuffs[i];
+   if(!d.active)continue;
+   d.age+=dt;
+   if(d.age>=d.life){d.active=false;continue;}
+   d.v.x*=Math.max(0,1-dt*0.85);
+   d.v.z*=Math.max(0,1-dt*0.85);
+   d.v.y*=Math.max(0,1-dt*0.7);
+   d.v.y+=dt*0.22;
+   d.p.addScaledVector(d.v,dt);
+   if(d.p.y<0.3){d.p.y=0.3;d.v.y=Math.abs(d.v.y)*0.25;}
+   d.rot+=d.rotSpeed*dt;
+   const progress=Math.min(1,d.age/d.life);
+   const currentSize=d.initialSize+(d.targetSize-d.initialSize)*Math.pow(progress,0.65);
+   const alpha=d.maxOpacity*Math.max(0,Math.sin(progress*Math.PI));
+   dust.add(d.p,currentSize,currentSize,alpha,d.rot,d.col);
+  }
+
+  // Update spark puffs
+  for(let i=0;i<MAX_SPARK_PUFFS;i++){
+   const s=sparkPuffs[i];
+   if(!s.active)continue;
+   s.age+=dt;
+   if(s.age>=s.life){s.active=false;continue;}
+   s.p.addScaledVector(s.v,dt);
+   s.v.y-=dt*19.0;
+   s.v.x*=Math.max(0,1-dt*3.0);
+   s.v.z*=Math.max(0,1-dt*3.0);
+   s.p.x+=(Math.random()-.5)*0.08*s.power;
+   s.p.z+=(Math.random()-.5)*0.08*s.power;
+   const progress=s.age/s.life;
+   const size=s.size*(1-progress*.6);
+   const alpha=(1-progress)*(.75+Math.random()*.25);
+   spark.add(s.p,size,size*2.2,alpha,Math.atan2(s.v.y,s.v.x));
+  }
+
+  // Update shockwave rings
+  for(let i=0;i<MAX_RINGS;i++){
+   const r=rings[i];
+   if(!r.active)continue;
+   r.age+=dt;
+   if(r.age>=r.life){r.active=false;continue;}
+   const size=r.radius*Math.min(1,r.age/.55);
+   ring.add(r.p,size,size,Math.max(0,1-r.age/.65));
+  }
+
+  // Update high-velocity water mist and spray particles
+  for(let i=0;i<MAX_WATER;i++){
+   const wp=waterParticles[i];
+   if(!wp.active)continue;
+   wp.age+=dt;
+   if(wp.age>=wp.life){wp.active=false;continue;}
+
+   // Dynamic gravity & aerodynamic drag
+   wp.v.y-=(wp.isMist?4.8:19.5)*dt;
+   wp.v.x*=Math.max(0,1-dt*(wp.isMist?1.1:0.42));
+   wp.v.z*=Math.max(0,1-dt*(wp.isMist?1.1:0.42));
+
+   // Urban wind deflection
+   if(windStrength>0){
+    wp.v.x+=windDirection.x*windStrength*dt*(wp.isMist?3.2:1.1);
+    wp.v.z+=windDirection.z*windStrength*dt*(wp.isMist?3.2:1.1);
+   }
+
+   wp.p.addScaledVector(wp.v,dt);
+
+   // Dynamic subway chasm check: if over an open breach, water cascades down into tunnel!
+   let chasmFloorY=0.22;
+   for(let scIdx=0;scIdx<subwayCraters.length;scIdx++){
+    const sc=subwayCraters[scIdx];
+    const dx=wp.p.x-sc.x,dz=wp.p.z-sc.z;
+    const rSq=sc.radius*sc.radius*0.82;
+    if(dx*dx+dz*dz<rSq){
+     chasmFloorY=-5.0; // Broad Street Line track bed depth
+     break;
+    }
+   }
+
+   // Ground or subterranean track bed collision
+   if(wp.p.y<chasmFloorY){
+    wp.p.y=chasmFloorY;
+    wp.v.y=Math.abs(wp.v.y)*0.15;
+    wp.v.x*=0.55;
+    wp.v.z*=0.55;
+    if(chasmFloorY<0&&Math.random()<0.25){
+     wp.isMist=true;
+     wp.color.copy(waterFoamColor);
+    }
+   }
+
+   wp.rot+=wp.rotSpeed*dt;
+   const progress=wp.age/wp.life;
+   const size=wp.initialSize+(wp.targetSize-wp.initialSize)*Math.pow(progress,0.68);
+   const alpha=wp.maxOpacity*Math.sin(Math.pow(progress,0.45)*Math.PI);
+   spray.add(wp.p,size,size,alpha,wp.rot,wp.color);
+  }
+ }
+
  function setWind(origin,direction,strength=0){
   windStrength=Math.max(0,Math.min(1,strength));
   if(windStrength&&origin&&direction){windOrigin.copy(origin);windDirection.copy(direction);}
  }
- function fire(pos,age,size=1,suppression=0,style='structure'){
+
+ function fire(pos,age,size=1,suppression=0,style='structure',sootFactor=0){
   const intensity=Math.max(0,1-suppression);
   const relX=pos.x-windOrigin.x,relY=pos.y-windOrigin.y,relZ=pos.z-windOrigin.z;
   const along=relX*windDirection.x+relY*windDirection.y+relZ*windDirection.z;
@@ -29,34 +441,126 @@ export function createCinematicEffects(T,scene,camera,bank){
   const across=Math.sqrt(Math.max(0,distanceSquared-along*along));
   const windAtFire=windStrength&&along>0&&along<50&&across<10+along*.33
    ?windStrength*(1-along/80)*(1-across/(12+along*.40)):0;
-  // Meteor smoke is a short, broken exhaust ribbon. Building fires produce
-  // slower, denser rising plumes. Distinct caps prevent two small fragments
-  // from creating opaque shafts that obscure the entire distant skyline.
+
   const fastTrail=style==='meteor';
   const flameCount=fastTrail?3:5;
-  const smokeCount=fastTrail?4:10;
+  const smokeCount=fastTrail?5:20; // RC173: Optimized to 20 for fluid 60fps without losing plume fullness
+
   for(let i=0;i<flameCount;i++){
    const t=age*(1.7+i*.19)+i*2.3;
-   const offset=new T.Vector3(Math.sin(i*4)*size*(fastTrail?.34:.65),
+   _offset.set(Math.sin(i*4)*size*(fastTrail?.34:.65),
     (fastTrail?.5:1)+Math.sin(t)*.24,Math.cos(i)*size*.3);
-   flame.add(pos.clone().add(offset),size*(fastTrail?.85:1.6+Math.sin(t)*.35),
+   _v1.copy(pos).add(_offset);
+   flame.add(_v1,size*(fastTrail?.85:1.6+Math.sin(t)*.35),
     size*(fastTrail?1.55:3.6+Math.sin(t*1.3)*1.0)*intensity,
     (fastTrail?.61:.75)*intensity,Math.sin(t)*.12);
   }
+
   for(let i=0;i<smokeCount;i++){
-   const t=fastTrail?(age*.75+i*.43)%2.6:(age*.55+i*.61)%6;
-   const wandering=Math.sin(age*1.4+i*2.3)*size*(fastTrail?.28:.6);
-   const scale=fastTrail?size*(.78+t*.29):size*(1.8+t*.95);
-   const y=fastTrail?.6+t*.75:2.2+t*2;
-   const smokePosition=pos.clone().add(new T.Vector3(
-    wandering+t*(fastTrail?.13:.45)+windDirection.x*windAtFire*t*2.2,
-    y+windDirection.y*windAtFire*t*.8,
-    .3+Math.cos(i)*.25+windDirection.z*windAtFire*t*2.2));
-   smoke.add(smokePosition,scale,scale*(fastTrail?1.25:1.2),
-    Math.sin(t/(fastTrail?2.6:6)*Math.PI)*
-      (fastTrail?.24:.8-.3*suppression)*(1-windAtFire*.55),Math.sin(i+age*.3)*.4);
+   const cycle=fastTrail?2.6:16.0;
+   const t=fastTrail?(age*.75+i*.43)%cycle:(age*.38+i*(cycle/smokeCount))%cycle;
+   const progress=t/cycle;
+   const curlAngle=age*0.48+i*0.58;
+   const curlR=Math.pow(progress,1.18)*(fastTrail?0.32:2.2);
+   const swirlX=Math.cos(curlAngle)*curlR*(fastTrail?.25:.65);
+   const swirlZ=Math.sin(curlAngle)*curlR*(fastTrail?.25:.65);
+   const wandering=Math.sin(age*0.7+i*1.8)*size*(fastTrail?.25:.55);
+   const scale=fastTrail?size*(.85+t*.30):size*(1.85+Math.pow(t,1.22)*1.95);
+   const y=fastTrail?.5+t*.80:1.6+Math.pow(t,1.52)*4.2;
+   const highWind=fastTrail?0:Math.min(26.0,Math.pow(t,1.22)*1.5);
+
+   _offset.set(
+    wandering+swirlX+t*(fastTrail?.12:.28)+windDirection.x*windAtFire*t*2.0-highWind,
+    y+windDirection.y*windAtFire*t*.75,
+    swirlZ+.3+Math.cos(i*.8)*.25+windDirection.z*windAtFire*t*2.0
+   );
+   _v1.copy(pos).add(_offset);
+
+   const alt=Math.max(0,_v1.y-pos.y);
+   const altFade=Math.max(0.05,Math.pow(Math.max(0,1.0-progress),2.1));
+   const altitudeDissipation=fastTrail?1.0:altFade;
+   const puffAlpha=Math.sin(Math.pow(progress,0.60)*Math.PI)*(fastTrail?.20:(.38-.12*suppression)*altitudeDissipation)*(1-windAtFire*.55);
+   const sootLerp=Math.min(1.0,Math.max(0.0,sootFactor));
+
+   if(sootLerp>0.04){
+    _col1.copy(defaultSmokeColor).lerp(sootColor,sootLerp);
+   }else{
+    _col1.copy(defaultSmokeColor);
+   }
+   smoke.add(_v1,scale,scale*(fastTrail?1.20:1.28),puffAlpha,Math.sin(i*1.2+age*.25)*0.5,_col1);
   }
  }
- function water(from,to,width=.12){const delta=to.clone().sub(from),length=delta.length(),steps=Math.min(56,Math.max(12,Math.ceil(length*2)));for(let i=0;i<steps;i++){const t=(i+(clock*9%1))/steps;const p=from.clone().addScaledVector(delta,t);p.y+=Math.sin(t*Math.PI)*Math.min(5,length*.13);const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),angle=Math.atan2(-delta.dot(right),delta.dot(up));spray.add(p,width*(1+t*1.5),Math.max(width*2,length/steps*2),.7,angle)}for(let i=0;i<12;i++){const a=clock*7+i*2.4,r=.2+(i%4)*.18;spray.add(to.clone().add(new T.Vector3(Math.cos(a)*r,Math.abs(Math.sin(a))*r,Math.sin(a)*r)),.23,.32,.4)}}
- return {begin,fire,setWind,water,burst,shock,flush(){for(const p of pools)p.flush()},reset(){puffs.length=0;rings.length=0;windStrength=0;for(const p of pools){p.n=0;p.flush()}},setVisible(on){for(const p of pools)p.m.visible=on},stats:()=>({drawBatches:4,puffs:puffs.length,shockwaves:rings.length,windStrength})};
+
+ function steamBurst(pos,power=1){
+  const num=Math.min(20,Math.max(4,Math.round(7*power)));
+  for(let i=0;i<num;i++){
+   const p=puffs[puffHead];puffHead=(puffHead+1)%MAX_PUFFS;
+   p.active=true;
+   p.p.set(pos.x+(Math.random()-.5)*1.8,0.2,pos.z+(Math.random()-.5)*1.8);
+   p.v.set((Math.random()-.5)*1.4,3.2+Math.random()*3.5,(Math.random()-.5)*1.4);
+   p.age=0;p.life=1.1+Math.random()*1.4;p.size=1.2+Math.random()*power*1.1;p.isSteam=true;
+  }
+ }
+
+ function water(from,to,width=.14){
+  _delta.subVectors(to,from);
+  const length=_delta.length();
+  if(length<0.1)return;
+  _right.set(1,0,0).applyQuaternion(camera.quaternion);
+  _up.set(0,1,0).applyQuaternion(camera.quaternion);
+  const angle=Math.atan2(-_delta.dot(_right),_delta.dot(_up));
+
+  // RC165: High-speed aerated stream droplets (fast, white, transparent)
+  const streamSpeed=32.0+Math.random()*8.0;
+  const flightTime=length/streamSpeed;
+  for(let k=0;k<3;k++){
+   const pvx=(_delta.x/length)*streamSpeed+(Math.random()-0.5)*1.2;
+   const pvz=(_delta.z/length)*streamSpeed+(Math.random()-0.5)*1.2;
+   const pvy=(_delta.y/length)*streamSpeed+Math.min(6.5,length*0.16)+(Math.random()-0.5)*0.8;
+   const dropletWidth=width*(0.9+Math.random()*0.6);
+   spawnWaterParticle(from.x,from.y,from.z,pvx,pvy,pvz,flightTime*(1.0+k*0.1),dropletWidth,dropletWidth*3.6,0.45,false,waterWhiteColor);
+  }
+
+  // Aerodynamically-elongated continuous stream core
+  const steps=Math.min(9,Math.max(4,Math.ceil(length*0.55)));
+  for(let i=0;i<steps;i++){
+   const t=(i+(clock*12.0%1))/steps;
+   _v1.copy(from).addScaledVector(_delta,t);
+   _v1.y+=Math.sin(t*Math.PI)*Math.min(4.8,length*0.13);
+   const w=width*(1.0+t*1.8);
+   const lenFactor=1.8+t*1.2; // Forward droplet elongation
+   spray.add(_v1,w,w*lenFactor,0.40*(1.0-t*0.28),angle,waterWhiteColor);
+  }
+
+  // Terminal foaming splash and fine atomized white mist
+  for(let i=0;i<3;i++){
+   const a=clock*10.0+i*2.09,r=0.25+Math.random()*0.45;
+   _v1.set(to.x+Math.cos(a)*r,to.y+Math.abs(Math.sin(a))*r*0.6+0.1,to.z+Math.sin(a)*r);
+   spray.add(_v1,0.36,0.36,0.34,0,waterFoamColor);
+  }
+ }
+
+ return {
+  begin,fire,setWind,water,waterJet,waterSpray,syncSubwayCraters,burst,shock,dustBurst,demolitionDustWave,sparks,steamBurst,
+  getWaterParticleCount:()=>waterParticles.filter(p=>p.active).length,
+  flush(){for(const p of pools)p.flush();},
+  reset(){
+   puffs.forEach(p=>p.active=false);
+   rings.forEach(r=>r.active=false);
+   dustPuffs.forEach(d=>d.active=false);
+   sparkPuffs.forEach(s=>s.active=false);
+   waterParticles.forEach(w=>w.active=false);
+   windStrength=0;
+   for(const p of pools){p.n=0;p.flush();}
+  },
+  setVisible(on){for(const p of pools)p.m.visible=on;},
+  stats:()=>({
+   drawBatches:pools.length,
+   activeWaterParticles:waterParticles.filter(p=>p.active).length,
+   activeDustPuffs:dustPuffs.filter(d=>d.active).length,
+   activeBrickDustPuffs:dustPuffs.filter(d=>d.active&&d.col===brickDustColor).length,
+   activeSparks:sparkPuffs.filter(s=>s.active).length,
+   smokePuffs:smoke.n
+  })
+ };
 }

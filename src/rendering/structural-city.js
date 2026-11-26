@@ -1,6 +1,8 @@
 import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '../simulation/structural-dynamics.js';
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
+
+
 export function createStructuralCity(THREE,scene,bank){
  const groups={front:new THREE.Group(),backNear:new THREE.Group(),backMid:new THREE.Group(),backFar:new THREE.Group(),school:new THREE.Group()};
  for(const [name,g] of Object.entries(groups)){g.name='structural-'+name;scene.add(g)}
@@ -10,11 +12,11 @@ export function createStructuralCity(THREE,scene,bank){
  const materials={
   brick:bank.getBuilding('brick',0x965f4c),brickBrown:bank.getBuilding('brick',0x7a4a3d),brickRed:bank.getBuilding('brick',0x96533f),brickTan:bank.getBuilding('brick',0xa2715c),stone:bank.getBuilding('limestone',0xc9bcaa),stoneGray:bank.getBuilding('limestone',0xb8b2a9),cream:bank.getBuilding('limestone',0xd3c4a8),creamWarm:bank.getBuilding('limestone',0xcbb79b),
   concrete:bank.concrete,roof:bank.roof,frame:bank.blackMetal,
-  plaster:new THREE.MeshStandardMaterial({color:0xc2b7a3,roughness:.94}),wood:new THREE.MeshStandardMaterial({color:0x67503e,roughness:.8}),
-  furniture:new THREE.MeshStandardMaterial({color:0x53606b,roughness:.62}),
-  glass:new THREE.MeshStandardMaterial({color:0x7d9ea9,roughness:.17,metalness:.18,transparent:true,opacity:.37,depthWrite:false,side:THREE.DoubleSide}),
-  room:new THREE.MeshStandardMaterial({color:0xe1d3b1,roughness:.88,emissive:0xf3bd77,emissiveIntensity:.05}),
-  red:new THREE.MeshStandardMaterial({color:0x874232,roughness:.8})};
+  plaster:new THREE.MeshStandardMaterial({color:0xc2b7a3,roughness:.95,metalness:0,envMapIntensity:0.02}),wood:new THREE.MeshStandardMaterial({color:0x67503e,roughness:.85,metalness:0,envMapIntensity:0.02}),
+  furniture:new THREE.MeshStandardMaterial({color:0x53606b,roughness:.72,metalness:0.05}),
+  glass:new THREE.MeshPhysicalMaterial({color:0x6295ad,roughness:.08,metalness:.32,clearcoat:1.0,clearcoatRoughness:.08,envMapIntensity:2.4,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide}),
+  room:new THREE.MeshStandardMaterial({color:0xe1d3b1,roughness:.90,metalness:0,emissive:0xf3bd77,emissiveIntensity:.05}),
+  red:new THREE.MeshStandardMaterial({color:0x874232,roughness:.88,metalness:0})};
  // World-sized texture projection keeps brick courses coherent across many wall pieces.
  for(const key of ['brick','brickBrown','brickRed','brickTan','stone','stoneGray','cream','creamWarm']){
   const material=materials[key];material.onBeforeCompile=shader=>{
@@ -35,7 +37,8 @@ export function createStructuralCity(THREE,scene,bank){
  }
  const densities={column:4,slab:4,roof:3,wall:2,facade:2,window:.18,frame:.4,furniture:.7,stair:1.8,partition:.65,foundation:8};
  function addPart(b,type,mat,x,y,z,w,h,d,floor=0,rotation=0){
-  const p={id:parts.length,building:b,type,mat,floor,position:new THREE.Vector3(x,y,z),size:new THREE.Vector3(w,h,d),rotation:new THREE.Euler(0,rotation,0),state:'attached',health:type==='column'?1.65:type==='window'?.18:1,velocity:new THREE.Vector3(),spin:new THREE.Vector3(),age:0};
+  const initHealth = type==='column'?(b.school?12.0:4.5):type==='window'?.18:2.0;
+  const p={id:parts.length,building:b,type,mat,floor,position:new THREE.Vector3(x,y,z),size:new THREE.Vector3(w,h,d),rotation:new THREE.Euler(0,rotation,0),state:'attached',health:initHealth,velocity:new THREE.Vector3(),spin:new THREE.Vector3(),age:0};
   p.original={position:p.position.clone(),rotation:p.rotation.clone(),size:p.size.clone()};p.mass=Math.max(.05,w*h*d*(densities[type]||1));
   parts.push(p);b.parts.push(p);return p;
  }
@@ -80,17 +83,13 @@ export function createStructuralCity(THREE,scene,bank){
      if(f===b.stories-1){
       addPart(b,'facade',wall,x,b.h+.24,front+.16,bw-.025,.20,.48,f);
       addPart(b,'facade','stone',x,b.h+.49,front+.23,bw-.025,.12,.62,f);
-     }
-    }
-    // Active Broad Street upper-storey masonry reveals, not the unused facade atlas.
-    // These are real facade parts in existing stone instancing batches: impacts,
-    // structural collapse and restart affect them exactly like surrounding walls.
-    if(historicSash&&!o.background&&!o.institutional){
-     const cap=addPart(b,'facade','stone',x,wy+glassH*.5+.22,front+.34,Math.min(.36,glassW*.26),.31,.28,f);
-     cap.detail='historic-keystone';b.sections.push(cap);
-     for(const side of [-1,1]){
-      const jamb=addPart(b,'facade','stone',x+side*(glassW*.5+.10),wy,front+.29,.15,glassH*.91,.24,f);
-      jamb.detail='historic-jamb';b.sections.push(jamb);
+      if(o.ornateRoofline){
+       addPart(b,'facade','stone',x,b.h+.74,front+.25,bw-.025,.24,.52,f);
+       if(ix===0||ix===bayCount-1){
+        addPart(b,'facade','stone',x,b.h+1.12,front+.20,bw*.86,.52,.44,f);
+        addPart(b,'roof','roof',x,b.h+1.02,b.z+.5,bw*.88,.62,b.d*.35,f);
+       }
+      }
      }
     }
     if(bayProjection){for(const side of [-1,1])addPart(b,'facade',wall,x+side*(bw*.5-.10),base+sh*.5,b.front+bayProjection*.5,.20,sh-.6,bayProjection,f);}
@@ -104,20 +103,112 @@ export function createStructuralCity(THREE,scene,bank){
     addPart(b,'wall',wall,x,base+sh*.5,z0,bw-.03,sh-.16,.22,f);
    }
    for(const x of [x0,x0+b.w])for(let iz=0;iz<tileZ;iz++)addPart(b,'wall',wall,x,base+sh*.5,z0+(iz+.5)*b.d/tileZ,.25,sh-.15,b.d/tileZ-.03,f);
-   // Rooms, corridor openings and stairs on every floor, including rear buildings.
-   const rooms=o.exteriorOnly?0:b.background?2:Math.max(2,Math.floor(b.w/4));
-   for(let room=0;room<rooms;room++){
-    const cx=x0+(room+.5)*b.w/rooms;
-    if(room<rooms-1){const px=x0+(room+1)*b.w/rooms;addPart(b,'partition','plaster',px,base+sh*.48,b.z+2,.10,sh-.35,b.d*.42,f);addPart(b,'partition','plaster',px,base+sh*.82,b.z-1,.10,sh*.25,2,f)}
-    const roomWidth=b.w/rooms-.12,doorWidth=Math.min(.95,roomWidth*.35),jamb=(roomWidth-doorWidth)/2;
-    for(const side of [-1,1])addPart(b,'partition','room',cx+side*(doorWidth+jamb)/2,base+sh*.5,b.z-2,jamb,sh-.32,.10,f);
-    addPart(b,'partition','room',cx,base+sh-.45,b.z-2,doorWidth,.6,.10,f);
-    // Table/desk, legs, cabinet and upholstered chair/sofa. Shared instances.
-    const tx=cx+(room%2?-.35:.35),tz=b.front-2.1;
-    addPart(b,'furniture','wood',tx,base+.92,tz,Math.min(1.5,b.w/rooms*.60),.12,.8,f);
-    for(const dx of [-.48,.48])addPart(b,'furniture','frame',tx+dx,base+.52,tz,.07,.75,.55,f);
-    addPart(b,'furniture','furniture',tx,base+.55,tz-.7,.60,.12,.55,f);addPart(b,'furniture','furniture',tx,base+.9,tz-.95,.6,.68,.10,f);
-    addPart(b,'furniture','wood',cx,base+.65,b.z-1.6,.8,1.15,.45,f);
+   // Authentic Interior Furniture & Room Partition Layouts
+   // Populated for ALL buildings: houses, businesses, storefronts, and church.
+   // Visible when facades are blown open; detaches and tumbles into street rubble on collapse.
+   const isMcDonalds = b.name === 'mcdonalds-2109-broad';
+   const isPharmacy = b.name === 'former-cvs-2131-broad';
+   const isChurch = b.name === 'south-diamond-corner';
+   const isTakeoutShop = b.name === 'susquehanna-crown-chicken' || b.name === 'north-red-brick-shop';
+   const isOffice = b.name.includes('fund') || b.name === 'pcs-for-people' || b.name === 'broad-2129-newman' || b.name === 'north-2300-corner-commercial';
+
+   if (isMcDonalds && f === 0) {
+    // McDonald's Fast-Food Dining, Counter & Kitchen
+    for (const bx of [x0 + 3.2, x0 + 6.2, x0 + 9.2]) {
+     addPart(b,'furniture','wood',bx,base+0.76,b.front-2.6,1.4,0.08,0.75,f);
+     addPart(b,'furniture','frame',bx,base+0.38,b.front-2.6,0.12,0.72,0.12,f);
+     addPart(b,'furniture','red',bx,base+0.44,b.front-2.6+0.62,1.4,0.12,0.42,f);
+     addPart(b,'furniture','red',bx,base+0.82,b.front-2.6+0.80,1.4,0.65,0.10,f);
+     addPart(b,'furniture','red',bx,base+0.44,b.front-2.6-0.62,1.4,0.12,0.42,f);
+     addPart(b,'furniture','red',bx,base+0.82,b.front-2.6-0.80,1.4,0.65,0.10,f);
+    }
+    addPart(b,'furniture','creamWarm',b.x+1.2,base+0.52,b.z,6.2,1.05,0.85,f);
+    for (const rx of [-1.8, 0, 1.8]) {
+     addPart(b,'furniture','frame',b.x+1.2+rx,base+1.24,b.z-0.05,0.42,0.36,0.32,f);
+    }
+    addPart(b,'furniture','frame',b.x+1.2,base+2.6,b.z,5.8,0.65,0.25,f);
+    addPart(b,'furniture','frame',b.x+5.8,base+0.65,b.z-3.2,2.4,1.1,0.9,f);
+    addPart(b,'furniture','frame',b.x+5.8,base+0.50,b.z+2.4,2.6,0.95,0.8,f);
+   } else if (isPharmacy && f === 0) {
+    // CVS / Pharmacy Retail Gondolas & Pharmacy
+    for (const gx of [-6.5, -2.2, 2.2, 6.5]) {
+     addPart(b,'furniture','frame',b.x+gx,base+0.85,b.front-4.5,0.72,1.65,5.8,f);
+     addPart(b,'furniture','furniture',b.x+gx,base+0.55,b.front-4.5,0.76,0.08,5.7,f);
+     addPart(b,'furniture','furniture',b.x+gx,base+1.15,b.front-4.5,0.76,0.08,5.7,f);
+    }
+    addPart(b,'furniture','creamWarm',b.x-7.8,base+0.50,b.front-1.8,2.8,0.95,0.80,f);
+    addPart(b,'furniture','frame',b.x-7.8,base+1.16,b.front-1.8,0.45,0.36,0.38,f);
+    addPart(b,'furniture','creamWarm',b.x+3.5,base+0.55,b.z-4.2,5.6,1.10,0.85,f);
+    addPart(b,'furniture','wood',b.x+3.5,base+1.10,b.z-7.5,5.4,2.10,0.45,f);
+   } else if (isChurch && f === 0) {
+    // Berean Presbyterian Church Nave & Interior
+    for (let row = 0; row < 8; row++) {
+     const pz = b.front - 5.0 - row * 3.4;
+     for (const side of [-1, 1]) {
+      addPart(b,'furniture','wood',b.x+side*5.2,base+0.48,pz,4.6,0.12,0.62,f);
+      addPart(b,'furniture','wood',b.x+side*5.2,base+0.88,pz-0.26,4.6,0.68,0.08,f);
+     }
+    }
+    addPart(b,'furniture','wood',b.x,base+0.55,b.z-12.0,3.4,1.0,1.1,f);
+    addPart(b,'furniture','wood',b.x-2.4,base+0.70,b.z-9.0,1.1,1.35,0.85,f);
+    for (let tr = 0; tr < 6; tr++) {
+     addPart(b,'furniture','wood',b.x,base+b.h*0.75,b.front-5.5-tr*5.8,b.w*0.82,0.45,0.45,f);
+    }
+   } else {
+    // Residential Rowhouses, Apartments, Commercial Shops & Offices
+    const rooms = b.background ? 2 : Math.max(2, Math.floor(b.w / 4));
+    for (let room = 0; room < rooms; room++) {
+     const cx = x0 + (room + 0.5) * b.w / rooms;
+     if (room < rooms - 1) {
+      const px = x0 + (room + 1) * b.w / rooms;
+      addPart(b,'partition','plaster',px,base+sh*.48,b.z+2,.10,sh-.35,b.d*.42,f);
+      addPart(b,'partition','plaster',px,base+sh*.82,b.z-1,.10,sh*.25,2,f);
+     }
+     const roomWidth = b.w / rooms - .12, doorWidth = Math.min(.95, roomWidth * .35), jamb = (roomWidth - doorWidth) / 2;
+     for (const side of [-1, 1]) addPart(b,'partition','room',cx+side*(doorWidth+jamb)/2,base+sh*.5,b.z-2,jamb,sh-.32,.10,f);
+     addPart(b,'partition','room',cx,base+sh-.45,b.z-2,doorWidth,.6,.10,f);
+
+     if (isOffice) {
+      const tx = cx + (room % 2 ? -0.35 : 0.35), tz = b.front - 2.2;
+      addPart(b,'furniture','wood',tx,base+0.74,tz,1.4,0.08,0.75,f);
+      addPart(b,'furniture','frame',tx,base+0.36,tz,1.2,0.68,0.60,f);
+      addPart(b,'furniture','frame',tx,base+1.02,tz-0.12,0.52,0.40,0.08,f);
+      addPart(b,'furniture','furniture',tx,base+0.46,tz+0.65,0.48,0.85,0.48,f);
+      addPart(b,'furniture','frame',cx+1.1,base+0.65,b.z-1.5,0.50,1.20,0.60,f);
+     } else if (isTakeoutShop && f === 0) {
+      const tx = cx, tz = b.front - 2.0;
+      addPart(b,'furniture','creamWarm',tx,base+0.52,tz,Math.min(1.8, b.w/rooms*.8),1.05,0.75,f);
+      addPart(b,'furniture','frame',tx,base+1.18,tz,0.45,0.32,0.35,f);
+      addPart(b,'furniture','furniture',tx,base+0.42,tz+0.9,0.38,0.82,0.38,f);
+     } else if (f === 0) {
+      // Ground floor residential living room
+      const sofaX = cx + (room % 2 ? -0.35 : 0.35), sofaZ = b.front - 2.1;
+      addPart(b,'furniture','furniture',sofaX,base+0.42,sofaZ,1.65,0.36,0.82,f);
+      addPart(b,'furniture','furniture',sofaX,base+0.76,sofaZ-0.35,1.65,0.62,0.20,f);
+      addPart(b,'furniture','furniture',sofaX-0.86,base+0.54,sofaZ,0.18,0.50,0.82,f);
+      addPart(b,'furniture','furniture',sofaX+0.86,base+0.54,sofaZ,0.18,0.50,0.82,f);
+      addPart(b,'furniture','wood',sofaX,base+0.36,sofaZ+0.92,1.05,0.08,0.55,f);
+      addPart(b,'furniture','frame',sofaX,base+0.16,sofaZ+0.92,0.85,0.30,0.40,f);
+      addPart(b,'furniture','wood',cx,base+0.40,b.z-1.8,1.25,0.46,0.42,f);
+      addPart(b,'furniture','frame',cx,base+0.88,b.z-1.8,1.05,0.55,0.06,f);
+      addPart(b,'furniture','wood',cx+(room%2?1.3:-1.3),base+0.92,b.z-2.4,0.92,1.80,0.32,f);
+      addPart(b,'furniture','wood',cx,base+0.74,b.z+1.6,1.30,0.08,0.80,f);
+      addPart(b,'furniture','furniture',cx-0.42,base+0.44,b.z+1.6,0.40,0.82,0.40,f);
+      addPart(b,'furniture','furniture',cx+0.42,base+0.44,b.z+1.6,0.40,0.82,0.40,f);
+     } else {
+      // Upper floors: Bedroom
+      const bedX = cx + (room % 2 ? -0.32 : 0.32), bedZ = b.front - 2.2;
+      addPart(b,'furniture','wood',bedX,base+0.22,bedZ,1.60,0.26,1.95,f);
+      addPart(b,'furniture','furniture',bedX,base+0.46,bedZ,1.52,0.26,1.85,f);
+      addPart(b,'furniture','wood',bedX,base+0.90,bedZ-0.95,1.60,0.92,0.12,f);
+      addPart(b,'furniture','wood',bedX+(room%2?1.05:-1.05),base+0.28,bedZ-0.65,0.45,0.52,0.42,f);
+      addPart(b,'furniture','wood',cx+(room%2?-1.25:1.25),base+0.85,b.z-1.4,1.10,1.65,0.52,f);
+      const deskX = cx + (room % 2 ? 0.65 : -0.65);
+      addPart(b,'furniture','wood',deskX,base+0.72,b.z+1.1,1.15,0.08,0.62,f);
+      addPart(b,'furniture','frame',deskX,base+0.35,b.z+1.1,1.00,0.66,0.48,f);
+      addPart(b,'furniture','furniture',deskX,base+0.44,b.z+1.6,0.42,0.82,0.42,f);
+     }
+    }
    }
    const stairX=x0+Math.min(1.5,b.w*.18),stairZ=z0+1.0;
    if(!o.exteriorOnly&&f<b.stories-1){for(let step=0;step<12;step++)addPart(b,'stair','concrete',stairX,base+.22+step*sh/12,stairZ+step*.24,1.0,.14,.27,f);
@@ -140,12 +231,12 @@ export function createStructuralCity(THREE,scene,bank){
  function fragmentBurst(pos,count=50,glass=false,power=1,chunkScale=1){if(!particlesEnabled)return;for(let i=0;i<count;i++){
   const kind=glass?2:i%2,slot=chipCursor++%1600,key=kind*1600+slot;
   const size=(glass?.05+Math.random()*.16:.06+Math.random()*.19)*chunkScale;
-  const p={position:pos.clone(),size:new THREE.Vector3(size*(glass?2:1.3),glass?size*1.5:size,glass?.008:size),rotation:new THREE.Euler(Math.random()*3,Math.random()*3,0),velocity:new THREE.Vector3((Math.random()-.5)*12*power,(2+Math.random()*7)*power,(Math.random()-.15)*9*power),spin:new THREE.Vector3(Math.random()*7,Math.random()*8,Math.random()*6),age:0,kind,slot,sleep:false};chips[key]=p;
+  const origin=(pos?.isVector3||typeof pos?.clone==='function')?pos.clone():new THREE.Vector3(pos?.x||0,pos?.y||0,pos?.z||0);const p={position:origin.clone(),size:new THREE.Vector3(size*(glass?2:1.3),glass?size*1.5:size,glass?.008:size),rotation:new THREE.Euler(Math.random()*3,Math.random()*3,0),velocity:new THREE.Vector3((Math.random()-.5)*12*power,(2+Math.random()*7)*power,(Math.random()-.15)*9*power),spin:new THREE.Vector3(Math.random()*7,Math.random()*8,Math.random()*6),age:0,kind,slot,sleep:false};chips[key]=p;
  }}
  // Bounded dust pool: one draw, shared texture, no per-impact lights.
  const dustMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:bank.images?.dust||null,color:0x8b8174,transparent:true,opacity:.20,depthWrite:false}),96);dustMesh.count=96;dustMesh.frustumCulled=false;scene.add(dustMesh);const dustAlpha=new THREE.InstancedBufferAttribute(new Float32Array(96),1);dustMesh.geometry.setAttribute('dustAlpha',dustAlpha);dustMesh.material.onBeforeCompile=shader=>{shader.vertexShader='attribute float dustAlpha;varying float vDustAlpha;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvDustAlpha=dustAlpha;');shader.fragmentShader='varying float vDustAlpha;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a*=vDustAlpha;')};const dust=[];let dustCursor=0;const pile=new Map();
  for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);
- function dustBurst(pos,power=1){if(!particlesEnabled)return;for(let i=0;i<8;i++){const slot=dustCursor++%96;dust[slot]={position:pos.clone(),age:0,life:3+Math.random()*3,size:(.8+Math.random())*power,v:new THREE.Vector3((Math.random()-.5)*power*3,.3+Math.random(),(Math.random()-.5)*power)};}}
+ function dustBurst(pos,power=1){if(!particlesEnabled||!pos)return;const origin=(pos.isVector3||typeof pos.clone==='function')?pos.clone():new THREE.Vector3(pos.x||0,pos.y||0,pos.z||0);for(let i=0;i<8;i++){const slot=dustCursor++%96;dust[slot]={position:origin.clone(),age:0,life:3+Math.random()*3,size:(.8+Math.random())*power,v:new THREE.Vector3((Math.random()-.5)*power*3,.3+Math.random(),(Math.random()-.5)*power)};}}
  const contact=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:bank.images?.dust||null,color:0x17130f,transparent:true,opacity:.26,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}),512);contact.count=512;contact.frustumCulled=false;scene.add(contact);for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);let contactCursor=0;
  const pileKey=p=>Math.floor(p.x/1.5)+':'+Math.floor(p.z/1.5);
  function settle(p){dummy.position.set(p.position.x,.17,p.position.z);dummy.rotation.set(-Math.PI/2,0,p.rotation.y);dummy.scale.set(Math.max(.5,p.size.x)*1.3,Math.max(.5,p.size.z,p.size.y)*1.2,1);dummy.updateMatrix();contact.setMatrixAt(contactCursor++%512,dummy.matrix);contact.instanceMatrix.needsUpdate=true;p.state='settled';moving.delete(p);const key=pileKey(p.position);pile.set(key,Math.min(1.8,(pile.get(key)||0)+Math.min(.12,p.size.x*p.size.y*p.size.z*.025)));}
@@ -157,10 +248,16 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function write(p){
   if(!p.bucket?.mesh)return;
-  dummy.position.copy(p.position);dummy.rotation.copy(p.rotation);dummy.scale.copy(p.size);dummy.updateMatrix();
   const {mesh,broken}=p.bucket;
-  mesh.setMatrixAt(p.index,p.state==='attached'&&!p.building.hideIntactGeometry?dummy.matrix:zero);
   const detached=p.state==='falling'||p.state==='settled';
+  if(p.building.hideIntactGeometry && !detached && ['wall','facade','column','foundation','roof','frame','window'].includes(p.type)){
+   mesh.setMatrixAt(p.index,zero);
+   broken.setMatrixAt(p.index,zero);
+   dirty.add(p.bucket);
+   return;
+  }
+  dummy.position.copy(p.position);dummy.rotation.copy(p.rotation);dummy.scale.copy(p.size);dummy.updateMatrix();
+  mesh.setMatrixAt(p.index,p.state==='attached'?dummy.matrix:zero);
   if(detached||broken.visible){
    broken.setMatrixAt(p.index,detached?dummy.matrix:zero);
    broken.instanceMatrix.needsUpdate=true;
@@ -171,48 +268,136 @@ export function createStructuralCity(THREE,scene,bank){
  function detach(p,origin,power=1,blast=false){
   if(p.state!=='attached'||p.type==='foundation')return 0;
   if(p.type==='window'){p.state='removed';write(p);fragmentBurst(p.position,14,true,power);return 1}
-  p.state='falling';p.age=0;const dx=p.position.x-origin.x,dz=p.position.z-origin.z;
+  p.state='falling';p.age=0;
   const weight=Math.sqrt(Math.max(1,p.mass));
-  p.velocity.set(blast?dx*.9*power/weight:(Math.random()-.5)*.25,blast?Math.min(.7,2*power/weight):-.25,blast?(dz*.6+2)*power/weight:(Math.random()-.5)*.25);
+  const b=p.building;
+  const toBX=(b?.x||0)-p.position.x, toBZ=(b?.z||0)-p.position.z;
+  const distB=Math.hypot(toBX,toBZ)||1.0;
+  const isInterior=['slab','partition','furniture','stair','column'].includes(p.type);
+
+  if(isInterior&&b){
+   const implodeP=(power/weight)*(blast?2.2:1.1);
+   p.velocity.set(
+    (toBX/distB)*implodeP+(Math.random()-.5)*0.35,
+    blast?-0.8:-0.3,
+    (toBZ/distB)*implodeP+(Math.random()-.5)*0.35
+   );
+  }else{
+   const dx=p.position.x-origin.x,dz=p.position.z-origin.z;
+   p.velocity.set(blast?dx*.9*power/weight:(Math.random()-.5)*.25,blast?Math.min(.7,2*power/weight):-.25,blast?(dz*.6+2)*power/weight:(Math.random()-.5)*.25);
+  }
   const turn=blast?.65:.18;p.spin.set((Math.random()-.5)*turn,(Math.random()-.5)*turn,(Math.random()-.5)*turn);
   if(p.size.y>p.size.z*2)p.spin.x=(Math.random()<.5?-1:1)*.28;
+  if(p.type==='furniture'){
+   p.spin.set((Math.random()-.5)*4.5*power,(Math.random()-.5)*3.8*power,(Math.random()-.5)*3.0*power);
+   p.velocity.z+=(Math.random()*2.8+1.4)*power;
+   p.velocity.y+=(Math.random()*2.2+0.8)*power;
+  }
   moving.add(p);
-  if(['wall','facade','column'].includes(p.type))fragmentBurst(p.position,5,false,power);return 1;
+  if(['wall','facade','column'].includes(p.type))fragmentBurst(p.position,5,false,power);
+  if(p.type==='furniture')fragmentBurst(p.position,3,false,power*0.8);
+  return 1;
  }
  function impact(b,point,radius=5,strength=1){
   if(!b||b.damage>=1)return 0;let removed=0;
-  const resistance=b.school?1.7:1;
-  for(const p of b.parts){if(p.state!=='attached'||p.type==='foundation')continue;const distance=distanceToBox(point,p);if(distance>radius)continue;p.bucket.mesh.setColorAt(p.index,new THREE.Color().setScalar(.38+.38*Math.min(1,distance/radius)));p.bucket.mesh.instanceColor.needsUpdate=true;
-   p.health-=strength*(1-distance/(radius*1.2))*2.2/resistance;
-   if(p.health<=0||p.type==='window')removed+=detach(p,point,strength,true);
+  const origin = (point?.isVector3 || typeof point?.clone === 'function') ? point : new THREE.Vector3(point?.x||0, point?.y||0, point?.z||0);
+  const resistance=b.school?14.0:3.8;
+  const isRoofHit = origin.y >= b.h - 2.8;
+  const isLowerHit = origin.y < b.h * 0.45;
+  for(const p of b.parts){
+   if(p.state!=='attached'||p.type==='foundation')continue;
+   const distance=distanceToBox(origin,p);
+   if(distance>radius*0.85)continue;
+   p.bucket.mesh.setColorAt(p.index,new THREE.Color().setScalar(.38+.38*Math.min(1,distance/radius)));
+   p.bucket.mesh.instanceColor.needsUpdate=true;
+   const isTopRoof = p.type==='roof' || p.original.position.y > b.h * 0.82;
+   // Localized physics: roof crumples if hit directly near roof height;
+   // lower/mid hits leave roof intact overhead!
+   if(isTopRoof && !isRoofHit && isLowerHit) continue;
+   const coreCrater = distance < radius * 0.65;
+   const fragilePart = (p.type === 'window' && distance < radius * 0.90) || (p.type === 'furniture' && distance < radius * 0.80);
+   p.health -= strength * (1 - distance / (radius * 1.2)) * 3.5 / resistance;
+   if (p.health <= 0 || coreCrater || fragilePart) {
+     removed += detach(p, origin, strength, true);
+   }
   }
-  b.pressure=Math.min(1,b.pressure+strength*(b.school?.10:.38));b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);b.collapseClock=0;
-  dustBurst(point,Math.min(3,radius*.3));
-  fragmentBurst(point,Math.min(120,Math.round(35+radius*9)),false,strength);return removed;
+  b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.18));
+  if(!b.school) b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
+  b.collapseClock=0;
+  dustBurst(origin,Math.min(3,radius*.3));
+  fragmentBurst(origin,Math.min(120,Math.round(35+radius*9)),false,strength);
+  return removed;
  }
  function forceDamage(b,value){
   const target=Math.max(0,Math.min(1,value));b.pressure=Math.max(b.pressure,target);b.damage=Math.max(b.damage,target);
-  const count=Math.floor(b.structuralParts.length*target);const ordered=[...b.structuralParts].sort((a,b)=>b.original.position.y-a.original.position.y);for(let i=0;i<count;i++)detach(ordered[i],ordered[i].position,.5);
-  if(target>=1)for(const p of b.parts)detach(p,p.position,.6);
+  // School health is a cumulative gauge, NOT a list of entire floors to tear
+  // away. Its physical structural pieces already fracture at the actual meteor
+  // impact in impact(); the separate source-FBX damage mask and rebuild model
+  // follow the same hit. Do not strip the tallest 5–15% of ALL school pieces
+  // every time syncStructuralDamage() reconciles the health indicator.
+  if(b.school&&target<1)return;
+  const count=Math.floor(b.structuralParts.length*target);
+  // Procedural 3D chunk damage: detach in organic volumetric clusters,
+  // leaving upper floor sections and roofs partially intact over blown-out cavities.
+  const bSeed = Math.abs(Math.sin(b.x * 12.9898 + b.z * 78.233)) * 43758.5453;
+  const chunks = [
+    new THREE.Vector3(b.x + (bSeed % 1 - 0.5) * b.w * 0.6, b.h * 0.35, b.z + ((bSeed * 1.3) % 1 - 0.5) * b.d * 0.6),
+    new THREE.Vector3(b.x + ((bSeed * 2.7) % 1 - 0.5) * b.w * 0.7, b.h * 0.65, b.z + ((bSeed * 3.1) % 1 - 0.5) * b.d * 0.5),
+    new THREE.Vector3(b.x + ((bSeed * 4.9) % 1 - 0.5) * b.w * 0.5, b.h * 0.45, b.z + ((bSeed * 5.3) % 1 - 0.5) * b.d * 0.7),
+  ];
+  const partScores = b.structuralParts.map(p => {
+    let minDist = Infinity;
+    for (const c of chunks) {
+      const d = p.original.position.distanceTo(c);
+      if (d < minDist) minDist = d;
+    }
+    const isTopRoof = p.type === 'roof' || p.original.position.y > b.h * 0.82;
+    const roofBias = (isTopRoof && target < 0.82) ? 8.0 : 0.0;
+    const noise = Math.sin(p.original.position.x * 2.1 + p.original.position.y * 1.7 + p.original.position.z * 3.3) * 1.5;
+    return { part: p, score: minDist + roofBias + noise };
+  });
+  partScores.sort((a, b) => a.score - b.score);
+  for (let i = 0; i < count; i++) detach(partScores[i].part, partScores[i].part.position, 0.5);
+  if(target>=0.88){
+    for(const p of b.parts){
+      if(p.state==='attached'&&p.type!=='foundation')detach(p,p.position,.6);
+    }
+  }
  }
  function update(dt){time+=dt;
-  for(const b of buildings){if(b.pressure===0&&b.damage===0)continue;b.collapseClock-=dt;if(b.collapseClock>0)continue;b.collapseClock=.16;
+  for(const b of buildings){
+   if(b.pressure===0&&b.damage===0)continue;
+   b.collapseClock-=dt;
+   if(b.collapseClock>0)continue;
+   b.collapseClock=0.25;
    const support=supportedFloors(b.parts,b.stories);
-   const catastrophic=b.pressure>=1&&b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length>.78;
+   const lostRatio=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
+   const catastrophic=!b.school&&b.pressure>=0.98&&lostRatio>0.92;
    let shed=0;
-   for(const p of b.parts){if(p.state!=='attached'||p.type==='foundation')continue;
-    if(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached')){p.failureAt??=time+.12+p.floor*.10+Math.random()*.15;if(time>=p.failureAt){detach(p,p.position,.65);if(++shed>65)break}}
-    else if(p.type==='frame'&&p.original.position.z>b.front-.1){const attached=b.sections.some(w=>w.state==='attached'&&w.floor===p.floor&&Math.abs(w.position.x-p.position.x)<b.w/(b.bays||2));if(!attached)detach(p,p.position,.5)}
+   for(const p of b.parts){
+    if(p.state!=='attached'||p.type==='foundation')continue;
+     const isTopRoof=p.type==='roof'||p.original.position.y>b.h*0.80;
+     if(!b.school&&isTopRoof&&!catastrophic&&(support[p.floor]||p.supports?.some(c=>c.state==='attached')))continue;
+    if(!b.school&&(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached'))){
+     p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
+     if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}
+    }
+    else if(p.type==='frame'&&p.original.position.z>b.front-.1){
+     const attached=b.sections.some(w=>w.state==='attached'&&w.floor===p.floor&&Math.abs(w.position.x-p.position.x)<b.w/(b.bays||2));
+     if(!attached)detach(p,p.position,.5)
+    }
     else if(p.type==='furniture'||p.type==='partition'||p.type==='stair'){
-     // Interior contents lose their floor when the local floor tile is removed.
      const floor=b.slabs.some(s=>s.floor===p.floor&&s.state==='attached'&&Math.abs(s.position.x-p.position.x)<s.size.x*.6&&Math.abs(s.position.z-p.position.z)<s.size.z*.6);
      if(!floor)detach(p,p.position,.5);
     }
    }
    const lost=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
-   b.damage=Math.max(b.damage,lost);if(lost>.97)b.damage=1;
+   if(!b.school){
+    b.damage=Math.max(b.damage,lost);
+    if(lost>.97)b.damage=1;
+   }
   }
-  for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const ground=.08+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
+  for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const b=p.building;const insideB=b&&Math.abs(p.position.x-b.x)<b.w*0.48&&Math.abs(p.position.z-b.z)<b.d*0.48;const basementDepth=insideB?1.8:0;const ground=(.08-basementDepth)+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
    // Floor collisions: falling heavy slabs break supports below them; furniture lands.
    if(p.velocity.y<0&&p.age>.15){const b=p.building;for(let f=b.stories-1;f>=0;f--){const y=f*b.floorHeight+.28;if(oldBottom>=y&&p.position.y-p.size.y*.5<y){const slab=b.slabs.find(s=>s.floor===f&&s.state==='attached'&&Math.abs(s.position.x-p.position.x)<s.size.x*.5&&Math.abs(s.position.z-p.position.z)<s.size.z*.5);if(slab){if(p.mass>2.5&&Math.abs(p.velocity.y)>3){detach(slab,p.position,.8);fragmentBurst(p.position,8)}else{p.position.y=y+p.size.y*.5;p.velocity.y*=-.12;p.velocity.x*=.5;p.velocity.z*=.5;if(Math.abs(p.velocity.y)<.3){p.state='settled';moving.delete(p)}}break}}}}
    if(asleep)settle(p);write(p);
@@ -221,11 +406,12 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
-  b.hideIntactGeometry=!visible;for(const p of b.parts)write(p);
+  b.hideIntactGeometry=!visible;
+  for(const p of b.parts)write(p);
   for(const bucket of dirty){bucket.mesh.instanceMatrix.needsUpdate=true;}dirty.clear();return true;
  }
  return {fireAnchorHeight,buildings,groups,addBuilding,finalize,impact,forceDamage,update,restore,fragmentBurst,setIntactBuildingVisible,

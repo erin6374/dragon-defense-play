@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>v21 · North Broad · Review 18 architectural openings</title><link rel="stylesheet" href="./version-badge.css?v=21.0.0">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{background:#17262a;color:#eff5f2;font:15px/1.5 system-ui,Segoe UI,sans-serif;margin:0}main{max-width:1250px;padding:22px 16px;margin:auto}h1{font-size:1.5rem;margin:0}h2{font-size:1.07rem}p{max-width:95ch}a{color:#a6f0db}header{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;align-items:center}section{border:1px solid #485d5a;border-radius:10px;padding:15px;margin:16px 0;background:#203339}input,select,button{border-radius:5px;padding:10px;font:inherit;background:#e6f1ed;color:#142728;border:0}input{width:min(100%,460px)}.controls{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.counts{display:flex;gap:15px;flex-wrap:wrap;color:#c7e1d5}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;min-width:900px}td,th{border-bottom:1px solid #435755;padding:12px 8px;text-align:left;vertical-align:top}th{font-size:.83rem;position:sticky;top:0;background:#2b4449}td:first-child{font-weight:700}.good{color:#b7efc5}.partial{color:#f3d9a7}.dim{color:#b3c5c3}.tag{font-size:.79rem;border:1px solid #789c93;padding:3px 6px;border-radius:5px;display:inline-block}.src{max-width:270px;overflow-wrap:anywhere}small{color:#bccfcc}code{color:#e7efbf}
+</style>
+<div id="bsv-edition-bar" data-build-id="BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE" role="status" aria-label="Current viewer version">
+<div><span class="bsv-big">BROAD STREET VIEWER · v21.1.1</span> <span class="bsv-sub">Accuracy Review 20 · 3D with protected fallback</span></div>
+<div><span class="bsv-id">Build BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE</span><div id="bsv-version-status" class="bsv-status">Checking edition…</div></div>
+<a href="mapped.html?build=v20-CHRONOLOGY-60" title="Open the latest local mapped viewer">Open v20 3D viewer</a>
+</div>
+<main><header><h1>North Broad Street · window and door accuracy audit</h1><nav><a href="mapped.html">Back to interactive viewer</a> · <a href="review-20.html">Prior 20-building review</a></nav></header>
+<p>This review inventories <b>40 saved GIS footprint records</b> including rear-only and split building sections. It does not claim 40 separate broadside facades. The 3D viewer renders photo-informed openings on mapped street-facing portions, while retaining custom original school, church, landmark, and provisional structures.</p>
+<section><h2>How to interpret the counts</h2><p>A window is a <b>principal architectural opening</b>. A bay with several panes counts as one bay; glass mullions are not extra windows. Counts represent the model's major street-facing openings, and are tagged <em>photo-visible</em>, <em>photo-partial</em>, or <em>estimated</em>. Unknown door counts are shown as —, rather than fabricated. Exact dimensions and hidden street-level openings still require verification.</p><div class="counts" id="counts"></div><div class="controls"><input id="search" aria-label="Search address or evidence" placeholder="Search street address, source, evidence…"><select id="filter"><option value="all">All 40 parts</option><option value="photo-visible">Photo-visible windows</option><option value="photo-partial">Partially visible</option><option value="estimated">Estimated windows</option><option value="unconfirmed">Unconfirmed / original</option><option value="street">Street-facing mapped parts</option><option value="rear">Rear / set-back parts</option></select><button id="export">Download JSON inventory</button></div><small id="filtered"></small></section>
+<div class="scroll"><table><thead><tr><th>Building (select in 3D)</th><th>Principal windows / level</th><th>Upper levels</th><th>Ground windows / shopfront banks</th><th>Street doors</th><th>Proportional model sizes</th><th>Evidence</th><th>Reference and exceptions</th></tr></thead><tbody id="rows"></tbody></table></div>
+<section><h2>Important limitations</h2><p>Do not infer the number of doors from a blocked storefront shutter or an architectural bay's individual glass panels. The saved municipal footprints determine massing and frontage. Source photos are retained in your existing ChatGPT Library and identified by filename; Google Street View image copies have not been bundled into this package. The school relies on its original 3D architecture, not a new imaginary window grid. Buildings marked rear-only must not be treated as new properties on Broad Street.</p></section>
+<script type="module">
+import {openingProfile,openingSurvey} from './opening-survey-15.mjs';
+const data=await fetch('./mapped-data.json').then(r=>r.json());const profiles=openingSurvey(data.rows);
+const $=id=>document.getElementById(id),render=()=>{
+ const query=$('search').value.trim().toLowerCase(),filter=$('filter').value;
+ const filtered=profiles.filter(p=>{
+  if(query&&![p.address,p.notes,p.sourceFile,p.windowEvidence,p.doorEvidence].join(' ').toLowerCase().includes(query))return false;
+  if(filter==='street')return p.hasStreetFront;
+  if(filter==='rear')return !p.hasStreetFront;
+  if(filter==='unconfirmed')return !p.windowEvidence.includes('photo')&&!p.windowEvidence.includes('estimated');
+  if(filter==='all')return true;
+  return p.windowEvidence===filter;
+ });
+ const cell=(text,tag='td')=>{const n=document.createElement(tag);n.textContent=text===null||text===undefined?'—':String(text);return n};
+ const fragment=document.createDocumentFragment();for(const p of filtered){
+  const tr=document.createElement('tr');const a=document.createElement('a');a.href='mapped.html#'+encodeURIComponent(p.id);a.textContent=p.address+' · '+p.id;const title=cell('');title.append(a);tr.append(title);
+  tr.append(cell(p.bays),cell(p.upperLevels),cell(p.groundWindows),cell(p.doors),cell(`${p.windowWidthMeters} × ${p.windowHeightMeters} m window; ${p.doorWidthMeters} × ${p.doorHeightMeters} m door`));
+  const ev=cell(p.windowEvidence+' / door '+p.doorEvidence);ev.className=p.windowEvidence==='photo-visible'?'good':p.windowEvidence==='estimated'?'partial':'dim';tr.append(ev);
+  tr.append(cell((p.sourceFile?p.sourceFile.split('/').at(-1)+' · ':'')+p.notes));fragment.append(tr);
+ }
+ $('rows').replaceChildren(fragment);$('filtered').textContent=`Showing ${filtered.length} of ${profiles.length} records`;
+};
+$('counts').textContent=`40 footprint records · ${profiles.filter(p=>p.renderMode==='opening-layout-15').length} regenerated building fronts · ${profiles.filter(p=>p.windowEvidence==='photo-visible').length} photo-visible opening patterns · ${profiles.filter(p=>p.renderMode==='rear-preserved').length} rear or set-back records left unverified`;
+$('search').oninput=render;$('filter').onchange=render;$('export').onclick=()=>{
+ const u=URL.createObjectURL(new Blob([JSON.stringify({review:'15',records:profiles},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='north-broad-opening-survey-15.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)
+};render();
+</script></main><script defer src="./version-badge.js?v=21.0.0"></script></html>

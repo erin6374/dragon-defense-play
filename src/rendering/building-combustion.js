@@ -113,7 +113,7 @@ void main(){
  alpha=(1.-exp(-density*.66))*.24*vPower*envelope;
  color=mix(vec3(.28,.30,.32),vec3(.70,.72,.73),
   clamp(.40+shade*.17+height*.14,0.,1.));
- color+=vec3(.13,.048,.012)*exp(-height*8.)*(1.-min(1.,abs(displaced)));
+ color+=vec3(.48,.16,.028)*exp(-height*6.5)*(1.-min(1.,abs(displaced)))*vPower;
  #elif KIND == 2
  float d=length((q-.5)*2.);alpha=(1.-smoothstep(.2,1.,d))*sin(vAge*3.14159)*vPower;
  color=mix(vec3(1.,.63,.13),vec3(.8,.12,.005),vAge);
@@ -184,26 +184,6 @@ export function createBuildingCombustion(parent,capacity,name='building-combusti
    for(let k=0;k<count;k++){const i=index*count+k;a.setXYZ(i,x,y,z);b.setXYZW(i,w,h,seed,k<budget?power:0);geometry.attributes.surface.setX(i,surface);}
    a.needsUpdate=b.needsUpdate=geometry.attributes.surface.needsUpdate=true;
   });
- }
- // Read-only deterministic QA evidence; never mutate source buffers or GPU time.
- // Exclude the intentionally toggled smoke opacity uniform from comparisons.
- function qaSnapshot(){
-  return {name,capacity,activeCount,lastActive,visible:group.visible,
-   clock:uniforms.clock.value,sourceBufferWrites,unchangedSetSkips,unchangedActiveSkips,
-   sources:sources.map(s=>[s.active,s.x,s.y,s.z,s.w,s.h,s.seed,s.power,s.lod,s.surface]),
-   batches:batches.map(({geometry,count})=>({
-    count,instanceCount:geometry.instanceCount,
-    sourceVersion:geometry.attributes.source.version,
-    settingsVersion:geometry.attributes.settings.version,
-    surfaceVersion:geometry.attributes.surface.version,
-    source:Array.from(geometry.attributes.source.array),
-    settings:Array.from(geometry.attributes.settings.array),
-    surface:Array.from(geometry.attributes.surface.array)
-   }))};
- }
- if(typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('qa')==='1'){
-  const registry=window.__DD_COMBUSTION_QA||(window.__DD_COMBUSTION_QA=[]);
-  registry.push({name,snapshot:qaSnapshot});
  }
  function clear(index){set(index,0,0,0,0,0,0,0);}
  return {group,sources,set,clear,update(time){uniforms.clock.value=time;},

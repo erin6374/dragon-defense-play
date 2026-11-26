@@ -20,6 +20,14 @@ export function configureStreetMapping(material,tilesPerUnit){
    #ifdef USE_ROUGHNESSMAP
    vRoughnessMapUv = streetUv;
    #endif`);
+  if(shader.fragmentShader && shader.fragmentShader.includes('#include <roughnessmap_fragment>')){
+   shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+    #ifdef USE_ROUGHNESSMAP
+    float puddleNoise = fract(sin(dot(vRoughnessMapUv.xy * 0.38, vec2(12.9898, 78.233))) * 43758.5453);
+    float puddleMask = smoothstep(0.46, 0.74, puddleNoise);
+    roughnessFactor = mix(roughnessFactor, roughnessFactor * 0.42, puddleMask * 0.62);
+    #endif`);
+  }
  };
  material.customProgramCacheKey=()=>`street-world-uv-v1-${tilesPerUnit}`;
  material.needsUpdate=true;

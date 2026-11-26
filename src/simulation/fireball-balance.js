@@ -1,30 +1,117 @@
 // Deterministic player fireball and shockwave meteor balance.
-export const MAX_PLAYABLE_METEORS=48;
-const OPENING_WAVES=[
- {count:1,size:8,kind:'stone'},
- {count:2,size:8,kind:'stone'},
- {count:1,size:11,kind:'flaming'},
- {count:2,size:11,kind:'flaming'}
-];
-export function openingMeteorWave(wave){return OPENING_WAVES[wave-1]??null;}
+export const MAX_PLAYABLE_METEORS = 24;
 
-export function fireballMeteorDamage(m,playerFire=true,ordinaryShockDamage=0){
- if(m.indestructible)return 0;
- if(!playerFire)return ordinaryShockDamage;
- if(m.boss)return 5; // preserve the multi-hit finale
- return Math.max(1,Number.isFinite(m.hp)?m.hp:1);
+const OPENING_WAVES = [
+  { count: 6, size: 13.5, kind: 'molten' },
+  { count: 8, size: 10.0, kind: 'molten' },
+  { count: 12, size: 10.0, kind: 'flaming' },
+  { count: 16, size: 11.0, kind: 'flaming' }
+];
+
+export function openingMeteorWave(wave) {
+  return OPENING_WAVES[wave - 1] ?? null;
 }
-export function meteorSplitPlan(m,activeCount=0){
- const room=Math.max(0,MAX_PLAYABLE_METEORS-activeCount);
- if(!room||m.indestructible||m.grounded||m.dragonHunter)return {count:0,size:0};
- if(m.boss)return {count:Math.min(6,room),size:1.52};
- if(m.opening){
-  const generation=m.generation||0;
-  const childSizes=m.kind==='stone'?[2.5,1.45,.65]:[3.2,1.65,.8];
-  const size=childSizes[generation]??0;
-  return {count:size?Math.min(generation===0?2:3,room):0,size};
- }
- if((m.generation||0)>=2||m.size<1.1)return {count:0,size:0};
- if(m.size>=1.8)return {count:Math.min(3,room),size:Math.min(1.62,1.36+Math.max(0,m.size-1.8)*.18)};
- return {count:Math.min(3,room),size:Math.min(.88,.66+Math.max(0,m.size-1.1)*.23)};
+
+export function getWave1SpawnConfig(spawnIndex) {
+  if (spawnIndex === 0) {
+    return {
+      stage: 'colossus',
+      isMassive: true,
+      colossus: true,
+      size: 13.5,
+      hp: 5,
+      kind: 'molten',
+      x: 0,
+      vy: -8.5,
+      notice: '🚨 EXTRA LARGE COLOSSAL METEOR INCOMING! INTERCEPT BEFORE IMPACT!'
+    };
+  }
+  if (spawnIndex === 1) {
+    return {
+      stage: 'twin_massive',
+      isMassive: true,
+      colossus: false,
+      size: 10.5,
+      hp: 4,
+      kind: 'molten',
+      x: -36,
+      vy: -9.0,
+      notice: '⚠️ MASSIVE METEOR APPROACHING! DEFEND THE WEST FLANK!'
+    };
+  }
+  if (spawnIndex === 2) {
+    return {
+      stage: 'twin_massive',
+      isMassive: true,
+      colossus: false,
+      size: 10.5,
+      hp: 4,
+      kind: 'molten',
+      x: 36,
+      vy: -9.0,
+      notice: '⚠️ MASSIVE METEOR APPROACHING! DEFEND THE EAST FLANK!'
+    };
+  }
+  const size = 3.8 + (spawnIndex % 2) * 0.4;
+  return {
+    stage: 'barrage',
+    isMassive: false,
+    colossus: false,
+    size,
+    hp: 2,
+    kind: 'flaming',
+    x: ((spawnIndex % 2 === 0 ? 1 : -1) * (18 + (spawnIndex * 12) % 45)),
+    vy: -9.5,
+    notice: spawnIndex === 3 ? '☄️ LARGE METEORS DETECTED — INTERCEPT AND SHATTER!' : null
+  };
+}
+
+export function fireballMeteorDamage(m, playerFire = true, ordinaryShockDamage = 0) {
+  if (m.indestructible) return 0;
+  if (!playerFire) return ordinaryShockDamage;
+  if (m.boss) return 5;
+  // Colossus & Massive meteors take 2 clean fire hits or 1 buster ram
+  if (m.isMassive || (m.size && m.size >= 5.5)) {
+    return 2.5;
+  }
+  if (m.size && m.size >= 2.8) {
+    return 2.0;
+  }
+  // Medium and Small meteors shatter in 1 hit!
+  return Math.max(1, Number.isFinite(m.hp) ? m.hp : 1);
+}
+
+// Universal 5-Tier Hierarchical Meteor Breakup:
+// Tier 1: Giant/Colossal/Extra Large (size >= 5.5) -> 2 Large (size ~4.2)
+// Tier 2: Large (size >= 2.8) -> 2 Medium (size ~2.2)
+// Tier 3: Medium (size >= 1.4) -> 2 Small (size ~1.05)
+// Tier 4: Small (size < 1.4) -> Harmless particles/dust/shrapnel rain (0 rock spawns)
+// Tier 5: Harmless particle shower rains harmlessly down onto ground (0 damage)
+export function meteorSplitPlan(m, activeCount = 0) {
+  // Free 1 slot for parent being destroyed, guaranteeing room for fragments
+  const room = Math.max(1, MAX_PLAYABLE_METEORS - Math.max(0, activeCount - 1));
+  if (m.indestructible || m.grounded || m.dragonHunter) {
+    return { count: 0, size: 0, tier: 'particles', harmless: true };
+  }
+  if (m.boss) {
+    return { count: Math.min(3, Math.max(1, room)), size: 2.0, tier: 'medium', harmless: false };
+  }
+
+  // Tier 1: Giant / Colossal / Extra Large (size >= 5.5) -> 2 Large (size ~4.0)
+  if (m.isMassive || m.colossus || (m.size && m.size >= 5.5)) {
+    return { count: Math.min(2, Math.max(1, room)), size: 4.0, tier: 'large', isLargeSplitter: true, harmless: false };
+  }
+
+  // Tier 2: Large (size >= 2.6) -> 2 Medium (size ~2.0)
+  if (m.size && m.size >= 2.6) {
+    return { count: Math.min(2, Math.max(1, room)), size: 2.0, tier: 'medium', harmless: false };
+  }
+
+  // Tier 3: Medium (size >= 1.3) -> 2 Small (size ~0.95)
+  if (m.size && m.size >= 1.3) {
+    return { count: Math.min(2, Math.max(1, room)), size: 0.95, tier: 'small', harmless: false };
+  }
+
+  // Tier 4: Small (< 1.3) -> Breaks into harmless dust/particles, 0 rock spawns
+  return { count: 0, size: 0, tier: 'particles', harmless: true };
 }

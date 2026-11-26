@@ -1,5 +1,22 @@
 <!doctype html><html lang="en"><head>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%90%89%3C/text%3E%3C/svg%3E"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b36"><link rel="manifest" href="./manifest.webmanifest"><title>Tech Freire: Dragon Defense v5.5 RC59 — Smoke Sheet Variation Review</title><style>*{box-sizing:border-box}body{margin:0;background:#080d20;color:#e8f3ff;font-family:system-ui,Arial;overflow:hidden}canvas{display:block}#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;gap:12px;justify-content:space-between;pointer-events:none;text-shadow:0 2px 4px #000;font-weight:900}#hud>div{background:linear-gradient(165deg,rgba(8,15,25,.88),rgba(20,31,45,.74));border:1px solid rgba(136,177,210,.65);padding:10px 14px;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05)}.health-bar{width:150px;height:12px;background:#561c29;border-radius:4px;overflow:hidden;margin-top:5px}#healthbar{background:linear-gradient(90deg,#fbd64a,#35e889);height:100%;width:100%}#bottom{position:fixed;bottom:14px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;align-items:end;pointer-events:none}#bottom>*{pointer-events:auto}button{background:linear-gradient(180deg,#304860,#24374d);color:white;border:1px solid #7fa3bd;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22)}button:hover{background:linear-gradient(180deg,#3b5977,#2a425b)}#overlay{position:fixed;inset:0;background:#071127b8;display:grid;place-items:center;z-index:10}#panel{width:min(500px,92vw);background:linear-gradient(160deg,#101a27,#16283b);border:2px solid #84b7dd;border-radius:18px;padding:28px;text-align:center;box-shadow:0 25px 90px rgba(0,0,0,.48)}h1{color:#ffcf54;letter-spacing:2px;margin:0 0 12px}p{line-height:1.55}small{color:#b7cce6}#toast{position:fixed;top:88px;left:50%;transform:translateX(-50%);font-weight:900;font-size:24px;color:#ffd774;text-shadow:0 2px 6px black;pointer-events:none}#notice{position:fixed;right:10px;bottom:68px;color:#abc0d9;font-size:11px;text-shadow:0 1px 3px black;pointer-events:none}@media(max-width:650px){#hud{font-size:11px;gap:3px}#hud>div{padding:7px}.health-bar{width:75px}#bottom{font-size:12px}}</style><style>
+<script>
+// Unregister all legacy service workers & clear caches to prevent Brave/Chrome serving stale code (e.g. rc63)
+(function(){
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        for (var i = 0; i < regs.length; i++) regs[i].unregister();
+      }).catch(function(){});
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        for (var i = 0; i < keys.length; i++) caches.delete(keys[i]);
+      }).catch(function(){});
+    }
+  } catch(e){}
+})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%90%89%3C/text%3E%3C/svg%3E"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b36"><link rel="manifest" href="./manifest.webmanifest"><title>Dragon Defense — Integration Preview</title><style>*{box-sizing:border-box}body{margin:0;background:#080d20;color:#e8f3ff;font-family:system-ui,Arial;overflow:hidden}canvas{display:block}#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;gap:12px;justify-content:space-between;pointer-events:none;text-shadow:0 2px 4px #000;font-weight:900}#hud>div{background:linear-gradient(165deg,rgba(8,15,25,.88),rgba(20,31,45,.74));border:1px solid rgba(136,177,210,.65);padding:10px 14px;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05)}.health-bar{width:150px;height:12px;background:#561c29;border-radius:4px;overflow:hidden;margin-top:5px}#healthbar{background:linear-gradient(90deg,#fbd64a,#35e889);height:100%;width:100%}#bottom{position:fixed;bottom:14px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;align-items:end;pointer-events:none}#bottom>*{pointer-events:auto}button{background:linear-gradient(180deg,#304860,#24374d);color:white;border:1px solid #7fa3bd;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22)}button:hover{background:linear-gradient(180deg,#3b5977,#2a425b)}#overlay{position:fixed;inset:0;background:#071127b8;display:grid;place-items:center;z-index:10}#panel{width:min(500px,92vw);background:linear-gradient(160deg,#101a27,#16283b);border:2px solid #84b7dd;border-radius:18px;padding:28px;text-align:center;box-shadow:0 25px 90px rgba(0,0,0,.48)}h1{color:#ffcf54;letter-spacing:2px;margin:0 0 12px}p{line-height:1.55}small{color:#b7cce6}#toast{position:fixed;top:88px;left:50%;transform:translateX(-50%);font-weight:900;font-size:24px;color:#ffd774;text-shadow:0 2px 6px black;pointer-events:none}#notice{position:fixed;right:10px;bottom:68px;color:#abc0d9;font-size:11px;text-shadow:0 1px 3px black;pointer-events:none}@media(max-width:650px){#hud{font-size:11px;gap:3px}#hud>div{padding:7px}.health-bar{width:75px}#bottom{font-size:12px}}</style><style>
 /* Touch-first controls, without modifying the desktop UI. */
 #mobile-controls{display:none;position:fixed;inset:0;z-index:6;pointer-events:none;user-select:none;-webkit-user-select:none;touch-action:none}
 #mobile-controls button{pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;background:rgba(18,32,55,.65);border:2px solid rgba(185,217,242,.65);box-shadow:0 2px 12px #0008;border-radius:16px;min-width:55px;min-height:55px;padding:4px;font-size:21px;backdrop-filter:blur(5px)}
@@ -10,7 +27,7 @@
 @media(pointer:coarse),(max-width:850px){
  #mobile-controls{display:block}body,canvas{touch-action:none}
  #hud{top:4px;left:3px;right:3px;gap:2px;font-size:9px;flex-wrap:nowrap}#hud>div{padding:3px 4px;border-radius:4px;min-width:0}.health-bar{width:49px;height:7px;margin-top:1px}
- #bottom{bottom:150px;right:5px;left:auto;max-width:70%;display:block;text-align:right}#bottom>div:first-child{display:none}#bottom>div:last-child{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px}#bottom button{padding:5px 6px;font-size:10px}#bottom #gas-btn{display:none}
+ #bottom{bottom:150px;right:5px;left:auto;max-width:70%;display:block;text-align:right}#bottom>div:first-child{display:none}#bottom>div:last-child{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px}#bottom button{padding:5px 6px;font-size:10px}#bottom #gas-btn{display:none}#bottom #tactical-trial-btn{display:none}
  #power-status{top:52px;font-size:10px;padding:3px 5px;white-space:nowrap}#hunter-warning{top:90px!important;font-size:15px!important}#model-status{top:76px!important;font-size:9px!important}
  #notice{display:none}#panel{max-height:92%;overflow:auto;padding:13px!important}#panel h1{font-size:23px}#panel p{font-size:13px;margin:7px 0}
 }
@@ -127,6 +144,211 @@ body.cinematic-hud #wind-meter{bottom:9px!important;left:9px!important;min-width
 @media (max-width:850px), (pointer:coarse) {
  #incoming-radar {top:82px!important;bottom:auto!important;right:8px!important;}
 }
+</style><style>
+/* Unified Settings Modal & Director Sandbox Toolbar */
+#dd-unified-settings {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(3, 8, 18, 0.84);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+#dd-unified-settings[hidden] {
+  display: none !important;
+}
+#dd-settings-dialog {
+  width: min(740px, 96vw);
+  max-height: 88vh;
+  background: linear-gradient(165deg, #0d1829 0%, #132238 100%);
+  border: 2px solid #528bbd;
+  border-radius: 16px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.85), 0 0 30px rgba(82, 139, 189, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e2eeff;
+}
+.dd-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(15, 27, 47, 0.95);
+  border-bottom: 1px solid #34577e;
+}
+.dd-settings-tabs {
+  display: flex;
+  background: rgba(10, 18, 33, 0.98);
+  border-bottom: 1px solid #284466;
+  padding: 0 14px;
+  gap: 6px;
+  overflow-x: auto;
+}
+.dd-settings-tab {
+  background: transparent;
+  color: #9cb8d9;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 11px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+  white-space: nowrap;
+}
+.dd-settings-tab:hover {
+  background: rgba(45, 75, 115, 0.25);
+  color: #fff;
+}
+.dd-settings-tab.active {
+  color: #6ed3ff;
+  border-bottom-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+.dd-settings-content {
+  padding: 18px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+.dd-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dd-settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(17, 30, 52, 0.65);
+  border: 1px solid rgba(88, 146, 197, 0.3);
+  border-radius: 8px;
+  gap: 12px;
+}
+.dd-settings-row label {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #d1e5ff;
+}
+.dd-settings-row .desc {
+  font-size: 11px;
+  color: #8faecf;
+  margin-top: 2px;
+}
+.dd-toggle-btn {
+  background: linear-gradient(180deg, #22374e, #18283a);
+  border: 1px solid #537a9f;
+  color: #cbdbee;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dd-toggle-btn.active {
+  background: linear-gradient(180deg, #0284c7, #0369a1);
+  border-color: #38bdf8;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+.dd-opt-btn {
+  background: linear-gradient(180deg, #22374e, #18283a);
+  border: 1px solid #537a9f;
+  color: #cbdbee;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dd-opt-btn.active {
+  background: linear-gradient(180deg, #1d4ed8, #1e40af);
+  border-color: #60a5fa;
+  color: #fff;
+}
+.dd-atmo-btn, .dd-spawn-btn {
+  background: linear-gradient(180deg, #1f344d, #162638);
+  border: 1px solid #486f94;
+  color: #d8e8f8;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.dd-atmo-btn:hover, .dd-spawn-btn:hover {
+  background: linear-gradient(180deg, #2a4769, #1c334d);
+  border-color: #6ca0cf;
+}
+.dd-atmo-btn.active {
+  border-color: #38bdf8;
+  background: linear-gradient(180deg, #0284c7, #0369a1);
+  color: #fff;
+}
+
+/* Floating Director Sandbox Toolbar */
+#dd-sandbox-toolbar {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 125;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(9, 18, 34, 0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid #4a84b8;
+  border-radius: 12px;
+  padding: 6px 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(56, 189, 248, 0.25);
+}
+#dd-sandbox-toolbar[hidden] {
+  display: none !important;
+}
+.dd-tb-btn {
+  background: linear-gradient(180deg, #1f3652, #142438);
+  border: 1px solid #557d9f;
+  color: #e2f0ff;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dd-tb-btn:hover {
+  background: linear-gradient(180deg, #2b4b73, #1c324e);
+  border-color: #7db0dd;
+}
+.dd-tb-btn.active {
+  background: linear-gradient(180deg, #0284c7, #0369a1);
+  border-color: #38bdf8;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+.dd-tb-btn.danger {
+  background: linear-gradient(180deg, #991b1b, #600f14);
+  border-color: #ef4444;
+}
+.dd-tb-btn.success {
+  background: linear-gradient(180deg, #065f46, #047857);
+  border-color: #10b981;
+}
+
+/* Retain primary button visibility in cinematic HUD */
+body.cinematic-hud #bottom #sandbox-btn {
+  display: inline-block !important;
+}
 </style></head><body><div id="game-vignette" aria-hidden="true"></div><div id="hud"><div>TECH FREIRE<br><span style="color:#ffbf55">DRAGON DEFENSE</span><small id="hud-version">Loading build…</small></div><div>SCORE<br><span id="score">0</span></div><div>WAVE<br><span id="wave">1</span><br><small>DRAGON ♥ <span id="lives">3</span></small></div><div>BLOCK HEALTH <span id="block-wire" style="font-size:15px;color:#82c5ed">▱▤▥</span><div class="health-bar"><div id="blockbar" style="height:100%;width:100%;background:linear-gradient(90deg,#e8ae5b,#62c0ef)"></div></div><span id="blockhp">100%</span></div><div>SCHOOL HEALTH <span id="school-wire" style="font-size:15px;color:#e7caa0">▥▤▥</span><div class="health-bar"><div id="healthbar"></div></div><span id="hp">100%</span></div></div><div id="toast"></div><div id="campaign-chapter-label" style="position:fixed;top:112px;left:12px;z-index:4;font:700 12px system-ui;color:#ffce7c;background:#111d34d9;padding:6px 10px;border:1px solid #947149;border-radius:5px;pointer-events:none">CH 1 · THE METEOR MISTAKE</div>
 <div id="cinematic-player" hidden aria-label="In-game animated chapter cutscene"><iframe id="cinematic-frame" title="Chapter cinematic" allow="autoplay" loading="eager"></iframe><div id="cinematic-chapter"></div><button id="cinematic-skip" type="button">SKIP CUTSCENE ⏭</button></div><div id="campaign-transition" hidden role="dialog" aria-label="Chapter transition" style="position:fixed;inset:0;z-index:110;background:#060a17eb;display:grid;place-items:center;padding:20px">
  <div style="width:min(580px,95vw);background:linear-gradient(145deg,#20273d,#451f35);border:2px solid #c69a58;border-radius:16px;padding:30px;text-align:center;box-shadow:0 18px 80px #000b">
@@ -137,7 +359,314 @@ body.cinematic-hud #wind-meter{bottom:9px!important;left:9px!important;min-width
   <a data-chapter-cinematic href="./campaign/chapter1.html" target="_blank" rel="noopener" style="display:inline-block;padding:12px 18px;color:#1b1420;background:#ffd07c;border-radius:8px;font-weight:800;text-decoration:none;margin:5px">▶ WATCH CUTSCENE</a>
   <button id="campaign-continue" type="button" style="padding:12px 18px;margin:5px;background:#375b72;color:white;border:1px solid #8fc4dd;border-radius:8px;font-weight:800">CONTINUE GAME</button>
  </div>
-</div><div id="hunter-warning" style="position:fixed;top:145px;left:50%;transform:translateX(-50%);color:#ff8755;font-size:20px;font-weight:900;text-shadow:0 2px 8px #000;pointer-events:none;opacity:0;transition:opacity .3s;z-index:5"></div><div id="power-status" style="position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#101b36dd;padding:6px 12px;border:1px solid #6cb6d9;border-radius:6px;font-weight:bold;pointer-events:none;z-index:3">INTERCEPT 0/5 | RAPID 0s | SHIELD 0s</div><div id="bottom"><div style="background:#102044dd;padding:10px;border:1px solid #45648d;border-radius:8px">F3: performance stats · A/D or ←/→ move · W/S or ↑/↓ fly · Left click/Space: fire · RIGHT CLICK or F: gas<br><small>Protect the block and helicopters. Helicopters arrive wave 5, hostile after 8; hostile emergency vehicles wave 7. Avoid traffic.</small></div><div><button type="button" onclick="location.href='./campaign/index.html'">📖 Campaign</button> <button onclick="location.href='./model-inspector.html'">Inspect FBX</button> <button id="model-mode" disabled>Loading FBX…</button> <button id="cinema-hud-toggle" type="button" aria-pressed="false" title="Switch between film view and full controls (H)">🎬 Cinematic HUD (H)</button> <button id="call-block" type="button" disabled title="Chapter-specific neighborhood intervention">📣 CALL THE BLOCK 0%</button> <button id="gas-btn" title="Short range gas attack (F)">💨 GAS</button> <button id="sound-toggle">🔊 Sound On</button> <button id="export-stats" title="Download session metrics JSON">📊 Export Stats</button> <button id="fullscreen-btn" title="Toggle fullscreen">⛶ Fullscreen</button> <button id="paulo-toggle" type="button" aria-pressed="false" title="Switch original dragon and procedural Paulo preview (licensed European Dragon model not yet installed)">🐉 Model: Original</button> <button id="performance-lab-btn" title="Toggle scene systems and benchmark frame rates" aria-expanded="false" aria-controls="performance-lab-panel">🔬 Performance Lab</button> <button id="settings-btn">⚙ Settings</button> <button id="pause">Pause</button> <button id="restart">Restart</button></div></div><div id="model-status" style="position:fixed;left:12px;top:115px;font-size:12px;color:#ffce71;z-index:2">Loading cinematic rebuild…</div><div id="notice">TECH FREIRE · NORTH BROAD STREET · GAME BUILD INFORMATION BELOW</div><div id="game-build" aria-label="Game version and build identifier">Loading build…</div><div id="overlay"><div id="panel"><h1>🐉 DRAGON DEFENSE</h1><div id="start-build">Loading version…</div><p>Protect Tech Freire from the meteor storm! Fly freely above Broad Street, save news helicopters from meteors, and defend the block. One blast can intercept multiple meteors.</p><p><small>Perspective street camera · Mobile dragon · Massively overhauled visuals with same gameplay · Escalating waves</small></p><label for="difficulty" style="display:block;margin:12px 0">DIFFICULTY <select id="difficulty" style="padding:8px;background:#263d65;color:white;border:1px solid #88b5df;border-radius:5px"><option value="easy">Easy — slower, fewer meteors</option><option value="normal" selected>Normal</option><option value="hard">Hard — faster, more meteors</option></select></label><label>GRAPHICS <select id="graphics" style="padding:8px;background:#263d65;color:white;border:1px solid #88b5df"><option value="balanced" selected>Balanced (recommended)</option><option value="cinematic">Cinematic (powerful GPUs)</option><option value="mobile">Mobile (fastest)</option></select></label><br><br><label>START WAVE <input id="start-wave" type="number" min="1" max="15" value="1" style="width:75px;padding:8px"></label><br><br><button type="button" onclick="location.href='./campaign/index.html'">VIEW CAMPAIGN & CUTSCENES</button> <button id="start">START DEFENSE</button></div></div><script>
+</div><div id="hunter-warning" style="position:fixed;top:145px;left:50%;transform:translateX(-50%);color:#ff8755;font-size:20px;font-weight:900;text-shadow:0 2px 8px #000;pointer-events:none;opacity:0;transition:opacity .3s;z-index:5"></div><div id="power-status" style="position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#101b36dd;padding:6px 12px;border:1px solid #6cb6d9;border-radius:6px;font-weight:bold;pointer-events:none;z-index:3">INTERCEPT 0/5 | RAPID 0s | SHIELD 0s</div><div id="bottom"><div style="background:#102044dd;padding:10px;border:1px solid #45648d;border-radius:8px">F3: performance stats · A/D or ←/→ move · W/S or ↑/↓ fly · Left click/Space: fire · RIGHT CLICK or F: gas<br><small>Protect the block and helicopters. Helicopters arrive wave 5, hostile after 8; hostile emergency vehicles wave 7. Avoid traffic.</small></div><div><button id="gas-btn" title="Short range gas attack (F)">💨 GAS</button> <button id="call-block" type="button" disabled title="Chapter-specific neighborhood intervention">📣 CALL THE BLOCK 0%</button> <button id="cinema-hud-toggle" type="button" aria-pressed="false" title="Switch between film view and full controls (H)">🎬 Cinematic HUD (H)</button> <button id="sandbox-btn" type="button" title="Free-flight map inspection & director sandbox (F1)">🛠️ Sandbox</button> <button id="music-toggle-bottom" type="button" onclick="window.toggleMusic?.()" title="Toggle background music on/off">🎵 Music: ON</button> <button id="sfx-toggle-bottom" type="button" onclick="window.toggleSfx?.()" title="Toggle sound effects on/off">🔊 SFX: ON</button> <button id="settings-btn" title="Unified game & system settings (Esc)">⚙ Settings</button> <button id="pause">Pause</button> <button id="restart">Restart</button><button id="sound-toggle" style="display:none">🔊 Sound On</button><button id="model-mode" style="display:none" disabled>Loading FBX…</button><button id="tactical-trial-btn" style="display:none" type="button" title="Start compact 2.5-minute tactical defense test trial">🎯 Tactical Trial</button><button id="export-stats" style="display:none" title="Download session metrics JSON">📊 Export Stats</button><button id="fullscreen-btn" style="display:none" title="Toggle fullscreen">⛶ Fullscreen</button><button id="paulo-toggle" type="button" style="display:none;" aria-pressed="false" title="Paulo upgraded procedural dragon model active">🐉 Model: Paulo Upgraded</button><button id="performance-lab-btn" style="display:none" title="Toggle scene systems and benchmark frame rates" aria-expanded="false" aria-controls="performance-lab-panel">🔬 Performance Lab</button></div></div>
+<!-- UNIFIED SETTINGS MODAL -->
+<div id="dd-unified-settings" hidden role="dialog" aria-modal="true" aria-label="Game & System Settings">
+  <div id="dd-settings-dialog">
+    <div class="dd-settings-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">⚙️</span>
+        <h2 style="margin:0;font-size:17px;color:#ffe299;letter-spacing:1px">UNIFIED SETTINGS & DIRECTOR SUITE</h2>
+        <span style="font-size:11px;background:#1a324f;padding:3px 8px;border-radius:4px;color:#85c2ff;border:1px solid #3d72aa">v5.5 RC166</span>
+      </div>
+      <button id="dd-settings-close-btn" type="button" aria-label="Close Settings" style="background:#22374e;border:1px solid #638cb3;color:#e8f1ff;padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer">✕ Close (Esc)</button>
+    </div>
+    <div class="dd-settings-tabs" role="tablist">
+      <button class="dd-settings-tab active" data-tab="gameplay" role="tab" aria-selected="true">🎮 Gameplay & Starting Wave</button>
+      <button class="dd-settings-tab" data-tab="audio" role="tab" aria-selected="false">🔊 Audio & Music</button>
+      <button class="dd-settings-tab" data-tab="graphics" role="tab" aria-selected="false">🎨 Graphics & Display</button>
+      <button class="dd-settings-tab" data-tab="sandbox" role="tab" aria-selected="false">🛠️ Director & Sandbox</button>
+    </div>
+    <div class="dd-settings-content">
+      <!-- Tab 1: Gameplay -->
+      <div class="dd-settings-panel" data-panel="gameplay">
+        <div class="dd-settings-section">
+          <div class="dd-settings-row">
+            <div>
+              <label>Game Mode</label>
+              <div class="desc">Standard arcade wave defense vs. free-flight map exploration</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="dd-set-mode-defense" type="button" class="dd-opt-btn active">⚔️ Standard Defense</button>
+              <button id="dd-set-mode-sandbox" type="button" class="dd-opt-btn">✈️ Free-Flight Sandbox</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label for="dd-modal-start-wave">Start Wave (1 - 15)</label>
+              <div class="desc">Select starting wave; escalating colossal meteors and chapter missions</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input id="dd-modal-start-wave" type="range" min="1" max="15" value="1" style="width:140px;cursor:pointer">
+              <span id="dd-modal-start-wave-val" style="font-weight:900;color:#ffce71;min-width:28px;text-align:center">1</span>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label for="dd-modal-difficulty">Combat Difficulty</label>
+              <div class="desc">Scales meteor spawn rates, velocity, and damage multiplier</div>
+            </div>
+            <select id="dd-modal-difficulty" style="padding:8px 12px;background:#1e3552;color:#fff;border:1px solid #5a8ab8;border-radius:6px">
+              <option value="easy">Easy — Slower, fewer meteors</option>
+              <option value="normal" selected>Normal — Authentic challenge</option>
+              <option value="hard">Hard — Swarming rapid colossi</option>
+            </select>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Tactical Benchmark Trial</label>
+              <div class="desc">Launch a repeatable 2.5-minute defense benchmark with powerups</div>
+            </div>
+            <button id="dd-modal-trial-btn" type="button" style="background:linear-gradient(180deg,#1e5473,#123447);border:1px solid #6cb3de;color:#ffe699;padding:8px 16px;border-radius:6px;font-weight:bold">🎯 Launch Tactical Trial</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Story Campaign & Model Tools</label>
+              <div class="desc">View animated chapter cutscenes or inspect 3D assets</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" onclick="location.href='./campaign/index.html'" style="padding:8px 12px;background:#243950;border:1px solid #638cb0;color:#d8ecff;border-radius:6px">📖 Campaign</button>
+              <button type="button" onclick="location.href='./model-inspector.html'" style="padding:8px 12px;background:#243950;border:1px solid #638cb0;color:#d8ecff;border-radius:6px">🔍 FBX Inspector</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Audio -->
+      <div class="dd-settings-panel" data-panel="audio" hidden>
+        <div class="dd-settings-section">
+          <div class="dd-settings-row">
+            <div>
+              <label>Master Audio</label>
+              <div class="desc">Master audio output bus (affects all sounds, music, and foley)</div>
+            </div>
+            <button id="dd-audio-master-btn" type="button" class="dd-toggle-btn active">🔊 Audio: ON</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Music (Taiko War Drums & Victory Fanfares)</label>
+              <div class="desc">Dynamically tempo-synced Kodō Ō-daiko ensemble war drums and brass fanfares</div>
+            </div>
+            <button id="dd-audio-music-btn" type="button" class="dd-toggle-btn active">🎵 Music: ON</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Sound Effects (SFX & Foley)</label>
+              <div class="desc">Meteors, explosions, dragon roar, gas stream, sirens, and debris collapse</div>
+            </div>
+            <button id="dd-audio-sfx-btn" type="button" class="dd-toggle-btn active">💥 Sound Effects: ON</button>
+          </div>
+          <div style="background:rgba(12,25,44,0.6);border:1px solid #2f527a;border-radius:8px;padding:12px;font-size:12px;color:#a8cbee;line-height:1.5">
+            💡 <strong>Independent Audio Control:</strong> You can turn off music while keeping full sound effects (explosions, roars, sirens, water monitors), or mute sound effects while keeping music.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Graphics -->
+      <div class="dd-settings-panel" data-panel="graphics" hidden>
+        <div class="dd-settings-section">
+          <div class="dd-settings-row">
+            <div>
+              <label for="dd-modal-graphics">Graphics Preset</label>
+              <div class="desc">Shader fidelity, procedural 3D crater carving, volumetric smoke & lighting</div>
+            </div>
+            <select id="dd-modal-graphics" style="padding:8px 12px;background:#1e3552;color:#fff;border:1px solid #5a8ab8;border-radius:6px">
+              <option value="balanced" selected>Balanced — High fidelity (Recommended)</option>
+              <option value="cinematic">Cinematic — Ultra GPU shaders & shadows</option>
+              <option value="mobile">Mobile — High performance</option>
+            </select>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Display Mode</label>
+              <div class="desc">Toggle browser fullscreen mode for immersive flight</div>
+            </div>
+            <button id="dd-modal-fullscreen-btn" type="button" style="padding:8px 16px;background:#243950;border:1px solid #638cb0;color:#d8ecff;border-radius:6px;font-weight:bold">⛶ Toggle Fullscreen</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Cinematic HUD (H)</label>
+              <div class="desc">Hide tactical overlays and health bars for a cinematic movie view</div>
+            </div>
+            <button id="dd-modal-cinema-btn" type="button" class="dd-toggle-btn">🎬 Cinema HUD: OFF</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Performance Diagnostics & Stats</label>
+              <div class="desc">Inspect GPU draw calls, frame timings, and system telemetry</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="dd-modal-perf-lab-btn" type="button" style="padding:8px 14px;background:#243950;border:1px solid #638cb0;color:#d8ecff;border-radius:6px">🔬 Performance Lab</button>
+              <button id="dd-modal-export-stats-btn" type="button" style="padding:8px 14px;background:#243950;border:1px solid #638cb0;color:#d8ecff;border-radius:6px">📊 Export Stats JSON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Sandbox & Director -->
+      <div class="dd-settings-panel" data-panel="sandbox" hidden>
+        <div class="dd-settings-section">
+          <div class="dd-settings-row" style="background:rgba(20,40,70,0.7);border-color:#4895d9">
+            <div>
+              <label style="color:#7ed6ff;font-size:15px">Free-Flight Map Inspector Mode</label>
+              <div class="desc">Fly freely without incoming meteors, timers, or level change interruptions</div>
+            </div>
+            <button id="dd-sandbox-flight-toggle" type="button" class="dd-toggle-btn">✈️ Free-Flight: OFF</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Dragon & Breath / Wind Effects</label>
+              <div class="desc">Totally remove Paulo and all fire breath/wind effects for clean map inspection and unhindered test meteors</div>
+            </div>
+            <button id="dd-setting-dragon" type="button" onclick="window.toggleDragon?.()" class="dd-toggle-btn active">🐉 Dragon & Breath Effects: ON</button>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Time of Day & Atmosphere</label>
+              <div class="desc">Inspect North Broad Street under each level's distinct lighting and mood</div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <button type="button" class="dd-atmo-btn active" data-atmo="1">🌅 L1 Morning</button>
+              <button type="button" class="dd-atmo-btn" data-atmo="2">☀️ L2 Noon</button>
+              <button type="button" class="dd-atmo-btn" data-atmo="3">🌇 L3 Sunset</button>
+              <button type="button" class="dd-atmo-btn" data-atmo="4">🌌 L4 Twilight</button>
+              <button type="button" class="dd-atmo-btn" data-atmo="5">🌙 L5 Midnight</button>
+              <button type="button" class="dd-atmo-btn" data-atmo="orbit">🛰️ Orbit</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Developer Test Meteor Dropper</label>
+              <div class="desc">Click on any building or street to drop a test meteor and inspect procedural damage</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="dd-test-meteor-size" style="padding:6px 10px;background:#1e3552;color:#fff;border:1px solid #5a8ab8;border-radius:6px">
+                <option value="1.8">Small (1.8m)</option>
+                <option value="3.6" selected>Medium (3.6m)</option>
+                <option value="6.5">Colossal (6.5m)</option>
+                <option value="10.5">Titanic Cataclysm (10.5m)</option>
+                <option value="14.0">Extinction Megalith (14.0m)</option>
+              </select>
+              <select id="dd-test-meteor-kind" style="padding:6px 10px;background:#1e3552;color:#fff;border:1px solid #5a8ab8;border-radius:6px">
+                <option value="molten" selected>Molten Magma</option>
+                <option value="flaming">Flaming Bolide</option>
+                <option value="stone">Stone/Iron</option>
+              </select>
+              <button id="dd-meteor-tool-btn" type="button" class="dd-opt-btn active">🎯 Active (Click Scene)</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Firefighting & Emergency Response</label>
+              <div class="desc">Dispatch authentic Philadelphia fire engines and hose crews, or extinguish all fires</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="dd-dispatch-firefighters-btn" type="button" style="padding:8px 14px;background:linear-gradient(180deg,#9a3412,#7c2d12);border:1px solid #f97316;color:#fff;border-radius:6px;font-weight:bold">🚒 Dispatch Firefighters</button>
+              <button id="dd-extinguish-all-btn" type="button" style="padding:8px 14px;background:linear-gradient(180deg,#065f46,#047857);border:1px solid #10b981;color:#fff;border-radius:6px;font-weight:bold">🧯 Extinguish All Fires</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>City Life & Traffic Toggles</label>
+              <div class="desc">Toggle cars and pedestrians to inspect clean street architecture or active simulation</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="dd-traffic-toggle-btn" type="button" class="dd-toggle-btn active">🚗 Cars: ON</button>
+              <button id="dd-pedestrians-toggle-btn" type="button" class="dd-toggle-btn active">🚶 Crowd: ON</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Block Restoration & Simulation Speed</label>
+              <div class="desc">Instantly restore all structures and windows, or adjust simulation speed for physics inspection</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="dd-modal-repair-btn" type="button" style="padding:8px 14px;background:linear-gradient(180deg,#047857,#065f46);border:1px solid #10b981;color:#fff;border-radius:6px;font-weight:bold;cursor:pointer">🛠️ Repair Block</button>
+              <button id="dd-modal-slowmo-btn" type="button" class="dd-toggle-btn">⏱️ Slow-Mo: OFF</button>
+              <button id="dd-modal-barrage-btn" type="button" style="padding:8px 14px;background:linear-gradient(180deg,#b91c1c,#7f1d1d);border:1px solid #ef4444;color:#fff;border-radius:6px;font-weight:bold;cursor:pointer">☄️ Meteor Barrage</button>
+            </div>
+          </div>
+          <div class="dd-settings-row">
+            <div>
+              <label>Spawn Level Assets</label>
+              <div class="desc">Instantly spawn vehicles, aircraft, and powerups near your dragon</div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <button type="button" class="dd-spawn-btn" data-asset="helicopter_news">🚁 News Chopper</button>
+              <button type="button" class="dd-spawn-btn" data-asset="helicopter_police">🚁 Police Chopper</button>
+              <button type="button" class="dd-spawn-btn" data-asset="police">🚓 Police Car</button>
+              <button type="button" class="dd-spawn-btn" data-asset="ambulance">🚑 Ambulance</button>
+              <button type="button" class="dd-spawn-btn" data-asset="powerup_purple">💜 Purple Ram</button>
+              <button type="button" class="dd-spawn-btn" data-asset="powerup_blue">⚡ Blue Fireball</button>
+              <button type="button" class="dd-spawn-btn" data-asset="powerup_fire_stream">🔥 Fire Stream</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING DIRECTOR SANDBOX TOOLBAR -->
+<div id="dd-sandbox-toolbar" hidden role="toolbar" aria-label="Director & Free-Flight Sandbox Controls">
+  <span style="font-weight:900;color:#38bdf8;font-size:11.5px;padding:0 4px">✈️ FREE FLIGHT</span>
+  <button id="dd-tb-dragon" type="button" onclick="window.toggleDragon?.()" class="dd-tb-btn active" title="Toggle dragon and all breath fire/wind effects (clean spectator inspection with unhindered test meteors)">🐉 Dragon & Breath Effects: ON</button>
+  <button id="dd-tb-music" type="button" onclick="window.toggleMusic?.()" class="dd-tb-btn active" title="Toggle background music on/off">🎵 Music: ON</button>
+  <button id="dd-tb-sfx" type="button" onclick="window.toggleSfx?.()" class="dd-tb-btn active" title="Toggle sound effects on/off">🔊 SFX: ON</button>
+  <button id="dd-tb-meteor-tool" type="button" class="dd-tb-btn active" title="Click on any building or street to drop a test meteor">🎯 Test Meteor</button>
+  <button id="dd-tb-ignite" type="button" class="dd-tb-btn" title="Click on any building or street to ignite an untended fire">🔥 Ignite Fire</button>
+  <select id="dd-tb-meteor-size" title="Meteor impact size" style="padding:4px 6px;background:#152840;color:#fff;border:1px solid #4a759c;border-radius:6px;font-size:11px">
+    <option value="1.8">Small (1.8m)</option>
+    <option value="3.6" selected>Med (3.6m)</option>
+    <option value="6.5">Colossal (6.5m)</option>
+    <option value="10.5">💥 Titanic (10.5m)</option>
+    <option value="14.0">☄️ Extinction (14.0m)</option>
+  </select>
+  <select id="dd-tb-meteor-kind" title="Meteor Material Composition" style="padding:4px 6px;background:#152840;color:#fff;border:1px solid #4a759c;border-radius:6px;font-size:11px">
+    <option value="iron">⚙️ Heavy Dense Iron</option>
+    <option value="molten" selected>🔥 Molten Chondrite</option>
+    <option value="stone">🪨 Stony Silicate</option>
+  </select>
+  <button id="dd-tb-barrage" type="button" class="dd-tb-btn" title="Drop a multi-meteor cluster barrage">☄️☄️ Barrage</button>
+  <button id="dd-tb-firefighters" type="button" class="dd-tb-btn" title="Dispatch Philadelphia Firefighters to put out fires">🚒 Firefighters</button>
+  <button id="dd-tb-extinguish" type="button" class="dd-tb-btn success" title="Immediately extinguish all active fires">🧯 Put Out Fires</button>
+  <button id="dd-tb-repair" type="button" class="dd-tb-btn success" title="Instantly repair all buildings, roofs, and facades to 100% health">🛠️ Repair</button>
+  <button id="dd-tb-subway-cam" type="button" class="dd-tb-btn" title="Toggle subterranean Broad Street subway chasm camera view">🚇 Subway Cam</button>
+  <button id="dd-tb-basement-cam" type="button" class="dd-tb-btn" title="Toggle subterranean basement camera view to inspect foundation and fallen rubble">🏚️ Basement Cam</button>
+  <button id="dd-tb-spawn-furniture" type="button" class="dd-tb-btn" title="Drop burst of dynamic classroom furniture">🪑 Furniture Burst</button>
+  <button id="dd-tb-ignite-block" type="button" class="dd-tb-btn danger" title="Trigger full neighborhood conflagration spreading across North Broad Street blocks">🔥 Ignite Block</button>
+  <span style="font-weight:900;color:#f59e0b;font-size:11px;padding:0 3px">🎬 PRESETS:</span>
+  <button id="dd-tb-preset-borehole" type="button" class="dd-tb-btn" title="One-Click Core Borehole: Heavy Dense Iron Penetrator punches through Tech Freire atrium into basement">💥 Core Borehole</button>
+  <button id="dd-tb-preset-subway" type="button" class="dd-tb-btn" title="One-Click Subway Catastrophe: Colossal meteor ruptures Broad Street deck, severing water main and 600V third rail">🚇 Subway Breach</button>
+  <button id="dd-tb-preset-water" type="button" class="dd-tb-btn" title="One-Click Ruptured Water Main: High-velocity particle spray column, billowing mist canopy and boiling foam">💧 Water Main</button>
+  <button id="dd-tb-preset-pancake" type="button" class="dd-tb-btn" title="One-Click Floor Pancake: Sequential downward structural collapse of Tech Freire interior floor slabs with cascading electrical shorts">🥞 Floor Pancake</button>
+  <button id="dd-tb-preset-titanic" type="button" class="dd-tb-btn danger" title="One-Click Titanic Super-Colossal Meteor: Drops a 10.5m Super-Colossal Meteor directly onto Broad Street, blasting open a massive street chasm into the subterranean SEPTA Subway Cavern!">💥 Titanic Meteor</button>
+  <button id="dd-tb-preset-fire" type="button" class="dd-tb-btn danger" title="One-Click Conflagration: Multi-building party-wall firestorm spreading across North Broad rowhouse blocks">🔥 4th Alarm Fire</button>
+  <button id="dd-tb-slowmo" type="button" class="dd-tb-btn" title="Cycle simulation physics rate: 1.0x -> 0.50x -> 0.25x -> 0.10x (Ultra Bullet-Time) -> 2.0x">⏱️ 1.00x</button>
+  <button id="dd-tb-traffic" type="button" class="dd-tb-btn active" title="Toggle vehicle traffic on/off">🚗 Traffic: ON</button>
+  <button id="dd-tb-crowd" type="button" class="dd-tb-btn active" title="Toggle pedestrians on/off">🚶 Crowd: ON</button>
+  <select id="dd-tb-atmo" title="Level Lighting & Atmosphere" style="padding:4px 6px;background:#152840;color:#fff;border:1px solid #4a759c;border-radius:6px;font-size:11px">
+    <option value="1">L1 Morning</option>
+    <option value="2">L2 Noon</option>
+    <option value="3">L3 Sunset</option>
+    <option value="4">L4 Twilight</option>
+    <option value="5">L5 Midnight</option>
+    <option value="orbit">Orbit</option>
+  </select>
+  <button id="dd-tb-settings" type="button" class="dd-tb-btn" title="Open Unified Settings Modal">⚙ Settings</button>
+  <button id="dd-tb-exit" type="button" class="dd-tb-btn danger" title="Exit Sandbox mode back to regular defense">✕ Exit</button>
+</div>
+
+<!-- FLOATING BUILDING INSPECTOR CARD -->
+<div id="dd-inspector-card" hidden style="position:fixed;bottom:78px;left:50%;transform:translateX(-50%);z-index:130;background:rgba(8,17,33,0.94);backdrop-filter:blur(8px);border:1px solid #4a84b8;border-radius:10px;padding:7px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.65),0 0 16px rgba(56,189,248,0.25);pointer-events:none;font:700 12px system-ui;color:#e8f3ff;display:flex;align-items:center;gap:12px">
+  <span id="dd-insp-icon" style="font-size:18px">🏛️</span>
+  <div>
+    <div id="dd-insp-title" style="color:#ffe299;font-size:12.5px;letter-spacing:0.5px">Tech Freire Charter School · 2221 N Broad St</div>
+    <div id="dd-insp-desc" style="color:#9ec2e8;font-size:11px;font-weight:normal">Height: 16m · Health: 100% · Status: Structurally Sound</div>
+  </div>
+</div>
+
+<div id="model-status" style="position:fixed;left:12px;top:115px;font-size:12px;color:#ffce71;z-index:2">Loading cinematic rebuild…</div><div id="notice">TECH FREIRE · NORTH BROAD STREET · GAME BUILD INFORMATION BELOW</div><div id="game-build" aria-label="Game version and build identifier">Loading build…</div><div id="overlay"><div id="panel"><h1>🐉 DRAGON DEFENSE</h1><div id="start-build">Loading version…</div><p><a href="./broad-street/mapped.html" style="color:#b9d9ff">Inspect the Broad Street Viewer source layout</a></p><p>Protect Tech Freire from the meteor storm! Fly freely above Broad Street, save news helicopters from meteors, and defend the block. One blast can intercept multiple meteors.</p><p><small>Perspective street camera · Mobile dragon · Massively overhauled visuals with same gameplay · Escalating waves</small></p><label for="difficulty" style="display:block;margin:12px 0">DIFFICULTY <select id="difficulty" style="padding:8px;background:#263d65;color:white;border:1px solid #88b5df;border-radius:5px"><option value="easy">Easy — slower, fewer meteors</option><option value="normal" selected>Normal</option><option value="hard">Hard — faster, more meteors</option></select></label><label>GRAPHICS <select id="graphics" style="padding:8px;background:#263d65;color:white;border:1px solid #88b5df"><option value="balanced" selected>Balanced (recommended)</option><option value="cinematic">Cinematic (powerful GPUs)</option><option value="mobile">Mobile (fastest)</option></select></label><br><br><label>START WAVE <input id="start-wave" type="number" min="1" max="15" value="1" style="width:75px;padding:8px"></label><br><br><button type="button" onclick="location.href='./campaign/index.html'">VIEW CAMPAIGN</button> <button id="start" type="button" style="padding:12px 24px;background:linear-gradient(180deg,#991b1b,#600f14);border:2px solid #ef4444;color:#ffffff;font-weight:900;border-radius:8px;cursor:pointer;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(239,68,68,0.35)">⚔️ DEFEND PHILADELPHIA</button> <button id="start-sandbox-direct" type="button" onclick="window.startSandboxDirect?.()" style="padding:11px 18px;background:linear-gradient(180deg,#0d9488,#0f766e);border:1.5px solid #2dd4bf;color:#ffffff;font-weight:900;border-radius:8px;margin-left:6px;cursor:pointer;font-size:14px;box-shadow:0 4px 15px rgba(20,184,166,0.35)" title="Direct launch into infinite Director Sandbox mode (no level progression, no timers, pure map inspection)">🛠️ DIRECTOR SANDBOX (INFINITE)</button> <button id="start-trial" type="button" style="padding:10px 14px;background:linear-gradient(180deg,#206085,#133e59);border:1px solid #71b9e2;color:#ffe699;font-weight:900;border-radius:9px;margin-left:6px;cursor:pointer">🎯 TACTICAL TRIAL (2 MIN)</button><p style="font-size:12px;color:#94a3b8;margin-top:10px">Defend Philadelphia begins combat immediately with escalating colossal & massive meteors falling on North Broad Street.</p></div></div><script>
 window.addEventListener('error', e => {
  const notice=document.getElementById('notice');
  notice.textContent='GAME ERROR: '+(e.message||'Unable to load game');
@@ -208,7 +737,7 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'){
  });
 })();
 </script>
-<script type="module" src="./src/ui/cinematic-hud.js"></script><script type="module" src="./src/game.js"></script><script type="module" src="./src/rendering/system-monitor-ui.js"></script><script>if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("./sw.js").catch(()=>{});</script><script>
+<script type="module" src="./src/ui/cinematic-hud.js"></script><script type="module" src="./src/game.js?v=integration-preview-1"></script><script type="module" src="./src/rendering/system-monitor-ui.js?v=integration-preview-1"></script><script>
 (function(){
  const q=new URLSearchParams(location.search);
  const w=Number(q.get('wave'));

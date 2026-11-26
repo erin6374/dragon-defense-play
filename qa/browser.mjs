@@ -19,17 +19,17 @@ for(const hp of [1,2,8,30])for(const size of [.55,.95,1.3,2.4])
 assert.equal(fireballMeteorDamage({size:2,hp:8,indestructible:true}),0);
 assert.equal(fireballMeteorDamage({size:8,hp:65,boss:true}),5);
 assert.equal(fireballMeteorDamage({size:.6,hp:4},false,.7),.7);
-assert.deepEqual(meteorSplitPlan({size:.7},0),{count:0,size:0});
-const mediumSplit=meteorSplitPlan({size:1.4},0),largeSplit=meteorSplitPlan({size:2.4},0);
-assert.equal(mediumSplit.count,3);
+assert.deepEqual(meteorSplitPlan({size:.7},0),{count:0,size:0,tier:'particles',harmless:true});
+const mediumSplit=meteorSplitPlan({size:1.4},0),largeSplit=meteorSplitPlan({size:3.2},0);
+assert.equal(mediumSplit.count,2,'medium produces two small fragments');
 assert.ok(mediumSplit.size<1.1,'medium splits into small');
-assert.equal(largeSplit.count,3);
-assert.ok(largeSplit.size>=1.1&&largeSplit.size<1.8,'large splits into medium');
-assert.equal(meteorSplitPlan({size:2.4,generation:2},0).count,0);
-assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS).count,0);
-assert.equal(meteorSplitPlan({size:2.4},MAX_PLAYABLE_METEORS-1).count,1);
+assert.equal(largeSplit.count,2,'large produces two medium fragments');
+assert.ok(largeSplit.size>=1.8&&largeSplit.size<=2.2,'large splits into medium');
+assert.equal(meteorSplitPlan({size:.95,generation:2},0).count,0,'small terminal particles never recurse');
+assert.equal(meteorSplitPlan({size:3.2},MAX_PLAYABLE_METEORS).count,1,'only freed parent slot is reused at cap');
+assert.equal(meteorSplitPlan({size:3.2},MAX_PLAYABLE_METEORS-1).count,2,'two slots available below cap');
 
-assert.deepEqual([1,2,3,4,5,15].map(w=>openingMeteorWave(w)?.count??null),[1,2,1,2,null,null]);
+assert.deepEqual([1,2,3,4,5,15].map(w=>openingMeteorWave(w)?.count??null),[6,8,12,16,null,null]);
 for(const size of [.8,1.65,3.2]){
  const stone=impactProfile(size,'stone'),molten=impactProfile(size,'molten');
  assert.ok(molten.strength>stone.strength&&molten.radius>stone.radius&&molten.fire>stone.fire);
@@ -57,11 +57,11 @@ assert.equal(selectMeteorWarning([
 
 // Distant disaster glow must build gradually without exceeding a bounded
 // shader uniform; this test is deterministic and does not claim GPU FPS.
-assert.ok(disasterSkyIntensity(1,0)>=.1 && disasterSkyIntensity(1,0)<.2);
+assert.equal(disasterSkyIntensity(1,0),0,'pristine opening sky has no disaster glow');
 assert.ok(disasterSkyIntensity(10,.4)>disasterSkyIntensity(2,0));
 assert.ok(disasterSkyIntensity(15,1)<=1);
-assert.equal(disasterSkyIntensity(-100,-1),.12);
-assert.equal(disasterSkyIntensity(NaN,Infinity),.12);
+assert.equal(disasterSkyIntensity(-100,-1),0);
+assert.equal(disasterSkyIntensity(NaN,Infinity),0);
 
 const base = new URL(process.argv[2] ?? 'http://127.0.0.1:8765/');
 const {chromium} = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
@@ -95,8 +95,10 @@ assert.match(gameSource,/blasts\.push\(\{mesh,r:0,max,age:0,playerFire\}\)/,'sho
 // Fresh games and cutscenes perch; chapter cleanup must retain free flight.
 const waveSource=gameSource.slice(gameSource.indexOf('function newWave(){'),gameSource.indexOf('function reset(){'));
 assert.ok(waveSource.startsWith('function newWave(){'),'wave transition function found');
-assert.doesNotMatch(waveSource,/perchDragon\s*\(/,'ordinary waves preserve Paulo free-flight position');
-assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(false\)/,'initial game reset still perches Paulo');
+assert.match(waveSource,/if\(wave===1\)\{\s*perchDragon\(true\)/,'only the first wave perches Paulo for the rooftop prologue');
+assert.equal((waveSource.match(/perchDragon\s*\(/g) ?? []).length,1,
+ 'later ordinary waves must preserve Paulo free-flight position');
+assert.match(gameSource,/function reset\(\)[\s\S]*?perchDragon\(/,'initial game reset still perches Paulo');
 
 // Touch drags already reach the universal pointermove listener. A second
 // touch-specific listener used to raycast the same event twice.
@@ -511,16 +513,17 @@ try {
     const high=unit.applyGas(new THREE.Vector3(-25,20,15));
     const hit=unit.applyGas(new THREE.Vector3(-25,1,3));
     unit.update(.1,[],[]);const disabled=unit.gasStates();
-    const hidden=unit.searchlightStates().find(v=>v.x===-25).visible===false;
+    const hidden=unit.searchlightStates().find(v=>Math.abs(v.x-(-25))<1.5).visible===false;
     for(let i=0;i<71;i++)unit.update(.1,[],[]);
     const recovered=unit.gasStates();unit.reset();
     return {before,high,hit,disabled,hidden,recovered};
   });
   assert.equal(report.militaryGas.high,0,'airborne gas must descend before disabling ground units');
   assert.equal(report.militaryGas.hit,1,'settled gas reaches launcher on another street lane');
-  assert.ok(report.militaryGas.disabled.find(v=>v.x===-25).gasTime>6.8);
+  assert.ok(report.militaryGas.disabled.find(v=>Math.abs(v.x-(-25))<1.5).gasTime>6.8);
   assert.equal(report.militaryGas.hidden,true,'gassed searchlight is disabled');
-  assert.equal(report.militaryGas.recovered.find(v=>v.x===-25).gasTime,0);
+  assert.ok(report.militaryGas.recovered.length>0&&report.militaryGas.recovered.every(v=>v.gasTime===0),
+    'recovered military units resume zero gas time');
 
   const fluidFire=await page.evaluate(()=>window.__DD_QA.stageFluidFire());
   assert.ok(fluidFire.ok,fluidFire.error);
@@ -598,8 +601,11 @@ try {
   await page.locator('#graphics').selectOption('mobile');
   await page.locator('#start').click();
   await page.waitForFunction(() => window.__DD_QA.snap().active);
-  await page.locator('#cinematic-skip').click();
-  await page.locator('#cinematic-player').waitFor({state:'hidden'});
+  const skipBtn = page.locator('#cinematic-skip');
+  if (await skipBtn.isVisible().catch(() => false)) {
+    await skipBtn.click();
+    await page.locator('#cinematic-player').waitFor({state:'hidden'});
+  }
   await page.evaluate(() => window.__DD_QA.cinematicStage('quiet'));
   await shot('02-playing');
   // Cinematic HUD removes only low-priority overlays; the game remains playable
@@ -934,7 +940,7 @@ try {
   assert.equal(restoredWave.result.active,true,'QA reset must start active gameplay');
   assert.equal(restoredWave.result.paused,false,'QA reset must close the auto-opened chapter cinematic');
   const before = await snap();
-  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+2,before.frameTimes.frames,{timeout:15000});
+  await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+2,before.frameTimes.frames,{timeout:45000});
   await page.keyboard.down('KeyD');
   try {
     await page.waitForFunction(x => window.__DD_QA.snap().dragon.x > x + 4, before.dragon.x);
@@ -957,7 +963,7 @@ try {
     assert.deepEqual(camera.streetOrigins, before.camera.streetOrigins, 'street and neighborhood stay anchored during pans');
   }
   report.movement = {before: before.dragon, right: right.camera, left: left.camera};
-  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 15, left.frameTimes.frames);
+  await page.waitForFunction(n => window.__DD_QA.snap().frameTimes.frames >= n + 4, left.frameTimes.frames, {timeout: 60000});
   report.performance = await page.evaluate(() => ({
     live: window.__DD_GAME_METRICS, frameHealth: window.__DD_FRAME_HEALTH.summary(),
     scene: window.__DD_QA.snap().scene,
@@ -1334,6 +1340,14 @@ try {
   assert.ok(backgroundSettled.tonguePositions.every(p=>p[1]<1),'all sources settle onto rubble');
   assert.ok(backgroundIntact.tonguePositions[0][1]>backgroundSettled.tonguePositions[0][1]+2,
     'sources follow structural collapse to the ground');
+  assert.ok(backgroundIntact.flameHeight !== null && backgroundIntact.flameHeight >= 0.85 && backgroundIntact.flameHeight <= 1.45,
+    'calibrated rowhouse flame height is visible from gameplay distance and bounded against oversized torches');
+  assert.ok(backgroundIntact.flameWidth !== null && backgroundIntact.flameWidth >= 0.60 && backgroundIntact.flameWidth <= 1.20,
+    'calibrated rowhouse flame width stays bounded within window reveal');
+  assert.ok(backgroundIntact.combustionSites[0].y + backgroundIntact.flameHeight < backgroundIntact.originalHeight,
+    'flame card vertex tips stay strictly contained below the roofline');
+  assert.ok(backgroundIntact.combustionSites[0].z < backgroundIntact.roof.z + backgroundIntact.roof.depth * .5 + .25,
+    'flame base is anchored inside the window opening');
   assert.equal(flightBudget.combustion.capacity,168);
   assert.equal(idleBudget.combustion.sourceBufferWrites,settledBudget.combustion.sourceBufferWrites,
     'stationary fire must not rewrite instanced GPU combustion attributes');

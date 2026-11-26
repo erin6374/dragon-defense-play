@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>v21 · North Broad Studio · 20-building review</title><link rel="stylesheet" href="./version-badge.css?v=21.0.0">
+<style>
+:root{font-family:system-ui, sans-serif;color-scheme:dark}body{margin:0;background:#122128;color:#e4eeed}main{max-width:1360px;margin:auto;padding:20px}header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{font-size:1.5rem;margin:.3rem 0}p{color:#c7d0cd;max-width:900px}nav a,.card a{color:#9fe5d7}#summary{font-size:.9rem}#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:12px;margin-top:20px}.card{border:1px solid #38545a;background:#1f3339;border-radius:9px;padding:14px;min-width:0}.card h2{font-size:1.05rem;margin:.2rem 0}.card small{display:block;color:#b8c8c5;margin:5px 0}.card .measures{font-variant-numeric:tabular-nums;font-size:.9rem}.elevation{width:100%;height:126px;background:#17282f;border-radius:6px;margin:10px 0}.type{font-weight:600;font-size:.82rem;color:#c8ded9}.caveat{color:#e5c392}.refs{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;font-size:.9rem}.navlink{display:inline-block;padding:8px;border:1px solid #547078;border-radius:5px;margin-top:6px}select{font:inherit;padding:8px;color:#17242a;background:#fff;border-radius:5px}
+</style>
+<div id="bsv-edition-bar" data-build-id="BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE" role="status" aria-label="Current viewer version">
+<div><span class="bsv-big">BROAD STREET VIEWER · v21.1.1</span> <span class="bsv-sub">Accuracy Review 20 · 3D with protected fallback</span></div>
+<div><span class="bsv-id">Build BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE</span><div id="bsv-version-status" class="bsv-status">Checking edition…</div></div>
+<a href="mapped.html?build=v20-CHRONOLOGY-60" title="Open the latest local mapped viewer">Open v20 3D viewer</a>
+</div>
+<main><header><div><h1>Review 14 · 20 individual North Broad buildings</h1><p>Original City of Philadelphia outline masses, measured street-facing polygon edges, and 20 separate schematic facade revisions. Only selected historic or storefront details have published evidence; windows and unspecified colors remain illustrative.</p><nav><a href="mapped.html">Open 3D street viewer</a> · <a href="mapped.html?review13">Compare previous geometry</a> · <a href="../ACCURACY_REVIEW_14.md">Read accuracy limits</a></nav></div><div><label for="tier">Evidence filter</label><select id="tier"><option value="all">All 20 buildings</option><option value="cited">Cited facade/use evidence</option><option value="uncited">GIS-only / address-only</option></select></div></header><div id="summary" aria-live="polite"></div><section id="cards"></section></main>
+<script type="module">
+import {REVIEW14_IDS,review14Profile,facadeEdges,recommendedBays} from './frontage-review-14.mjs';
+const response=await fetch('./mapped-data.json');if(!response.ok)throw new Error('Could not load building data');
+const rows=(await response.json()).rows,byId=new Map(rows.map(x=>[String(x.id),x])),container=document.querySelector('#cards');
+const round=n=>Number(n).toFixed(2);
+function svg(r){
+ const edges=facadeEdges(r),w=Math.max(3,Math.min(20,edges.reduce((a,b)=>a+b.width,0))),n=recommendedBays(w);
+ const levels=Math.max(1,Math.min(6,Math.round(r.h/3.35)));
+ const width=250,height=118,plotW=width*.64,plotH=height*.81,bx=(width-plotW)/2,by=height-plotH-3;
+ let content=`<rect x="${bx}" y="${by}" width="${plotW}" height="${plotH}" rx="1" fill="#8a8581"/>`;
+ for(let level=0;level<levels;level++)for(let bay=0;bay<n;bay++){
+  const ww=(plotW/n)*.57,wh=plotH/levels*.48;
+  const x=bx+(bay+.5)*plotW/n-ww/2,y=by+plotH-(level+.7)*plotH/levels-wh/2;
+  content+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${ww.toFixed(1)}" height="${wh.toFixed(1)}" fill="#415662" stroke="#c0b6a6" stroke-width="2"/>`;
+ }
+ content+=`<rect x="${bx-2}" y="${by}" width="${plotW+4}" height="4" fill="#c5bfae"/><text x="125" y="116" text-anchor="middle" font-size="10" fill="#b7d0cd">schematic elevation, NOT photo tracing</text>`;
+ return `<svg class="elevation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 125" role="img" aria-label="Schematic, not photo-verified, facade layout">${content}</svg>`;
+}
+function create(r){const p=review14Profile(r),d=document.createElement('article');d.className='card';d.dataset.tier=p.confidence;const label=d.ownerDocument.createElement('div');label.className='type';label.textContent=p.confidence==='historic-nomination'?'Historical nomination':p.confidence==='photo-confirmed'?'Exterior listing photograph':p.confidence==='photo-listing'?'Published property listing':p.confidence==='address-known'?'Address association only':'Municipal outline only';
+ const h=document.createElement('h2');h.textContent=r.address;const details=document.createElement('small');details.className='measures';details.textContent=`Footprint ${round(r.w)} × ${round(r.d)} m · GIS h ${round(r.h)} m · front ${round(Math.abs(r.front))} m from road center`;const note=document.createElement('small');note.className='caveat';note.textContent=r.review14.notes;const links=document.createElement('div');links.className='refs';const a=document.createElement('a');a.href='mapped.html#'+encodeURIComponent(r.id);a.textContent='Inspect in 3D';a.className='navlink';links.append(a);if(r.refs?.length)for(const url of r.refs.slice(-2)){const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener';link.textContent='Published reference';links.append(link)}d.append(label,h,details);d.insertAdjacentHTML('beforeend',svg(r));d.append(note,links);return d}
+function show(){const v=document.querySelector('#tier').value;const ids=[...REVIEW14_IDS].map(i=>byId.get(i)).sort((a,b)=>a.x-b.x);const subset=ids.filter(r=>v==='all'||(v==='cited'?r.review14.photographicEvidence:!r.review14.photographicEvidence));container.replaceChildren(...subset.map(create));document.querySelector('#summary').textContent=`${subset.length} shown / ${ids.length} individually updated building records. No underlying municipal polygon changes. Source-based rendering does not guarantee surveyed facade fidelity.`}
+document.querySelector('#tier').addEventListener('change',show);show();
+</script><script defer src="./version-badge.js?v=21.0.0"></script></html>

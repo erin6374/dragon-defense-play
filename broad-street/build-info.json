@@ -1,0 +1,185 @@
+{
+  "product": "North Broad Street Viewer",
+  "version": "21.1.7",
+  "revision": 21,
+  "buildId": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
+  "date": "2026-11-25",
+  "baseEdition": "Review 43 + Park and York + Secondary Contact Candidate",
+  "editionsPreviouslyIdentified": [
+    "Windows Detail 02-11",
+    "Accuracy Review 12-15"
+  ],
+  "comment": "Restored landmark-first rendering: McDonald\u2019s model is no longer bypassed by generic sash-window layout; AutoZone sign at documented 2445 N Broad; Berean Church prominent circular five-pointed stained-glass window in street/individual viewer. Preserves original 40 municipal footprint records and v20 60-record evidence audit. All exact signage dimensions remain estimated; actual browser rendered verification pending.",
+  "mcdonalds": {
+    "address": "2109\u20132121 N Broad St, Philadelphia, PA",
+    "gisBuildingId": "1005655",
+    "roofHex": "#d2d2c8",
+    "fasciaHex": "#c7c8be",
+    "coverage": "light flat membrane roof and neutral parapet; no red pitched roof",
+    "evidence": "User-supplied November 2020 Google Street View parking-side photo; saved Google Earth aerial capture date unverified",
+    "photographedFacade": "31.46 m parking-side (south) elevation; NOT the 13.99 m Broad Street end",
+    "current2026ConditionVerified": false,
+    "actualWebGLVerified": false,
+    "releaseApproved": false
+  },
+  "sourceMunicipalGeometry": "unchanged since Review 15",
+  "publishedSiteUpdated": false,
+  "status": "UNRELEASED 1940 RESIDENCE ROOF CANDIDATE; browser visual QA pending",
+  "githubPages": {
+    "status": "pending initial repository creation",
+    "expectedRepository": "erin6374/north-broad-street-viewer",
+    "expectedUrl": "https://erin6374.github.io/north-broad-street-viewer/"
+  },
+  "architecturalChanges": [
+    {
+      "id": "1050173",
+      "address": "2301-03 N BROAD ST",
+      "revision": "Upper balconies above projecting bay-window ensembles; source Nov 21 Screenshot 2026-11-21 031101.png"
+    },
+    {
+      "id": "1050168",
+      "address": "2305-07 N BROAD ST",
+      "revision": "Upper balconies above projecting bay-window ensembles; source Screenshot 2026-11-21 031101.png"
+    },
+    {
+      "id": "1050169",
+      "address": "2315-17 N BROAD ST",
+      "revision": "Two side entrances moved toward visible ends of facade; source Screenshot 2026-11-21 031121.png"
+    },
+    {
+      "id": "1003388",
+      "address": "2231 N BROAD ST",
+      "revision": "Ground opening styled as storefront glazing with two separate pedestrian entrances; source Screenshot 2026-11-21 030932.png"
+    },
+    {
+      "id": "1542243",
+      "address": "2253 N BROAD ST",
+      "revision": "Photo-confirmed shutter separated from the left pedestrian door; source Screenshot 2026-11-21 031037.png"
+    },
+    {
+      "id": "1005655",
+      "address": "2109-21 N BROAD ST",
+      "revision": "UNRELEASED correction from Nov 2020 image: 31.46m parking-side glazing/tower/service elevation; pale flat roof; no red mansard"
+    },
+    {
+      "id": "1003022",
+      "address": "2131 N BROAD ST",
+      "revision": "Former Rite Aid low roof + scaled glazing/entry at true setback; avoid unverified CVS identity"
+    },
+    {
+      "id": "park-20",
+      "address": "20 individually identified N PARK AVE addresses",
+      "revision": "Street-facing rowhouse doors, upper sash and roofline elements proportioned to existing GIS widths; photographic confidence provisional"
+    },
+    {
+      "id": "infill-20",
+      "address": "2207, 2209-11, 2243, 2255 N BROAD ST",
+      "revision": "Chronology record preserves newer buildings when an older image shows a vacant lot"
+    }
+  ],
+  "features": [
+    "independent-2d-elevation-fallback",
+    "WebGL-render-ready-handoff",
+    "mode-toggle",
+    "40-record-profile-confidence-legend",
+    "3d-default",
+    "street-facing-only-2d-fallback",
+    "rear-footprint-warning",
+    "backup-clear-schematic-label",
+    "v18.1-geometry-hash-verified",
+    "chronological-photo-infill-preservation",
+    "former-rite-aid-storefront",
+    "park-avenue-20-gis-scaled-facades",
+    "60-structure-audit",
+    "landmark-fidelity-21",
+    "berean-five-pointed-stained-glass",
+    "autozone-2445-sign",
+    "mcdonalds-render-order-guard",
+    "golden-arches-roadside-sign",
+    "qa-landmark-route-guard",
+    "mcdonalds-historical-2020-parking-side-QA-HOLD"
+  ],
+  "landmarkFidelity": [
+    {
+      "buildingId": "1005656",
+      "feature": "large round five-pointed stained glass",
+      "source": "https://www.phila.gov/media/20211119091954/2101-07-N-Broad-St-nomination.pdf#page=36 (Fig. 38 circa 1923)"
+    },
+    {
+      "buildingId": "1005655",
+      "feature": "UNRELEASED: pale flat roof, parking-side historic 2020 storefront and golden arches",
+      "source": "User November 2020 Google Street View and undated saved Google Earth aerial; 2026 not certified"
+    },
+    {
+      "buildingId": "1073318",
+      "feature": "AutoZone sign on 2431-45 N Broad lot (business at 2445)",
+      "source": "https://www.autozone.com/locations/pa/philadelphia/2445-n-broad-st.html"
+    }
+  ],
+  "qaWorkingCopy": {
+    "status": "UNRELEASED 1940 Residence Hall roof candidate; visual QA pending",
+    "sourceBaseline": "BSV-21.1.6-20261125-BOSTON-MASONRY-CANDIDATE",
+    "qaCandidateId": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
+    "note": "Nine pale roof bands and seven added equipment assemblies; original massing and facade preserved."
+  },
+  "candidateBuiltAt": "2026-11-25T04:44:31-05:00",
+  "startupFix": {
+    "previousCandidate": "BSV-21.1.0-20261125-SITE-SUPPORT-CANDIDATE",
+    "previousSourceSHA256": "6e4633bfbbd4cd2c72abe86624c8b92bd6fc0ff5edb6fdcc9abe362dcf49dd07",
+    "evidence": "DDQA-20261125-080637-134036Z.zip",
+    "originalError": "Cannot read properties of undefined (reading 'map')",
+    "regression": "FULL-SCENE-STARTUP-AUDIT.json",
+    "visualQA": "pending"
+  },
+  "schoolSourceAudit": {
+    "report": "../SCHOOL-SOURCE-CONTACT-AUDIT.json",
+    "retainedMeshes": 3395,
+    "restoredRoofMeshes": 2,
+    "unresolvedBoxGroups": 8,
+    "scope": "AABB only, original FBX unchanged",
+    "builtAt": "2026-11-25T04:21:20-05:00",
+    "restoredSkylightMeshes": 9,
+    "visualQA": "v21.1.3 verified via DDQA-20261125-092240-945317Z.zip; new revision pending"
+  },
+  "roofDetailAudit": {
+    "previous": "21.1.3",
+    "records": [
+      "1000951",
+      "1003022",
+      "district:57"
+    ],
+    "features": 15,
+    "source": "Bundled city-aerial-1.jpg and city-aerial-2.jpg; capture date not independently confirmed",
+    "report": "../SOUTH-ROOF-AUDIT.json",
+    "visualQA": "v21.1.4 rendered via DDQA-20261125-092756-471072Z.zip",
+    "equipmentHeights": "provisional"
+  },
+  "bostonFrontageAudit": {
+    "previous": "21.1.4",
+    "records": 17,
+    "source": "Saved Review43 aerial (date unverified) and original district GIS. No Review44 patch found. Front elevations and roof colors schematic/inferred.",
+    "report": "../BOSTON-FRONTAGE-AUDIT.json",
+    "visualQA": "v21.1.5 rendered via DDQA-20261125-093510-887799Z.zip; facade details schematic",
+    "built": "2026-11-25T04:33:24-05:00"
+  },
+  "bostonMasonryAudit": {
+    "addresses": [
+      "1328 W BOSTON ST",
+      "1341 W BOSTON ST",
+      "1344 W BOSTON ST",
+      "1345 W BOSTON ST"
+    ],
+    "report": "../BOSTON-MASONRY-AUDIT.json",
+    "visualQA": "v21.1.6 rendered via DDQA-20261125-094017-750552Z.zip",
+    "source": "Property records identify brick; bond, color, and mortar are provisional."
+  },
+  "residenceRoofAudit": {
+    "source": "Bundled city-aerial-2.jpg; capture date unconfirmed",
+    "report": "../RESIDENCE-ROOF-AUDIT.json",
+    "evidence": "../1940-ROOF-EVIDENCE.jpg",
+    "bands": 9,
+    "equipment": 7,
+    "visualQA": "pending",
+    "builtAt": "2026-11-25T04:44:31-05:00"
+  }
+}

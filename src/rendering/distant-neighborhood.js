@@ -6,10 +6,13 @@ import {createBuildingCombustion} from './building-combustion.js';
 // nominations at 2101 and 2301 N Broad document rowhouse blocks, corner shops
 // and larger masonry buildings along the corridor. Lots here are illustrative.
 const STREET_AXIS=[
- {name:'N Park Ave',z:-88},{name:'N 13th St',z:-112},
- {name:'N Camac St',z:-143},{name:'N 12th St',z:-174},
- {name:'N 11th St',z:-204},{name:'N 10th St',z:-234},
- {name:'N 9th St',z:-265},{name:'N 8th St',z:-296}
+ {name:'N Camac St',z:-136.0},
+ {name:'N 12th St',z:-176.0},
+ {name:'N 11th St',z:-210.0},
+ {name:'N 10th St',z:-250.0},
+ {name:'N 9th St',z:-290.0},
+ {name:'N 8th St',z:-330.0},
+ {name:'N 7th St',z:-370.0}
 ];
 const facades=[0x9a5c4a,0x6d423b,0xb7afa1,0xcac1b1,0x8a9192,0x8a674e,0xc0a38c,0x7d5350,0xbabcc0];
 // Depth cueing is baked into existing instanced facade colors; it does not
@@ -28,35 +31,35 @@ function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;
 const rand=seeded(1221237);
 export function createDistantNeighborhood({root,flameTexture}){
  const tiers=[
-  {name:'outside-playable-block',min:-87,max:0},
-  {name:'park-camac',min:-135,max:-87},
-  {name:'camac-11th',min:-199,max:-135},
-  {name:'11th-9th',min:-261,max:-199},
-  {name:'9th-8th',min:-326,max:-261},
-  {name:'horizon',min:-590,max:-326}
+  {name:'outside-playable-block',min:-60,max:0},
+  {name:'park-camac',min:-136,max:-60},
+  {name:'camac-11th',min:-210,max:-136},
+  {name:'11th-9th',min:-290,max:-210},
+  {name:'9th-8th',min:-370,max:-290},
+  {name:'horizon',min:-980,max:-370}
  ];
  const cube=new THREE.BoxGeometry(1,1,1),canopyGeo=new THREE.IcosahedronGeometry(1,1),dummy=new THREE.Object3D();
  const materials={
-  main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.89}),
-  roof:new THREE.MeshStandardMaterial({color:0x4a4441,roughness:.95}),
-  cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.85}),
-  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.82,metalness:.14}),
-  window:new THREE.MeshStandardMaterial({color:0x567383,roughness:.45,metalness:.06}),
+  main:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  roof:new THREE.MeshStandardMaterial({color:0xcbd1d5,roughness:.95,metalness:0,envMapIntensity:0}),
+  cornice:new THREE.MeshStandardMaterial({color:0x9a8b7c,roughness:.95,metalness:0,envMapIntensity:0.02}),
+  rooftop:new THREE.MeshStandardMaterial({color:0x777d7c,roughness:.95,metalness:0,envMapIntensity:0}),
+  window:new THREE.MeshPhysicalMaterial({color:0x567383,roughness:.08,metalness:.30,clearcoat:1.0,clearcoatRoughness:.06,envMapIntensity:2.2}),
   road:new THREE.MeshLambertMaterial({color:0x484b4d}),
   walk:new THREE.MeshLambertMaterial({color:0xaaa49a}),
   green:new THREE.MeshLambertMaterial({color:0x67785b}),
   canopy:new THREE.MeshLambertMaterial({color:0x647c5e}),
   trunk:new THREE.MeshLambertMaterial({color:0x685746}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(790,.2,638),materials.walk);
- base.position.set(0,-.63,-311);root.add(base);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,1220),materials.walk);
+ base.position.set(0,-.63,-565);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[],canopy:[],trunk:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
- function registerBuilding(tier,x,z,w,h,d){
-  const home={id:buildingDefs.length,tier,x,z,w,h,d,parts:[],damage:0,fall:0};
+ function registerBuilding(tier,x,z,w,h,d,y=0){
+  const home={id:buildingDefs.length,tier,x,y,z,w,h,d,parts:[],damage:0,fall:0};
   buildingDefs.push(home);
   return home;
  }
@@ -66,44 +69,48 @@ export function createDistantNeighborhood({root,flameTexture}){
   add(home.tier,type,x,y,z,w,h,d,color);
  }
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
- function street(x,z,w,d,tier){add(tier,'road',x,-.44,z,w,.12,d);}
+ function street(x,z,w,d,tier,y0=0){add(tier,'road',x,y0-.44,z,w,.12,d);}
  // Residential grid has open lots, rear yards, crossing streets and the railway/civic gap.
  const cross=CROSS_STREETS.map(s=>s.x);
  for(let k=0;k<STREET_AXIS.length;k++){
   const s=STREET_AXIS[k],tier=Math.max(0,slot(s.z));
-  if(k>0)street(0,s.z,600,8.5,tier);
-  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,600,.15,1.45);
+  street(0,s.z,2600,8.5,tier);
+  for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,2600,.15,1.45);
   // Intersections and crossings are an inexpensive white instanced pattern.
   for(const xx of cross)for(let q=0;q<4;q++)add(tier,'walk',xx+(q-1.5)*1.35,-.25,s.z,0.52,.02,6.4);
  }
- // Continue the two cross streets through the deeper residential grid.
+ // Continue all 4 cross streets through the deeper residential grid across all tiers.
  for(const x of cross){
-   for(let tier=1;tier<tiers.length;tier++){
+   for(let tier=0;tier<tiers.length;tier++){
     const t=tiers[tier],depth=t.max-t.min,mid=(t.min+t.max)/2;
-    street(x,mid,12,depth,tier);
-    for(const side of [-1,1])add(tier,'walk',x+side*7.35,-.31,mid,1.35,.15,depth);
+    street(x,mid,14,depth,tier);
+    for(const side of [-1,1])add(tier,'walk',x+side*8.2,-.31,mid,1.4,.15,depth);
    }
  }
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
  const nearParapetHeights=[];
   const nearParapetBandsByRow=new Map();
- const rowCenters=[-100,-127,-158,-189,-219,-249,-280,-311,-345,-379,-416,-453,-491,-529,-565];
- for(const z of [-328,-362,-397,-435,-472,-510,-546,-582]){
-  street(0,z,760,8.5,slot(z));
+ const rowCenters=[-156,-193,-230,-270,-310,-350,-390,-430,-470,-510,-550,-590,-630,-670,-710,-750,-790,-830,-870,-910,-950];
+ for(const z of [-410,-450,-490,-530,-570,-610,-650,-690,-730,-770,-810,-850,-890,-930,-970]){
+  const streetElev=Math.max(0,-z-100)*0.0028;
+  street(0,z,2600,8.5,slot(z),streetElev);
  }
  for(let row=0;row<rowCenters.length;row++){
   const z=rowCenters[row],tier=slot(z);if(tier<0)continue;
   const horizon=tier===tiers.length-1;
-  const lots=horizon?90:tier>=3?66:50;
+  const rowElev=Math.max(0,-z-100)*0.0028;
+  // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
+  const lots=horizon?340:tier>=3?300:260;
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate
    const vacant=(ix+row*7)%11===0 || (row===5&&ix>15&&ix<19);
+   const y0=rowElev;
    if(railGap||vacant){
     if((ix+row)%3===0){
-     add(tier,'green',x,-.42,z,7.1,.05,11.5);
-     add(tier,'trunk',x,2.1,z,.54,4.2,.54);
-     add(tier,'canopy',x,5.1,z,5.9,4.5,5.4,0x6c805c);
+     add(tier,'green',x,y0-.42,z,7.1,.05,11.5);
+     add(tier,'trunk',x,y0+2.1,z,.54,4.2,.54);
+     add(tier,'canopy',x,y0+5.1,z,5.9,4.5,5.4,0x6c805c);
     }
     continue;
    }
@@ -113,37 +120,38 @@ export function createDistantNeighborhood({root,flameTexture}){
    const stories=civic?4:modern||commercial||(ix+row)%4===0?3:2;
    const h=stories*(civic?4.0:commercial?3.95:3.52)+((ix*13+row*5)%7)*.19;
    const w=civic?7.3:commercial?7:5.75+((ix+row)%4)*.44;
-   const d=civic?21:commercial?16:9+((ix*2+row)%5)*1.24;
-   if(occupiesCrossStreet(x,w))continue; // no buildings on the two continuous cross streets
+   const d=Math.min(12.0, (civic?12.0:commercial?11.5:8.5+((ix*2+row)%5)*0.8));
+   if(occupiesCrossStreet(x,w,5.0))continue; // strict clearance for all 4 cross streets across all depths
    const color=facades[(ix*3+row*5)%facades.length];
-   const home=registerBuilding(tier,x,z,w,h,d);
-   addPart(home,'main',x,h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
-   addPart(home,'roof',x,h+.12,z,w+.18,.24,d+.18);
+   const home=registerBuilding(tier,x,z,w,h,d,y0);
+   addPart(home,'main',x,y0+h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
+   const roofColor=((ix+row*3)%7===0)?0x524e4b:atmosphericFacade([0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3,0xafb5b9][(ix+row*5)%5],tier,row,ix);
+   addPart(home,'roof',x,y0+h+.12,z,w+.18,.24,d+.18,roofColor);
    // Google Earth reference: dense street-wall roofs punctuated by mature
    // rear-yard trees. Deterministic instancing adds depth, not per-tree meshes.
    if((ix+row*3)%3===0){
     const treeX=x+w*(ix%2?-.40:.43),treeZ=z-d*.68;
     const treeHeight=4.2+((ix*7+row)%6)*.52;
-    const leafColor=[0x637c5f,0x7b875d,0x526e58,0x8a895f][(ix+row)%4];
-    add(tier,'trunk',treeX,treeHeight*.48,treeZ,.52,treeHeight*.96,.52);
-    add(tier,'canopy',treeX,treeHeight+1.3,treeZ,5.0+treeHeight*.22,4.3+treeHeight*.35,5.2+treeHeight*.28,leafColor);
+    const leafColor=[0x5a734a,0xc68234,0x788a4e,0xa95232,0x687c55,0xc2983c][(ix+row*5)%6];
+    add(tier,'trunk',treeX,y0+treeHeight*.48,treeZ,.52,treeHeight*.96,.52);
+    add(tier,'canopy',treeX,y0+treeHeight+1.3,treeZ,5.0+treeHeight*.22,4.3+treeHeight*.35,5.2+treeHeight*.28,leafColor);
    }
    if(horizon){
     // At this distance, a parapet or stepped roof reads more clearly than windows.
-    if(civic||modern)addPart(home,'rooftop',x,h+.9,z-d*.15,w*.78,1.55,d*.62);
-    else addPart(home,'cornice',x,h+.27,z+d*.48,w+.12,.35,.33);
+    if(civic||modern)addPart(home,'rooftop',x,y0+h+.9,z-d*.15,w*.78,1.55,d*.62);
+    else addPart(home,'cornice',x,y0+h+.27,z+d*.48,w+.12,.35,.33);
     continue;
    }
-   if(civic||commercial)addPart(home,'rooftop',x,h+.89,z-d*.16,w*.82,1.48,d*.68);
+   if(civic||commercial)addPart(home,'rooftop',x,y0+h+.89,z-d*.16,w*.82,1.48,d*.68);
    // Small rooftop HVAC boxes and access housings give the distant rows a
    // varied architectural silhouette; all equipment shares one batch per tier.
    // Place equipment toward the rear, away from the front cornice.
    if((ix+row*3)%5===0){
     const unitW=modern?1.4:1.1;
-    addPart(home,'rooftop',x-w*.21,h+.54,z-d*.23,unitW,.72,1.2);
+    addPart(home,'rooftop',x-w*.21,y0+h+.54,z-d*.23,unitW,.72,1.2);
    }
    if((ix*7+row)%23===0){
-    addPart(home,'rooftop',x+w*.19,h+1.02,z-d*.17,1.65,1.65,1.85);
+    addPart(home,'rooftop',x+w*.19,y0+h+1.02,z-d*.17,1.65,1.65,1.85);
    }
    if(!modern){
     if(tier<=2){
@@ -154,43 +162,129 @@ export function createDistantNeighborhood({root,flameTexture}){
      nearParapetHeights.push(parapetHeight);
      if(!nearParapetBandsByRow.has(row))nearParapetBandsByRow.set(row,new Set());
      nearParapetBandsByRow.get(row).add(parapetBand);
-     addPart(home,'cornice',x,h+.12+parapetHeight*.5,z+d/2+.02,w+.23,parapetHeight,.3);
-    }else addPart(home,'cornice',x,h+.36,z+d/2+.02,w+.23,.20,.3);
+     addPart(home,'cornice',x,y0+h+.12+parapetHeight*.5,z+d/2+.02,w+.23,parapetHeight,.3);
+    }else addPart(home,'cornice',x,y0+h+.36,z+d/2+.02,w+.23,.20,.3);
    }
-   else addPart(home,'cornice',x,h*.47,z+d/2+.03,w*.98,.12,.25);
+   else addPart(home,'cornice',x,y0+h*.47,z+d/2+.03,w*.98,.12,.25);
    for(let floor=0;floor<stories;floor++){
     for(const bay of [-1,1]){
      const yy=(floor+.55)*h/stories;const wx=x+bay*w*.24;
-     addPart(home,'window',wx,yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
+     addPart(home,'window',wx,y0+yy,z+d/2+.085,w*.24,Math.min(1.43,h/stories*.57),.07);
     }
    }
    // Door and occasional stoop, no separate draw call per home.
-   if((ix+row)%3===0)addPart(home,'cornice',x-w*.24,.18,z+d/2+.62,w*.35,.24,1.12);
-   if(commercial)addPart(home,'window',x,1.4,z+d/2+.10,w*.78,2.15,.07);
+   if((ix+row)%3===0)addPart(home,'cornice',x-w*.24,y0+.18,z+d/2+.62,w*.35,.24,1.12);
+   if(commercial)addPart(home,'window',x,y0+1.4,z+d/2+.10,w*.78,2.15,.07);
   }
  }
- // The east-side blocks beyond the playable frontage are visible at the pan limits.
- // Use simple fixed masses here, with the low civic lot beside Susquehanna kept open.
+ // East/West pan limit wings aligned to middleground rows (z = -50.5, -85.0, -120.0)
+ // strictly clearing N Watts St (-34.0), N Park Ave (-66.0), N 13th St (-104.0), and N Camac St (-136.0)
  for(const side of [-1,1]){
-  for(const z of [-10,-31,-53,-75]){
+  for(const z of [-50.5,-85.0,-120.0]){
+   const tier=Math.max(0,slot(z));
    for(let i=0;i<22;i++){
-    if(z===-10&&i<2)continue; // existing frontage and the lower civic building
-    const x=side*(70+i*9.4);
-    const h=7.6+(i*13+Math.abs(z))%7;
-    const color=facades[(i+Math.abs(z))%facades.length];
-    const home=registerBuilding(0,x,z,8.2,h,14);
-    addPart(home,'main',x,h/2,z,8.2,h,14,color);
-    addPart(home,'roof',x,h+.14,z,8.5,.28,14.2);
+     const x=side*(85+i*9.4);
+     if(occupiesCrossStreet(x,8.2,5.0))continue;
+     if((x>-175&&x<-159) || (x>-106&&x<-90) || (x>62&&x<78) || (x>237&&x<253))continue;
+    const h=7.6+(i*13+Math.abs(Math.round(z)))%7;
+    const color=facades[(i+Math.abs(Math.round(z)))%facades.length];
+    const home=registerBuilding(tier,x,z,8.2,h,12.0);
+    addPart(home,'main',x,h/2,z,8.2,h,12.0,color);
+    const sideRoofColor=((i+Math.abs(Math.round(z)))%6===0)?0x524e4b:[0xcfd5d9,0xc5cbd0,0xd7dde0,0xb8bec3][(i+Math.abs(Math.round(z)))%4];
+    addPart(home,'roof',x,h+.14,z,8.5,.28,12.2,sideRoofColor);
+    addPart(home,'cornice',x,h+.28,z+6.1,8.6,.36,.42);
     for(const floor of [1,2,3]){
-     for(const dx of [-1.75,1.75])addPart(home,'window',x+dx,h*floor/4,z+7.05,1.32,1.62,.12);
+     for(const dx of [-1.75,1.75]){
+      addPart(home,'window',x+dx,h*floor/4,z+6.05,1.32,1.62,.12);
+      addPart(home,'cornice',x+dx,h*floor/4-.92,z+6.12,1.5,.12,.24);
+     }
     }
    }
   }
  }
- const civic=registerBuilding(0,72,-12,20,5.4,19);
- addPart(civic,'main',72,2.7,-12,20,5.4,19,0x85847a);
- addPart(civic,'roof',72,5.5,-12,20.4,.2,19.2);
+ // Low green buffer near Susquehanna
  add(0,'green',68,-.40,-.8,13,.08,4.6);
+  // Real-world surrounding neighborhood landmarks from aerial Google Earth references:
+  // 1. Edberg-Olson Football Complex (Temple University Football facility, East at Susquehanna/10th)
+  add(2,'green',138,-.42,-158,52,.08,88); // Regulation green turf field
+  add(2,'roof',138,-.40,-118,50,.10,10);  // Cherry red north endzone
+  add(2,'roof',138,-.40,-198,50,.10,10);  // Cherry red south endzone
+  for(let q=0;q<9;q++)add(2,'walk',138,-.38,-158+(q-4)*8.2,46,.04,.7); // White yard markings
+  const edberg=registerBuilding(2,106,-158,16,8.2,36);
+  addPart(edberg,'main',106,4.1,-158,16,8.2,36,0x8a9192);
+  addPart(edberg,'roof',106,8.3,-158,16.4,.28,36.4);
+  // 2. Penrose Recreation Center (North of Dauphin behind 2300 block)
+  add(1,'green',-125,-.42,-116,54,.08,40); // Rec center park & play fields
+  const recHall=registerBuilding(1,-125,-101,24,6.4,16);
+  addPart(recHall,'main',-125,3.2,-101,24,6.4,16,0xb7afa1);
+  addPart(recHall,'roof',-125,6.5,-101,24.4,.26,16.4);
+  for(let t=0;t<5;t++){add(1,'trunk',-145+t*10,2.1,-132,.5,4.2,.5);add(1,'canopy',-145+t*10,5.1,-132,5.2,4.4,5.2,0x687d5b);}
+  // 3. Fotterall Square & diagonal rail corridor (Northwest toward York)
+  add(0,'green',-178,-.42,-88,48,.08,44);
+  for(let r=0;r<6;r++){add(0,'road',-155-r*12,-.28,-68-r*11,8,.22,14);add(0,'walk',-155-r*12,-.25,-68-r*11,1.2,.26,14);}
+  // 4. Fotterall / Northgate High-Rise Residential Slabs (11th & Cumberland at Fotterall Square)
+  // Prominent 14-story residential towers standing tall over the rowhouse canopy in Google Earth
+  const towerDefs=[
+   {x:-174,z:-152,w:19,h:42,d:15,color:0x8a5c48,tier:2},
+   {x:-198,z:-168,w:19,h:42,d:15,color:0x7d5350,tier:2}
+  ];
+  for(const td of towerDefs){
+   const tower=registerBuilding(td.tier,td.x,td.z,td.w,td.h,td.d);
+   addPart(tower,'main',td.x,td.h/2,td.z,td.w,td.h,td.d,td.color);
+   addPart(tower,'roof',td.x,td.h+.14,td.z,td.w+.2,.28,td.d+.2,0xcad0d4);
+   addPart(tower,'rooftop',td.x,td.h+1.6,td.z,td.w*.42,3.0,td.d*.42,0x777d7c);
+   for(let fl=1;fl<=13;fl++){
+    const wy=fl*(td.h/14);
+    for(let bx=-td.w*.36;bx<=td.w*.36;bx+=td.w*.24){
+     addPart(tower,'window',td.x+bx,wy,td.z+td.d/2+.08,1.4,1.8,.08);
+    }
+   }
+  }
+  // 5. Philadelphia Military Academy / Makkah Mosque (13th & Dauphin, east behind Tech Freire)
+  // Monumental gothic dark stone/brick masonry with arched window bays and central entrance portal
+  const pma=registerBuilding(1,14,-108,28,18,24);
+  addPart(pma,'main',14,9,-108,28,18,24,0x685e58);
+  addPart(pma,'roof',14,18.15,-108,28.4,.3,24.4,0x524c48);
+  addPart(pma,'cornice',14,18.6,-95.9,28.6,.9,.4,0x7e7670);
+  addPart(pma,'rooftop',14,21.5,-98,9,6.0,7,0x5a524c);
+  for(let fl=1;fl<=3;fl++){
+   for(let bx=-10;bx<=10;bx+=5){
+    addPart(pma,'window',14+bx,fl*4.8,-95.88,2.2,3.2,.12);
+   }
+  }
+  add(1,'walk',14,-.25,-95,32,.15,3.5);
+  // 6. William McKinley School / The U School Complex (12th & Diamond / Susquehanna corridor)
+  // Sprawling multi-story public school complex with horizontal ribbon window bands and limestone trim
+  const mckinley=registerBuilding(4,-18,-295,48,14,22);
+  addPart(mckinley,'main',-18,7,-295,48,14,22,0x8a786a);
+  addPart(mckinley,'roof',-18,14.15,-295,48.4,.3,22.4,0xc8ced2);
+  addPart(mckinley,'rooftop',-26,15.6,-295,9,2.8,12,0x656c70);
+  addPart(mckinley,'rooftop',-6,15.2,-297,12,2.0,8,0x656c70);
+  for(let fl=1;fl<=3;fl++){
+   for(let bx=-20;bx<=20;bx+=8){
+    addPart(mckinley,'window',-18+bx,fl*3.8,-283.88,5.8,2.1,.1);
+   }
+  }
+  add(4,'road',-18,-.42,-280,52,.12,14);
+  // 7. Tyler School of Art & Architecture (Temple University Campus at 12th & Norris)
+  // Contemporary folded-plate angular glass and slate institutional building
+  const tyler=registerBuilding(3,175,-210,54,20,32);
+  addPart(tyler,'main',175,10,-210,54,20,32,0x465a6c);
+  addPart(tyler,'roof',175,20.15,-210,54.4,.3,32.4,0xaeb7be);
+  addPart(tyler,'rooftop',165,22.4,-210,24,4.5,18,0x5a768a);
+  for(let fl=1;fl<=4;fl++){
+   for(let bx=-22;bx<=22;bx+=9){
+    addPart(tyler,'window',175+bx,fl*4.4,-193.88,7.2,3.2,.12);
+   }
+  }
+  add(3,'green',175,-.42,-190,58,.08,18);
+  add(3,'walk',175,-.35,-190,4,.12,22);
+  // 8. West Side Broad Street commercial apron & parking stalls (facing Tech Freire)
+  add(0,'road',0,-.44,22,120,.12,18);
+  for(let s=-45;s<=45;s+=3.6){
+   add(0,'walk',s,-.37,22,.12,.04,6.2);
+  }
+  add(0,'walk',0,-.31,12.5,1600,.15,1.5);
  let drawCalls=0;
  const batches=tiers.map(()=>({}));
  for(let ti=0;ti<tiers.length;ti++){
@@ -264,7 +358,7 @@ export function createDistantNeighborhood({root,flameTexture}){
  // batches, per-building textures, meshes or impact-time allocations.
  const nearFacadeMasonryMaterial=materials.main.clone();
  nearFacadeMasonryMaterial.map=masonryTexture;
- nearFacadeMasonryMaterial.roughness=.94;
+ if(nearFacadeMasonryMaterial.isMeshStandardMaterial)nearFacadeMasonryMaterial.roughness=.94;
  nearFacadeMasonryMaterial.onBeforeCompile=shader=>{
   const anchor='#include <uv_vertex>';
   if(!shader.vertexShader.includes(anchor))throw Error('Masonry UV shader changed');
@@ -525,8 +619,8 @@ export function createDistantNeighborhood({root,flameTexture}){
    Math.sign(p.x-home.x)!==Math.sign(primary.x-home.x))||
    windows.find(p=>p.y<primary.y-p.h*.8)||windows.find(p=>p!==primary));
   home.fireOpenings=[primary,secondary].map(p=>p?
-   {x:p.x,y:p.y-p.h*.5,z:p.z+p.d*.5+.025,w:p.w,h:p.h}:null);
-  home.fireOpenings[2]={x:home.x,y:home.h+.25,z:home.z+home.d*.18,w:home.w*.19,h:1.1};
+   {x:p.x,y:p.y-p.h*.46,z:p.z-p.d*.15,w:p.w,h:p.h}:null);
+  home.fireOpenings[2]={x:home.x,y:(home.y||0)+home.h+.10,z:home.z+home.d*.12,w:home.w*.14,h:.52};
  }
  function positionImpactEffects(home){
   const entry=impactSmoke.get(home);if(!entry)return;
@@ -543,9 +637,9 @@ export function createDistantNeighborhood({root,flameTexture}){
     windows.find(part=>part.original.position.y<primary.original.position.y-part.size.y*.8)||
     windows.find(part=>part!==primary));
    home.fireOpenings=[primary,secondary].filter(Boolean)
-    .map(part=>({part,x:part.position.x,y:part.position.y-part.size.y*.5,z:part.position.z+.12,w:part.size.x,h:part.size.y}));
+    .map(part=>({part,x:part.position.x,y:part.position.y-part.size.y*.46,z:part.position.z-part.size.z*.15,w:part.size.x,h:part.size.y}));
    const roof=home.parts?.find(p=>p.type==='roof');
-   if(roof)home.fireOpenings.push({part:roof,x:roof.position.x,y:roof.position.y+.15,z:roof.position.z,w:Math.min(2,roof.size.x),h:1.2});
+   if(roof)home.fireOpenings.push({part:roof,x:roof.position.x,y:roof.position.y+.10,z:roof.position.z+roof.size.z*.12,w:Math.min(1.4,roof.size.x*.14),h:.52});
   }
   for(let k=0;k<SITES_PER_FIRE;k++){
    const opening=home.fireOpenings[k];const index=slot*SITES_PER_FIRE+k;
@@ -567,7 +661,13 @@ export function createDistantNeighborhood({root,flameTexture}){
    // visible propagation; a windowless horizon roof still ignites on impact.
    const power=k===0?.85:k===1?.85*(.035+.965*secondaryGrowth):
     home.fireOpenings[0]?Math.max(0,(home.damage||.25)-.3)*1.2*roofGrowth:.85;
-   combustion.set(index,x,y,z,opening.w*(1+.2*rubble),opening.h*(1.5-.25*rubble),(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,k===2||rubble>.8?1:0);
+   const isRoof=k===2;
+   const heat=Math.min(.30,(home.damage||.25)*.35);
+   const baseW=isRoof?opening.w:opening.w*.68;
+   const baseH=isRoof?opening.h:opening.h*(.75+heat);
+   const renderW=baseW*(1+(isRoof?.2:.25)*rubble);
+   const renderH=baseH*(1-(isRoof?.1:.18)*rubble);
+   combustion.set(index,x,y,z,renderW,renderH,(home.id??Math.abs(home.x*3+home.z))*.731+k*2.43,power,home.tier??0,isRoof||rubble>.8?1:0);
   }
  }
  function releaseFire(home){

@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>North Broad Studio · 60 Building Chronology Audit · v21</title><link rel="stylesheet" href="version-badge.css?v=21.0.0">
+<style>body{font:15px/1.5 system-ui;max-width:1400px;margin:auto;padding:15px;background:#17262d;color:#e8f1ef}a{color:#9ce6db}h1{font-size:1.5rem}input,select{padding:9px;font:inherit;border:1px solid #6e9ba5;border-radius:5px}input{width:min(500px,95%)}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #4b666b;padding:8px;text-align:left;vertical-align:top}th{position:sticky;top:0;background:#243c42}tr:nth-child(even){background:#21343b}.muted{color:#bdcacb}.flag{font-size:.8rem;color:#ffe5a5}header{display:flex;gap:18px;align-items:center;flex-wrap:wrap}button{padding:7px}</style>
+<div id="bsv-edition-bar" data-build-id="BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE" role="status"><div><span class="bsv-big">BROAD STREET VIEWER · v21.1.1</span><span class="bsv-sub">60 Building Chronology & Facade QA</span></div><div><span class="bsv-id">Build BSV-21.1.1-20261125-STARTUP-FIX-CANDIDATE</span><div id="bsv-version-status" class="bsv-status">Checking edition…</div></div><a href="mapped.html?build=v20-CHRONOLOGY-60">Open v20 3D viewer</a></div>
+<h1>60 structures: evidence and geometric change review</h1>
+<p><strong>40 Broad Street footprint records + 20 Park Avenue contextual structures.</strong> A date on a saved screenshot is not necessarily the date of the Google Street View photograph. Documented newer infill takes priority over an older empty-lot view. This is a model QA inventory, <strong>not a claim of 60 photographically confirmed facades</strong>.</p>
+<header><label>Filter records <input id="filter" placeholder="Address, reference, 2209, red roof…"></label><label>Evidence <select id="scope"><option value="all">All 60 structures</option><option value="infill">Four contradictory-photo infill locations</option><option value="updated">22 geometry changes</option><option value="context">20 Park Avenue context buildings</option><option value="photo">Broad records with saved reference</option></select></label><strong id="count">Loading…</strong></header>
+<div style="overflow:auto"><table><thead><tr><th>Building</th><th>Reference / imagery</th><th>Change / context</th><th>Accuracy limitation</th></tr></thead><tbody id="data"></tbody></table></div>
+<script src="version-badge.js?v=21.0.0" defer></script>
+<script type="module">
+ const data=await fetch('./REVIEW20_60_STRUCTURE_AUDIT.json',{cache:'no-store'}).then(r=>r.json());
+ const field=document.getElementById('filter'),scope=document.getElementById('scope'),tbody=document.getElementById('data'),count=document.getElementById('count');
+ const td=(tr,t)=>{const c=document.createElement('td');c.textContent=t;tr.appendChild(c);return c};
+ function draw(){tbody.replaceChildren();const term=field.value.toLowerCase().trim(),mode=scope.value;
+  const visible=data.records.filter(x=>{
+   if(mode==='infill'&&!x.infillEvidence.some(o=>/vacant|construction/.test(o.observation)))return false;
+   if(mode==='updated'&&!/roof perimeter|former Rite Aid low roof|new per-parcel front model/.test(x.visualCorrectionThisVersion))return false;
+   if(mode==='context'&&x.area.indexOf('Park Avenue')<0)return false;
+   if(mode==='photo'&&!x.sourceScreenshot)return false;
+   return !term||JSON.stringify([x.address,x.sourceScreenshot,x.visualCorrectionThisVersion,x.visualCorrectionThisVersion,x.verificationLimit,x.infillEvidence]).toLowerCase().includes(term)
+  });count.textContent=visible.length+' of '+data.records.length+' structures';
+  for(const x of visible){const tr=document.createElement('tr');const name=td(tr,'');
+   if(x.area==='North Broad Street'){const a=document.createElement('a');a.href='mapped.html#'+encodeURIComponent(x.id);a.textContent=x.address;name.append(a)}else{name.textContent=x.address}
+   const ref=x.sourceScreenshot?x.sourceScreenshot.split('/').at(-1):'No street-front photo linked';
+   td(tr,(x.sourceImageryDate||'Unknown panorama date')+' · '+ref+(x.infillEvidence.some(o=>/vacant|construction/.test(o.observation))?' · BUILT INFILL PRESERVED':''));
+   td(tr,x.visualCorrectionThisVersion);td(tr,x.verificationLimit);tbody.append(tr)
+  }
+ }field.addEventListener('input',draw);scope.addEventListener('change',draw);draw();
+</script></html>

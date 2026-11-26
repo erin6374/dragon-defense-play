@@ -18,7 +18,18 @@ export function createStableLightPool(scene, size, createLight) {
 
 // Preserve the position/aim of a light formerly parented to the helicopter,
 // including its rotation and scale. The pooled light and target stay in the scene.
-export function syncHelicopterSearchlight(root, light) {
- light.position.set(1.1,-.25,0);root.localToWorld(light.position);
- light.target.position.set(2,-10,1);root.localToWorld(light.target.position);
+export function syncHelicopterSearchlight(root, light, targetPos=null) {
+ if(!root || !light) return;
+ if(light.position){
+  light.position.set(1.35,-.62,0);
+  root.localToWorld(light.position);
+ }
+ if(light.target?.position){
+  if(targetPos){
+   light.target.position.copy(targetPos);
+  }else{
+   light.target.position.set(1.35,-16,0);
+   root.localToWorld(light.target.position);
+  }
+ }
 }

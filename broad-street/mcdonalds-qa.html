@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>McDonald's actual-source 3D inspection · Unreleased QA</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#15242b;color:#edf6f4;font-family:system-ui,Segoe UI,sans-serif}
+header{padding:13px 20px;background:#20343d;border-bottom:1px solid #506c74;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+h1{font-size:21px;margin:0}header small{color:#e4bc8d}main{padding:12px;display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+article{min-width:0;background:#243840;border:1px solid #45606a;border-radius:8px;padding:11px}
+article h2{font-size:16px;margin:0 0 8px}canvas{width:100%;height:min(69vh,720px);display:block;background:#c8d4d8;border-radius:5px}
+img{width:100%;max-height:69vh;object-fit:contain;display:block;background:#111}
+button{border:0;border-radius:6px;background:#e6eee9;color:#173137;font-weight:700;padding:8px 12px;cursor:pointer}button:hover{background:#f5cb82}
+.buttons{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}#status{padding:8px 10px;border-radius:6px;border:1px solid #b4a77e;background:#433c2a}
+p{font-size:13px;color:#ceddd9}strong{color:#ffe2a4}#error{color:#ffdbcc}#error[hidden]{display:none}
+@media(max-width:950px){main{grid-template-columns:1fr}canvas{height:54vh}}
+</style>
+<header><div><h1>McDonald's — 2109–2121 N Broad · actual model inspection</h1><small>UNRELEASED QA candidate MCD-20261123-FINAL-FACADE-QA · two different elevation references. Broad capture date UNKNOWN; parking image November 2020.</small></div>
+<a href="mapped.html#1005655" style="color:#94dfe6">Open main v21 viewer</a></header>
+<main><article><h2>3D model — same facade, roof and sign renderers used by the street viewer</h2>
+<canvas id="view"></canvas><div class="buttons"><button data-view="parking">Parking facade</button><button data-view="oblique">Oblique aerial</button><button data-view="broad">Broad end</button><button data-view="top">Roof plan</button><button id="capture-pair">Save paired evidence (PNG + JSON)</button><button id="capture">Save PNG of rendered 3D</button><button id="capture-comparison">Save side-by-side evidence PNG</button><button id="capture-manifest">Save source fingerprint JSON</button></div>
+<div id="status">Loading live WebGL model…</div><div id="error" hidden></div>
+<p>Drag to rotate, wheel to zoom. Screenshots are direct browser captures; the image displayed beside the canvas changes with the camera preset. A geometry-source screenshot alone is NOT final photographic approval. Version 21 is not modified or published by this QA instrument.</p>
+<p id="metrics"></p><p>Comparisons carry a camera preset and reference capture date. A screenshot is not an architectural approval. If a building is hidden, a WebGL capture is rejected rather than replaced with a schematic diagram.</p></article>
+<article><h2>Reference — Broad Street end / south parking side</h2><img id="comparison-image" src="../qa-reference/McDonalds_Broad_StreetView_capture_unknown.png" alt="User-supplied Google Street View of the Broad-facing brick-and-glass end, source capture date unknown">
+<p><strong>Evidence status:</strong> this QA viewer holds TWO photo references for different elevations. The Broad-facing image (uploaded Nov 23, 2026) lacks a visible Street View capture date. The 2020 parking-side image is dated. Do not infer they show the same side or a remodel merely because colors differ.</p><p>Do not release the viewer based solely on this isolated 3D inspection. Compare it in the full scene, including road alignment and adjacent buildings.</p></article></main>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+<script type="module" src="./mcdonalds-qa.mjs"></script>
+</html>

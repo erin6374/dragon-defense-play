@@ -1,8 +1,30 @@
 {
-  "build": "5.5-licensed-smoke-sheet-roll-rc59",
-  "version": "5.5.0-rc.59",
-  "gameplay_base": "5.2.3",
-  "scope": "Bounded source-seeded +/-0.21 radian camera-space roll for existing CC0 plume smoke sheets; legacy/procedural modes, sheet/pool budgets, meteor ignition, bilateral destruction and original school FBX unchanged.",
-  "new_gameplay_features": false,
-  "release_status": "RC59 visual candidate; exact-new-HEAD workflows and visual comparison pending, physical Windows FPS unmeasured, cinematic art FAIL."
+  "project": "Dragon Defense — Integration Preview",
+  "version": "5.5.0-integration.1",
+  "build": "combined-preview.1-rc174-bsv21.1.7",
+  "timestamp": "2026-11-26T19:17:16+00:00",
+  "sources": {
+    "gameplay": {
+      "version": "5.5.0-rc.174",
+      "build": "5.5-colossal-shockwave-and-pancake-physics-rc174",
+      "timestamp": "2026-11-26T18:10:00Z",
+      "archive": "Dragon-Defense-Antigravity-RC174-Preview.zip",
+      "sha256": "c2cc8fef189ab2a7e5e6632d4b8e7c166ce90a548d36696f890f016604b97517"
+    },
+    "architecture": {
+      "version": "21.1.7",
+      "build": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
+      "sha256": "cfbbbc480bba2a8c0706f2a220296870c05dbcb041c87cb8c42ff2e13305622b"
+    },
+    "park2228": {
+      "version": "21.1.13",
+      "sourceCommit": "1145173923c9b54abcefa1391de8f21c8d99812e",
+      "sha256": "1551af3cd391c9c59ff9af300b593b7370c230173a96652f02cfe3ebe3ebe681"
+    },
+    "schoolFBX": {
+      "path": "assets/tech-freire-original.fbx",
+      "sha256": "8fe8c980ea7b73795db4c5b947853615d861c2b0c50db37e8a5541560b1d77e4"
+    },
+    "repositoryParent": "9521eaec8f5fe1ee873db006d733cbb89a83e648"
+  }
 }

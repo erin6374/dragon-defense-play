@@ -10,9 +10,18 @@ export function createSchoolSourceDamage() {
  texture.format=THREE.RedFormat;
  texture.minFilter=texture.magFilter=THREE.LinearFilter;
  texture.needsUpdate=true;
+ const destructionRatio={value:0.0};
+ const MAX_IMPACTS=16;
+ const impactPoints=Array.from({length:MAX_IMPACTS},()=>new THREE.Vector4(0,0,0,0));
+ const impactCount={value:0};
  let strikes=0;
  const stamp=(x,y,z,radius)=>{
   const r=radius*1.2;
+  const idx=strikes%MAX_IMPACTS;
+  impactPoints[idx].set(x,y,z,Math.max(1.8,radius));
+  strikes++;
+  impactCount.value=Math.min(strikes,MAX_IMPACTS);
+
   const low=(p,origin)=>Math.max(0,Math.floor((p-origin-r)/cell));
   const high=(p,origin,count)=>Math.min(count-1,Math.ceil((p-origin+r)/cell));
   for(let k=low(z,min.z);k<=high(z,min.z,depth);k++){
@@ -29,8 +38,8 @@ export function createSchoolSourceDamage() {
     }
    }
   }
-  strikes++;
   texture.needsUpdate=true;
+  if(texture.source)texture.source.needsUpdate=true;
  };
  const patch=material=>{
   const glass=material.name==='school-glass';
@@ -39,42 +48,53 @@ export function createSchoolSourceDamage() {
    shader.uniforms.schoolDamageMap={value:texture};
    shader.uniforms.schoolDamageMin={value:min};
    shader.uniforms.schoolDamageSize={value:size};
+   shader.uniforms.schoolDestructionRatio=destructionRatio;
+   shader.uniforms.uSchoolImpacts={value:impactPoints};
+   shader.uniforms.uSchoolImpactCount=impactCount;
    shader.vertexShader='varying vec3 schoolDamagePosition;\n'+shader.vertexShader;
    shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',
     '#include <worldpos_vertex>\n schoolDamagePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
    shader.fragmentShader=`varying vec3 schoolDamagePosition;
     uniform highp sampler3D schoolDamageMap;
     uniform vec3 schoolDamageMin;
-    uniform vec3 schoolDamageSize;\n`+shader.fragmentShader;
+    uniform vec3 schoolDamageSize;
+    uniform float schoolDestructionRatio;
+    uniform vec4 uSchoolImpacts[16];
+    uniform int uSchoolImpactCount;\n`+shader.fragmentShader;
    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',`
     #include <clipping_planes_fragment>
-    vec3 damageUv=(schoolDamagePosition-schoolDamageMin)/schoolDamageSize;
+    // RC167: High-performance GPU-friendly 3D texture crater lookup & floor collapse
     float damage=0.0;
+    vec3 damageUv=(schoolDamagePosition-schoolDamageMin)/max(schoolDamageSize,vec3(0.001));
     if(all(greaterThanEqual(damageUv,vec3(0.0)))&&all(lessThanEqual(damageUv,vec3(1.0)))){
      damage=texture(schoolDamageMap,damageUv).r;
+     if(damage>${glass?'.22':'.48'})discard;
     }
-    if(damage>${glass?'.24':'.53'})discard;`);
+
+    // Direct impact craters
+    if(uSchoolImpactCount>0){
+     for(int i=0;i<8;i++){
+      if(i>=uSchoolImpactCount)break;
+      vec3 c=uSchoolImpacts[i].xyz;
+      float baseR=uSchoolImpacts[i].w${glass?'*1.55':''};
+      if(baseR>0.05){
+       vec3 delta=schoolDamagePosition-c;
+       if(dot(delta,delta)<baseR*baseR){discard;}
+      }
+     }
+    }
+
+    // Gradual progressive floor collapse
+    if(schoolDestructionRatio>0.02){
+     float normY=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
+     float collapseCutoff=(1.0-normY)*0.92;
+     if(collapseCutoff<schoolDestructionRatio){discard;}
+    }`);
    if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
     #include <color_fragment>
-    vec3 surfaceNormal=abs(normalize(cross(dFdx(schoolDamagePosition),dFdy(schoolDamagePosition))));
-    float horizontal=surfaceNormal.x>surfaceNormal.z?schoolDamagePosition.z:schoolDamagePosition.x;
-    vec2 course=vec2(horizontal/.235,schoolDamagePosition.y/.083);
-    course.x+=mod(floor(course.y),2.0)*.5;
-    vec2 joint=abs(fract(course)-.5);
-    vec2 footprint=fwidth(course);
-    float mortar=max(smoothstep(.46-footprint.x,.46+footprint.x,joint.x),
-     smoothstep(.44-footprint.y,.44+footprint.y,joint.y));
-    float variation=fract(sin(dot(floor(course),vec2(31.74,17.16)))*43758.54);
-    float detail=1.0-smoothstep(.60,1.65,max(footprint.x,footprint.y));
-    vec3 masonry=mix(diffuseColor.rgb*mix(.76,1.23,variation),vec3(.19,.155,.13),mortar*.70);
-    diffuseColor.rgb=mix(diffuseColor.rgb,masonry,detail*(1.0-surfaceNormal.y));
-    // Broad weathering survives gameplay distance when individual brick
-    // courses are subpixel. It stays anchored to the original model surface.
-    float weather=.5+.22*sin(horizontal*3.1+sin(schoolDamagePosition.y*2.4))+
-     .16*sin(horizontal*8.7-schoolDamagePosition.y*5.3);
-    float runoff=pow(.5+.5*sin(horizontal*9.2),5.)*.07;
-    diffuseColor.rgb*=.88+.22*weather-runoff;
-
+    // Authentic North Broad brick color tone with subtle vertical weathering
+    float weather=sin(schoolDamagePosition.y*0.8)*0.08;
+    diffuseColor.rgb*=(0.96+weather);
    `);
    // Light the existing interior surfaces by classroom bay, rather than
    // making every retained surface an equally bright beige rectangle.
@@ -93,11 +113,22 @@ export function createSchoolSourceDamage() {
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v2-'+material.name;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v4-'+material.name;
  };
- return {stamp,patch,strikes:()=>strikes,reset:()=>{
-  pixels.fill(0);
-  strikes=0;
-  texture.needsUpdate=true;
- }};
+ return {
+  stamp,
+  patch,
+  strikes:()=>strikes,
+  impacts:()=>impactPoints.slice(0,impactCount.value),
+  setDestruction:ratio=>{destructionRatio.value=THREE.MathUtils.clamp(ratio,0,1);},
+  reset:()=>{
+   pixels.fill(0);
+   strikes=0;
+   destructionRatio.value=0;
+   impactCount.value=0;
+   for(const p of impactPoints)p.set(0,0,0,0);
+   texture.needsUpdate=true;
+   if(texture.source)texture.source.needsUpdate=true;
+  }
+ };
 }

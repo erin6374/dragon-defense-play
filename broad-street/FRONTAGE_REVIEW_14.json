@@ -1,0 +1,187 @@
+{
+  "version": "2026-11-22-accuracy-review-14",
+  "count": 20,
+  "referenceState": "Existing saved Philadelphia municipal polygons, plus explicitly cited exterior references for four IDs",
+  "buildings": [
+    {
+      "id": "1001197",
+      "address": "2205 N BROAD ST",
+      "style": "masonry",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Rear 2205 building section remains a separately mapped footprint.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1007134",
+      "address": "2217 N BROAD ST",
+      "style": "warmstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Narrow city frontage, individual window and entry arrangement unconfirmed.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1007133",
+      "address": "2219 N BROAD ST",
+      "style": "warmstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Keep the mapped party-wall boundary to its neighbor.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1007132",
+      "address": "2227 N BROAD ST",
+      "style": "warmstone",
+      "ground": "institutional",
+      "confidence": "address-known",
+      "notes": "The Grands As Parents address is documented; current exterior remains unverified.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1003388",
+      "address": "2231 N BROAD ST",
+      "style": "brownstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Front GIS piece; separate rear GIS building part is preserved.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1525758",
+      "address": "2233 N BROAD ST",
+      "style": "brownstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Windows and facade color remain schematic.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1547386",
+      "address": "2235-37 N BROAD ST",
+      "style": "contemporary-brick",
+      "ground": "retail",
+      "confidence": "photo-listing",
+      "notes": "2026 listing documents ground-floor retail and a recent apartment building; detailed glazing is interpretive.",
+      "sourceUrl": "https://www.loopnet.com/Listing/2235-2237-N-Broad-St-Philadelphia-PA/40708498/"
+    },
+    {
+      "id": "1536711",
+      "address": "2239 N BROAD ST",
+      "style": "brownstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Preserve original independent frontage next to 2235–37 development.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1508518",
+      "address": "2241 N BROAD ST",
+      "style": "brownstone",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Saved GIS source overlaps 2243 by ~0.319 m²; do not trim city geometry.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1519830",
+      "address": "2245 N BROAD ST",
+      "style": "masonry",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Street-level building elevation remains unverified.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1536712",
+      "address": "2247 N BROAD ST",
+      "style": "redbrick",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "2247-2251 listing documents the block, not this unit-specific facade.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1531017",
+      "address": "2249 N BROAD ST",
+      "style": "redbrick",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Record is spatially close to 2251; avoid inventing shared geometry.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1536713",
+      "address": "2251 N BROAD ST",
+      "style": "redbrick",
+      "ground": "glass-retail",
+      "confidence": "photo-confirmed",
+      "notes": "Photo in 2247–2251 listing shows large glass storefront with street-facing doors; upper elevation pending.",
+      "sourceUrl": "https://www.loopnet.com/Listing/2247-2251-N-Broad-St-Philadelphia-PA/27062689/"
+    },
+    {
+      "id": "1542243",
+      "address": "2253 N BROAD ST",
+      "style": "redbrick",
+      "ground": "residential",
+      "confidence": "address-known",
+      "notes": "Historic Doll Museum associated with address; current signage and frontage unverified.",
+      "sourceUrl": null
+    },
+    {
+      "id": "3000691",
+      "address": "2255 N BROAD ST",
+      "style": "redbrick",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Only municipal polygon/height used for massing and schematic windows.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1050173",
+      "address": "2301-03 N BROAD ST",
+      "style": "historic-stone",
+      "ground": "historic-corner",
+      "confidence": "historic-nomination",
+      "notes": "2018 city nomination photos document corner turret, projecting bay, and mansard roof.",
+      "sourceUrl": "https://www.phila.gov/media/20190401093025/2305-07-N-Broad-St-nomination.pdf"
+    },
+    {
+      "id": "1050168",
+      "address": "2305-07 N BROAD ST",
+      "style": "historic-brownstone",
+      "ground": "historic-pair",
+      "confidence": "historic-nomination",
+      "notes": "City nomination documents paired projecting balconies, two dormers, and a mansard roof.",
+      "sourceUrl": "https://www.phila.gov/media/20190401093025/2305-07-N-Broad-St-nomination.pdf"
+    },
+    {
+      "id": "1050169",
+      "address": "2315-17 N BROAD ST",
+      "style": "masonry",
+      "ground": "residential",
+      "confidence": "municipal-only",
+      "notes": "Primary block volume only; two separate associated rear footprint parts remain.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1079073",
+      "address": "2319 N BROAD ST",
+      "style": "masonry",
+      "ground": "setback",
+      "confidence": "municipal-only",
+      "notes": "Saved building footprint front is set back ~54 m from Broad; do not add an invented curbside wall.",
+      "sourceUrl": null
+    },
+    {
+      "id": "1050167",
+      "address": "2321 N BROAD ST",
+      "style": "masonry",
+      "ground": "setback",
+      "confidence": "municipal-only",
+      "notes": "Saved footprint is recessed ~53 m; do not relocate it to Broad sidewalk.",
+      "sourceUrl": null
+    }
+  ]
+}

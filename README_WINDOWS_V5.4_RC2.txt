@@ -1,4 +1,4 @@
-TECH FREIRE DRAGON DEFENSE — v5.5.0 RC55 DEVELOPMENT PREVIEW
+TECH FREIRE DRAGON DEFENSE — v5.5.0 RC39 DEVELOPMENT PREVIEW
 ================================================================
 Video-driven graphics candidate. Paulo now has unsynchronized shoulder/elbow/
 wrist motion, folding inner wing on banks, deeper scalloped leathery membranes
@@ -59,7 +59,7 @@ SOURCE / QA
 https://github.com/erin6374/dragon-defense-play/pull/2
 See RELEASE-PLAN-v5.4.md and CHANGELOG.md for the release gates and detailed changes.
 
-RC55 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
+RC39 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
 - Extract the new exact-commit Windows preview ZIP and double-click PLAY-PREVIEW.cmd.
 - The launcher now uses tools/windows-preview-server.py, not plain http.server.
 - Open Settings > Performance Lab > System Monitor while playing at normal resolution.
@@ -70,30 +70,3 @@ RC55 WINDOWS PERFORMANCE CAPTURE (NEW; HARDWARE RESULT NOT YET VERIFIED)
   stdlib server; do not interpret missing GPU counters as zero GPU load.
 - The CSV is written to the OS temporary folder and served only on 127.0.0.1:8769.
 - This instrumentation does not fix low FPS; it makes the reported slideshow measurable.
-
-RC55 PERFORMANCE LAB DIAGNOSTIC UPDATE
-- In-game Performance Lab samples may run 60 seconds and retain frame gaps beyond 15 seconds.
-- Use System Monitor CSV for independent host/heartbeat samples during browser stalls.
-- Physical Windows FPS and GPU utilization remain unmeasured until captured on hardware.
-
-RC55 SYSTEM CSV CAPTURE QUALITY CHECK
-- tools/analyze-windows-performance.py identifies short/unfocused captures and missing host/browser samples.
-- A 30-60s focused Windows capture with at least 20 host samples and two browser heartbeats supports foreground FPS analysis; host-only stall evidence remains useful if the browser freezes.
-- Missing CPU/RAM counters are not treated as zero. No GPU timing or utilization is measured.
-
-RC58 SUSTAINED-SLIDESHOW FRAMEBUFFER RECOVERY (CANDIDATE; NOT FPS VERIFIED)
-- When active, visible and focused, three consecutive >250ms frames now lower
-  the framebuffer pixel scale in bounded steps (minimum 0.65), no more often
-  than every five seconds. Isolated stalls and suspended tabs do not trigger it.
-- This may reduce pixel workload during a slideshow but does not prove faster
-  Windows FPS. Use the same 30-60s heavy-destruction Performance Lab/System
-  Monitor CSV capture to measure before/after on the physical Windows machine.
-- Gameplay, meteor ignition, neighborhood destruction, school FBX and dragon
-  controls remain unchanged.
-
-RC59 ONE-CLICK PHYSICAL WINDOWS 60-SECOND CAPTURE (CANDIDATE; HARDWARE NOT YET TESTED)
-- Start PLAY-PREVIEW.cmd, begin active gameplay and heavy destruction.
-- Double-click CAPTURE-WINDOWS-PERFORMANCE.cmd, press a key, and return to the game within the 10-second countdown.
-- After 60 seconds, find timestamped .csv and .json files under performance-captures; upload both for review.
-- This captures ONLY the requested 60-second window, not prior sessions. Host sampling continues during browser freezes.
-- The script verifies the local preview server belongs to this extracted folder. GPU timing/utilization remains unsupported.

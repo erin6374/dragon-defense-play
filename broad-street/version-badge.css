@@ -1,0 +1,12 @@
+/* North Broad Studio build identifier: self-contained and always prominent. */
+#bsv-edition-bar { box-sizing:border-box;position:sticky;top:0;z-index:200000;display:flex;
+  align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;min-height:54px;
+  padding:10px 16px;background:#082e38;color:#f8fafc;border-bottom:3px solid #edb653;
+  font:500 13px/1.4 system-ui,-apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 2px 10px #0005; }
+#bsv-edition-bar .bsv-big {font-size:20px;font-weight:800;letter-spacing:.35px;color:white;}
+#bsv-edition-bar .bsv-id {font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#e6f5f3;}
+#bsv-edition-bar .bsv-sub {font-size:12px;color:#f0d69b;}
+#bsv-edition-bar .bsv-status {font-size:12px;color:#d5f4e9;}
+#bsv-edition-bar .bsv-verify-bad {color:#ffd199;font-weight:700;}
+#bsv-edition-bar a{color:#aaf7ec;text-decoration:underline}
+@media(max-width:650px){#bsv-edition-bar{padding:7px 10px}#bsv-edition-bar .bsv-big{font-size:17px}}

@@ -21,8 +21,12 @@ function roleFor(mesh){
 }
 function roleMaterial(role){
  const colors={glazing:0x668e9d,roof:0x343c41,brick:0x874f3f,limestone:0xc2b7a6,metal:0x48545c,concrete:0x8f928e};
- return new THREE.MeshStandardMaterial({color:colors[role],roughness:role==='glazing'?.29:role==='metal'?.58:.84,
-  metalness:role==='glazing'?.15:role==='metal'?.38:.01,side:THREE.DoubleSide});
+ const isGlazing=role==='glazing',isMatte=['roof','brick','limestone','concrete'].includes(role);
+ if(isGlazing){
+  return new THREE.MeshPhysicalMaterial({color:colors.glazing,roughness:.08,metalness:.30,clearcoat:1.0,clearcoatRoughness:.08,envMapIntensity:2.4,transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide});
+ }
+ return new THREE.MeshStandardMaterial({color:colors[role],roughness:isMatte?.95:role==='metal'?.58:.88,
+  metalness:isMatte?0:role==='metal'?.38:.01,envMapIntensity:isMatte?0.02:1.0,side:THREE.DoubleSide});
 }
 export function batchStaticBim(root,{maxVerticesPerBatch=320000,maxMeshesPerBatch=500,exteriorOnly=false,exteriorMargin=3.6,meshFilter=null}={}){
  root.updateWorldMatrix(true,true);
