@@ -6,7 +6,7 @@ import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '..
 export function createStructuralCity(THREE,scene,bank){
  const groups={front:new THREE.Group(),backNear:new THREE.Group(),backMid:new THREE.Group(),backFar:new THREE.Group(),school:new THREE.Group()};
  for(const [name,g] of Object.entries(groups)){g.name='structural-'+name;scene.add(g)}
- const buildings=[],parts=[],buckets=new Map(),moving=new Set(),dirty=new Set();let finalized=false,time=0,particlesEnabled=true,rubbleVisible=true;
+ const buildings=[],parts=[],buckets=new Map(),moving=new Set(),dirty=new Set(),supportWork=new Set();let finalized=false,time=0,particlesEnabled=true,rubbleVisible=true,supportPasses=0;
  const brokenGeometry=new THREE.BoxGeometry(1,1,1,2,2,2);const bp=brokenGeometry.attributes.position;for(let i=0;i<bp.count;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),r=Math.sin(x*71+y*93+z*39)*.045;bp.setXYZ(i,x+r,y+r*.7,z-r*.8)}brokenGeometry.computeVertexNormals();
  const cube=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D(),zero=new THREE.Matrix4().makeScale(0,0,0);
  const materials={
@@ -44,7 +44,7 @@ export function createStructuralCity(THREE,scene,bank){
  }
  function addBuilding(o){
   if(finalized)throw Error('Buildings must be registered before finalize');
-  const b={...o,damage:0,pressure:0,parts:[],sections:[],windows:[],collapseClock:0,stories:o.stories||3};b.front=o.z+o.d*.5;
+  const b={...o,damage:0,pressure:0,parts:[],sections:[],windows:[],collapseClock:0,supportRevision:0,stories:o.stories||3};b.front=o.z+o.d*.5;
   if(o.school)b.layer='school';
   else if(o.background)b.layer=(o.z<-95?'backFar':o.z<-63?'backMid':'backNear');
   else b.layer='front';
@@ -284,8 +284,13 @@ export function createStructuralCity(THREE,scene,bank){
   if(detached)broken.visible=true;
   dirty.add(p.bucket);
  }
+ function scheduleSupport(b){
+  b.supportRevision=(b.supportRevision??0)+1;
+  supportWork.add(b);
+ }
  function detach(p,origin,power=1,blast=false){
   if(p.state!=='attached'||p.type==='foundation')return 0;
+  scheduleSupport(p.building);
   if(p.type==='window'){p.state='removed';write(p);fragmentBurst(p.position,14,true,power);return 1}
   p.state='falling';p.age=0;
   const weight=Math.sqrt(Math.max(1,p.mass));
@@ -344,6 +349,8 @@ export function createStructuralCity(THREE,scene,bank){
   b.pressure=Math.min(1,b.pressure+strength*(b.school?0.04:0.18));
   if(!b.school) b.damage=Math.max(b.damage,b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length);
   b.collapseClock=0;
+  // Pressure changes can also trigger a previously weakened structure.
+  scheduleSupport(b);
   dustBurst(origin,Math.min(3,radius*.3));
   fragmentBurst(origin,Math.min(120,Math.round(35+radius*9)),false,strength);
   return removed;
@@ -384,11 +391,15 @@ export function createStructuralCity(THREE,scene,bank){
   for (let i = 0; i < Math.min(needed,partScores.length); i++) detach(partScores[i].part,partScores[i].part.position,.5);
  }
  function update(dt){time+=dt;
-  for(const b of buildings){
-   if(b.pressure===0&&b.damage===0)continue;
+  // Only topology changes or outstanding delayed failures need a support
+  // pass. Stable damaged buildings no longer rescan forever.
+  for(const b of supportWork){
    b.collapseClock-=dt;
    if(b.collapseClock>0)continue;
    b.collapseClock=0.25;
+   supportPasses++;
+   const revision=b.supportRevision;
+   let pendingFailure=false;
    const support=supportedFloors(b.parts,b.stories);
    const lostRatio=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
    const catastrophic=!b.school&&b.pressure>=0.98&&lostRatio>0.92;
@@ -399,7 +410,8 @@ export function createStructuralCity(THREE,scene,bank){
      if(!b.school&&isTopRoof&&!catastrophic&&(support[p.floor]||p.supports?.some(c=>c.state==='attached')))continue;
     if(!b.school&&(catastrophic||!support[p.floor]||p.supports?.length&&p.supports.every(c=>c.state!=='attached'))){
      p.failureAt??=time+0.8+p.floor*0.5+Math.random()*0.5;
-     if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>(b.school?4:12))break}
+     if(time>=p.failureAt){detach(p,p.position,.45);if(++shed>=12){pendingFailure=true;break}}
+     else pendingFailure=true;
     }
     else if(p.type==='frame'&&p.original.position.z>b.front-.1){
      const attached=b.sections.some(w=>w.state==='attached'&&w.floor===p.floor&&Math.abs(w.position.x-p.position.x)<b.w/(b.bays||2));
@@ -415,6 +427,7 @@ export function createStructuralCity(THREE,scene,bank){
     b.damage=Math.max(b.damage,lost);
     if(lost>.97)b.damage=1;
    }
+   if(!pendingFailure&&revision===b.supportRevision)supportWork.delete(b);
   }
   for(const p of moving){p.age+=dt;const oldBottom=p.position.y-p.size.y*.5;const b=p.building;const insideB=b&&Math.abs(p.position.x-b.x)<b.w*0.48&&Math.abs(p.position.z-b.z)<b.d*0.48;const basementDepth=insideB?1.8:0;const ground=(.08-basementDepth)+(pile.get(pileKey(p.position))||0),incoming=-p.velocity.y;const asleep=integrateFragment(p,dt,ground);if(incoming>4&&p.position.y-verticalExtent(p)<ground+.03){dustBurst(p.position,Math.min(2,p.mass*.1));if(!p.fractured&&(p.mass>2.5||p.type==='partition')){p.fractured=true;fragmentBurst(p.position,18,false,.4,2.8);p.size.multiplyScalar(p.type==='partition'?.45:.65);p.position.y=ground+verticalExtent(p);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0x807367));p.bucket.mesh.instanceColor.needsUpdate=true;}}
    // Floor collisions: falling heavy slabs break supports below them; furniture lands.
@@ -430,7 +443,7 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;dustChanged=true;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}if(dustChanged){dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;}
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();supportWork.clear();supportPasses=0;pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.supportRevision=0;b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
@@ -442,5 +455,5 @@ export function createStructuralCity(THREE,scene,bank){
   setAtmosphere(darkness){materials.room.emissiveIntensity=.05+darkness*.55;materials.glass.color.setHex(0x7d9ea9).lerp(new THREE.Color(0xd4b184),darkness*.35)},
   setParticlesEnabled(on){particlesEnabled=!!on;dustMesh.visible=!!on},
   setRubbleVisible(on){rubbleVisible=on;contact.visible=on;for(const [i,m] of chipMeshes.entries())m.visible=on&&chips.slice(i*1600,(i+1)*1600).some(Boolean)},
-  stats:()=>({buildings:buildings.length,components:parts.length,drawBatches:buckets.size*2+5,activeFragments:moving.size,smallDebris:chips.filter(Boolean).length,activeSmallDebris:activeChips.size,collapsed:buildings.filter(b=>b.damage>=.97).length,attached:parts.filter(p=>p.state==='attached').length,types:Object.fromEntries(['slab','partition','stair','furniture','window'].map(t=>[t,parts.filter(p=>p.type===t).length]))})};
+  stats:()=>({buildings:buildings.length,components:parts.length,drawBatches:buckets.size*2+5,activeFragments:moving.size,smallDebris:chips.filter(Boolean).length,activeSmallDebris:activeChips.size,pendingSupportBuildings:supportWork.size,supportPasses,collapsed:buildings.filter(b=>b.damage>=.97).length,attached:parts.filter(p=>p.state==='attached').length,types:Object.fromEntries(['slab','partition','stair','furniture','window'].map(t=>[t,parts.filter(p=>p.type===t).length]))})};
 }
