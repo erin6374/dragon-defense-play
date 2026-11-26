@@ -4,6 +4,24 @@ import {meteorImpactEnergy,componentImpact} from '../simulation/school-impact-re
 // front lobby is a deliberately prominent interpretation of the user's real
 // factory interior; classroom partitions beyond it are illustrative, not BIM.
 // Pieces share instanced draw batches and detach into permanent rubble.
+// PBX Material Physics Specification: density (t/m^3), rigidity, yield strength, restitution, drag, gravity
+export const MATERIAL_PROPERTIES = [
+  // 0: Brick / Exterior Masonry Facade & Piers
+  { name: 'brick_masonry', density: 1.9, rigidity: 2.4, yieldStrength: 1.8, restitution: -0.16, drag: 0.65, grav: 16.5 },
+  // 1: Concrete Floor Slabs & Foundation / Basement Walls
+  { name: 'reinforced_concrete', density: 2.4, rigidity: 5.5, yieldStrength: 3.2, restitution: -0.06, drag: 0.40, grav: 21.0 },
+  // 2: Architectural Glazing / Window Panes
+  { name: 'glazing_glass', density: 2.5, rigidity: 0.12, yieldStrength: 0.20, restitution: -0.02, drag: 2.4, grav: 9.6 },
+  // 3: Structural Steel Columns, Beams, Mullions, & Rebar
+  { name: 'structural_steel', density: 7.85, rigidity: 8.5, yieldStrength: 5.5, restitution: -0.22, drag: 0.32, grav: 18.5 },
+  // 4: Interior Drywall Partitions, Ceiling Soffits, Whiteboards
+  { name: 'interior_drywall', density: 0.85, rigidity: 0.65, yieldStrength: 0.45, restitution: -0.10, drag: 1.8, grav: 10.8 },
+  // 5: Classroom & Office Furniture (desks, chairs, bookshelves)
+  { name: 'furniture_wood_plastic', density: 0.95, rigidity: 1.5, yieldStrength: 0.55, restitution: -0.12, drag: 0.95, grav: 13.5 },
+  // 6: Industrial Roof Equipment, Parapets, Gravel Ballast
+  { name: 'roof_industrial', density: 2.1, rigidity: 3.2, yieldStrength: 2.2, restitution: -0.14, drag: 0.55, grav: 17.0 }
+];
+
 export function createDestructibleSchool(THREE,scene,bounds){
  const min=bounds.min,max=bounds.max,centerX=(min.x+max.x)/2;
  const depth=max.z-min.z,height=max.y-min.y,width=max.x-min.x;
@@ -77,10 +95,18 @@ export function createDestructibleSchool(THREE,scene,bounds){
  let activeFallingPieces=0;
  const batchCounts=new Int32Array(materials.length);
  let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0,effectsHooks=null;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
- function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=1,rigidity=1,isFurniture=false}={}){
-  // Pieces have a simple physically-inspired falling state, not hidden floors.
-  pieces.push({kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
-   protectedZone,mass,rigidity,isFurniture,integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false});
+ function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=null,rigidity=null,isFurniture=false}={}){
+  const props = MATERIAL_PROPERTIES[kind] || MATERIAL_PROPERTIES[0];
+  const vol = Math.max(0.04, w * h * d);
+  const calcMass = mass !== null ? mass : Math.max(0.15, vol * props.density * 0.85);
+  const calcRigidity = rigidity !== null ? rigidity : props.rigidity;
+  pieces.push({
+   kind,x,y,z,w,h,d,homeX:x,homeY:y,homeZ:z,zone,strength,
+   protectedZone,mass:calcMass,rigidity:calcRigidity,isFurniture,
+   yieldStrength:props.yieldStrength,restitution:props.restitution,dragRate:props.drag,grav:props.grav,
+   integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,
+   axialDeformation:0,buckleAngle:0,twistAngle:0,isBuckled:false
+  });
  }
  const wall=(x,y,z,w,h,d,kind=0,zone='facade',strength=1,mass=2.2,rigidity=1.8)=>piece(kind,x,y,z,w,h,d,{zone,strength,mass,rigidity});
  const slab=(x,y,z,w,d,kind=1,zone='floor',mass=5.2,rigidity=3.2)=>piece(kind,x,y,z,w,.23,d,{zone,strength:1.1,mass,rigidity});
@@ -266,31 +292,48 @@ export function createDestructibleSchool(THREE,scene,bounds){
   const implodeDirX=toCenterX/distCenter;
   const implodeDirZ=toCenterZ/distCenter;
 
-  const isInterior=['floor','column','beam','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','basement-column','basement-floor','basement-wall','rebar'].includes(p.zone);
+  const isInterior=['floor','column','beam','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','classroom-chair','lab-monitor','student-desk','filing-cabinet','classroom-bookshelf','basement-column','basement-floor','basement-wall','rebar'].includes(p.zone);
   const isGlass=p.kind===2||p.zone==='glass';
-  const rigidity=p.rigidity||(isGlass?0.1:isInterior?4.0:1.8);
+  const isSteel=p.kind===3||['beam','column','atrium-column','basement-column','rebar'].includes(p.zone);
+  const rigidity=p.rigidity||(isGlass?0.12:isSteel?8.5:isInterior?4.0:2.2);
   const mass=p.mass||(isGlass?0.25:p.zone==='floor'?5.2:isInterior?4.0:2.2);
 
   if(isInterior){
-   const implodeSpeed=(violent?4.8:2.4)/Math.sqrt(mass);
-   p.vx=implodeDirX*implodeSpeed+a*1.2;
-   p.vz=implodeDirZ*implodeSpeed+b*1.2;
-   p.vy=(violent?-1.8:-0.6)-Math.abs(b)*(violent?2.8:1.2)/Math.sqrt(mass);
-   p.vr=(a+b)*(1.8/rigidity);
+   const implodeSpeed=(violent?5.2:2.8)/Math.sqrt(Math.max(0.4,mass));
+   p.vx=implodeDirX*implodeSpeed+a*1.1;
+   p.vz=implodeDirZ*implodeSpeed+b*1.1;
+   p.vy=(violent?-3.2:-1.2)-Math.abs(b)*(violent?3.2:1.6)/Math.sqrt(Math.max(0.4,mass));
+   p.vr=(a+b)*(2.0/rigidity);
+   p.isImploded=true;
   }else{
-   const explodeSpeed=(violent?(isGlass?8.5:6.2):(isGlass?4.8:3.2))/Math.sqrt(mass);
-   p.vx=-implodeDirX*explodeSpeed+a*2.2;
-   p.vz=-implodeDirZ*explodeSpeed+b*2.2;
-   p.vy=1.2+Math.abs(b)*(violent?5.5:2.8)/Math.sqrt(mass);
-   p.vr=(a+b)*(isGlass?6.0:3.2);
+   const explodeSpeed=(violent?(isGlass?9.5:6.8):(isGlass?5.2:3.6))/Math.sqrt(Math.max(0.3,mass));
+   p.vx=-implodeDirX*explodeSpeed+a*2.4;
+   p.vz=-implodeDirZ*explodeSpeed+b*2.4;
+   p.vy=1.4+Math.abs(b)*(violent?6.2:3.2)/Math.sqrt(Math.max(0.3,mass));
+   p.vr=(a+b)*(isGlass?7.2:3.6);
+   p.isExploded=true;
+  }
+
+  // RC163: Structural steel plastic buckling deformation
+  if(isSteel){
+   p.isBuckled=true;
+   p.axialDeformation=(violent?0.38:0.18)*(1.0/Math.sqrt(Math.max(1.0,rigidity)));
+   p.buckleAngle=(a*0.35+b*0.25)*p.axialDeformation;
+   p.twistAngle=(a-b)*0.45*p.axialDeformation;
   }
 
   const frame=structural.has(p)||p.zone==='floor'||p.zone==='basement-floor';
   p.profile=isGlass?'glass':frame?'structure':'facade';
   if(effectsHooks){
    if(p.profile==='glass')effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
-   else if(['column','pier','atrium-column'].includes(p.zone))effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
+   else if(['column','pier','atrium-column','basement-column'].includes(p.zone))effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
    else if(['floor','basement-floor'].includes(p.zone))effectsHooks.onFloorPancake?.(p.x,p.y,p.z);
+
+   // RC163: Live electrical wire / conduit short arc sparks
+   const isElectrical=['classroom-light','lab-monitor','basement-column','rebar','partition','atrium-light'].includes(p.zone);
+   if(isElectrical&&Math.random()<0.68){
+    effectsHooks.onElectricalShort?.(p.x,p.y,p.z,violent?1.8:1.0);
+   }
   }
   return true;
  }
@@ -384,6 +427,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const b=Math.cos(p.z*5.5-p.x*2.2);
    const hDist = Math.sqrt(hDistSq);
    const isCoreImplosion = hDist < (radius * 0.55);
+   const isSteelPiece = p.kind === 3 || p.zone === 'beam' || p.zone === 'column' || p.zone === 'atrium-column' || p.materialType === 'steel';
+   if (isSteelPiece) {
+    p.isBuckled = true;
+    p.axialDeformation = Math.min(1.0, 0.45 + (1.0 - hDist / radius) * 0.55);
+    p.buckleAngle = (a * 0.35 + b * 0.25) * p.axialDeformation;
+    p.twistAngle = (a - b) * 0.45 * p.axialDeformation;
+   }
 
    if (isCoreImplosion) {
     // RC151: Internal Implosion Core — pieces sucked inward toward penetration axis
@@ -525,10 +575,19 @@ export function createDestructibleSchool(THREE,scene,bounds){
    position.set(p.x,p.y,p.z);
    const tumble=p.resting?0:p.rot;
    let rx=tumble,ry=p.rot,rz=tumble*.63;
-   if(!p.falling&&!p.resting&&(p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column')&&p.integrity<0.92){
-    const sag=(1.0-p.integrity)*0.32;
+   if(!p.falling&&!p.resting&&(p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column'||p.zone==='basement-column')&&p.integrity<0.95){
+    const deform=(1.0-p.integrity);
+    const sag=deform*0.38;
     position.y-=sag*0.45;
-    rz+=Math.sin(p.homeX*2.8)*sag*0.42;
+    position.x+=Math.sin(p.homeY*2.5)*deform*0.35;
+    position.z+=Math.cos(p.homeY*2.5)*deform*0.35;
+    rz+=Math.sin(p.homeX*2.8)*deform*0.35;
+    rx+=Math.cos(p.homeZ*2.4)*deform*0.25;
+   }
+   if(p.falling&&p.isBuckled){
+    rx+=p.buckleAngle;
+    ry+=p.twistAngle;
+    rz+=p.buckleAngle*0.7;
    }
    rotation.set(rx,ry,rz);
    quat.setFromEuler(rotation);
@@ -596,7 +655,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    fullFiveStoryShell:!collapsing,collapsing}}
  reset();
  return {group:batches,impact,punchBorehole,collapse,update,reset,restore:reset,syncDestruction,stats,
-  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass,isFurniture:!!p.isFurniture,isImploded:!!p.isImploded,isExploded:!!p.isExploded})),
+  getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass,rigidity:p.rigidity,kind:p.kind,materialType:p.materialType||(p.kind===3?'steel':p.kind===2?'glass':p.kind===1?'concrete':p.kind===5?'furniture':'brick'),isFurniture:!!p.isFurniture,isImploded:!!p.isImploded,isExploded:!!p.isExploded,isBuckled:!!p.isBuckled,axialDeformation:p.axialDeformation||0})),
   setEffectsHooks:hooks=>{effectsHooks=hooks;},
   getFlamingDebris:()=>pieces.filter(p=>p.resting&&p.isFlaming).map(p=>({x:p.x,y:p.y,z:p.z,scale:Math.max(p.w,p.h)})),
   setDetachedOnly:on=>{if(detachedOnly!==on){detachedOnly=on;flush();}},

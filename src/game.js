@@ -56,10 +56,13 @@ import {createCityExtensions} from './rendering/city-extensions.js';
 import {installSchoolFlankingHouses} from './rendering/school-flanking-houses.js';
 import {createBroadStreetReferenceFacades} from './rendering/broad-street-reference.js';
 import {createNorthBroadModels} from './rendering/north-broad-models.js';
+import {BuildingAssetRegistry} from './rendering/building-registry.js';
+import {createStreetWaterRunoff} from './rendering/street-water-runoff.js';
 import {schoolFitDimensions} from './rendering/school-fit.js';
 import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMesh} from './rendering/tech-freire-source-fit.js';
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
+import {createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
 
 import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,enhanceEnvironment,createCinematicWeather} from './rendering/cinematic-assets.js';
 const mobileVisual=window.matchMedia('(pointer:coarse)').matches;
@@ -239,6 +242,7 @@ const orbitalTheater=createOrbitalTheater(scene,camera,visualBank,(x,y,z,p)=>fla
 },()=>{
  if(satWarning)satWarning.style.display='none';
 });
+if(orbitalTheater?.group)orbitalTheater.group.visible=false;
 const DAY_PHASE_WAVES=10;
 function dayPhase(w){
  if(w>=11&&w<=15)return 0.55; // Chapter 3 starts at dramatic night
@@ -331,6 +335,7 @@ function updateNight(dt){
  for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission*brownout;
  referenceFacades?.update?.(brownout);
  northBroadModels?.update?.(dt, darkness, brownout);
+ streetWaterRunoff?.update?.(dt, craters.some(c=>c.geyserGroup));
 
  const titanX=orbitalTheater?.titanMesh?.position?.x??999;
  const titanDistToSun=Math.abs(titanX-(-22));
@@ -353,6 +358,10 @@ const neighborhood=buildNeighborhood({THREE,scene,staticGroup,block,material,mat
 const referenceFacades=createBroadStreetReferenceFacades(scene,neighborhood.buildings);
 const northBroadModels=createNorthBroadModels(THREE,scene,neighborhood.city,referenceFacades);
 window.__DD_NORTH_BROAD=northBroadModels;
+const buildingRegistry=new BuildingAssetRegistry(scene,northBroadModels,neighborhood.city);
+window.__DD_BUILDING_REGISTRY=buildingRegistry;
+const streetWaterRunoff=createStreetWaterRunoff(scene);
+window.__DD_STREET_RUNOFF=streetWaterRunoff;
 installNeighborhoodWindows();
 // Architecture passes remain separate from simulation and collisions.
 addStreetSurfaceDetail(THREE,staticGroup);
@@ -361,7 +370,7 @@ try{cityExtensions=createCityExtensions({THREE,root:staticGroup,block,material})
 catch(err){console.error('City scenery could not be initialized. Starting core game without it.',err);window.__DD_OPTIONAL_ERRORS=(window.__DD_OPTIONAL_ERRORS||[]).concat('City scenery: '+String(err));}
 const upgradedStreet=enhanceEnvironment(THREE,scene,staticGroup,neighborhood,visualBank);
 const updateWindPlanting=createWindPlanting(upgradedStreet.windTrees,neighborhood.foreground);
-const streetBatchStats=batchStaticStreetProps(staticGroup);console.info('Static street batching:',streetBatchStats);
+const streetBatchStats=batchStaticStreetProps(scene);console.info('Static street batching:',streetBatchStats);
 const cinematicWeather=createCinematicWeather(THREE,scene,{mobile:mobileVisual});
 // Voxel facade with ~0.30 world-unit cells. Individual instances can be hidden after impacts.
 const cell=.3,W=28,H=15,D=12,counts={brick:0,brick2:0,stone:0,roof:0,glass:0,glassLit:0,frame:0};const specs=[];
@@ -906,6 +915,17 @@ schoolReconstruction.setEffectsHooks?.({
   if(Math.random()<0.45){
    sound('buildingCollapse',{x,volume:0.38,pitch:1.25});
   }
+ },
+ onElectricalShort:(x,y,z,power=1.0)=>{
+  sound('electricSpark',{x,volume:Math.min(1.0,0.45+power*0.35)});
+  buildingElectricalShorts.triggerArc(
+   new THREE.Vector3(x,y,z),
+   new THREE.Vector3(x+(Math.random()-0.5)*2.4,Math.max(0.2,y-0.8-Math.random()*1.4),z+(Math.random()-0.5)*2.4),
+   power,
+   cinematicFX,
+   sound
+  );
+  cinematicFX.sparks(new THREE.Vector3(x,y,z),Math.floor(12*power),1.2);
  }
 });
 const signCanvas=document.createElement('canvas');signCanvas.width=1024;signCanvas.height=256;
@@ -1331,7 +1351,7 @@ for(const crossX of [-270, -102, 78, 256]){
 }
 function updatePoliceBlockades(dt){
  const activeBlockade=(wave>=6||hp<75);
- policeBlockadeGroup.visible=activeBlockade;
+ policeBlockadeGroup.visible=activeBlockade;try{batchStaticStreetProps(policeBlockadeGroup);}catch(e){}
  if(!activeBlockade)return;
  for(const b of policeBlockades){
   if(b.beacon)b.beacon.material=(Math.floor(elapsed*8)%2)?redLamp:blueLamp;
@@ -2206,9 +2226,12 @@ function disposeCrater(c){
  if(!c)return;
  if(c.mesh){scene.remove(c.mesh);c.mesh.geometry?.dispose();c.mesh.material?.dispose();}
  if(c.inner){scene.remove(c.inner);c.inner.geometry?.dispose();c.inner.material?.dispose();}
- if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
+ if(c.thermalUpdate)c.thermalUpdate(elapsed);
+  if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
  if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.geometry?.dispose();c.rimMesh.material?.dispose();}
  if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.geometry?.dispose();c.bowlMesh.material?.dispose();}
+ if(c.sootDecal){scene.remove(c.sootDecal);c.sootDecal.geometry?.dispose();c.sootDecal.material?.dispose();}
+ if(c.thermalGroup){scene.remove(c.thermalGroup);c.thermalGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.subwayGroup){
   scene.remove(c.subwayGroup);
   c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
@@ -2232,14 +2255,13 @@ function addCrater(x,z,radius=3,opts={}){
   const apertureW=Math.max(4.6,radius*1.85);
   const apertureD=Math.max(4.0,radius*1.55);
 
-  // Surface collar: raised 3D fractured asphalt lip around opening
-  rimMesh=new THREE.Mesh(
-   new THREE.RingGeometry(radius*0.82,radius*1.32,24),
-   new THREE.MeshStandardMaterial({color:0x221e1a,roughness:0.95,metalness:0.04,side:THREE.DoubleSide})
-  );
-  rimMesh.rotation.x=-Math.PI/2;
-  rimMesh.position.set(x,0.14,z);
+  // 3D Procedural Jagged Heaved-Asphalt Crest (subway breach)
+  rimMesh=createHeavedAsphaltRim(radius,true);
+  rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
+  const sootDecal=createFeatheredRadialSootDecal(radius);
+  sootDecal.position.set(x,0.03,z);
+  scene.add(sootDecal);
 
   // Subterranean Subway Cavern
   subwayGroup=new THREE.Group();
@@ -2493,39 +2515,14 @@ function addCrater(x,z,radius=3,opts={}){
    }
   }
 
-  // RC140: High-visibility orange safety cones with reflective collars & flashers cordoning off breach rim
-  const coneMat=new THREE.MeshStandardMaterial({color:0xff5500,roughness:0.45});
-  const collarMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.25});
-  const flasherMat=new THREE.MeshStandardMaterial({color:0xffaa00,emissive:0xffaa00,emissiveIntensity:1.8});
-  const numCones=8;
-  const coneRadius=radius*1.15;
-  for(let cIdx=0;cIdx<numCones;cIdx++){
-   const cAngle=(cIdx/numCones)*Math.PI*2;
-   const cX=Math.cos(cAngle)*coneRadius;
-   const cZ=Math.sin(cAngle)*coneRadius;
+  // RC157: Subterranean third-rail dynamic electric arc flicker light
+  const arcLight = new THREE.PointLight(0x44ddff, 0.0, 18.0, 1.8);
+  arcLight.name = 'subway-third-rail-arc-light';
+  arcLight.position.set(0, -H + 1.2, 0);
+  subwayGroup.add(arcLight);
 
-   const coneRoot=new THREE.Group();
-   coneRoot.name='safety-cone-station';
-   coneRoot.position.set(cX,0.14,cZ);
+// (RC163: Streamlined subterranean breach without toy cones)
 
-   const coneGeom=new THREE.ConeGeometry(0.16,0.65,8);
-   const coneMesh=new THREE.Mesh(coneGeom,coneMat);
-   coneMesh.name='safety-cone';
-   coneMesh.position.y=0.325;
-   coneRoot.add(coneMesh);
-
-   const collarMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.13,0.16,8),collarMat);
-   collarMesh.name='cone-collar';
-   collarMesh.position.y=0.36;
-   coneRoot.add(collarMesh);
-
-   const flasherMesh=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6),flasherMat);
-   flasherMesh.name='breach-flasher';
-   flasherMesh.position.y=0.68;
-   coneRoot.add(flasherMesh);
-
-   subwayGroup.add(coneRoot);
-  }
 
   // RC157: Subterranean emergency evacuation illuminated EXIT signs on tunnel bulkheads
   const exitHousingMat=new THREE.MeshStandardMaterial({color:0x1b2024,roughness:0.7,metalness:0.2});
@@ -2564,31 +2561,27 @@ function addCrater(x,z,radius=3,opts={}){
   sound('spark',{x});
   message('🚇 BROAD STREET SUBWAY BREACH! SEPTA TRAIN CAR & CAVERN COLLAPSED');
  } else {
-  // TRUE 3D VOLUMETRIC DEPRESSED CRATER BOWL (Non-subway)
-  const depth=Math.min(2.2,0.85+radius*0.22);
-  const bowlGeo=new THREE.CylinderGeometry(radius*0.92,radius*0.35,depth,18,1,true);
-  const bowlMat=new THREE.MeshStandardMaterial({color:0x1e1916,roughness:0.96,metalness:0.04,side:THREE.DoubleSide});
-  bowlMesh=new THREE.Mesh(bowlGeo,bowlMat);
-  bowlMesh.position.set(x,-depth*0.5+0.12,z);
+  // TRUE 3D PROCEDURAL VOLUMETRIC IMPACT CAVITY & HEAVED ASPHALT CREST
+  const bowlObj=createVolumetricImpactBowl(radius);
+  bowlMesh=bowlObj.mesh;
+  bowlMesh.position.set(x,0,z);
   scene.add(bowlMesh);
 
-  // Raised 3D asphalt rim collar around top
-  rimMesh=new THREE.Mesh(
-   new THREE.RingGeometry(radius*0.82,radius*1.22,18),
-   new THREE.MeshStandardMaterial({color:0x2a2420,roughness:0.95,metalness:0.02,side:THREE.DoubleSide})
-  );
-  rimMesh.rotation.x=-Math.PI/2;
-  rimMesh.position.set(x,0.14,z);
+  // 3D Procedural Jagged Heaved-Asphalt Crest (buckled upward +0.28m to +0.44m)
+  rimMesh=createHeavedAsphaltRim(radius,false);
+  rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
 
-  // Molten magma bed at bottom of crater bowl
-  ember=new THREE.Mesh(
-   new THREE.CircleGeometry(radius*0.36,16),
-   new THREE.MeshBasicMaterial({color:0xfff4cc,side:THREE.DoubleSide,transparent:true,opacity:0.85})
-  );
-  ember.rotation.x=-Math.PI/2;
-  ember.position.set(x,-depth+0.16,z);
-  scene.add(ember);
+  // Feathered radial scorch decal (zero polygon borders)
+  const sootDecal=createFeatheredRadialSootDecal(radius);
+  sootDecal.position.set(x,0.03,z);
+  scene.add(sootDecal);
+
+  // Pulsating subsurface thermal magma fissure bed
+  const thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth);
+  thermalCore.group.position.set(x,0,z);
+  scene.add(thermalCore.group);
+  ember=thermalCore.mesh;
  }
 
  let geyserGroup=null;
@@ -2629,9 +2622,10 @@ function addCrater(x,z,radius=3,opts={}){
 
   scene.add(geyserGroup);
   sound('water');
+  streetWaterRunoff?.triggerWaterMainRupture(x, z);
  }
 
- craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
+ craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,sootDecal:typeof sootDecal!=='undefined'?sootDecal:null,thermalGroup:typeof thermalCore!=='undefined'?thermalCore?.group:null,thermalUpdate:typeof thermalCore!=='undefined'?thermalCore?.update:null,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
  streetStop=Math.max(streetStop,1.5);
  sound('steam',{x});
  if(craters.length>8){const c=craters.shift();disposeCrater(c);}
@@ -2683,6 +2677,14 @@ function updateCraters(dt){
     const pulse=(Math.sin(elapsed*9.0)>0.1)?1.0:0.12;
     if(bl)bl.intensity=2.5*pulse;
     if(bd&&bd.material)bd.material.emissiveIntensity=1.8*pulse;
+   }
+   const arcLight=c.subwayGroup.getObjectByName('subway-third-rail-arc-light');
+   if(arcLight){
+    if(Math.random()<0.30){
+     arcLight.intensity=3.2+Math.random()*4.5;
+    }else{
+     arcLight.intensity=Math.max(0,arcLight.intensity-dt*14.0);
+    }
    }
   }
   if(c.geyserGroup){
@@ -4277,6 +4279,11 @@ function damage(x,z,y=7,meteor=null){
  );
  const neighbor=!!targetBuilding;
 
+ const schoolHalfW=neighborhood.school.w*0.5+1.2;
+ const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-1.2;
+ const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+1.2;
+ const schoolMaxY=neighborhood.school.h+2.0;
+
  const roadStrike=(hitZ>=11&&hitZ<=42&&targetY<=4.5)||(meteor&&(meteor.size>=4.5)&&targetY<=4.5&&hitZ>=10);
  if(roadStrike){
   strikeParkedCars(targetX,hitZ,profile.radius);shake=Math.max(shake,Math.min(1.4,profile.strength));emitImpact(targetX,1,hitZ,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,hitZ,profile.shockRadius);flashAt(targetX,1.8,hitZ,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,hitZ),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,hitZ),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,hitZ);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,hitZ+(Math.random()-.5)*2.5);
@@ -4284,14 +4291,33 @@ function damage(x,z,y=7,meteor=null){
   neighborhood.aftershock(targetX,targetY,hitZ,shockRadius*0.75,p=>debrisPiece(p,'brick'),blastStrength*0.6);
   const mSz=meteor?.size||(profile.radius*0.45);
   const isSubwayPenetrator = (mSz >= 2.6) || (meteor && meteor.size >= 4.5);
-   addCrater(targetX,hitZ,Math.min(13.0,2.6+mSz*0.75),{isSubway:isSubwayPenetrator,size:mSz,isTitanic:mSz>=9.0,isMassive:mSz>=4.5});
-  sound('impact');return;
+  addCrater(targetX,hitZ,Math.min(13.0,2.6+mSz*0.75),{isSubway:isSubwayPenetrator,size:mSz,isTitanic:mSz>=9.0,isMassive:mSz>=4.5});
+  sound('impact');
+
+  // RC163: Propagate kinetic shockwave to all adjacent buildings along Broad Street
+  const isColossal = mSz >= 4.5;
+  const isTitanic = mSz >= 9.0;
+  const roadShockRadius = Math.max(shockRadius, mSz * 3.8);
+  for(const b of neighborhood.targetBuildings){
+   if(b.school)continue;
+   const bDist = Math.hypot(b.x - targetX, b.z - hitZ);
+   if(bDist <= roadShockRadius + Math.max(b.w, b.d) * 0.5){
+    const dmgFraction = Math.max(0.20, (1.0 - bDist / roadShockRadius)) * (isTitanic ? 1.0 : isColossal ? 0.85 : 0.45);
+    b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
+    neighborhood.city.forceDamage(b, b.damage);
+    const nbDef = northBroadModels?.definitions?.find?.(d => d.id === b.id || (b.name && d.name === b.name));
+    if(nbDef){
+     if(b.damage >= 0.80) northBroadModels.collapseBuilding(nbDef.id);
+     else northBroadModels.damageBuilding(nbDef.id, b.damage);
+    }
+   }
+  }
+  if(Math.abs(targetX) <= schoolHalfW + roadShockRadius * 0.5 && hitZ <= schoolMaxZ + roadShockRadius && architecturalReady){
+   carveSchool(targetX, targetY, hitZ, Math.min(12.0, mSz * 0.85), profile.strength * (isTitanic ? 1.8 : 1.2), meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
+  }
+  return;
  }
 
- const schoolHalfW=neighborhood.school.w*0.5+1.2;
- const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-1.2;
- const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+1.2;
- const schoolMaxY=neighborhood.school.h+2.0;
  const isSchoolHit=architecturalReady&&(
   (Math.abs(targetX)<=schoolHalfW+blastRadius*0.4&&hitZ>=schoolMinZ-blastRadius*0.4&&hitZ<=schoolMaxZ+blastRadius*0.4&&targetY<=schoolMaxY)||
   (!neighbor&&Math.abs(targetX)<=schoolHalfW+3.0&&hitZ>=schoolMinZ-3.0&&hitZ<=schoolMaxZ+3.0)
@@ -5783,7 +5809,7 @@ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_
    }
   }
  }
- dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.35,flightCeiling);
+ dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.35,flightCeiling);if(orbitalTheater?.group){orbitalTheater.group.visible=(dragon.position.y>60||wave>=15);}
  if(dragon.position.y>=flightCeiling||dragon.position.y<=1.35){dragonVelY=0;diveEnergy=0;}
  const roofY=schoolBounds.max.y+2.4;
  const isOverRoof=Math.abs(dragon.position.x)<7.5&&Math.abs(dragon.position.z-(schoolBounds.max.z-1.8))<4.5;
@@ -6826,7 +6852,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // A close camera captures Paulo at real gameplay scale and lighting.
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
- window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;
+ window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;window.__DD_CAMERA=camera;
  window.__DD_SANDBOX={
  isFreeFlight:()=>freeFlightMode,
  setFreeFlight:(on)=>toggleFreeFlight(on),

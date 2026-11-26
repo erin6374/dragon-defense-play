@@ -69,25 +69,63 @@ export function buildNeighborhood({THREE,scene,staticGroup:g,block:b,material,ma
    b(nearStatic,x+side*8.2,-.31,-48.0,2.0,.18,184,walk);
   }
  }
- // Broad Street's double yellow center markings and white lane dividers.
+ // Broad Street's double yellow center markings and white lane dividers (Instanced Batch)
  const yellow=patchCraterDiscardShader(mat(0xb88d41),'yellow-discard');
  const crossings=[-270,-102,78,256];
- for(const [left,right] of [[-1150,-278],[-262,-110],[-94,70],[86,248],[264,1150]]){
-  for(const z of [23.7,24.3])b(nearStatic,(left+right)/2,-.352,z,right-left,.015,.13,yellow);
- }
+ const markBox = new THREE.BoxGeometry(1, 1, 1);
+ const dummy = new THREE.Object3D();
+
+ // White road dashes & crosswalk bars instanced in 1 single draw call
+ const whiteInstanced = new THREE.InstancedMesh(markBox, white, 1600);
+ whiteInstanced.name = 'instanced-white-road-markings';
+ whiteInstanced.frustumCulled = false;
+ let whiteCount = 0;
+
  for(let x=-1150;x<=1150;x+=8){
   if(crossings.some(cross=>Math.abs(x-cross)<9.5))continue;
-  for(const z of [18,31,38])b(nearStatic,x,-.352,z,3,.015,.14,white);
+  for(const z of [18,31,38]){
+   dummy.position.set(x, -0.352, z);
+   dummy.scale.set(3, 0.015, 0.14);
+   dummy.updateMatrix();
+   whiteInstanced.setMatrixAt(whiteCount++, dummy.matrix);
+  }
  }
  for(const x of crossings)for(let z=14;z<44;z+=2.15){
-  for(const side of [-1,1])b(nearStatic,x+side*8.4,-.33,z,2.5,.025,.72,white);
+  for(const side of [-1,1]){
+   dummy.position.set(x+side*8.4, -0.33, z);
+   dummy.scale.set(2.5, 0.025, 0.72);
+   dummy.updateMatrix();
+   whiteInstanced.setMatrixAt(whiteCount++, dummy.matrix);
+  }
  }
- // 2100-Block Commercial Ground Parking Aprons (McDonald's & ArchWell / Former CVS)
- // Paved customer parking apron with yellow stall striping in front of McDonald's (x in [178, 202], z in [-5, 10])
+ whiteInstanced.count = whiteCount;
+ whiteInstanced.instanceMatrix.needsUpdate = true;
+ nearStatic.add(whiteInstanced);
+
+ // Yellow center lines & parking stripes instanced in 1 single draw call
+ const yellowInstanced = new THREE.InstancedMesh(markBox, yellow, 150);
+ yellowInstanced.name = 'instanced-yellow-road-markings';
+ yellowInstanced.frustumCulled = false;
+ let yellowCount = 0;
+
+ for(const [left,right] of [[-1150,-278],[-262,-110],[-94,70],[86,248],[264,1150]]){
+  for(const z of [23.7,24.3]){
+   dummy.position.set((left+right)/2, -0.352, z);
+   dummy.scale.set(right-left, 0.015, 0.13);
+   dummy.updateMatrix();
+   yellowInstanced.setMatrixAt(yellowCount++, dummy.matrix);
+  }
+ }
  b(nearStatic,190.0,-.39,2.5,24.0,.14,15.0,asphalt);
  for(let px=180.0;px<=200.0;px+=2.8){
-  b(nearStatic,px,-.31,3.0,.12,.02,4.8,yellow);
+  dummy.position.set(px, -0.31, 3.0);
+  dummy.scale.set(0.12, 0.02, 4.8);
+  dummy.updateMatrix();
+  yellowInstanced.setMatrixAt(yellowCount++, dummy.matrix);
  }
+ yellowInstanced.count = yellowCount;
+ yellowInstanced.instanceMatrix.needsUpdate = true;
+ nearStatic.add(yellowInstanced);
  // Drive-thru lane apron and approach connecting to McDonald's
  b(nearStatic,207.0,-.39,-12.0,12.0,.14,24.0,asphalt);
  // Authentic McDonald's Landmark Accent (2109 N Broad - Studio E-031):

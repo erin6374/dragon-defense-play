@@ -1152,6 +1152,24 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       if (churchInterior) churchInterior.visible = false;
       if (churchRubbleProxy) churchRubbleProxy.visible = false;
     },
+    swapModel(idOrAddress, source, options = {}) {
+      if (window.__DD_BUILDING_REGISTRY) {
+        return window.__DD_BUILDING_REGISTRY.swapBuildingModel(idOrAddress, source, options);
+      }
+      return null;
+    },
+    getBuildingSlots() {
+      if (window.__DD_BUILDING_REGISTRY) {
+        return window.__DD_BUILDING_REGISTRY.getBuildingSlots();
+      }
+      return [];
+    },
+    loadManifest(manifestObj) {
+      if (window.__DD_BUILDING_REGISTRY) {
+        return window.__DD_BUILDING_REGISTRY.loadBuildingManifest(manifestObj);
+      }
+      return [];
+    },
     getStats() {
       return {
         totalModels: NORTH_BROAD_DEFINITIONS.length,
