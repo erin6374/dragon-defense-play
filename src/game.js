@@ -19,7 +19,7 @@ import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc169';
-console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC170 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
+console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC171 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
 console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded ', 'background: #223344; color: #ffcc44; font-size: 12px; padding: 2px 6px;');
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
@@ -2687,7 +2687,7 @@ function addCrater(x,z,radius=3,opts={}){
 
   // Pulsating subsurface thermal magma fissure bed
   const thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth);
-  thermalCore.group.position.set(x,0,z);
+  thermalCore.group.position.set(x,-bowlObj.depth+0.06,z);
   scene.add(thermalCore.group);
   ember=thermalCore.mesh;
  }
@@ -2748,6 +2748,7 @@ function updateCraters(dt){
  for(let i=craters.length-1;i>=0;i--){
   const c=craters[i];c.life-=dt;
   const heatRatio=Math.max(0,c.life/120);
+  if(c.thermalUpdate)c.thermalUpdate(elapsed);
   if(c.ember){
    c.ember.material.opacity=heatRatio*(.60+.25*Math.sin(elapsed*5.0));
    if(heatRatio>0.75)c.ember.material.color.setHex(0xfff4cc);

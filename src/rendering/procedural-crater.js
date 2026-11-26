@@ -320,14 +320,14 @@ export function createPulsatingThermalFissures(radius, depth) {
   const group = new THREE.Group();
   group.name = 'crater-thermal-core';
 
-  const fissureRadius = radius * 0.38;
+  const fissureRadius = radius * 0.42;
   const segments = 16;
   const positions = [];
   const colors = [];
   const indices = [];
 
   // Multi-tier radial veins: center white-hot, branches orange, outer cooling black
-  positions.push(0, 0.02, 0);
+  positions.push(0, 0.03, 0);
   colors.push(1.0, 0.94, 0.82);
 
   for (let i = 0; i < segments; i++) {
@@ -336,7 +336,7 @@ export function createPulsatingThermalFissures(radius, depth) {
     const rDist = fissureRadius * (isVein ? (0.85 + Math.random() * 0.3) : 0.55);
     const px = Math.cos(angle) * rDist;
     const pz = Math.sin(angle) * rDist;
-    positions.push(px, 0.02, pz);
+    positions.push(px, isVein ? 0.025 : 0.015, pz);
 
     if (isVein) {
       colors.push(1.0, 0.32, 0.02);
@@ -361,7 +361,7 @@ export function createPulsatingThermalFissures(radius, depth) {
     roughness: 0.45,
     metalness: 0.1,
     emissive: 0xff3b00,
-    emissiveIntensity: 1.6,
+    emissiveIntensity: 1.8,
     side: THREE.DoubleSide
   });
 
@@ -369,8 +369,22 @@ export function createPulsatingThermalFissures(radius, depth) {
   mesh.name = 'crater-magma-fissure-mesh';
   group.add(mesh);
 
-  const light = new THREE.PointLight(0xff5511, 2.2, Math.max(8.0, radius * 3.5));
-  light.position.set(0, 0.35, 0);
+  // Scattered molten obsidian and concrete chunks resting on the crater floor
+  const rubbleGeo = new THREE.DodecahedronGeometry(0.18, 0);
+  const rubbleMat = new THREE.MeshStandardMaterial({ color: 0x181412, roughness: 0.92, metalness: 0.25 });
+  for (let r = 0; r < 7; r++) {
+    const chunk = new THREE.Mesh(rubbleGeo, rubbleMat);
+    const rAngle = (r / 7) * Math.PI * 2 + Math.sin(r * 2.1) * 0.3;
+    const rDist = (radius * 0.22) * (0.4 + (r % 3) * 0.25);
+    chunk.scale.set(0.6 + (r % 3) * 0.3, 0.4 + (r % 2) * 0.2, 0.6 + (r % 4) * 0.3);
+    chunk.position.set(Math.cos(rAngle) * rDist, 0.08, Math.sin(rAngle) * rDist);
+    chunk.rotation.set(r * 0.8, r * 1.4, r * 0.5);
+    group.add(chunk);
+  }
+
+  // Deep subsurface warm thermal glow illuminating bowl walls from beneath
+  const light = new THREE.PointLight(0xff5511, 2.8, Math.max(8.0, radius * 3.5));
+  light.position.set(0, 0.28, 0);
   light.name = 'crater-thermal-glow-light';
   group.add(light);
 
@@ -382,9 +396,9 @@ export function createPulsatingThermalFissures(radius, depth) {
     light,
     material,
     update: (elapsed) => {
-      const pulse = 1.3 + Math.sin(elapsed * 2.8) * 0.45;
+      const pulse = 1.4 + Math.sin(elapsed * 2.8) * 0.5;
       material.emissiveIntensity = pulse;
-      light.intensity = pulse * 1.5;
+      light.intensity = pulse * 1.6;
     }
   };
 }
