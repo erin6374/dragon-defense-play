@@ -12,6 +12,7 @@ import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConf
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
 import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
 import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
+import {traceMeteorCollision} from './simulation/meteor-collision.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
 import {forcedVehicleRole,planResponderRoute,hoseReach} from './simulation/responder-routing.js';
@@ -4357,23 +4358,10 @@ function spawnHelicopterCrashDebris(pos,variant=0){
 // Opening-wave rocks hit the first standing roof or ground plane they cross.
 // Sweep the fall so fast or small fragments cannot tunnel through a roof.
 function traceOpeningMeteorImpact(m,start){
- const end=m.mesh.position,drop=start.y-end.y;
- if(drop<=0)return false;
- let earliest=Infinity;
- function check(y,minX,maxX,minZ,maxZ,parcel=null){
-  const t=(start.y-y)/drop;
-  if(t<0||t>1||t>=earliest)return;
-  const x=THREE.MathUtils.lerp(start.x,end.x,t);
-  const z=THREE.MathUtils.lerp(start.z,end.z,t);
-  if(x>=minX&&x<=maxX&&z>=minZ&&z<=maxZ&&(!parcel||containsParcel(parcel,x,z)))earliest=t;
- }
- check(.7,-Infinity,Infinity,-Infinity,Infinity);
- if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,schoolBounds.min.z,schoolBounds.max.z);
- for(const b of neighborhood.targetBuildings){
-  if(b.damage<.98)check(b.h,b.x-b.w/2,b.x+b.w/2,b.z-b.d/2,b.z+b.d/2,b);
- }
- if(earliest===Infinity)return false;
- m.target.copy(start).lerp(end,earliest);
+ const hit=traceMeteorCollision(start,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1);
+ if(!hit)return false;
+ m.target.set(hit.point.x,hit.point.y,hit.point.z);
+ m.impactOwner=hit;
  return true;
 }
 function damage(x,z,y=7,meteor=null){
@@ -4391,7 +4379,8 @@ function damage(x,z,y=7,meteor=null){
  const blastRadius=profile.radius*(diffMode==='hard'?2.2:1.0);
  const blastStrength=profile.strength*diffDmg;
 
- const targetBuilding=neighborhood.activeAt(targetX,hitZ);
+ const owner=meteor?.impactOwner;
+ const targetBuilding=owner?(owner.kind==='building'?owner.building:null):neighborhood.activeAt(targetX,hitZ);
  const schoolMaxY=neighborhood.school.h+2.0;
 
  const roadStrike=!targetBuilding&&targetY<=4.5&&isBroadRoad(targetX,hitZ);
@@ -4410,7 +4399,7 @@ function damage(x,z,y=7,meteor=null){
   return;
  }
 
- const isSchoolHit=!targetBuilding&&architecturalReady&&targetX>=schoolBounds.min.x&&targetX<=schoolBounds.max.x&&
+ const isSchoolHit=owner?owner.kind==='school':!targetBuilding&&architecturalReady&&targetX>=schoolBounds.min.x&&targetX<=schoolBounds.max.x&&
   hitZ>=schoolBounds.min.z&&hitZ<=schoolBounds.max.z&&targetY<=schoolMaxY;
  if(isSchoolHit&&hp>0)sound('dragonRoar',{variant:'furious',x:dragon.position.x});
 
@@ -6541,36 +6530,19 @@ if(m.grounded){
    continue;
   }
 
-  // Sweep collision detection: catch any descending meteor piercing a building roof or facade
-  let sweepHit=null;
-  let hitBuilding=null;
-  let hitSchool=false;
-  if(!m.opening&&!m.dragonHunter&&m.vel&&m.vel.y<-0.1){
-   const curr=m.mesh.position;
-   const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
-   const sMinZ=schoolBounds.min.z,sMaxZ=schoolBounds.max.z;
-   const sMaxY=schoolBounds.max.y;
-   // A mapped parcel owns its precise footprint before the enlarged school
-   // collision envelope is considered. Do not let the school mask a neighbor.
-   if(neighborhood?.targetBuildings){
-    for(const b of neighborhood.targetBuildings){
-     if(b.damage>=0.999)continue;
-     if(curr.y<=b.h&&meteorStart.y>=0.5&&containsParcel(b,curr.x,curr.z)){
-      sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
-      hitBuilding=b;
-      break;
-     }
-    }
-   }
-   if(!sweepHit&&schoolDamage<1&&!neighborhood.activeAt(curr.x,curr.z)&&curr.x>=sMinX&&curr.x<=sMaxX&&curr.z>=sMinZ&&curr.z<=sMaxZ&&curr.y<=sMaxY+0.8&&meteorStart.y>=0.5){
-    sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
-    hitSchool=true;
-   }
-  }
+  // The same continuous collision test handles opening and later waves.
+  // A large time step cannot skip a roof or pass through a side facade.
+  const collision=!m.opening&&!m.dragonHunter&&m.vel?.y<-.1?
+   traceMeteorCollision(meteorStart,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1):null;
+  const sweepHit=collision?new THREE.Vector3(collision.point.x,collision.point.y,collision.point.z):null;
+  const hitBuilding=collision?.building??null;
+  const hitSchool=collision?.kind==='school';
+  if(collision)m.impactOwner=collision;
 
   // Roof breach triggers progressive crunching through the building
   if(sweepHit&&hitSchool&&elapsed<schoolShieldUntil){groundFireball(sweepHit.x,sweepHit.y,sweepHit.z,m.size);remove(meteors,i);continue;}
-  if(sweepHit&&!m.harmless&&(m.size??1)>=1.35&&!m.dragonHunter&&!m.boss&&!m.opening&&m.mesh.position.y>1.2){
+  if(sweepHit&&(hitBuilding||hitSchool)&&!m.harmless&&(m.size??1)>=1.35&&!m.dragonHunter&&!m.boss&&!m.opening&&sweepHit.y>1.2){
+   m.mesh.position.copy(sweepHit);
    m.crunching=true;
    m.crunchBuilding=hitBuilding||(hitSchool?neighborhood.school:null);
    m.crunchStartY=m.mesh.position.y;
@@ -6616,7 +6588,7 @@ if(m.grounded){
    if(sweepHit)m.target.copy(sweepHit);
    if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}
    const heat=openingMoltenHeat(m);
-   if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
+   if(elapsed<schoolShieldUntil&&(m.impactOwner?m.impactOwner.kind==='school':m.target.z<14&&Math.abs(m.target.x)<30&&!neighborhood.activeAt(m.target.x,m.target.z))){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
    if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
    groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);
    cinematicFX.burst(m.target,Math.max(.4,m.size));
