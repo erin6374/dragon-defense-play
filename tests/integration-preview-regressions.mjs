@@ -82,4 +82,36 @@ test('Forced damage detaches only its missing quota, without premature flattenin
  force(b,1);assert.equal(detaches,80);
  force(b,1);assert.equal(detaches,80);
 });
+test('Structural support queue drains after stable damage and retains delayed failures',()=>{
+ const structural=read('src/rendering/structural-city.js');
+ const start=structural.indexOf(' function scheduleSupport('),end=structural.indexOf(' function detach(',start);
+ const a=structural.indexOf(' function update(dt)'),b=structural.indexOf('  for(const p of moving)',a);
+ assert.ok(start>=0&&end>start&&a>=0&&b>a);
+ const code=structural.slice(start,end)+structural.slice(a,b)+'\n}';
+ const env=new Function('supportedFloors',
+  "let time=0,supportPasses=0;const supportWork=new Set();function detach(p){if(p.state!=='attached')return 0;p.state='falling';scheduleSupport(p.building);return 1;}"+code+
+  'return {scheduleSupport,update,state:()=>({supportPasses,pending:supportWork.size})}'
+ )((parts,stories)=>Array(stories).fill(parts.some(p=>p.type==='column'&&p.state==='attached')));
+ const mk=()=>{const b={school:false,h:6,stories:1,damage:0,pressure:.4,collapseClock:0,supportRevision:0,parts:[],sections:[],slabs:[]};
+  b.parts=[{type:'column',state:'attached',floor:0,building:b,original:{position:{y:1}},position:{}},{type:'wall',state:'attached',floor:0,building:b,original:{position:{y:1}},position:{}}];b.structuralParts=b.parts;return b;};
+ const one=mk();env.scheduleSupport(one);env.update(.3);assert.equal(env.state().pending,0);assert.equal(env.state().supportPasses,1);
+ for(let i=0;i<100;i++)env.update(.1);assert.equal(env.state().supportPasses,1);
+ one.parts[0].state='removed';env.scheduleSupport(one);env.update(.3);assert.equal(env.state().pending,1);assert.equal(one.parts[1].state,'attached');
+ for(let i=0;i<20;i++)env.update(.3);assert.equal(one.parts[1].state,'falling');assert.equal(env.state().pending,0);
+ for(let i=0;i<122;i++)env.scheduleSupport(mk());env.update(.3);const passes=env.state().supportPasses;
+ for(let i=0;i<40;i++)env.update(.25);assert.equal(env.state().supportPasses,passes);assert.equal(env.state().pending,0);
+});
+test('Floor-indexed nearest supports match the original stable sort',()=>{
+ const {nearestSupports}=load('src/simulation/structural-dynamics.js',{},['nearestSupports']);
+ const vec=(x,y,z)=>({x,y,z,distanceToSquared(p){return (x-p.x)**2+(y-p.y)**2+(z-p.z)**2;}});
+ const cols=Array.from({length:120},(_,i)=>({id:i,floor:i%5,position:vec(i%7,i%5*5,Math.floor(i/7)%4)}));
+ const groups=Array.from({length:5},(_,f)=>cols.filter(c=>c.floor===f));
+ for(let i=0;i<500;i++){
+  const part={floor:i%5,type:i%2?'column':'wall',position:vec(i%13,i%8,i%9)};
+  const floor=part.type==='column'&&part.floor>0?part.floor-1:part.floor;
+  const expected=cols.filter(c=>c.floor===floor).sort((a,b)=>a.position.distanceToSquared(part.position)-b.position.distanceToSquared(part.position)).slice(0,2);
+  assert.equal(nearestSupports(part,groups).map(c=>c.id).join(','),expected.map(c=>c.id).join(','));
+ }
+ assert.equal(nearestSupports({floor:8,type:'wall',position:vec(0,0,0)},groups).length,0);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
