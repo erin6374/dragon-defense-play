@@ -1631,10 +1631,14 @@ function fireTruckService(c,dt){
  }
  if(!c.serviceTarget){
   let best=null;
+  c.servicePlanDelay=Math.max(0,(c.servicePlanDelay??0)-dt);
+  if(c.servicePlanDelay===0){
+   c.servicePlanDelay=.5;
   for(const f of schoolFire){
    if(cars.some(other=>other!==c&&!other.destroyed&&!other.frozen&&other.fireTruck&&other.serviceTarget===f))continue;
    const plan=planResponderRoute(p,c.dir,c.originalLane,f.root.position,c.ladder?38:30);
    if(plan&&(!best||plan.cost<best.plan.cost))best={f,plan};
+  }
   }
   c.serviceTarget=best?.f??null;c.servicePlan=best?.plan??null;c.serviceProgress=0;
  }
@@ -1699,7 +1703,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
-  const obstruction=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
+  const obstruction=craters.find(q=>!q.waterOnly&&q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
    if(obstruction&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
     c.hazardLights=true;
     c.evadingCrater=true;
@@ -1732,7 +1736,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
    c.root.position.z+=Math.sign(latError)*Math.min(Math.abs(latError),dt*steerRate);
    c.steerAngle=(c.steerAngle||0)+Math.sign(latError)*0.14;
   }
-  const closeCrater=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+8&&Math.abs(q.z-c.root.position.z)<q.radius+1.5&&((q.x-c.root.position.x)*c.dir)>-0.5);
+  const closeCrater=craters.find(q=>!q.waterOnly&&q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+8&&Math.abs(q.z-c.root.position.z)<q.radius+1.5&&((q.x-c.root.position.x)*c.dir)>-0.5);
   const blockedAhead=closeCrater&&Math.abs(c.root.position.z-closeCrater.z)<closeCrater.radius+0.8;
   const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&CROSS_STREET_X.some(cx=>Math.abs(c.root.position.x-cx)<13);
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
@@ -1832,7 +1836,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    const exitCross=CROSS_STREET_X.find(x=>Math.abs(c.root.position.x-x)<22);
    if(exitCross!==undefined)c.turnAt=exitCross;
   }
-  if(!c.frozen&&(Math.abs(c.root.position.x)>280||(c.crossStreet&&(c.crossDir<0?c.root.position.z<-135:c.root.position.z>135))||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
+  if(!c.frozen&&((Math.abs(c.root.position.x)>280&&!c.routing&&!c.serviceTarget)||(c.crossStreet&&(c.crossDir<0?c.root.position.z<-135:c.root.position.z>135))||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
  }
 }
 // Dynamic arcade city activity. Stylized, not real-world simulation.
