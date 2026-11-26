@@ -17,6 +17,12 @@ export function createViewerCityModels(scene,city) {
   });
   const findEntry=id=>entries.find(e=>e.def.id===id||e.def.address===id);
   function apply(entry,damage) {
+    // Structural repair/chapter reset must restore the authored facade, not
+    // merely its parent group's visibility. Impact hides individual sections.
+    if(damage<entry.damage){
+      for(const section of entry.sections)section.visible=true;
+      entry.collapseRequested=false;
+    }
     entry.damage=damage;
     entry.model.visible=damage<.97;
   }
@@ -41,8 +47,18 @@ export function createViewerCityModels(scene,city) {
   }
   return {
     root,entries,findEntry,update,impact,damageBuilding,
-    collapseBuilding(id){return damageBuilding(id,1);},
-    restore(){for(const e of entries){apply(e,0);for(const section of e.sections)section.visible=true;}},
+    collapseBuilding(id){
+      const e=findEntry(id);
+      if(!e)return null;
+      // A crunching meteor can request collapse every simulation tick. Only
+      // run the expensive structural detach pass once until a repair/reset.
+      if(e.collapseRequested&&e.targetBuilding.damage>=.97)
+        return {id:e.def.id,damage:e.targetBuilding.damage};
+      const result=damageBuilding(e.def.id,1);
+      e.collapseRequested=true;
+      return result;
+    },
+    restore(){for(const e of entries){apply(e,0);e.collapseRequested=false;for(const section of e.sections)section.visible=true;}},
     getStats(){return {loadedCount:entries.length,totalModels:entries.length,
       models:entries.map(e=>({id:e.def.id, address:e.def.address, loaded:true,
         architectureSource:e.architectureSource, worldBounds:e.worldBounds, damage:e.damage}))};}
