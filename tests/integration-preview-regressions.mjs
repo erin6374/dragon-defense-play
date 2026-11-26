@@ -155,4 +155,40 @@ test('Generic particle pool respects capacity and active matrix ranges',()=>{
  pool.begin();for(let i=0;i<4;i++)pool.add({},1);assert.equal(pool.add({},1),false);pool.end();
  assert.equal(pool.mesh.instanceMatrix.ranges[0][1],64);pool.clear();assert.equal(pool.mesh.count,0);
 });
+test('Parcel damage mask persists locally and restores original shared materials',()=>{
+ const {createParcelDamageMask}=load('src/rendering/parcel-damage-mask.js',{},['createParcelDamageMask']);
+ class V{constructor(x,y,z){Object.assign(this,{x,y,z});}}
+ class Texture{constructor(data,w,h,d){this.image={data,w,h,d};this.disposals=0;}dispose(){this.disposals++;}}
+ const T={Vector3:V,Data3DTexture:Texture};
+ const original={clone(){return {dispose(){this.disposals=(this.disposals||0)+1;}};},customProgramCacheKey:()=> 'base',onBeforeCompile(){}};
+ const a={isMesh:true,material:original},b={isMesh:true,material:original},other={isMesh:true,material:original};
+ const mask=createParcelDamageMask(T,{traverse(cb){cb(a);cb(b);}},{minX:0,maxX:10,minY:0,maxY:10,minZ:0,maxZ:10});
+ assert.equal(a.material,b.material);assert.ok(a.material!==original);assert.equal(other.material,original);
+ const shader={uniforms:{},vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <clipping_planes_fragment>\n#include <color_fragment>'};
+ a.material.onBeforeCompile(shader);
+ assert.ok(shader.vertexShader.includes('instanceMatrix*parcelLocal'));
+ const tex=shader.uniforms.uParcelDamageMap.value,im=tex.image;
+ const sample=(x,y,z)=>{const o=shader.uniforms.uParcelDamageMin.value,s=shader.uniforms.uParcelDamageSize.value;return im.data[(Math.floor((z-o.z)/s.z*im.d)*im.h+Math.floor((y-o.y)/s.y*im.h))*im.w+Math.floor((x-o.x)/s.x*im.w)];};
+ mask.stamp({x:2,y:4,z:0},4,1);assert.ok(sample(2,4,0)>122);
+ assert.equal(sample(8,4,0),0);assert.equal(sample(2,4,10),0);
+ mask.stamp({x:8,y:6,z:10},3,1);assert.ok(sample(2,4,0)>122&&sample(8,6,10)>122);
+ assert.ok(mask.byteLength<=48**3);
+ const clone=a.material;mask.dispose();mask.dispose();
+ assert.equal(a.material,original);assert.equal(b.material,original);assert.equal(clone.disposals,1);assert.equal(tex.disposals,1);
+});
+test('Viewer damage never hides an entire floor band on a partial strike',()=>{
+ const {createViewerCityModels}=load('src/rendering/viewer-city-models.js',{
+ THREE:{Group:class{constructor(){this.children=[];this.visible=true;}add(o){this.children.push(o);}},Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z});}}},
+ makeViewerBuilding:()=>({model:{visible:true},sections:Array.from({length:4},()=>({visible:true})),bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}}),
+ containsParcel:(b,x,z)=>Math.abs(x-b.x)<=b.w/2&&Math.abs(z)<=3,
+ createParcelDamageMask:()=>{let n=0;return {stamp(){n++;},strikes(){return n;},dispose(){}};}
+ },['createViewerCityModels']);
+ const city={buildings:[{id:'a',name:'A',viewerParcel:true,h:6,x:0,z:0,w:6,front:3,damage:0},{id:'b',name:'B',viewerParcel:true,h:6,x:4,z:0,w:6,front:3,damage:0}],impact(b){b.damage+=.2;},forceDamage(b,v){b.damage=v;}};
+ const api=createViewerCityModels({add(){}},city);
+ api.impactBuilding('b',{x:2,y:3,z:0},3,1);assert.equal(api.entries[0].damage,0);
+ assert.ok(api.entries[1].sections.every(s=>s.visible));
+ assert.equal(api.entries[1].impactMask.strikes(),1);
+ api.impactBuilding('b',{x:2,y:4,z:0},3,1);assert.equal(api.entries[1].impactMask.strikes(),2);
+ api.restore();assert.equal(api.entries[1].impactMask,null);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
