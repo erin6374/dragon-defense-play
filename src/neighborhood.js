@@ -104,8 +104,9 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
   streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,city.groups.backFar]
    .map(group=>group.getWorldPosition(new THREE.Vector3()).toArray());},
   syncCraterHoles(activeCraters=[]){
+   const surfaceCraters=activeCraters.filter(c=>!c.waterOnly&&c.life>0);
    for(const [i,hole] of craterHolesUniform.value.entries()){
-    const cr=activeCraters[i];
+    const cr=surfaceCraters[i];
     if(cr&&cr.life>0)hole.set(cr.x,cr.z,(cr.radius*(cr.isSubway?1.05:.92))**2,cr.isSubway?1:.5);
     else hole.set(0,0,0,0);
    }
