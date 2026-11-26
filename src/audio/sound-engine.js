@@ -93,6 +93,19 @@ export function createSoundEngine() {
   // Buffer cache: Map<string, AudioBuffer>
   const buffers = new Map();
   let loadingInitiated = false;
+  let userGestureUnlocked = false;
+
+  if (typeof window !== 'undefined') {
+    const handleUnlock = () => {
+      userGestureUnlocked = true;
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    };
+    ['pointerdown', 'keydown', 'touchstart', 'mousedown', 'click'].forEach(evt => {
+      window.addEventListener(evt, handleUnlock, { capture: true, once: true, passive: true });
+    });
+  }
 
   // Continuous looping sources
   let flameLoopSource = null;
@@ -331,7 +344,9 @@ export function createSoundEngine() {
     initContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      if (userGestureUnlocked) {
+        ctx.resume().catch(() => {});
+      }
       return;
     }
 
@@ -682,6 +697,12 @@ export function createSoundEngine() {
 
   return {
     init: initContext,
+    unlockAudio: () => {
+      userGestureUnlocked = true;
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    },
     sound,
     setFlameStreamAudio,
     update,

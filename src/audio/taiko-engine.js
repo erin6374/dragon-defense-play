@@ -111,7 +111,7 @@ export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   // 1. Ō-daiko (Giant Sacred War Drum)
   // Deep sub-bass chest thud: dual Bessel membrane modes + leather mallet slap
   function playOdaiko(time, velocity = 1.0, pan = 0.0) {
-    if (!ctx || isMuted || !masterGain) return;
+    if (!ctx || isMuted || !masterGain || ctx.state === 'suspended') return;
     try {
       const vel = Math.max(0.1, Math.min(1.2, velocity));
       const panner = createPanner(pan);
@@ -184,7 +184,7 @@ export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   // 2. Chū-daiko (Medium Barrel War Drum)
   // The galloping engine: 135 Hz dropping to 84 Hz with tight body resonance
   function playChudaiko(time, velocity = 1.0, pan = -0.15) {
-    if (!ctx || isMuted || !masterGain) return;
+    if (!ctx || isMuted || !masterGain || ctx.state === 'suspended') return;
     try {
       const vel = Math.max(0.1, Math.min(1.2, velocity));
       const panner = createPanner(pan);
@@ -242,7 +242,7 @@ export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   // 3. Shime-daiko (High-Tension Roped War Drum)
   // Crisp, snappy, high-pitched double-time roll membrane
   function playShimedaiko(time, velocity = 1.0, pan = 0.35) {
-    if (!ctx || isMuted || !masterGain) return;
+    if (!ctx || isMuted || !masterGain || ctx.state === 'suspended') return;
     try {
       const vel = Math.max(0.1, Math.min(1.2, velocity));
       const panner = createPanner(pan);
@@ -290,7 +290,7 @@ export function createTaikoEngine(ctx, destinationBus, playSampleFn = null) {
   // 4. Bachi Rim Click ("Ka" / "Kara")
   // Hard wooden bachi strike against the iron-studded drum rim
   function playRim(time, velocity = 1.0, pan = 0.15) {
-    if (!ctx || isMuted || !masterGain) return;
+    if (!ctx || isMuted || !masterGain || ctx.state === 'suspended') return;
     try {
       const vel = Math.max(0.1, Math.min(1.2, velocity));
       const panner = createPanner(pan);

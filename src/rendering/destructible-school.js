@@ -480,11 +480,19 @@ export function createDestructibleSchool(THREE,scene,bounds){
   if(schoolCracksGroup)schoolCracksGroup.visible=false;
   if(collapsing)return;
   collapsing=true;
-  // Stagger the loss of all remaining support, including trim and rooftop units.
+  // Stagger the loss of all remaining support: progressive gravity pancake cascade
+  // Lower structural tiers buckle first, triggering sequential downward floor collapses
+  // over an authentic 2.2-second progression with air overpressure ejections.
+  if(effectsHooks){
+   effectsHooks.onStructuralCreak?.(centerX,min.y+height*0.5,front);
+   effectsHooks.onColumnBuckle?.(centerX,min.y+1.5,front);
+  }
   for(const p of pieces){
    p.integrity=0;
-   const delay=.08+.48*Math.min(1,Math.abs(p.homeX-lastImpact.x)/width)+
-    .20*THREE.MathUtils.clamp((p.homeY-min.y)/height,0,1);
+   const floorNorm=THREE.MathUtils.clamp((p.homeY-min.y)/height,0,1);
+   const floorStep=Math.floor(floorNorm*5.0); // 0 to 4
+   const lateralDist=Math.min(1,Math.abs(p.homeX-lastImpact.x)/(width*0.55));
+   const delay=0.06 + floorStep*0.36 + lateralDist*0.42 + (Math.sin(p.homeX*5.7+p.homeZ*3.3)*0.5+0.5)*0.18;
    detach(p,p.homeX+p.homeY+impactSerial,delay,false);
   }
   flush();

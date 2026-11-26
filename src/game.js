@@ -19,7 +19,7 @@ import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc169';
-console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC171 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
+console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC174 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
 console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded ', 'background: #223344; color: #ffcc44; font-size: 12px; padding: 2px 6px;');
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
@@ -2337,8 +2337,8 @@ function addCrater(x,z,radius=3,opts={}){
   // 3D BROAD STREET SUBWAY CHASM & CAVERN
   // Road deck is completely punched through into the SEPTA Broad Street line!
   // NO opaque inner disc covering the hole!
-  const apertureW=isExtinction?Math.max(22.0,radius*2.6):isTitanic?Math.max(16.0,radius*2.2):Math.max(5.8,radius*1.85);
-  const apertureD=isExtinction?Math.max(16.0,radius*2.2):isTitanic?Math.max(12.0,radius*1.85):Math.max(4.6,radius*1.55);
+  const apertureW=isExtinction?Math.max(26.0,radius*2.6):isTitanic?Math.max(18.0,radius*2.2):isColossal?Math.max(12.0,radius*1.95):Math.max(5.8,radius*1.85);
+  const apertureD=isExtinction?Math.max(18.0,radius*2.2):isTitanic?Math.max(14.0,radius*1.85):isColossal?Math.max(8.5,radius*1.65):Math.max(4.6,radius*1.55);
 
   // 3D Procedural Jagged Heaved-Asphalt Crest (subway breach)
   rimMesh=createHeavedAsphaltRim(radius,true);
@@ -4429,26 +4429,41 @@ function damage(x,z,y=7,meteor=null){
   for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-hitZ)<5)explodeCar(c);
   neighborhood.aftershock(targetX,targetY,hitZ,shockRadius*0.75,p=>debrisPiece(p,'brick'),blastStrength*0.6);
   const mSz=meteor?.size||(profile.radius*0.45);
-  const isSubwayPenetrator = (mSz >= 2.6) || (meteor && meteor.size >= 4.5);
-  addCrater(targetX,hitZ,Math.min(13.0,2.6+mSz*0.75),{isSubway:isSubwayPenetrator,size:mSz,isTitanic:mSz>=9.0,isMassive:mSz>=4.5});
+  const isExtinction = mSz >= 13.0;
+  const isTitanic = mSz >= 9.0;
+  const isColossal = mSz >= 4.0;
+  const isSubwayPenetrator = (mSz >= 2.6) || (meteor && meteor.size >= 4.5) || isColossal || isTitanic || isExtinction;
+  const craterRadius = isExtinction ? Math.min(18.0, 5.5 + mSz * 0.85) : (isTitanic ? Math.min(14.0, 4.2 + mSz * 0.80) : (isColossal ? Math.min(11.0, 3.4 + mSz * 0.75) : Math.min(7.0, 2.2 + mSz * 0.65)));
+  addCrater(targetX,hitZ,craterRadius,{isSubway:isSubwayPenetrator,size:mSz,isTitanic,isExtinction,isColossal,isMassive:isColossal});
   sound('impact');
 
-  // RC163: Propagate kinetic shockwave to all adjacent buildings along Broad Street
-  const isColossal = mSz >= 4.0;
-  const isTitanic = mSz >= 9.0;
-  const roadShockRadius = Math.max(shockRadius, mSz * 3.8);
+  // RC174: Master kinetic shockwave expansion across Broad Street & North Broad parcels
+  const roadShockRadius = isExtinction ? Math.max(160.0, mSz * 14.0) : (isTitanic ? Math.max(110.0, mSz * 11.0) : (isColossal ? Math.max(70.0, mSz * 8.5) : Math.max(shockRadius, mSz * 4.8)));
   for(const b of neighborhood.targetBuildings){
    if(b.school)continue;
    const bDist = Math.hypot(b.x - targetX, b.z - hitZ);
    if(bDist <= roadShockRadius + Math.max(b.w, b.d) * 0.5){
-    const dmgFraction = Math.max(0.30, (1.0 - bDist / roadShockRadius)) * (isTitanic ? 1.0 : isColossal ? 0.92 : 0.55);
-    b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
-    neighborhood.city.forceDamage(b, b.damage);
-    damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.80);
+    if(isExtinction || isTitanic || (isColossal && bDist <= roadShockRadius * 0.72)){
+     b.damage = 1.0;
+     neighborhood.city.forceDamage(b, 1.0);
+     damageOrCollapseNorthBroad(b, 1.0, true);
+    }else{
+     const dmgFraction = Math.max(0.40, (1.0 - bDist / roadShockRadius)) * (isColossal ? 0.95 : 0.65);
+     b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
+     neighborhood.city.forceDamage(b, b.damage);
+     damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.75);
+    }
    }
   }
   if(Math.abs(targetX) <= schoolHalfW + roadShockRadius * 0.5 && hitZ <= schoolMaxZ + roadShockRadius && architecturalReady){
-   carveSchool(targetX, targetY, hitZ, Math.min(12.0, mSz * 0.85), profile.strength * (isTitanic ? 1.8 : 1.2), meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
+   if(isExtinction || isTitanic){
+    carveSchool(targetX, targetY, hitZ, 16.0, 4.0, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
+    schoolReconstruction?.collapse?.();
+   }else if(isColossal){
+    carveSchool(targetX, targetY, hitZ, Math.min(14.0, mSz * 1.2), profile.strength * 2.2, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
+   }else{
+    carveSchool(targetX, targetY, hitZ, Math.min(12.0, mSz * 0.85), profile.strength * 1.2, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
+   }
   }
   return;
  }
@@ -4496,18 +4511,24 @@ function damage(x,z,y=7,meteor=null){
     damageOrCollapseNorthBroad(effectiveTarget,effectiveTarget.damage,effectiveTarget.damage>=0.80);
    }
 
-   // RC170: Multi-building shockwave collapse:
+   // RC174: Multi-building shockwave collapse:
    // Colossal, Titanic, and Extinction strikes demolish adjacent rowhouses and shops along North Broad
    if(isColossalStrike||isTitanicStrike||isExtinctionStrike){
-    const shockWaveRadius = isExtinctionStrike ? Math.max(50.0, mSzVal * 4.5) : (isTitanicStrike ? Math.max(34.0, mSzVal * 3.8) : Math.max(22.0, mSzVal * 3.2));
+    const shockWaveRadius = isExtinctionStrike ? Math.max(160.0, mSzVal * 14.0) : (isTitanicStrike ? Math.max(110.0, mSzVal * 11.0) : Math.max(70.0, mSzVal * 8.5));
     for(const b of neighborhood.targetBuildings){
      if(b===effectiveTarget||b.school)continue;
      const bDist=Math.hypot(b.x-targetX,b.z-hitZ);
      if(bDist<=shockWaveRadius+Math.max(b.w,b.d)*0.5){
-      const dmgFraction=Math.max(0.35,(1.0-bDist/shockWaveRadius))*(isExtinctionStrike?1.0:isTitanicStrike?0.95:0.85);
-      b.damage=Math.min(1.0,(b.damage||0)+dmgFraction);
-      neighborhood.city.forceDamage(b,b.damage);
-      damageOrCollapseNorthBroad(b,b.damage,b.damage>=0.80);
+      if(isExtinctionStrike || isTitanicStrike || (isColossalStrike && bDist <= shockWaveRadius * 0.72)){
+       b.damage = 1.0;
+       neighborhood.city.forceDamage(b, 1.0);
+       damageOrCollapseNorthBroad(b, 1.0, true);
+      }else{
+       const dmgFraction = Math.max(0.40, (1.0 - bDist / shockWaveRadius)) * 0.95;
+       b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
+       neighborhood.city.forceDamage(b, b.damage);
+       damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.75);
+      }
      }
     }
    }
@@ -5355,10 +5376,10 @@ function spawnTestMeteorAt(hitX,hitY,hitZ,size=3.6,kind='molten'){
   isPowerup:null,
   opening:false,
   fastImpact:true,
-  isMassive:size>=5.0||kind==='iron',
+  isMassive:size>=4.0||kind==='iron',
   isHeavyIron:kind==='iron',
   mass:size*(kind==='iron'?3.8:1.0),
-  colossus:isSuperMassive,
+  colossus:size>=4.0,
   largeSplitter:false,
   burning:kind==='flaming'||kind==='molten',
   mesh,
