@@ -92,7 +92,8 @@ export function createDestructibleSchool(THREE,scene,bounds){
  scene.add(schoolCracksGroup);
  const pieces=[],matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),scale=new THREE.Vector3();
  const rotation=new THREE.Euler();
- let activeFallingPieces=0;
+ const activeFallingPieces=new Set();
+ let detachedCount=0,lastReconciledTarget=-1;
  const batchCounts=new Int32Array(materials.length);
  let collapsing=false,supportClock=0,impactSerial=0,currentRatio=0,effectsHooks=null;let lastImpact={x:centerX,y:min.y+height*.5,z:front};
  function piece(kind,x,y,z,w,h,d,{zone='structure',strength=1,protectedZone=false,mass=null,rigidity=null,isFurniture=false}={}){
@@ -281,7 +282,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function detach(p,seed=0,delay=0,violent=false){
   if(p.falling||p.resting||p.removed)return false;
-  p.falling=true;p.delay=delay;activeFallingPieces++;
+  p.falling=true;p.delay=delay;activeFallingPieces.add(p);detachedCount++;
   const a=Math.sin(seed*11.37+p.x*1.41+p.y*7.3+p.z*.27);
   const b=Math.cos(seed*13.21+p.z*.83-p.x*2.17);
 
@@ -346,7 +347,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
   // game projectile collisions arrive at Broad Street z, so clamp to the facade.
   z=Math.max(back,Math.min(front,rawZ));
   lastImpact={x,y,z};impactSerial++;
-  let detached=0;
+  let detached=0,changed=false;
   for(const p of pieces){
    if(p.falling||p.resting||p.removed)continue;
    const dx=Math.max(0,Math.abs(x-p.x)-p.w*.5);
@@ -362,12 +363,13 @@ export function createDestructibleSchool(THREE,scene,bounds){
      zone:p.zone,structuralStrength:p.strength,frontDepth,lateralDistance});
    if(impulse<=0)continue;
    const jitter=.88+.24*(.5+.5*Math.sin(p.x*5.37+p.y*3.31+p.z*1.21+impactSerial*13.1));
-   p.integrity=Math.max(0,p.integrity-impulse*jitter*.64);
+   p.integrity=Math.max(0,p.integrity-impulse*jitter*.64);changed=true;
    if(p.integrity<=0){
     const delay=Math.min(.27,.04+distance*.016);
     if(detach(p,x+y+z+impactSerial,delay,strike.energy>1.1))detached++;
    }
   }
+  if(changed)flush();
   return detached;
  }
  // Support is computed locally from nearby surviving beams and columns. A
@@ -460,7 +462,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    p.vr=(a+b)*3.2;
    p.integrity=0;
    severed++;
-   activeFallingPieces++;
+   activeFallingPieces.add(p);detachedCount++;
   }
   if(severed>0){
     // Spawn scorched carbon soot blast ring at borehole entry lip
@@ -512,12 +514,11 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function update(dt){
   if(dt<=0)return;
-  if(!collapsing&&activeFallingPieces===0)return;
+  if(activeFallingPieces.size===0)return;
   supportClock+=dt;
   if(!collapsing&&supportClock>=.18){propagateSupportFailure(supportClock);if(Math.random()<0.25&&effectsHooks)effectsHooks.onStructuralCreak?.(centerX,min.y+height*0.5,front);supportClock=0;}
   let changed=false;
-  for(const p of pieces){
-   if(!p.falling||p.resting||p.removed)continue;
+  for(const p of activeFallingPieces){
    p.delay=Math.max(0,p.delay-dt);
    if(p.delay>0)continue;
    changed=true;
@@ -559,7 +560,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
 
     if(impactVy>2.4&&effectsHooks){
      if(isGlass){
-      if(!p.resting){p.resting=true;activeFallingPieces=Math.max(0,activeFallingPieces-1);}
+      if(!p.resting){p.resting=true;activeFallingPieces.delete(p);}
       if(Math.random()<0.65)p.removed=true;
       effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
      }else if(isFloor&&impactVy>4.0){
@@ -570,6 +571,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
       effectsHooks.onFurnitureImpact?.(p.x,p.y,p.z,p.zone,impactVy);
       if(impactVy>4.0&&Math.random()<0.40){
        p.removed=true;
+       activeFallingPieces.delete(p);
       }
      }
     }
@@ -577,7 +579,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
     if(Math.abs(p.vy)<1.4){
      if(!p.resting){
       p.resting=true;
-      activeFallingPieces=Math.max(0,activeFallingPieces-1);
+      activeFallingPieces.delete(p);
       // RC172: Authentic resting tilt angles: slabs and girders lean against each other at 10-32 deg angles
       const tiltMax=isFloor?0.32:(isSteel?0.58:(isFacade?0.42:0.28));
       p.restingRotX=(Math.sin(p.x*6.3+p.z*4.7)*0.5)*tiltMax;
@@ -668,12 +670,15 @@ export function createDestructibleSchool(THREE,scene,bounds){
    }
   }
   if(ratio<=0)return;
-  if(ratio>=0.97){collapse();return;}
-  const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
+  if(ratio>=1){collapse();return;}
   const targetDetached=Math.floor(pieces.length*Math.min(1.0,ratio*0.92));
-  const currentDetached=pieces.filter(p=>p.falling||p.resting).length;
-  const needed=targetDetached-currentDetached;
+  // Most fixed steps advance the gauge by less than one component. Do not
+  // allocate or sort the entire reconstruction until the quota changes.
+  if(targetDetached===lastReconciledTarget)return;
+  lastReconciledTarget=targetDetached;
+  const needed=targetDetached-detachedCount;
   if(needed>0){
+   const attachedPieces=pieces.filter(p=>!p.falling&&!p.resting&&!p.removed);
    // Physically-calibrated failure: damage concentrates near meteor impacts,
    // interior lightweight partitions/desks fail first, followed by pancake slabs
    const candidates=[...attachedPieces].map(p=>{
@@ -695,17 +700,17 @@ export function createDestructibleSchool(THREE,scene,bounds){
  }
  function reset(){
   if(schoolCracksGroup){schoolCracksGroup.visible=false;schoolCrackMat.opacity=0;}if(boreholeCharGroup){while(boreholeCharGroup.children.length>0){const c=boreholeCharGroup.children[0];c.geometry?.dispose();c.material?.dispose();boreholeCharGroup.remove(c);}}
-  collapsing=false;activeFallingPieces=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
+  collapsing=false;activeFallingPieces.clear();detachedCount=0;lastReconciledTarget=-1;currentRatio=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
      integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,
      restingRotX:0,restingRotY:0,restingRotZ:0,
-     removed:false,profile:null,isFlaming:false,hitGround:false});
+     removed:false,profile:null,isFlaming:false,hitGround:false,isImploded:false,isExploded:false,isBuckled:false,axialDeformation:0,buckleAngle:0,twistAngle:0});
   }
   flush();
  }
  function stats(){return {parts:pieces.length,drawBatches:materials.length,
-   detached:pieces.filter(p=>p.falling).length,falling:pieces.filter(p=>p.falling&&!p.resting).length,
+   detached:detachedCount,falling:activeFallingPieces.size,
    rubble:pieces.filter(p=>p.resting).length,damaged:pieces.filter(p=>p.integrity<.999).length,
    lastImpact,structuralMembers:structural.size,doubleHeightAtrium:true,
    atriumY:[levels[0],levels[2]],atriumFrontZ:front,atriumBackZ:atriumBack,
