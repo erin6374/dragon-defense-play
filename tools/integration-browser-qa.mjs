@@ -5,13 +5,13 @@ import {createReadStream} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {resolve,extname,sep} from 'node:path';
 import {execFileSync} from 'node:child_process';
-const root=fileURLToPath(new URL('../',import.meta.url));
+const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const out=resolve(root,'integration-qa-results',new Date().toISOString().replace(/[:.]/g,'-'));
 await mkdir(out,{recursive:true});
 const report={started:new Date().toISOString(),commit:null,checks:[],errors:[],warnings:[],benchmark:null};
 try{report.commit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{}
 const save=()=>writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));
-const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');save().finally(()=>process.exit(2));},240000);
+const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');report.passed=false;report.finished=new Date().toISOString();save().finally(()=>process.exit(2));},240000);
 const mime={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.webp':'image/webp','.wasm':'application/wasm','.woff2':'font/woff2','.ogg':'audio/ogg','.mp3':'audio/mpeg','.wav':'audio/wav'};
 const server=createServer(async(req,res)=>{
  try{
@@ -74,11 +74,21 @@ try{
   return {before,after};
  });
  await check('Single parcel hit does not damage neighbors',async()=>{
-  const result=await page.evaluate(()=>{
+  const result=await page.evaluate(async()=>{
+   const {containsParcel}=await import('/src/simulation/viewer-parcels.js');
    const q=window.__DD_QA;q.repairAllBuildings();
    const city=q.getCity(),list=city.buildings.filter(b=>b.viewerParcel);
-   const b=list.find(b=>!b.background&&b.w>4&&b.d>4&&Math.abs(b.x)>25);
-   const before=list.map(x=>x.damage);q.verifyMeteorImpact(b.x,Math.min(5,b.h*.7),b.z,2.0);
+   let target=null;
+   for(const b of list.filter(b=>!b.background&&b.w>4&&b.d>4&&Math.abs(b.x)>25)){
+    for(let u=1;u<10&&!target;u++)for(let v=1;v<10&&!target;v++){
+     const x=b.x-b.w/2+b.w*u/10,z=b.z-b.d/2+b.d*v/10;
+     if(containsParcel(b,x,z)&&!list.some(p=>p!==b&&containsParcel(p,x,z)))target={b,x,z};
+    }
+    if(target)break;
+   }
+   if(!target)throw Error('No exclusive frontage sample');
+   const {b,x,z}=target,before=list.map(x=>x.damage);
+   q.verifyMeteorImpact(x,Math.min(5,b.h*.7),z,2.0);
    return {target:b.id,damaged:list.filter((b,i)=>b.damage>before[i]+.0001).map(b=>b.id)};
   });
   assert(result.damaged.length===1&&result.damaged[0]===result.target,'Incorrect direct-hit ownership: '+JSON.stringify(result));
@@ -99,7 +109,7 @@ try{
   return {before,after};
  });
  await check('Independent water-main rupture and cleanup',async()=>{
-  const v=await page.evaluate(()=>{const q=window.__DD_QA;q.repairAllBuildings();q.runPresetWaterMain();return {water:q.hasWaterMainGeyser(),puddle:q.hasAsphaltWaterPuddle(),subway:q.getSubwayCarsCount(),activeHoles:q.getCraterUniforms().filter(h=>h.w>0).length};});
+  const v=await page.evaluate(()=>{const q=window.__DD_QA;q.repairAllBuildings();q.runPresetWaterMain();return {water:q.hasWaterMainGeyser(),puddle:q.hasAsphaltWaterPuddle(),subway:q.getSubwayCarsCount(),activeHoles:q.getCraterUniforms().filter(h=>h.active>0).length};});
   assert(v.water&&v.puddle&&v.subway===0&&v.activeHoles===0,'Water-only rupture created subway or road hole');
   await page.screenshot({path:resolve(out,'04-water-main.png')});
   await page.evaluate(()=>window.__DD_QA.repairAllBuildings());
@@ -133,7 +143,7 @@ try{
 }catch(e){report.errors.push(String(e));}
 finally{
  clearTimeout(watchdog);report.finished=new Date().toISOString();
- report.passed=report.errors.length===0&&report.checks.length===8&&report.checks.every(c=>c.pass);
+ report.passed=report.errors.length===0&&report.checks.length===9&&report.checks.every(c=>c.pass);
  await save();console.log('Report: '+resolve(out,'report.json'));
  if(browser)await browser.close().catch(()=>{});
  server.close();process.exitCode=report.passed?0:1;
