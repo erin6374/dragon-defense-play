@@ -1,37 +1,51 @@
-# Dragon Defense — Integration Preview 3
+# Dragon Defense — Integration Preview 4 development candidate
 
-Build `5.5.0-integration.3` uses Antigravity RC174 and the Broad Street Viewer
-v21.1.33 candidate. Exact source revisions and the unchanged Tech Freire
-Revit FBX hash are in `build-info.json`.
+Current source version: `5.5.0-integration.4-dev.11`.
+Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
+This is a development snapshot, not a verified playable release. Exact source
+revisions, the unchanged Tech Freire FBX hash, and the development snapshot
+commit are recorded in `build-info.json`.
 
-## Play
+## Play locally
 
-Extract the Windows ZIP and double-click `PLAY-INTEGRATION-PREVIEW.cmd`. The
-launcher uses Python 3 and opens the game on a free loopback port. Leave its
-window open while playing. Start **Defend Philadelphia** or use **Director
-Sandbox** to inspect the layout and trigger subway, basement, and water-main
-effects.
+From the repository or extracted snapshot, double-click
+`PLAY-INTEGRATION-PREVIEW.cmd`. It uses Python 3 and opens an isolated local
+server. Start **Defend Philadelphia** or **Director Sandbox**. Exiting Sandbox
+now starts a clean defense session; it does not preserve a prior campaign.
 
-## What changed
+## Run Windows browser QA
 
-- Gameplay builds all 122 district and frontage parcels from the Viewer snapshot.
-  The original school FBX remains separate. The game uses the Viewer road,
-  curb, junction, and parcel geometry, plus the game-specific traffic and transit
-  simulation. Collision and damage volumes follow the imported parcels.
-- A direct strike selects one footprint. Shockwaves still produce visual effects,
-  while the former forced demolition of adjacent parcels is removed. A fire can
-  still spread after sustained burning.
-- Opaque facade relief is batched, intact duplicate collision geometry is hidden,
-  fragments and detailed subway cavities have bounded budgets, and a fixed light
-  pool prevents cave lighting from changing the shader light count. The adaptive
-  renderer can reduce resolution after sustained foreground frame stalls.
+1. Check out the `integration/combined-preview` branch, or extract its current
+   snapshot in a new directory.
+2. Install Node.js 20 or newer if needed. Microsoft Edge is the preferred
+   browser for the visible GPU test.
+3. Double-click `RUN-INTEGRATION-QA.cmd`. On first use, approve the local
+   Playwright installation. The utility uses a private loopback server and
+   opens a separate browser window. Keep it in the foreground.
+4. Return the newest directory in `integration-qa-results`, especially
+   `report.json` and screenshots. The report includes the exact Git commit
+   when Git is available, build ID, renderer, nine functional checks and
+   a 30-second sustained bombardment measurement.
+5. If Edge is unavailable, install Playwright Chromium using
+   `npx --prefix tools/.integration-qa-runtime playwright install chromium`.
+   The runner can also be invoked with `--headless --software` for software
+   smoke testing, but that is not native GPU performance verification.
 
-## Verification scope
+## Development changes
 
-Chromium smoke checks cover startup, keyboard movement, the original FBX, parcel
-ownership, a localized strike, subway train derailment, warning/exit geometry,
-basement and subway camera transitions, independent water-main activation and
-rising water, repair, traffic and crowd controls, and Sandbox exit.
+The 122 mapped building parcels and the separate original school FBX are
+retained. Work toward Preview 4 includes localized and bounded meteor damage,
+continuous roof/side collision, reconstruction optimizations, updated mapped
+traffic and responder routes, independent water-main rupture, crater and
+camera cleanup, and regression tests. The repeatable source-level suite is
+`node tests/integration-preview-regressions.mjs`.
 
-The upstream v21.1.33 district-contact audit timed out. Native Windows GPU
-performance and a full campaign playthrough remain to be verified.
+## Verification limits
+
+The previous Preview 3 smoke checks are historical. The Preview 4 candidate
+has passed isolated source-level tests, including all 122 parcel roof ownership
+checks. The new browser runner has not yet executed on a live browser against
+this candidate. Native Windows GPU performance, visual architecture alignment,
+a full campaign playthrough, and the upstream district contact audit remain
+unverified. Do not designate this candidate as a verified playable release
+until those checks have been reviewed.
