@@ -1,5 +1,6 @@
 import {distanceToBox,supportedFloors,integrateFragment,verticalExtent,nearestSupports} from '../simulation/structural-dynamics.js';
 import {containsParcel} from '../simulation/viewer-parcels.js';
+import {interiorProfile,interiorFurnishings} from '../simulation/interior-profiles.js';
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
 
@@ -49,6 +50,8 @@ export function createStructuralCity(THREE,scene,bank){
   if(o.school)b.layer='school';
   else if(o.background)b.layer=(o.z<-95?'backFar':o.z<-63?'backMid':'backNear');
   else b.layer='front';
+  b.interiorProfile=interiorProfile(b);
+  if(b.viewerParcel)b.stories=b.interiorProfile.stories;
   b.floorHeight=b.h/b.stories;b.fallenFloors=new Set();buildings.push(b);
   if(o.viewerParcel){
    b.hideIntactGeometry=true;
@@ -66,8 +69,15 @@ export function createStructuralCity(THREE,scene,bank){
     }
    }
    for(const side of [-1,1])addPart(b,'roof','roof',b.x+side*b.w*.25,b.h,b.z,b.w*.48,thick,b.d*.96,b.stories-1);
+   // Church naves and assembly halls use an open volume, not a stack of
+   // residential floors. Their seating and furnishings are non-structural.
+   for(const p of interiorFurnishings(b,b.interiorProfile)){
+    const candidate={original:{position:{x:p.x,y:p.y,z:p.z},size:{x:p.w,y:p.h,z:p.d}}};
+    if(p.y-p.h/2<0||p.y+p.h/2>b.h||!interiorFitsParcel(b,candidate))continue;
+    addPart(b,p.type,p.mat,p.x,p.y,p.z,p.w,p.h,p.d,p.floor);
+   }
    b.slabs=b.parts.filter(p=>p.type==='slab');
-   b.structuralParts=b.parts.filter(p=>p.type!=='foundation');
+   b.structuralParts=b.parts.filter(p=>['column','slab','wall','facade','roof'].includes(p.type));
    return b;
   }
   const bayCount=o.bays||Math.max(2,Math.round(b.w/2.7)),bw=b.w/bayCount,x0=b.x-b.w*.5,z0=b.z-b.d*.5,sh=b.floorHeight;
@@ -264,14 +274,14 @@ export function createStructuralCity(THREE,scene,bank){
  function finalize(){
   for(const p of parts){const key=p.building.layer+':'+p.mat;if(!buckets.has(key))buckets.set(key,{parts:[],material:materials[p.mat],group:groups[p.building.layer]});const bucket=buckets.get(key);p.bucket=bucket;p.index=bucket.parts.length;bucket.parts.push(p)}
   for(const bucket of buckets.values()){const mesh=new THREE.InstancedMesh(cube,bucket.material,bucket.parts.length);mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.name='physical-components';mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);bucket.mesh=mesh;const bm=bucket.material.clone();bm.color?.multiplyScalar(.75);if(bm.emissive)bm.emissiveIntensity=0;const broken=new THREE.InstancedMesh(brokenGeometry,bm,bucket.parts.length);broken.frustumCulled=false;broken.instanceMatrix.setUsage(THREE.DynamicDrawUsage);bucket.broken=broken;broken.visible=false;bucket.group.add(mesh,broken);for(let i=0;i<bucket.parts.length;i++){broken.setMatrixAt(i,zero);broken.setColorAt(i,new THREE.Color(0xffffff))}for(const p of bucket.parts){mesh.setColorAt(p.index,new THREE.Color(0xffffff));write(p)}mesh.instanceColor.needsUpdate=true;mesh.instanceMatrix.needsUpdate=true}
-  for(const b of buildings){if(b.viewerParcel)for(const p of b.parts)if(p.type==='slab'||p.type==='column')p.interiorFits=interiorFitsParcel(b,p);b.columns=b.parts.filter(p=>p.type==='column');const byFloor=Array.from({length:b.stories},()=>[]);for(const c of b.columns)(byFloor[c.floor]??=[]).push(c);for(const p of b.parts)p.supports=nearestSupports(p,byFloor);}
+  for(const b of buildings){if(b.viewerParcel)for(const p of b.parts)if(['slab','column','partition','furniture'].includes(p.type))p.interiorFits=interiorFitsParcel(b,p);b.columns=b.parts.filter(p=>p.type==='column');const byFloor=Array.from({length:b.stories},()=>[]);for(const c of b.columns)(byFloor[c.floor]??=[]).push(c);for(const p of b.parts)p.supports=nearestSupports(p,byFloor);}
   finalized=true;
  }
  function write(p){
   if(!p.bucket?.mesh)return;
   const {mesh,broken}=p.bucket;
   const detached=p.state==='falling'||p.state==='settled';
-  const exposedInterior=p.building.viewerParcel&&p.interiorFits&&p.building.exposedFloors?.has(p.floor)&&['slab','column'].includes(p.type);
+  const exposedInterior=p.building.viewerParcel&&p.interiorFits&&p.building.exposedFloors?.has(p.floor)&&['slab','column','partition','furniture'].includes(p.type);
   if(p.building.hideIntactGeometry && !detached && ((p.building.viewerParcel&&!exposedInterior) || (!p.building.viewerParcel&&['wall','facade','column','foundation','roof','frame','window'].includes(p.type)))){
    mesh.setMatrixAt(p.index,zero);
    broken.setMatrixAt(p.index,zero);
@@ -306,7 +316,7 @@ export function createStructuralCity(THREE,scene,bank){
   let added=0;
   for(let floor=min;floor<=max;floor++)if(!b.exposedFloors.has(floor)){
    b.exposedFloors.add(floor);added++;
-   for(const p of b.parts)if(p.floor===floor&&p.state==='attached'&&p.interiorFits&&['slab','column'].includes(p.type))write(p);
+   for(const p of b.parts)if(p.floor===floor&&p.state==='attached'&&p.interiorFits&&['slab','column','partition','furniture'].includes(p.type))write(p);
   }
   return added;
  }
