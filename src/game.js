@@ -4421,7 +4421,7 @@ function damage(x,z,y=7,meteor=null){
  if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
   const before=effectiveTarget.damage;
-  northBroadModels.impact(new THREE.Vector3(targetX,targetY,hitZ),Math.min(blastRadius,8),Math.min(blastStrength,3));
+  northBroadModels.impactBuilding(effectiveTarget.id,new THREE.Vector3(targetX,targetY,hitZ),Math.min(blastRadius,8),Math.min(blastStrength,3));
   lost=effectiveTarget.damage>before?1:0;
   cinematicFX.dustBurst(new THREE.Vector3(targetX,targetY,hitZ),Math.min(2.5,blastStrength*1.2),{brick:true,count:16});
   if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,4.2);panicCrowdAt(targetX,hitZ,38);
@@ -6417,7 +6417,7 @@ if(m.grounded){
       isMassive:!!(m.isMassive||sz>=3.8)
      });
     }else if(b){
-     northBroadModels.impact(m.mesh.position,punchRad,0.38);
+     northBroadModels.impactBuilding(b.id,m.mesh.position,punchRad,0.38);
     }
 
     // Physical furniture spillout tumbling out through facade openings onto the street
@@ -6545,11 +6545,9 @@ if(m.grounded){
    const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
    const sMinZ=schoolBounds.min.z,sMaxZ=schoolBounds.max.z;
    const sMaxY=schoolBounds.max.y;
-   if(curr.x>=sMinX-0.8&&curr.x<=sMaxX+0.8&&curr.z>=sMinZ-0.8&&curr.z<=sMaxZ+0.8&&curr.y<=sMaxY+0.8&&meteorStart.y>=0.5){
-    sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
-    hitSchool=true;
-   }
-   if(!sweepHit&&neighborhood?.targetBuildings){
+   // A mapped parcel owns its precise footprint before the enlarged school
+   // collision envelope is considered. Do not let the school mask a neighbor.
+   if(neighborhood?.targetBuildings){
     for(const b of neighborhood.targetBuildings){
      if(b.damage>=0.999)continue;
      if(curr.y<=b.h&&meteorStart.y>=0.5&&containsParcel(b,curr.x,curr.z)){
@@ -6558,6 +6556,10 @@ if(m.grounded){
       break;
      }
     }
+   }
+   if(!sweepHit&&schoolDamage<1&&!neighborhood.activeAt(curr.x,curr.z)&&curr.x>=sMinX&&curr.x<=sMaxX&&curr.z>=sMinZ&&curr.z<=sMaxZ&&curr.y<=sMaxY+0.8&&meteorStart.y>=0.5){
+    sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
+    hitSchool=true;
    }
   }
 
@@ -6589,7 +6591,7 @@ if(m.grounded){
    // Keep penetration within its original building footprint.
    m.crunchStopY=Math.min(m.crunchStopY,m.crunchStartY-.01);
    m.vel.set(0,-16.0,0);
-   neighborhood.roofBreach(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(1.5,sz*1.4));
+   if(hitBuilding)northBroadModels.impactBuilding(hitBuilding.id,m.mesh.position,Math.max(1.5,sz*1.4),.45);
    cinematicFX.burst(m.mesh.position,Math.max(0.4,sz*0.7));
    sound('impact',{x:m.mesh.position.x});
    emitMeteorShrapnel(m.mesh.position,Math.min(6,sz*2.0));
