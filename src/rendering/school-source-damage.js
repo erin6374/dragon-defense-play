@@ -73,7 +73,7 @@ export function createSchoolSourceDamage() {
 
     // Direct impact craters
     if(uSchoolImpactCount>0){
-     for(int i=0;i<8;i++){
+     for(int i=0;i<16;i++){
       if(i>=uSchoolImpactCount)break;
       vec3 c=uSchoolImpacts[i].xyz;
       float baseR=uSchoolImpacts[i].w${glass?'*1.55':''};
@@ -84,12 +84,9 @@ export function createSchoolSourceDamage() {
      }
     }
 
-    // Gradual progressive floor collapse
-    if(schoolDestructionRatio>0.02){
-     float normY=clamp((schoolDamagePosition.y-schoolDamageMin.y)/max(schoolDamageSize.y,0.001),0.0,1.0);
-     float collapseCutoff=(1.0-normY)*0.92;
-     if(collapseCutoff<schoolDestructionRatio){discard;}
-    }`);
+    // The health gauge is not a global horizontal clipping plane. Physical
+    // components and localized damage masks define the visible damage.
+    if(schoolDestructionRatio>=1.0){discard;}`);
    if(brick)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
     #include <color_fragment>
     // Authentic North Broad brick color tone with subtle vertical weathering
@@ -113,7 +110,7 @@ export function createSchoolSourceDamage() {
    shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',
     '#include <dithering_fragment>\n gl_FragColor.rgb*=1.0-.65*smoothstep(.03,.53,damage);');
   };
-  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v4-'+material.name;
+  material.customProgramCacheKey=()=> 'tech-freire-source-damage-3d-roomlight-v5-'+material.name;
  };
  return {
   stamp,
