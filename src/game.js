@@ -10,7 +10,8 @@ import {DEFENSE_REAR_Z,projectDefensePoint} from './simulation/defense-zone.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConfig,MAX_PLAYABLE_METEORS} from './simulation/fireball-balance.js';
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
-import {occupiesCrossStreet} from './simulation/road-corridors.js';
+import {occupiesCrossStreet,CROSS_STREET_X,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
+import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
@@ -24,7 +25,6 @@ console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded 
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
 import {hitVehicleWithWind,advanceVehicleWind,hitPedestrianWithWind,advancePedestrianWind} from './simulation/ground-wind.js';
-import {createWindPlanting} from './rendering/wind-planting.js';
 import {createPauloRig} from './dragon/paulo-rig.js';
 import {createPauloPoseDriver} from './dragon/paulo-pose-driver.js';
 import {createProfiler} from './rendering/profiler.js';
@@ -40,7 +40,7 @@ import {createCinematicLighting} from './rendering/cinematic-lighting.js';
 import {createPowerGrid} from './rendering/power-grid.js';
 import {createBuildingElectricalShorts} from './rendering/building-electrical-shorts.js';
 import {createOrbitalTheater} from './rendering/orbital-theater.js';
-import {createCinematicSky,addStreetSurfaceDetail,disasterSkyIntensity} from './rendering/cinematic-environment.js';
+import {createCinematicSky,disasterSkyIntensity} from './rendering/cinematic-environment.js';
 import {createPhiladelphiaSkyline} from './rendering/philadelphia-geometry-skyline.js';
 import {skylineCameraRayX,skylineParallaxX} from './core/skyline-position.js';
 import {batchVehicleVisuals} from './rendering/vehicle-batch.js';
@@ -54,10 +54,9 @@ import {createPerformanceLab} from './core/performance-lab.js';
 import {createCaptureLab} from './core/capture-lab.js';
 import {batchStaticBim} from './rendering/static-bim-batch.js';
 import {batchStaticStreetProps} from './rendering/static-prop-batch.js';
-import {createCityExtensions} from './rendering/city-extensions.js';
 import {installSchoolFlankingHouses} from './rendering/school-flanking-houses.js';
-import {createBroadStreetReferenceFacades} from './rendering/broad-street-reference.js';
-import {createNorthBroadModels} from './rendering/north-broad-models.js';
+import {batchOpaqueRelief} from './rendering/viewer-building-fit.js';
+import {createViewerCityModels} from './rendering/viewer-city-models.js';
 import {BuildingAssetRegistry} from './rendering/building-registry.js';
 import {createStreetWaterRunoff} from './rendering/street-water-runoff.js';
 import {schoolFitDimensions} from './rendering/school-fit.js';
@@ -66,7 +65,7 @@ import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
 import {createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
 
-import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,enhanceEnvironment,createCinematicWeather} from './rendering/cinematic-assets.js';
+import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,createCinematicWeather} from './rendering/cinematic-assets.js';
 const mobileVisual=window.matchMedia('(pointer:coarse)').matches;
 let visualPreset=mobileVisual?'mobile':'balanced';
 const performanceLab=createPerformanceLab({onChange:(key,on)=>applyDiagnosticSystem(key,on)});
@@ -335,7 +334,7 @@ function updateNight(dt){
  for(const car of cars)setRoadVehicleNight(car.root,darkness*brownout,!car.burning&&!car.destroyed);
  for(const w of nightWindows){const lightAllowed=(!w.surface||w.surface.alive)&&w.enabled&&!w.broken;const opacity=lightAllowed?Math.max(0,(darkness-.3)*.62)*brownout:0;w.mesh.material.opacity=opacity;w.mesh.visible=opacity>.001;}
  for(const mat of schoolGlazingMaterials)mat.emissiveIntensity=Math.max(0,(darkness-.18))*mat.userData.nightEmission*brownout;
- referenceFacades?.update?.(brownout);
+
  northBroadModels?.update?.(dt, darkness, brownout);
  streetWaterRunoff?.update?.(dt, craters.some(c=>c.geyserGroup));
 
@@ -355,10 +354,11 @@ function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904
 // 2200 block of N Broad Street. X is north (+), Z is west/front (+).
 // Street alignment and nearby building dimensions are not survey-verified.
 import {buildNeighborhood} from './neighborhood.js';
-const neighborhood=buildNeighborhood({THREE,scene,staticGroup,block,material,mats,rand,visualBank});
+const viewerGrid=await loadViewerGrid();
+const neighborhood=buildNeighborhood({scene,staticGroup,block,material,visualBank,grid:viewerGrid});
 // The school is drawn by the FBX ONLY when available. No second window/card facade.
-const referenceFacades=createBroadStreetReferenceFacades(scene,neighborhood.buildings);
-const northBroadModels=createNorthBroadModels(THREE,scene,neighborhood.city,referenceFacades);
+const northBroadModels=createViewerCityModels(scene,neighborhood.city);
+const referenceFacades={referenceBuildings:northBroadModels.entries.length,drawObjects:0,snapshots:()=>[]};
 window.__DD_NORTH_BROAD=northBroadModels;
 const buildingRegistry=new BuildingAssetRegistry(scene,northBroadModels,neighborhood.city);
 window.__DD_BUILDING_REGISTRY=buildingRegistry;
@@ -376,13 +376,10 @@ const streetWaterRunoff=createStreetWaterRunoff(scene);
 window.__DD_STREET_RUNOFF=streetWaterRunoff;
 installNeighborhoodWindows();
 // Architecture passes remain separate from simulation and collisions.
-addStreetSurfaceDetail(THREE,staticGroup);
-let cityExtensions={group:null,propsEstimate:0};
-try{cityExtensions=createCityExtensions({THREE,root:staticGroup,block,material});}
-catch(err){console.error('City scenery could not be initialized. Starting core game without it.',err);window.__DD_OPTIONAL_ERRORS=(window.__DD_OPTIONAL_ERRORS||[]).concat('City scenery: '+String(err));}
-const upgradedStreet=enhanceEnvironment(THREE,scene,staticGroup,neighborhood,visualBank);
-const updateWindPlanting=createWindPlanting(upgradedStreet.windTrees,neighborhood.foreground);
-const streetBatchStats=batchStaticStreetProps(scene);console.info('Static street batching:',streetBatchStats);
+const cityExtensions={propsEstimate:0};
+const upgradedStreet={windTrees:[]};
+const streetBatchStats={mappedBuildings:northBroadModels.entries.length};
+const updateWindPlanting=neighborhood.updateWindPlanting;
 const cinematicWeather=createCinematicWeather(THREE,scene,{mobile:mobileVisual});
 // Voxel facade with ~0.30 world-unit cells. Individual instances can be hidden after impacts.
 const cell=.3,W=28,H=15,D=12,counts={brick:0,brick2:0,stone:0,roof:0,glass:0,glassLit:0,frame:0};const specs=[];
@@ -478,7 +475,7 @@ function updateFires(dt){
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
 
   // Identify building beneath or around fire
-  const bldg=neighborhood.targetBuildings?.find(b=>!b.school&&Math.abs(b.x-f.root.position.x)<b.w*.5+1.8&&f.root.position.z>=b.z-b.d*.5-1.8&&f.root.position.z<=b.front+1.8);
+  const bldg=neighborhood.activeAt(f.root.position.x,f.root.position.z);
   const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=1.2;
 
   // Electrical short sparking on damaged building framework
@@ -499,9 +496,9 @@ function updateFires(dt){
 
   // Realistic intra-building & neighborhood fire spread
   // Firestorm acceleration: clustered fires spread faster via thermal updraft radiation
-  const spreadRateMultiplier=1.0+(clusterFires.length*0.35);
+  const spreadRateMultiplier=1.0+Math.min(4,clusterFires.length)*.12;
   f.spreadTimer=(f.spreadTimer||0)+dt*spreadRateMultiplier;
-  const spreadInterval = (f.suppression < 0.15 ? 1.2 : 2.0);
+  const spreadInterval=f.suppression<.15?3:5;
   if(f.spreadTimer>spreadInterval&&schoolFire.length<64&&f.suppression<.45){
    f.spreadTimer=0;
    if(bldg){
@@ -512,7 +509,7 @@ function updateFires(dt){
      const spreadX=bldg.x+(Math.random()-.5)*bldg.w*.8;
      const spreadZ=bldg.z+(Math.random()-.5)*bldg.d*.8;
      ignite(spreadX,climbY,spreadZ);
-    }else{
+    }else if(f.age>=15&&bldg.fireDamage>.18){
      // Spread to adjacent building if current building is heavily ablaze
      const nearB=neighborhood.targetBuildings.find(b=>b!==bldg&&!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<28&&Math.abs(b.z-f.root.position.z)<26&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
      if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
@@ -523,7 +520,7 @@ function updateFires(dt){
      }
     }
     // High-altitude firestorm convective thermal updraft blows embers across North Broad Street
-    if(clusterFires.length>=3&&f.root.position.y>4.5&&Math.random()<dt*1.2){
+    if(f.age>=15&&clusterFires.length>=3&&f.root.position.y>4.5&&Math.random()<dt*.37){
      const acrossX=f.root.position.x<0?(18+Math.random()*16):(-18-Math.random()*16);
      const acrossZ=f.root.position.z+(Math.random()-0.5)*14;
      const acrossBldg=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<0.95&&Math.abs(b.x-acrossX)<b.w*0.6&&Math.abs(b.z-acrossZ)<b.d*0.6);
@@ -540,7 +537,7 @@ function updateFires(dt){
      const spreadZ=-48+Math.random()*42;
      ignite(spreadX,climbY,spreadZ);
     }
-   }else{
+   }else if(f.age>=15){
     // Spread along street / ground
     const nearB=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<.95&&Math.abs(b.x-f.root.position.x)<25&&Math.abs(b.z-f.root.position.z)<22&&!schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<3.5));
     if(nearB)ignite(nearB.x+(Math.random()-.5)*nearB.w*.5,Math.max(2,nearB.h*.82),nearB.front-1.2);
@@ -552,9 +549,10 @@ function updateFires(dt){
   if(f.burnTimer>=0.70){
    f.burnTimer=0;
    const unsuppressed=Math.max(0,1-f.suppression);
-   if(bldg){
-    const bFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x-bldg.x)<bldg.w*0.6&&Math.abs(sf.root.position.z-bldg.z)<bldg.d*0.6).length;
-    const burnRate=(0.018+bFires*0.016)*unsuppressed;
+   if(bldg&&elapsed>=(bldg.nextFireDamageAt||0)){
+    bldg.nextFireDamageAt=elapsed+.7;
+    const bFires=schoolFire.filter(sf=>containsParcel(bldg,sf.root.position.x,sf.root.position.z)).length;
+    const burnRate=(.012+Math.min(bFires,6)*.007)*unsuppressed;
     bldg.fireDamage=(bldg.fireDamage||0)+burnRate;
     bldg.damage=Math.max(bldg.damage||0,bldg.fireDamage);
     // Periodically weaken and detach localized structural parts
@@ -588,8 +586,6 @@ function updateFires(dt){
     // Catastrophic collapse from untended fire & neighborhood fire cascade
     if(!bldg.fireCollapsed&&(bldg.fireDamage>=0.70||bldg.damage>=0.96)){
      bldg.fireCollapsed=true;
-     bldg.damage=1.0;
-     neighborhood.city.forceDamage(bldg,1.0);
      damageOrCollapseNorthBroad(bldg, 1.0, true);
      cinematicFX.demolitionDustWave(
       new THREE.Vector3(bldg.x-bldg.w*.45,.3,bldg.front),
@@ -1400,7 +1396,7 @@ for(const street of CROSS_STREET_CONFIG){
 function updateSignals(){trafficLightRed=(elapsed%18)>11;for(const s of trafficSignals){s.red.material=trafficLightRed?trafficRed:trafficOff;s.green.material=trafficLightRed?trafficOff:trafficGreen;}}
 const policeBlockadeGroup=new THREE.Group();policeBlockadeGroup.name='police-intersections-blockade';policeBlockadeGroup.visible=false;scene.add(policeBlockadeGroup);
 const policeBlockades=[];
-for(const crossX of [-270, -102, 78, 256]){
+for(const crossX of CROSS_STREET_X){
  for(const z of [11.5, 36.5]){
   const cruiser=new THREE.Group();cruiser.position.set(crossX+(crossX>0?3.2:-3.2),-.36,z);
   cruiser.rotation.y=(crossX>0?-1:1)*0.55;
@@ -1473,46 +1469,17 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const laneKey=dir>0?'east':'west';
  const laneIndex=(nextLaneByDirection[laneKey]++)%2;
  let rearStreet=false,midgroundStreet=false,backgroundStreet=false,crossStreet=false,crossDir=0;
- let laneZ;
- if(forcedLaneZ!==null){
-  laneZ=forcedLaneZ;
-  if(laneZ===-37)rearStreet=true;
-  else if(laneZ===-88)midgroundStreet=true;
-  else if(laneZ===-112)backgroundStreet=true;
-  else if(![17,20,27,30].includes(laneZ))crossStreet=true;
- }else if(!emergency){
-  const roll=Math.random();
-  if(roll<.18){
-   crossStreet=true;
-   crossDir=Math.random()<.5?1:-1;
-   laneZ=crossDir>0?(-115+Math.random()*25):(110+Math.random()*20);
-  }else if(roll<.32){
-   rearStreet=true;
-   laneZ=-37;
-  }else if(roll<.44){
-   midgroundStreet=true;
-   laneZ=-88;
-  }else if(roll<.54){
-   backgroundStreet=true;
-   laneZ=-112;
-  }else{
-   laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
-  }
- }else{
-  if(fireTruck){
-   const r=Math.random();
-   if(r<0.30){rearStreet=true;laneZ=-37;}
-   else if(r<0.60){midgroundStreet=true;laneZ=-88;}
-   else if(r<0.75){backgroundStreet=true;laneZ=-112;}
-   else{laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];}
-  }else{
-   laneZ=dir>0?[17,20][laneIndex]:[27,30][laneIndex];
-  }
+ let laneZ=dir>0?BROAD_LANES[laneIndex]:BROAD_LANES[laneIndex+2];
+ if(forcedLaneZ!==null&&BROAD_LANES.includes(forcedLaneZ))laneZ=forcedLaneZ;
+ if(!emergency&&forcedLaneZ===null&&Math.random()<.1){
+  crossStreet=true;
+  crossDir=Math.random()<.5?1:-1;
+  laneZ=crossDir>0?-32:40;
  }
  const streetScale=backgroundStreet?.52:(midgroundStreet?.66:(rearStreet?.82:1.0));
  const spawnDist=260+Math.random()*40;
  if(crossStreet){
-  const crossX=forcedX??[-270,-102,78,256][Math.floor(Math.random()*4)];
+  const crossX=forcedX??CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)];
   root.position.set(crossX,-.36,laneZ);
   root.rotation.set(0,crossDir<0?-Math.PI/2:Math.PI/2,0);
  }else{
@@ -1537,7 +1504,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  }
  beacon=root.userData.vehicleBeacon||null;
  const isCorridor=!emergency&&!rearStreet&&!midgroundStreet&&!backgroundStreet&&!crossStreet;
- const turnAt=isCorridor&&Math.random()<.25?(dir>0?[-270,-102,78,256][Math.floor(Math.random()*4)]:[245,70,-98,-167][Math.floor(Math.random()*4)]):null;
+ const turnAt=isCorridor&&Math.random()<.25?(dir>0?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:[245,70,-98,-167][Math.floor(Math.random()*4)]):null;
  const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
  cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
  if(bike&&!scooter&&wave<=10&&cars.length<carCap-2&&Math.random()<.68&&forcedX===null){
@@ -1611,8 +1578,8 @@ function updateVehicleRoute(car,dt){if(car.burning)return true;
 // Roadside parked cars: impacted separately, and restored on game restart.
 const parkedCars=[];
 const parkedMaterials=[0x596d79,0x9aaca7,0x444750,0xa69b90,0x963c36].map(vehicleMaterial);
-for(const [i,x,z] of [[0,-43,14.5],[1,-10,14.5],[2,26,14.5],[3,-31,34.2],[4,34,34.2],[0,70,34.2]]){
- const root=new THREE.Group();root.position.set(x,-.35,z);if(z>30)root.rotation.y=Math.PI;scene.add(root);
+for(const [i,x,z] of [[0,-43,7.3],[1,-10,7.3],[2,26,7.3],[3,-31,25.8],[4,34,25.8],[0,70,25.8]]){
+ const root=new THREE.Group();root.position.set(x,-.35,z);if(z>BROAD_CENTER)root.rotation.y=Math.PI;scene.add(root);
  buildRoadVehicle(THREE,root,{length:3.9,bodyHex:parkedMaterials[i].color.getHex()});
  batchVehicleVisuals(THREE,root);parkedCars.push({root,destroyed:false,originalPos:new THREE.Vector3(x,-.35,z)});
 }
@@ -1660,7 +1627,7 @@ function fireTruckService(c,dt){
   }
   const home=c.originalLane||c.laneZ;
   if(Math.abs(c.root.position.z-home)>.3){
-   if(!c.returning){const turn=[-270,-102,78,256].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
+   if(!c.returning){const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
    const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();
    if(distance<.3)c.route.shift();else{c.root.position.addScaledVector(delta,Math.min(distance,dt*6.5)/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);}
    c.routing=true;c.serviceStop=true;c.speed=6.5;
@@ -1670,8 +1637,8 @@ function fireTruckService(c,dt){
  }
  c.returning=false;
  const pos=c.serviceTarget.root.position;
- if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=[-270,-102,78,256].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
- if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=[-270,-102,78,256].slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
+ if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
+ if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
  if(c.route?.length){const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();if(distance<.3)c.route.shift();else{const step=Math.min(distance,dt*6.5);c.root.position.addScaledVector(delta,step/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);c.speed=6.5}c.routing=!!c.route.length;c.serviceStop=true;if(c.routing)return;c.laneZ=c.routeLane;c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}
  const near=Math.abs(c.root.position.x-pos.x)<5.5;
  if(!near){if(c.laneZ===-37){c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}c.serviceStop=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;}
@@ -1725,13 +1692,13 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
      c.speed=Math.max(1.8,c.speed*0.52);
     }
     const lateralShift=(obstruction.z>=c.root.position.z)?-(obstruction.radius+2.4):(obstruction.radius+2.4);
-    const targetEvadeZ=THREE.MathUtils.clamp(obstruction.z+lateralShift,15.2,32.8);
+    const targetEvadeZ=THREE.MathUtils.clamp(obstruction.z+lateralShift,8.5,24.5);
     c.laneZ=targetEvadeZ;
     c.overtakeUntil=elapsed+5.0;
    }else if(c.evadingCrater){
     c.evadingCrater=false;
     c.hasSkidded=false;
-    c.laneZ=c.dir>0?19.5:27.5;
+    c.laneZ=c.dir>0?BROAD_LANES[1]:BROAD_LANES[2];
     c.hazardLights=false;
    }
   if(obstruction){
@@ -1751,7 +1718,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   }
   const closeCrater=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+8&&Math.abs(q.z-c.root.position.z)<q.radius+1.5&&((q.x-c.root.position.x)*c.dir)>-0.5);
   const blockedAhead=closeCrater&&Math.abs(c.root.position.z-closeCrater.z)<closeCrater.radius+0.8;
-  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&[-270,-102,78,256].some(cx=>Math.abs(c.root.position.x-cx)<13);
+  const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&CROSS_STREET_X.some(cx=>Math.abs(c.root.position.x-cx)<13);
   const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
@@ -1763,7 +1730,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
     c.turningAround=true;
     c.dir=-c.dir;
     c.root.rotation.y+=Math.PI;
-    c.laneZ=c.dir>0?17.5:29.5;
+    c.laneZ=c.dir>0?BROAD_LANES[0]:BROAD_LANES[3];
     c.blockedTimer=0;
     c.overtakeUntil=elapsed+7.0;
    }
@@ -1800,7 +1767,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
     }
    }
    if(!c.crossStreet){
-    if(c.laneZ>-20){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,15.6,32.4);}
+    if(c.laneZ>-20){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,8.5,24.5);}
     else if(c.laneZ===-37){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-39.0,-35.0);}
     else if(c.laneZ===-88){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-90.0,-86.0);}
     else if(c.laneZ===-112){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-114.0,-110.0);}
@@ -1856,7 +1823,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    c.blink=0;
   }
   if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
-   const exitCross=[-270,-102,78,256].find(x=>Math.abs(c.root.position.x-x)<22);
+   const exitCross=CROSS_STREET_X.find(x=>Math.abs(c.root.position.x-x)<22);
    if(exitCross!==undefined)c.turnAt=exitCross;
   }
   if(!c.frozen&&(Math.abs(c.root.position.x)>280||(c.crossStreet&&(c.crossDir<0?c.root.position.z<-135:c.root.position.z>135))||(c.turning&&c.turnPath?.length===0&&Math.abs(c.root.position.z)>120))){recycleCar(c);cars.splice(i,1);}
@@ -1950,16 +1917,16 @@ function spawnCrowd(forcedX=null,forcedZ=null){
  for(let i=0;i<count;i++){
   const g=buildPerson(THREE,Math.floor(Math.random()*12));scene.add(g);
   const jaywalker=Math.random()<.18,crossing=i<2||jaywalker,fromFar=Math.random()<.5;
-  const isRear=forcedZ!==null?forcedZ<-20:Math.random()<.20;
+  const isRear=forcedZ!==null&&forcedZ<-20;
   let x,z;
   if(forcedX!==null&&forcedZ!==null){
    x=forcedX;z=forcedZ;
   }else if(isRear){
    x=(Math.random()-.5)*130;z=Math.random()<.5?-34:-40;
   }else if(crossing&&!jaywalker){
-   x=[-270,-102,78,256][Math.floor(Math.random()*4)];z=fromFar?38:11;
+   x=CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)];z=fromFar?29:4;
   }else{
-   x=(Math.random()-.5)*150;z=Math.random()<.55?10.5:44.5;
+   x=(Math.random()-.5)*150;z=Math.random()<.55?4:29;
   }
   g.position.set(x,0,z);
   g.rotation.y=isRear?(Math.random()<.5?0:Math.PI):crossing?(fromFar?Math.PI:0):Math.PI/2;
@@ -1983,21 +1950,20 @@ function panicCrowdAt(x,z,radius=35){
 }
 function seedChapterTrafficAndCrowd(chapterNum){
  const carTarget=chapterNum===1?18:chapterNum===2?16:chapterNum===3?14:12;
- if(chapterNum===2){if(!cars.some(c=>c.bus))spawnCar(45,20,1,'bus');if(!cars.some(c=>c.police))spawnCar(22,17,1,'police');}
+ if(chapterNum===2){if(!cars.some(c=>c.bus))spawnCar(45,BROAD_LANES[1],1,'bus');if(!cars.some(c=>c.police))spawnCar(22,BROAD_LANES[0],1,'police');}
  for(let n=cars.length;n<carTarget;n++){
   const dir=Math.random()<.5?1:-1;
   const isRear=Math.random()<.24;
   const isCross=!isRear&&Math.random()<.16;
-  const laneZ=isCross?(dir>0?46:8):isRear?-37:(dir>0?(Math.random()<.5?17:20):(Math.random()<.5?27:30));
-  const posX=isCross?[-270,-102,78,256][Math.floor(Math.random()*4)]:(Math.random()-.5)*220;
+  const laneZ=dir>0?(Math.random()<.5?BROAD_LANES[0]:BROAD_LANES[1]):(Math.random()<.5?BROAD_LANES[2]:BROAD_LANES[3]);
+  const posX=isCross?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:(Math.random()-.5)*220;
   spawnCar(posX,laneZ,dir);
  }
  const crowdTarget=chapterNum===1?38:chapterNum===2?32:chapterNum===3?28:36;
  while(crowd.length<crowdTarget){
-  const isRear=Math.random()<.20;
-  const isCross=!isRear&&Math.random()<.25;
-  const z=isRear?(Math.random()<.5?-34:-40):isCross?(Math.random()<.5?11:38):(Math.random()<.55?10.5:44.5);
-  const x=isCross?[-270,-102,78,256][Math.floor(Math.random()*4)]:(Math.random()-.5)*150;
+  const isCross=Math.random()<.25;
+  const z=Math.random()<.55?4:29;
+  const x=isCross?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:(Math.random()-.5)*150;
   spawnCrowd(x,z);
  }
 }
@@ -2108,6 +2074,7 @@ function updateNeighborhoodGauge(health=neighborhoodHealth()){
  neighborhood.setDistantHealth(health);
 }
 function escalateBackgroundNeighborhood(dt,random=Math.random){
+ if(freeFlightMode)return;
  const fronts=neighborhood.targetBuildings.filter(b=>!b.background);
  const frontDamage=fronts.reduce((sum,b)=>sum+b.damage,0)/Math.max(1,fronts.length);
  const health=neighborhoodHealth();
@@ -2116,10 +2083,10 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
  backgroundDamageTimer-=dt;
  if(backgroundDamageTimer>0)return;
  // Rapid continuous background meteor strikes crashing into background rowhouses!
- backgroundDamageTimer=0.85+random()*0.75;
+ backgroundDamageTimer=6+random()*4;
  const district=neighborhood.longRange;
  const backs=neighborhood.targetBuildings.filter(b=>b.background&&b.damage<1);
- const count=2+Math.floor(random()*2);
+ const count=1;
  for(let i=0;i<count&&distantStreaks.length<65;i++){
   const near=backs.length&&random()<0.75?backs[Math.floor(random()*backs.length)]:null;
   const visible=true;
@@ -2177,7 +2144,7 @@ function updateDistantMeteors(dt){
    const remaining=Math.max(0,s.life)/1.8;
    s.sprite.position.copy(point);
    s.sprite.position.x-=20*remaining;s.sprite.position.y+=70*remaining;
-   if(s.life<=0){
+   if(s.life<=0&&!freeFlightMode){
     if(near){
      neighborhood.city.impact(near,point,5.5,strength);
      neighborhood.longRange.burnBackgroundBuilding(near);
@@ -2312,6 +2279,7 @@ function disposeCrater(c){
  if(c.sootDecal){scene.remove(c.sootDecal);c.sootDecal.geometry?.dispose();c.sootDecal.material?.dispose();}
  if(c.thermalGroup){scene.remove(c.thermalGroup);c.thermalGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.subwayGroup){
+  for(const light of c.subwayGroup.userData.lights||[])explosionLightPool.release(light);
   scene.remove(c.subwayGroup);
   c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
  }
@@ -2323,13 +2291,20 @@ function disposeCrater(c){
 const _craterV1=new THREE.Vector3(),_craterV2=new THREE.Vector3(),_craterV3=new THREE.Vector3();
 function addCrater(x,z,radius=3,opts={}){
  // Broad Street corridor includes roadway, curbs, sidewalks, and flanking lanes (z: -10 to 52)
- const isBroadStreetCorridor=z>=-10&&z<=52&&Math.abs(x)<265;
+ const isBroadStreetCorridor=isBroadRoad(x,z);
  const mSzVal=opts.size||(radius*0.75);
  const isExtinction=opts.isExtinction||mSzVal>=13.0;
  const isTitanic=opts.isTitanic||mSzVal>=9.0;
  const isColossal=opts.isMassive||mSzVal>=4.5||radius>=4.0;
  const isTitanicOrExtinction=isExtinction||isTitanic;
  const isSubwayBreach=isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
+ // Reuse overlapping road cavities and cap detailed subway scenes before allocating meshes.
+ const existing=craters.find(c=>c.isSubway===isSubwayBreach&&Math.hypot(c.x-x,c.z-z)<Math.min(c.radius,radius)*.65&&c.radius>=radius*.9);
+ if(existing){existing.life=existing.initialLife;return existing;}
+ if(isSubwayBreach&&craters.filter(c=>c.isSubway).length>=2){
+  const index=craters.findIndex(c=>c.isSubway);
+  disposeCrater(craters.splice(index,1)[0]);
+ }
 
  let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null;
 
@@ -2457,17 +2432,19 @@ function addCrater(x,z,radius=3,opts={}){
    subwayGroup.add(rebar);
   }
 
-  // Subterranean amber tunnel lighting illuminating tracks & walls from within
-  const tunnelLight=new THREE.PointLight(0xffba55,3.6,28.0);
-  tunnelLight.position.set(0,-H*0.4,0);subwayGroup.add(tunnelLight);
-  const utilLight1=new THREE.PointLight(0xffa834,3.2,22.0);
-  utilLight1.position.set(-W*0.28,-H*0.35,0);subwayGroup.add(utilLight1);
-  const utilLight2=new THREE.PointLight(0xffa834,3.2,22.0);
-  utilLight2.position.set(W*0.28,-H*0.35,0);subwayGroup.add(utilLight2);
-  const thirdRailArc=new THREE.PointLight(0x60a5fa,3.8,16.0);
-  thirdRailArc.position.set(0,-H+0.55,1.18);
-  thirdRailArc.name='subway-third-rail-arc-light';
-  subwayGroup.add(thirdRailArc);
+  // Fixed scene-level slots keep existing material programs valid when a crater opens.
+  const tunnelLight=explosionLightPool.acquire();
+  if(tunnelLight){
+   tunnelLight.color.setHex(0xffba55);
+   tunnelLight.position.set(x,-H*.40,z);
+   tunnelLight.intensity=4.8;
+  }
+  const railLight=explosionLightPool.acquire();
+  if(railLight){
+   railLight.color.setHex(0x44ddff);
+   railLight.position.set(x,-H+1.2,z);
+  }
+  subwayGroup.userData.lights=[tunnelLight,railLight].filter(Boolean);
 
   // Subterranean Station Platform Mezzanine (North edge of cavern at z = D*0.38)
   const platformGroup=new THREE.Group();
@@ -2626,14 +2603,11 @@ function addCrater(x,z,radius=3,opts={}){
    }
   }
 
-  // RC157: Subterranean third-rail dynamic electric arc flicker light
-  const arcLight = new THREE.PointLight(0x44ddff, 0.0, 18.0, 1.8);
-  arcLight.name = 'subway-third-rail-arc-light';
-  arcLight.position.set(0, -H + 1.2, 0);
+  const arcLight=new THREE.Object3D();
+  arcLight.name='subway-third-rail-arc-light';
+  arcLight.intensity=0;
   subwayGroup.add(arcLight);
-
-// (RC163: Streamlined subterranean breach without toy cones)
-
+  subwayGroup.userData.railLight=railLight;
 
   // RC157: Subterranean emergency evacuation illuminated EXIT signs on tunnel bulkheads
   const exitHousingMat=new THREE.MeshStandardMaterial({color:0x1b2024,roughness:0.7,metalness:0.2});
@@ -2660,13 +2634,10 @@ function addCrater(x,z,radius=3,opts={}){
   beaconDome.name='subway-beacon-dome';
   beaconDome.position.set(0,0.10,0);
   beaconGroup.add(beaconDome);
-  const beaconLight=new THREE.PointLight(0xff2200,2.5,16.0);
-  beaconLight.name='subway-beacon-light';
-  beaconLight.position.set(0,0.25,0);
-  beaconGroup.add(beaconLight);
   beaconGroup.position.set(W*0.35,-H+platH+0.09,platZ+0.5);
   subwayGroup.add(beaconGroup);
 
+  batchOpaqueRelief(subwayGroup,{preserveNamed:true});
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
@@ -2800,10 +2771,8 @@ function updateCraters(dt){
    }
    const beacon=c.subwayGroup.getObjectByName('subway-emergency-beacon');
    if(beacon){
-    const bl=beacon.getObjectByName('subway-beacon-light');
     const bd=beacon.getObjectByName('subway-beacon-dome');
     const pulse=(Math.sin(elapsed*9.0)>0.1)?1.0:0.12;
-    if(bl)bl.intensity=2.5*pulse;
     if(bd&&bd.material)bd.material.emissiveIntensity=1.8*pulse;
    }
    const arcLight=c.subwayGroup.getObjectByName('subway-third-rail-arc-light');
@@ -2813,6 +2782,7 @@ function updateCraters(dt){
     }else{
      arcLight.intensity=Math.max(0,arcLight.intensity-dt*14.0);
     }
+    if(c.subwayGroup.userData.railLight)c.subwayGroup.userData.railLight.intensity=arcLight.intensity;
    }
   }
   if(c.geyserGroup){
@@ -3166,7 +3136,7 @@ function updateWorld(dt){
   else if(p.down>0){p.down-=dt;p.vy-=14*dt;p.g.position.y=Math.max(0,p.g.position.y+p.vy*dt);if(p.g.position.y===0)p.vy=0;p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,(p.dx||1)*1.25,Math.min(1,dt*7));}
   else{
    if(p.crossing){
-    if(trafficLightRed||p.jaywalker||isPanicked||(p.g.position.z>13&&p.g.position.z<35))p.g.position.z+=p.dz*dt*(isPanicked?5.8:p.walkSpeed);
+    if(trafficLightRed||p.jaywalker||isPanicked||(isBroadRoad(p.g.position.x,p.g.position.z)))p.g.position.z+=p.dz*dt*(isPanicked?5.8:p.walkSpeed);
     if(p.g.position.z>46||p.g.position.z<7)p.life=0;
    }else{
     p.g.position.x+=(p.panic>0?p.panicDir:p.dx)*dt*(isPanicked?p.walkSpeed:2+Math.sin(elapsed+p.phase));
@@ -4157,10 +4127,10 @@ function showFinalEnding(accountability){
  const link=document.createElement('a');link.href='./campaign/chapters3-4.html';link.target='_blank';link.rel='noopener';link.textContent='▶ VIEW ANIMATED FINALE';link.style.cssText='display:inline-block;margin-top:10px;padding:10px;color:#ffce75;font-weight:bold';panel.appendChild(link);
  document.getElementById('again').onclick=reset;
 }
-const MAX_DYNAMIC_LIGHTS=10;
-const explosionLightPool=createStableLightPool(scene,MAX_DYNAMIC_LIGHTS,()=>new THREE.PointLight(0xffbe78,0,50,1.5));
+const MAX_DYNAMIC_LIGHTS=4;
+const explosionLightPool=createStableLightPool(scene,MAX_DYNAMIC_LIGHTS+4,()=>new THREE.PointLight(0xffbe78,0,50,1.5));
 function updateExplosionLights(dt){for(let i=explosionLights.length-1;i>=0;i--){const e=explosionLights[i];e.life-=dt;const decayRate=(e.maxLife||.68)>1.0?2.2:3.5;e.light.intensity=Math.max(0,e.light.intensity*(1-dt*decayRate));if(e.life<=0){explosionLightPool.release(e.light);explosionLights.splice(i,1)}}}
-function flashAt(x,y,z,power=1){if(explosionLights.length>=MAX_DYNAMIC_LIGHTS)return;const light=explosionLightPool.acquire();if(!light)return;light.intensity=Math.min(9.5,3.2*power);light.distance=Math.min(36,18*power);light.color.setHex(power>3.0?0xfff6ea:power>1.8?0xffd690:power>1.0?0xffad58:0xff8838);light.position.set(x,y,z);const life=power>=3.5?.75:power>=2.0?.55:.35;explosionLights.push({light,life,maxLife:life});}
+function flashAt(x,y,z,power=1){if(explosionLights.length>=MAX_DYNAMIC_LIGHTS)return;const light=explosionLightPool.acquire();if(!light)return;light.color.setHex(0xffbe78);light.intensity=Math.min(9.5,3.2*power);light.distance=Math.min(36,18*power);light.color.setHex(power>3.0?0xfff6ea:power>1.8?0xffd690:power>1.0?0xffad58:0xff8838);light.position.set(x,y,z);const life=power>=3.5?.75:power>=2.0?.55:.35;explosionLights.push({light,life,maxLife:life});}
 function remove(arr,i){const o=arr[i];if(!o)return;scene.remove(o.mesh);if(o.mesh.userData.sharedRockAsset){arr.splice(i,1);return;}
  if(arr===blasts){if(blastMeshPool.length<110)blastMeshPool.push(o.mesh);else{o.mesh.material.dispose();}arr.splice(i,1);return;}if(arr===shots){for(const child of [...o.mesh.children]){o.mesh.remove(child);child.geometry?.dispose();if(child.material!==iceBoltMaterial)child.material?.dispose();}}if(arr===blasts||arr===meteors){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}else if(arr===shots){if(o.mesh.geometry!==hunterGeometry&&o.mesh.geometry!==waterDropletGeometry&&o.mesh.geometry!==sharedShotGeometry)o.mesh.geometry.dispose();if(o.mesh.material!==hunterMaterial&&o.mesh.material!==mats.fire&&o.mesh.material!==waterMat&&o.mesh.material!==iceBoltMaterial)o.mesh.material.dispose()}arr.splice(i,1)}const sharedBlastGeometry=new THREE.PlaneGeometry(1,1);
 const blastMeshPool=[];const blastStats={created:0,reused:0};
@@ -4372,17 +4342,17 @@ function traceOpeningMeteorImpact(m,start){
  const end=m.mesh.position,drop=start.y-end.y;
  if(drop<=0)return false;
  let earliest=Infinity;
- function check(y,minX,maxX,minZ,maxZ){
+ function check(y,minX,maxX,minZ,maxZ,parcel=null){
   const t=(start.y-y)/drop;
   if(t<0||t>1||t>=earliest)return;
   const x=THREE.MathUtils.lerp(start.x,end.x,t);
   const z=THREE.MathUtils.lerp(start.z,end.z,t);
-  if(x>=minX&&x<=maxX&&z>=minZ&&z<=maxZ)earliest=t;
+  if(x>=minX&&x<=maxX&&z>=minZ&&z<=maxZ&&(!parcel||containsParcel(parcel,x,z)))earliest=t;
  }
  check(.7,-Infinity,Infinity,-Infinity,Infinity);
  if(schoolDamage<.999)check(schoolBounds.max.y,schoolBounds.min.x,schoolBounds.max.x,schoolBounds.min.z,schoolBounds.max.z);
  for(const b of neighborhood.targetBuildings){
-  if(b.damage<.98)check(b.h,b.x-b.w/2,b.x+b.w/2,b.z-b.d/2,b.z+b.d/2);
+  if(b.damage<.98)check(b.h,b.x-b.w/2,b.x+b.w/2,b.z-b.d/2,b.z+b.d/2,b);
  }
  if(earliest===Infinity)return false;
  m.target.copy(start).lerp(end,earliest);
@@ -4397,37 +4367,19 @@ function damage(x,z,y=7,meteor=null){
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
- const targetX=THREE.MathUtils.clamp(x,-240,240);
+ const targetX=x;
  const targetY=THREE.MathUtils.clamp(y,.3,40);
  const hitZ=z;
  const blastRadius=profile.radius*(diffMode==='hard'?2.2:1.0);
  const blastStrength=profile.strength*diffDmg;
- const shockRadius=profile.shockRadius*(diffMode==='hard'?2.5:1.0);
 
- // 1. Always evaluate photogrammetric North Broad Models (Berean Church, Rowhouses, PECO)
- const nbHits=northBroadModels?.impact?.(new THREE.Vector3(targetX,targetY,hitZ),blastRadius+2.5,blastStrength)||0;
-
- // 2. Generous parcel search: matches direct hits on roof, facade, porch, entrance steps, or parking lot
- const targetBuilding=neighborhood.targetBuildings.find(b=>
-  !b.school &&
-  Math.abs(b.x-targetX)<=b.w*0.5+Math.max(3.0,blastRadius*0.5)&&
-  hitZ>=(b.z-b.d*0.5-Math.max(4.0,blastRadius*0.6))&&
-  hitZ<=(b.front+Math.max(6.0,blastRadius*0.8))
- ) || neighborhood.targetBuildings.find(b=>
-  !b.school && Math.hypot(b.x-targetX,b.z-hitZ)<=Math.max(b.w,b.d)*0.55+blastRadius
- );
- const neighbor=!!targetBuilding;
-
- const schoolHalfW=neighborhood.school.w*0.5+1.2;
- const schoolMinZ=neighborhood.school.z-neighborhood.school.d*0.5-1.2;
- const schoolMaxZ=neighborhood.school.z+neighborhood.school.d*0.5+1.2;
+ const targetBuilding=neighborhood.activeAt(targetX,hitZ);
  const schoolMaxY=neighborhood.school.h+2.0;
 
- const roadStrike=(hitZ>=11&&hitZ<=42&&targetY<=4.5)||(meteor&&(meteor.size>=4.5)&&targetY<=4.5&&hitZ>=10);
+ const roadStrike=!targetBuilding&&targetY<=4.5&&isBroadRoad(targetX,hitZ);
  if(roadStrike){
   strikeParkedCars(targetX,hitZ,profile.radius);shake=Math.max(shake,Math.min(1.4,profile.strength));emitImpact(targetX,1,hitZ,Math.round(55+profile.strength*45),profile.strength*1.4);blast(targetX,1,hitZ,profile.shockRadius);flashAt(targetX,1.8,hitZ,4.6);cinematicFX.burst(new THREE.Vector3(targetX,1.2,hitZ),profile.shockRadius*1.2);cinematicFX.fire(new THREE.Vector3(targetX,.4,hitZ),elapsed,Math.max(2.4,profile.radius*.9),.45,'structure');if(Math.random()<profile.fire*(diffMode==='hard'?1.6:1.2))ignite(targetX,1,hitZ);if(Math.random()<.55)ignite(targetX+(Math.random()-.5)*3.2,1,hitZ+(Math.random()-.5)*2.5);
   for(const c of cars)if(performanceLab.isEnabled('traffic')&&c.life>0&&Math.abs(c.root.position.x-targetX)<6&&Math.abs(c.root.position.z-hitZ)<5)explodeCar(c);
-  neighborhood.aftershock(targetX,targetY,hitZ,shockRadius*0.75,p=>debrisPiece(p,'brick'),blastStrength*0.6);
   const mSz=meteor?.size||(profile.radius*0.45);
   const isExtinction = mSz >= 13.0;
   const isTitanic = mSz >= 9.0;
@@ -4437,49 +4389,15 @@ function damage(x,z,y=7,meteor=null){
   addCrater(targetX,hitZ,craterRadius,{isSubway:isSubwayPenetrator,size:mSz,isTitanic,isExtinction,isColossal,isMassive:isColossal});
   sound('impact');
 
-  // RC174: Master kinetic shockwave expansion across Broad Street & North Broad parcels
-  const roadShockRadius = isExtinction ? Math.max(160.0, mSz * 14.0) : (isTitanic ? Math.max(110.0, mSz * 11.0) : (isColossal ? Math.max(70.0, mSz * 8.5) : Math.max(shockRadius, mSz * 4.8)));
-  for(const b of neighborhood.targetBuildings){
-   if(b.school)continue;
-   const bDist = Math.hypot(b.x - targetX, b.z - hitZ);
-   if(bDist <= roadShockRadius + Math.max(b.w, b.d) * 0.5){
-    if(isExtinction || isTitanic || (isColossal && bDist <= roadShockRadius * 0.72)){
-     b.damage = 1.0;
-     neighborhood.city.forceDamage(b, 1.0);
-     damageOrCollapseNorthBroad(b, 1.0, true);
-    }else{
-     const dmgFraction = Math.max(0.40, (1.0 - bDist / roadShockRadius)) * (isColossal ? 0.95 : 0.65);
-     b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
-     neighborhood.city.forceDamage(b, b.damage);
-     damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.75);
-    }
-   }
-  }
-  if(Math.abs(targetX) <= schoolHalfW + roadShockRadius * 0.5 && hitZ <= schoolMaxZ + roadShockRadius && architecturalReady){
-   if(isExtinction || isTitanic){
-    carveSchool(targetX, targetY, hitZ, 16.0, 4.0, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
-    schoolReconstruction?.collapse?.();
-   }else if(isColossal){
-    carveSchool(targetX, targetY, hitZ, Math.min(14.0, mSz * 1.2), profile.strength * 2.2, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
-   }else{
-    carveSchool(targetX, targetY, hitZ, Math.min(12.0, mSz * 0.85), profile.strength * 1.2, meteor?.kind || 'molten', meteor?.vel?.length?.() || 0);
-   }
-  }
   return;
  }
 
- const isSchoolHit=architecturalReady&&(
-  (Math.abs(targetX)<=schoolHalfW+blastRadius*0.4&&hitZ>=schoolMinZ-blastRadius*0.4&&hitZ<=schoolMaxZ+blastRadius*0.4&&targetY<=schoolMaxY)||
-  (!neighbor&&Math.abs(targetX)<=schoolHalfW+3.0&&hitZ>=schoolMinZ-3.0&&hitZ<=schoolMaxZ+3.0)
- );
-
+ const isSchoolHit=!targetBuilding&&architecturalReady&&targetX>=schoolBounds.min.x&&targetX<=schoolBounds.max.x&&
+  hitZ>=schoolBounds.min.z&&hitZ<=schoolBounds.max.z&&targetY<=schoolMaxY;
  if(isSchoolHit&&hp>0)sound('dragonRoar',{variant:'furious',x:dragon.position.x});
 
- const effectiveTarget=targetBuilding||neighborhood.targetBuildings.find(b=>
-  !b.school&&Math.hypot(b.x-targetX,b.z-hitZ)<=blastRadius+14.0
- );
-
- if(!effectiveTarget&&!isSchoolHit&&nbHits===0){
+ const effectiveTarget=targetBuilding;
+ if(!effectiveTarget&&!isSchoolHit){
   emitImpact(targetX,targetY,hitZ,50,profile.strength);
   sound('impact',{x:targetX});
   return;
@@ -4487,57 +4405,10 @@ function damage(x,z,y=7,meteor=null){
  let lost=0;
  if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
-  const mSzVal = meteor?.size || (profile.radius * 0.45);
-   const isExtinctionStrike = mSzVal >= 13.0;
-   const isTitanicStrike = mSzVal >= 9.0;
-   const isColossalStrike = mSzVal >= 4.0;
-   if(isExtinctionStrike){
-    effectiveTarget.damage=1.0;
-    neighborhood.city.forceDamage(effectiveTarget,1.0);
-    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
-    message(`☄️ EXTINCTION STRIKE OBLITERATED ${effectiveTarget.name||'STRUCTURE'}!`);
-   }else if(isTitanicStrike){
-    effectiveTarget.damage=1.0;
-    neighborhood.city.forceDamage(effectiveTarget,1.0);
-    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
-   }else if(isColossalStrike){
-    effectiveTarget.damage=1.0;
-    neighborhood.city.forceDamage(effectiveTarget,1.0);
-    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
-    message(`☄️ COLOSSAL METEOR CRUSHED ${effectiveTarget.name||'STRUCTURE'}!`);
-   }else{
-    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.35*Math.max(1.0,mSzVal));
-    neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
-    damageOrCollapseNorthBroad(effectiveTarget,effectiveTarget.damage,effectiveTarget.damage>=0.80);
-   }
-
-   // RC174: Multi-building shockwave collapse:
-   // Colossal, Titanic, and Extinction strikes demolish adjacent rowhouses and shops along North Broad
-   if(isColossalStrike||isTitanicStrike||isExtinctionStrike){
-    const shockWaveRadius = isExtinctionStrike ? Math.max(160.0, mSzVal * 14.0) : (isTitanicStrike ? Math.max(110.0, mSzVal * 11.0) : Math.max(70.0, mSzVal * 8.5));
-    for(const b of neighborhood.targetBuildings){
-     if(b===effectiveTarget||b.school)continue;
-     const bDist=Math.hypot(b.x-targetX,b.z-hitZ);
-     if(bDist<=shockWaveRadius+Math.max(b.w,b.d)*0.5){
-      if(isExtinctionStrike || isTitanicStrike || (isColossalStrike && bDist <= shockWaveRadius * 0.72)){
-       b.damage = 1.0;
-       neighborhood.city.forceDamage(b, 1.0);
-       damageOrCollapseNorthBroad(b, 1.0, true);
-      }else{
-       const dmgFraction = Math.max(0.40, (1.0 - bDist / shockWaveRadius)) * 0.95;
-       b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
-       neighborhood.city.forceDamage(b, b.damage);
-       damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.75);
-      }
-     }
-    }
-   }
-   lost=neighborhood.impact(targetX,targetY,hitZ,blastRadius,p=>debrisPiece(p,'brick'),blastStrength);
+  const before=effectiveTarget.damage;
+  northBroadModels.impact(new THREE.Vector3(targetX,targetY,hitZ),Math.min(blastRadius,8),Math.min(blastStrength,3));
+  lost=effectiveTarget.damage>before?1:0;
   cinematicFX.dustBurst(new THREE.Vector3(targetX,targetY,hitZ),Math.min(2.5,blastStrength*1.2),{brick:true,count:16});
-  if(!effectiveTarget.roofBreached&&(targetY>=effectiveTarget.h-3.5||hitZ<effectiveTarget.front-2.0)){
-   neighborhood.roofBreach(targetX,targetY,hitZ,blastRadius*(diffMode==='hard'?1.5:0.85));
-  }
-  neighborhood.aftershock(targetX,targetY,hitZ,shockRadius,p=>debrisPiece(p,'brick'),blastStrength);
   if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,4.2);panicCrowdAt(targetX,hitZ,38);
   emitImpact(targetX,targetY,hitZ,185,1.38);
   if(lost>0&&Math.random()<profile.fire*(diffMode==='hard'?1.5:1)){ignite(targetX,targetY,hitZ);cinematicFX.fire(new THREE.Vector3(targetX,targetY,hitZ),elapsed,Math.max(2.5,profile.radius*1.1),.48,'structure');if(Math.random()<.82)ignite(targetX+(Math.random()-.5)*3.2,Math.max(1,targetY-1.2),hitZ-.20);
@@ -5025,6 +4896,10 @@ let freeFlightMode=false;
 let subwayCamActive=false;
 let basementCamActive=false;
 function toggleSubwayCam(){
+ if(!subwayCamActive&&!craters.some(c=>c.isSubway)){
+  message('Create a subway breach to use the subway camera.');
+  return;
+ }
  subwayCamActive=!subwayCamActive;
  if(subwayCamActive){
   basementCamActive=false;
@@ -5265,28 +5140,28 @@ function runPresetBorehole(){
 
 function runPresetSubway(){
  basementCamActive=false;
- addCrater(0,23.5,5.5,{isSubway:true,size:6.8,isMassive:true});
+ addCrater(0,BROAD_CENTER,5.5,{isSubway:true,size:6.8,isMassive:true});
  sound('crash',{x:0});
  sound('warning');
- cinematicFX.demolitionDustWave(new THREE.Vector3(-6,0.4,23.5),new THREE.Vector3(6,0.4,23.5),2.6);
- blast(0,1.0,23.5,12.0);
+ cinematicFX.demolitionDustWave(new THREE.Vector3(-6,0.4,BROAD_CENTER),new THREE.Vector3(6,0.4,BROAD_CENTER),2.6);
+ blast(0,1.0,BROAD_CENTER,12.0);
  message('🚇 PRESET: BROAD STREET SUBWAY CAVERN RUPTURE LAUNCHED!');
 }
 
 function runPresetTitanic(){
  basementCamActive=false;
- addCrater(0,23.5,7.5,{isSubway:true,size:10.5,isTitanic:true,isMassive:true});
+ addCrater(0,BROAD_CENTER,7.5,{isSubway:true,size:10.5,isTitanic:true,isMassive:true});
  sound('collapse',{x:0});
  sound('crash',{x:0});
  sound('warning');
- cinematicFX.demolitionDustWave(new THREE.Vector3(-8,0.4,23.5),new THREE.Vector3(8,0.4,23.5),3.5);
- blast(0,1.0,23.5,18.0);
+ cinematicFX.demolitionDustWave(new THREE.Vector3(-8,0.4,BROAD_CENTER),new THREE.Vector3(8,0.4,BROAD_CENTER),3.5);
+ blast(0,1.0,BROAD_CENTER,18.0);
  message('💥 PRESET: TITANIC 10.5m SUPER-COLOSSAL METEOR BREACH ON BROAD STREET!');
 }
 
 function runPresetWaterMain(){
  basementCamActive=false;
- addCrater(0,23.5,4.5,{isSubway:true,size:6.8});
+ addCrater(0,BROAD_CENTER,4.5,{isSubway:true,size:6.8});
  message('💧 PRESET: MUNICIPAL WATER MAIN RUPTURE ACTIVATED!');
 }
 
@@ -5399,7 +5274,7 @@ function spawnTestMeteorAt(hitX,hitY,hitZ,size=3.6,kind='molten'){
 
 function dispatchFirefighters(targetX){
  const x=(typeof targetX==='number')?targetX:(dragon?dragon.position.x-20:0);
- spawnCar(x,17,1,'fireTruck');
+ spawnCar(x,BROAD_LANES[0],1,'fireTruck');
  sound('warning');
  message('🚒 PHILADELPHIA FIRE DEPARTMENT DISPATCHED WITH WATER MONITORS!');
 }
@@ -5504,11 +5379,11 @@ function spawnLevelAsset(assetType){
    message('🚁 MILITARY CHINOOK SPAWNED');
    break;
   case 'police':
-   spawnCar(px-15,17,1,'police');
+   spawnCar(px-15,BROAD_LANES[0],1,'police');
    message('🚓 POLICE CRUISER SPAWNED');
    break;
   case 'ambulance':
-   spawnCar(px-15,17,1,'ambulance');
+   spawnCar(px-15,BROAD_LANES[0],1,'ambulance');
    message('🚑 AMBULANCE SPAWNED');
    break;
   case 'fire_truck':
@@ -5901,7 +5776,7 @@ function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remai
  scene.add(mesh);
  const hp=isGiant?Math.max(4,Math.ceil(size*1.3)):Math.max(2,Math.ceil(size*1.1));
  meteors.push({kind,mesh,target:new THREE.Vector3(x+(Math.random()-0.5)*30,0.5,z),vel:new THREE.Vector3((Math.random()-0.5)*4,isGiant?-11:-15,0),trail:0,hp,size,damage:isGiant?2.5:1.0,burning:kind==='molten'||kind==='flaming',largeSplitter:isGiant});
-},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}referenceFacades.update();if(active){neighborhood.school.damage=schoolDamage;hp=Math.max(0,Math.round((1-schoolDamage)*100));}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
+},(reason)=>{stunDragon(reason||'SATELLITE ELECTRICAL DEFENSE GRID');});for(let i=escapingPilots.length-1;i>=0;i--){const p=escapingPilots[i];p.life-=dt;p.root.position.x+=p.dir*p.speed*dt;const legAngle=Math.sin(elapsed*16)*0.75;p.legL.rotation.x=legAngle;p.legR.rotation.x=-legAngle;p.armL.rotation.x=-legAngle;p.armR.rotation.x=legAngle;if(p.flareSprite){p.flareSprite.scale.setScalar(0.70+Math.sin(elapsed*28.0)*0.22);if(performanceLab.isEnabled('particles')&&Math.random()<0.40){trailEmberPool.add(p.root.position.clone().add(new THREE.Vector3(0.36*p.dir,0.86,0.12)),0.45);}}if(p.life<=0||Math.abs(p.root.position.x)>180){scene.remove(p.root);escapingPilots.splice(i,1);}}if(active){neighborhood.school.damage=schoolDamage;hp=Math.max(0,Math.round((1-schoolDamage)*100));}updateNight(dt);if(performanceLab.isEnabled('weather'))cinematicWeather.update(dt,wave,dayDarkness(wave));if(performanceLab.isEnabled('particles'))updateEffects(dt);foregroundMeteors?.update(dt,elapsed,(x,y,z)=>flashAt(x,y,z,.42));
  if(trainingMissions?.isActive()){hp=100;schoolDamage=0;remaining=0;spawnTimer=9999;} trainingMissions?.update(dt,{dragonPos:dragon.position,dragonVelX,dragonVelY,dragonSpeed:Math.hypot(dragonVelX,dragonVelY),isGasDeployed:gasPose>0,hasBusterCollided:busterRamCollided,meteorsList:meteors,schoolFiresCount:schoolFire.length,carsList:cars});
  if(secondaryEscortTimer>0){secondaryEscortTimer-=dt;if(secondaryEscortTimer<=0&&!evacuationChapter?.isActive()){const rNum=wave===7?1:wave===9?2:wave===12?3:4;evacuationChapter?.startSecondaryEscort(rNum);}} evacuationChapter?.update(dt,elapsed,meteors);if(performanceLab.isEnabled('fires'))updateFires(dt);if(active&&performanceLab.isEnabled('traffic'))updateCars(dt);updateEmergencyLighting();updateBuildingElectricalShorts(dt);}if(!active||paused){
 if(!freeFlightMode&&active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
@@ -6578,8 +6453,7 @@ if(m.grounded){
      });
      neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
     }else if(b){
-     neighborhood.city.impact(b,m.mesh.position,punchRad,0.38);
-     northBroadModels.impact(m.mesh.position,punchRad*1.15,0.42);
+     northBroadModels.impact(m.mesh.position,punchRad,0.38);
     }
 
     // Physical furniture spillout tumbling out through facade openings onto the street
@@ -6598,8 +6472,7 @@ if(m.grounded){
    }else if(b){
     b.damage=Math.min(1.0,(b.damage||0)+stepDmg);
     if(b.damage>=0.95){
-     neighborhood.city.forceDamage(b,1.0);
-     northBroadModels?.collapseBuilding?.(b.name);
+     northBroadModels?.collapseBuilding?.(b.id||b.name);
     }
    }
 
@@ -6700,7 +6573,7 @@ if(m.grounded){
   let sweepHit=null;
   let hitBuilding=null;
   let hitSchool=false;
-  if(!m.dragonHunter&&m.vel&&m.vel.y<-0.1){
+  if(!m.opening&&!m.dragonHunter&&m.vel&&m.vel.y<-0.1){
    const curr=m.mesh.position;
    const sMinX=schoolBounds.min.x,sMaxX=schoolBounds.max.x;
    const sMinZ=schoolBounds.min.z,sMaxZ=schoolBounds.max.z;
@@ -6712,7 +6585,7 @@ if(m.grounded){
    if(!sweepHit&&neighborhood?.targetBuildings){
     for(const b of neighborhood.targetBuildings){
      if(b.damage>=0.999)continue;
-     if(curr.x>=b.x-b.w*0.5-1.0&&curr.x<=b.x+b.w*0.5+1.0&&curr.z>=b.z-b.d*0.5-1.0&&curr.z<=b.front+1.0&&curr.y<=b.h+0.8&&meteorStart.y>=0.5){
+     if(curr.y<=b.h&&meteorStart.y>=0.5&&containsParcel(b,curr.x,curr.z)){
       sweepHit=new THREE.Vector3(curr.x,Math.max(curr.y,1.0),curr.z);
       hitBuilding=b;
       break;
@@ -6764,7 +6637,6 @@ if(m.grounded){
    if(sweepHit)m.target.copy(sweepHit);
    if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}
    const heat=openingMoltenHeat(m);
-   if(m.target.y<2&&m.target.z>13&&m.target.z<35)addCrater(m.target.x,m.target.z,2.2+m.size*heat,{isSubway:(m.size*heat)>=2.8,size:m.size*heat});
    if(elapsed<schoolShieldUntil&&m.target.z<14&&Math.abs(m.target.x)<30){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
    if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
    groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);
@@ -6772,23 +6644,13 @@ if(m.grounded){
    if(impactProfile(m.size,m.kind).penetrates&&m.target.z<13){
     const internal=m.target.clone().add(new THREE.Vector3(0,-1.2,-1.7));
     cinematicFX.burst(internal,Math.max(.4,m.size*.8));
-    neighborhood.city.impact(neighborhood.city.buildings.find(b=>Math.abs(b.x-internal.x)<b.w/2&&Math.abs(b.z-internal.z)<b.d/2),internal,impactProfile(m.size,m.kind).radius,.45);
    }
    if(m.burning){
     const count=m.kind==='flaming'?5:3;
     for(let k=0;k<count;k++)ignite(m.target.x+(Math.random()-.5)*m.size*4,Math.max(.4,m.target.y),m.target.z+(Math.random()-.5)*2);
    }
-   const roofImpact=neighborhood.roofBreach(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).radius*.65*heat);
-   if(roofImpact){
-    emitMeteorShrapnel(m.target,Math.min(6,m.size*2.2));
-    for(let k=0;k<3;k++)ignite(m.target.x+(Math.random()-.5)*3,Math.max(1,m.target.y-2.2),m.target.z+(Math.random()-.5)*2);
-    neighborhood.aftershock(m.target.x,m.target.y,m.target.z,impactProfile(m.size,m.kind).shockRadius,p=>debrisPiece(p,'roof',m.target));
-   }
    damage(m.target.x,m.target.z,m.target.y,m);
-   if(m.size>1.5){
-    blast(m.target.x,m.target.y,m.target.z,5*m.size);
-    neighborhood.impact(m.target.x,m.target.y,m.target.z,3*m.size,p=>debrisPiece(p,'brick',m.target),heat);
-   }
+   if(m.size>1.5)blast(m.target.x,m.target.y,m.target.z,5*m.size);
    strikeParkedCars(m.target.x,m.target.z,5.5*heat);
    for(const c of cars)if(performanceLab.isEnabled('traffic')&&Math.abs(c.root.position.x-m.target.x)<4&&Math.abs(c.root.position.z-m.target.z)<7&&m.target.y<5)explodeCar(c);
 
@@ -6852,7 +6714,7 @@ const profiler=createProfiler({renderer,scene,metrics:()=>({meteors:meteors.leng
 const gpuResourceAudit=new URLSearchParams(location.search).get('benchmark')==='1'?installWebGLResourceAudit(renderer.getContext()):null;
 const diagnosticFrames={ticks:0,rendered:0,lastTickUTC:0,lastRenderUTC:0,contextLost:false,
                        contextEvents:[],rendererBlocks100:0,maxRendererBlockMs:0,lastRendererBlockUTC:0};
-if(new URLSearchParams(location.search).get('benchmark')==='1'){
+if(schoolQA||new URLSearchParams(location.search).get('benchmark')==='1'){
  window.__DD_FRAME_SIGNAL=diagnosticFrames;
  renderer.domElement.addEventListener('webglcontextlost',e=>{
   diagnosticFrames.contextLost=true;
@@ -6871,7 +6733,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  previousRenderAt=present;const dt=forcedDt!==null?forcedDt:(motionQA?3/60:clock.getDelta());
  if(!motionQA){
   if(dt>.25&&active&&!paused)quality.sample(Math.min(dt,.2));
-  quality.sample(dt);evaluateRenderPressure(maxRenderFPS>0?dt*Math.min(1,maxRenderFPS/60):dt,active&&!paused);
+  quality.sample(dt);evaluateRenderPressure(dt,active&&!paused&&!document.hidden&&document.hasFocus());
  }
  hostMetricTime+=dt;hostMetricFrames++;
  sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const effectiveDt=dt*(freeFlightMode?sandboxTimeScale:1.0);const step=fixedStep.advance(effectiveDt,update);const simMs=performance.now()-simStart;
@@ -6913,9 +6775,10 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  let targetZoom=freeFlightMode?sandboxZoomLevel:THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
 
 
- if(subwayCamActive){
-  camera.position.set(0,5.8,38.0);
-  camera.lookAt(0,-3.2,22.5);
+ const subwayView=subwayCamActive?craters.findLast(c=>c.isSubway):null;
+ if(subwayView){
+  camera.position.set(subwayView.x,Math.max(2.5,subwayView.radius*.8),subwayView.z+subwayView.radius*.6);
+  camera.lookAt(subwayView.x,-3.2,subwayView.z);
  }else if(basementCamActive){
   camera.position.set(0,-0.8,-16.5);
   camera.lookAt(0,-2.4,-36.0);
@@ -6998,7 +6861,7 @@ window.__DD_SANDBOX={
  getZoomLevel:()=>sandboxZoomLevel,
  setZoomLevel:(z)=>{sandboxZoomLevel=z;},
  getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
-  toggleDragon:(on)=>run('toggleDragon',()=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible,snapshot:snap()};}),
+  toggleDragon:(on)=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible};},
   setDragonEnabled:(on)=>{toggleDragon(on);return dragonEnabled;},
   isDragonEnabled:()=>dragonEnabled,
   setMusicMuted:(on)=>{window.__DD_AUDIO.setMusicMuted(on);refreshAudioButtons();return soundEngine.isMusicMuted();},
@@ -7021,7 +6884,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   dragon:{x:dragon.position.x,y:dragon.position.y,z:dragon.position.z,lives:dragonLives},
   aim:{x:pointer.x,y:pointer.y,z:pointer.z},
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
-  camera:{x:camera.position.x,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
+  camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
   schoolReconstruction:schoolReconstruction?.stats()||null,
   sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes()},
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
@@ -7042,35 +6905,9 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  // Rendering here is diagnostic only; the next game frame restores its camera.
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
  window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;window.__DD_CAMERA=camera;window.__DD_THREE=THREE;
- window.__DD_SANDBOX={
- isFreeFlight:()=>freeFlightMode,
- setFreeFlight:(on)=>toggleFreeFlight(on),
- spawnTestMeteorAt,
- spawnMeteorBarrage,
- dispatchFirefighters,
- extinguishAllFires,
- repairAllBuildings,
- toggleSlowMo,
- getTimeScale:()=>sandboxTimeScale,
- setTimeScale:(s)=>{sandboxTimeScale=s;},
- getZoomLevel:()=>sandboxZoomLevel,
- setZoomLevel:(z)=>{sandboxZoomLevel=z;},
- getHoveredBuildingInfo:()=>currentHoveredBuildingInfo,
-  toggleDragon:(on)=>run('toggleDragon',()=>{toggleDragon(on);return {dragonEnabled,visible:dragon.visible,snapshot:snap()};}),
-  setDragonEnabled:(on)=>{toggleDragon(on);return dragonEnabled;},
-  isDragonEnabled:()=>dragonEnabled,
-  setMusicMuted:(on)=>{window.__DD_AUDIO.setMusicMuted(on);refreshAudioButtons();return soundEngine.isMusicMuted();},
-  setSfxMuted:(on)=>{window.__DD_AUDIO.setSfxMuted(on);refreshAudioButtons();return soundEngine.isSfxMuted();},
- setTrafficEnabled,
- isTrafficEnabled:()=>trafficActive,
- setPedestriansEnabled,
- isPedestriansEnabled:()=>pedestriansActive,
- setLevelAtmosphere,
- spawnLevelAsset,
- openSettings:(tab)=>openUnifiedSettings(tab),
- closeSettings:()=>closeUnifiedSettings()
-};
 window.__DD_QA={snap,
+  advanceSimulation:(frames=1)=>{for(let i=0;i<Math.min(120,frames);i++)update(1/60);},
+  verifyMeteorImpact:(x,y,z,size)=>{damage(x,z,y,{size,kind:'iron'});return snap();},
   stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return true;},
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,

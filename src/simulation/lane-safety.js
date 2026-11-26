@@ -1,24 +1,21 @@
 // Preview 17: bounded lane-change planner for same-direction traffic.
 // No cross-direction overtaking and no passing through an occupied gap.
 // RC136: Active crater and subway breach detours around road damage.
+import { BROAD_LANES,CROSS_STREET_X } from './road-corridors.js';
+
 export function adjacentLane(z,dir,detour=false){
- if(dir>0){
-  if(Math.abs(z-17)<1.2)return detour?14.0:20;
-  if(Math.abs(z-20)<1.2)return detour?14.0:17;
-  if(Math.abs(z-14)<1.2)return 17;
- }
- if(dir<0){
-  if(Math.abs(z-27)<1.2)return detour?33.0:30;
-  if(Math.abs(z-30)<1.2)return detour?33.0:27;
-  if(Math.abs(z-33)<1.2)return 30;
- }
+ const [inner,outer]=dir>0?BROAD_LANES.slice(0,2):BROAD_LANES.slice(2);
+ const shoulder=dir>0?7.5:25.5;
+ if(Math.abs(z-inner)<1.2)return detour?shoulder:outer;
+ if(Math.abs(z-outer)<1.2)return detour?shoulder:inner;
+ if(Math.abs(z-shoulder)<1.2)return inner;
  return null;
 }
 export function choosePassingLane(car,cars,craters=[],{allowWithoutLeader=false}={}){
  if(!car||car.emergency||car.rearStreet||car.turning||car.turnPath?.length||car.routing||car.frozen||car.stun>0)return null;
  const x=car.root.position.x,z=car.root.position.z,dir=car.dir;
  // Restrict lane changes near cross-streets
- if([-53,53].some(cross=>Math.abs(x-cross)<15))return null;
+ if(CROSS_STREET_X.some(cross=>Math.abs(x-cross)<15))return null;
  if(Math.abs(z-car.laneZ)>1.25)return null; // complete the current move first
 
  // Check for crater or subway breach ahead in current lane
@@ -42,7 +39,7 @@ export function choosePassingLane(car,cars,craters=[],{allowWithoutLeader=false}
     candidate=shoulderCandidate;
    }
   }
-  if(candidate===null)candidate=normalCandidate;
+  if(candidate===null)return null;
  }else{
   candidate=adjacentLane(car.laneZ,dir,false);
   if(candidate===null)return null;

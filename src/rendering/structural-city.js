@@ -6,7 +6,7 @@ import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '..
 export function createStructuralCity(THREE,scene,bank){
  const groups={front:new THREE.Group(),backNear:new THREE.Group(),backMid:new THREE.Group(),backFar:new THREE.Group(),school:new THREE.Group()};
  for(const [name,g] of Object.entries(groups)){g.name='structural-'+name;scene.add(g)}
- const buildings=[],parts=[],buckets=new Map(),moving=new Set(),dirty=new Set();let finalized=false,time=0,particlesEnabled=true;
+ const buildings=[],parts=[],buckets=new Map(),moving=new Set(),dirty=new Set();let finalized=false,time=0,particlesEnabled=true,rubbleVisible=true;
  const brokenGeometry=new THREE.BoxGeometry(1,1,1,2,2,2);const bp=brokenGeometry.attributes.position;for(let i=0;i<bp.count;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),r=Math.sin(x*71+y*93+z*39)*.045;bp.setXYZ(i,x+r,y+r*.7,z-r*.8)}brokenGeometry.computeVertexNormals();
  const cube=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D(),zero=new THREE.Matrix4().makeScale(0,0,0);
  const materials={
@@ -49,6 +49,25 @@ export function createStructuralCity(THREE,scene,bank){
   else if(o.background)b.layer=(o.z<-95?'backFar':o.z<-63?'backMid':'backNear');
   else b.layer='front';
   b.floorHeight=b.h/b.stories;b.fallenFloors=new Set();buildings.push(b);
+  if(o.viewerParcel){
+   b.hideIntactGeometry=true;
+   const thick=.24;
+   addPart(b,'foundation','concrete',b.x,.07,b.z,b.w,.14,b.d);
+   for(let floor=0;floor<b.stories;floor++){
+    const y=floor*b.floorHeight;
+    for(const side of [-1,1]){
+     const x=b.x+side*b.w*.42,z=b.z+side*b.d*.42;
+     for(const dx of [-1,1])addPart(b,'column','concrete',b.x+dx*b.w*.42,y+b.floorHeight/2,z,thick,b.floorHeight,thick,floor);
+     addPart(b,'wall','brick',x,y+b.floorHeight/2,b.z,thick,b.floorHeight,b.d*.88,floor);
+     addPart(b,'wall','brick',b.x,y+b.floorHeight/2,z,b.w*.88,b.floorHeight,thick,floor);
+     addPart(b,'slab','concrete',b.x+side*b.w*.25,y+.12,b.z,b.w*.48,thick,b.d*.92,floor);
+    }
+   }
+   for(const side of [-1,1])addPart(b,'roof','roof',b.x+side*b.w*.25,b.h,b.z,b.w*.48,thick,b.d*.96,b.stories-1);
+   b.slabs=b.parts.filter(p=>p.type==='slab');
+   b.structuralParts=b.parts.filter(p=>p.type!=='foundation');
+   return b;
+  }
   const bayCount=o.bays||Math.max(2,Math.round(b.w/2.7)),bw=b.w/bayCount,x0=b.x-b.w*.5,z0=b.z-b.d*.5,sh=b.floorHeight;
   const wall=o.kind||'brick';const tileX=Math.ceil(b.w/3),tileZ=Math.ceil(b.d/3.5);
   addPart(b,'foundation','concrete',b.x,.07,b.z,b.w,.14,b.d,0);
@@ -227,9 +246,9 @@ export function createStructuralCity(THREE,scene,bank){
  }
  // Thousands of small fragments share three draws and stay as bounded rubble.
  const chipMaterials=[materials.brick,materials.concrete,materials.glass],chips=[];let chipCursor=0;
- const chipMeshes=chipMaterials.map((m,i)=>{const shard=new THREE.BufferGeometry();shard.setAttribute('position',new THREE.Float32BufferAttribute([-.9,-.4,0,.8,-.25,0,-.25,1,0],3));shard.computeVertexNormals();const geo=i===2?shard:new THREE.IcosahedronGeometry(1,0);const mesh=new THREE.InstancedMesh(geo,m,1600);mesh.count=1600;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);for(let n=0;n<1600;n++)mesh.setMatrixAt(n,zero);scene.add(mesh);return mesh});
+ const chipMeshes=chipMaterials.map((m,i)=>{const shard=new THREE.BufferGeometry();shard.setAttribute('position',new THREE.Float32BufferAttribute([-.9,-.4,0,.8,-.25,0,-.25,1,0],3));shard.computeVertexNormals();const geo=i===2?shard:new THREE.IcosahedronGeometry(1,0);const mesh=new THREE.InstancedMesh(geo,m,1600);mesh.count=1600;mesh.visible=false;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);for(let n=0;n<1600;n++)mesh.setMatrixAt(n,zero);scene.add(mesh);return mesh});
  function fragmentBurst(pos,count=50,glass=false,power=1,chunkScale=1){if(!particlesEnabled)return;for(let i=0;i<count;i++){
-  const kind=glass?2:i%2,slot=chipCursor++%1600,key=kind*1600+slot;
+  const kind=glass?2:i%2,slot=chipCursor++%1600,key=kind*1600+slot;chipMeshes[kind].visible=rubbleVisible;
   const size=(glass?.05+Math.random()*.16:.06+Math.random()*.19)*chunkScale;
   const origin=(pos?.isVector3||typeof pos?.clone==='function')?pos.clone():new THREE.Vector3(pos?.x||0,pos?.y||0,pos?.z||0);const p={position:origin.clone(),size:new THREE.Vector3(size*(glass?2:1.3),glass?size*1.5:size,glass?.008:size),rotation:new THREE.Euler(Math.random()*3,Math.random()*3,0),velocity:new THREE.Vector3((Math.random()-.5)*12*power,(2+Math.random()*7)*power,(Math.random()-.15)*9*power),spin:new THREE.Vector3(Math.random()*7,Math.random()*8,Math.random()*6),age:0,kind,slot,sleep:false};chips[key]=p;
  }}
@@ -242,7 +261,7 @@ export function createStructuralCity(THREE,scene,bank){
  function settle(p){dummy.position.set(p.position.x,.17,p.position.z);dummy.rotation.set(-Math.PI/2,0,p.rotation.y);dummy.scale.set(Math.max(.5,p.size.x)*1.3,Math.max(.5,p.size.z,p.size.y)*1.2,1);dummy.updateMatrix();contact.setMatrixAt(contactCursor++%512,dummy.matrix);contact.instanceMatrix.needsUpdate=true;p.state='settled';moving.delete(p);const key=pileKey(p.position);pile.set(key,Math.min(1.8,(pile.get(key)||0)+Math.min(.12,p.size.x*p.size.y*p.size.z*.025)));}
  function finalize(){
   for(const p of parts){const key=p.building.layer+':'+p.mat;if(!buckets.has(key))buckets.set(key,{parts:[],material:materials[p.mat],group:groups[p.building.layer]});const bucket=buckets.get(key);p.bucket=bucket;p.index=bucket.parts.length;bucket.parts.push(p)}
-  for(const bucket of buckets.values()){const mesh=new THREE.InstancedMesh(cube,bucket.material,bucket.parts.length);mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.name='physical-components';bucket.mesh=mesh;const bm=bucket.material.clone();bm.color?.multiplyScalar(.75);if(bm.emissive)bm.emissiveIntensity=0;const broken=new THREE.InstancedMesh(brokenGeometry,bm,bucket.parts.length);broken.frustumCulled=false;broken.instanceMatrix.setUsage(THREE.DynamicDrawUsage);bucket.broken=broken;broken.visible=false;bucket.group.add(mesh,broken);for(let i=0;i<bucket.parts.length;i++){broken.setMatrixAt(i,zero);broken.setColorAt(i,new THREE.Color(0xffffff))}for(const p of bucket.parts){mesh.setColorAt(p.index,new THREE.Color(0xffffff));write(p)}mesh.instanceColor.needsUpdate=true;mesh.instanceMatrix.needsUpdate=true}
+  for(const bucket of buckets.values()){const mesh=new THREE.InstancedMesh(cube,bucket.material,bucket.parts.length);mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.name='physical-components';mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);bucket.mesh=mesh;const bm=bucket.material.clone();bm.color?.multiplyScalar(.75);if(bm.emissive)bm.emissiveIntensity=0;const broken=new THREE.InstancedMesh(brokenGeometry,bm,bucket.parts.length);broken.frustumCulled=false;broken.instanceMatrix.setUsage(THREE.DynamicDrawUsage);bucket.broken=broken;broken.visible=false;bucket.group.add(mesh,broken);for(let i=0;i<bucket.parts.length;i++){broken.setMatrixAt(i,zero);broken.setColorAt(i,new THREE.Color(0xffffff))}for(const p of bucket.parts){mesh.setColorAt(p.index,new THREE.Color(0xffffff));write(p)}mesh.instanceColor.needsUpdate=true;mesh.instanceMatrix.needsUpdate=true}
   for(const b of buildings){b.columns=b.parts.filter(p=>p.type==='column');for(const p of b.parts)p.supports=b.columns.filter(c=>c.floor===(p.type==='column'&&p.floor>0?p.floor-1:p.floor)).sort((a,b)=>a.position.distanceToSquared(p.position)-b.position.distanceToSquared(p.position)).slice(0,2);}
   finalized=true;
  }
@@ -250,7 +269,7 @@ export function createStructuralCity(THREE,scene,bank){
   if(!p.bucket?.mesh)return;
   const {mesh,broken}=p.bucket;
   const detached=p.state==='falling'||p.state==='settled';
-  if(p.building.hideIntactGeometry && !detached && ['wall','facade','column','foundation','roof','frame','window'].includes(p.type)){
+  if(p.building.hideIntactGeometry && !detached && (p.building.viewerParcel || ['wall','facade','column','foundation','roof','frame','window'].includes(p.type))){
    mesh.setMatrixAt(p.index,zero);
    broken.setMatrixAt(p.index,zero);
    dirty.add(p.bucket);
@@ -293,6 +312,7 @@ export function createStructuralCity(THREE,scene,bank){
    p.velocity.z+=(Math.random()*2.8+1.4)*power;
    p.velocity.y+=(Math.random()*2.2+0.8)*power;
   }
+  if(moving.size>=220){p.state='removed';write(p);return 1;}
   moving.add(p);
   if(['wall','facade','column'].includes(p.type))fragmentBurst(p.position,5,false,power);
   if(p.type==='furniture')fragmentBurst(p.position,3,false,power*0.8);
@@ -329,6 +349,7 @@ export function createStructuralCity(THREE,scene,bank){
   return removed;
  }
  function forceDamage(b,value){
+  if(!b)return;
   const target=Math.max(0,Math.min(1,value));b.pressure=Math.max(b.pressure,target);b.damage=Math.max(b.damage,target);
   // School health is a cumulative gauge, NOT a list of entire floors to tear
   // away. Its physical structural pieces already fracture at the actual meteor
@@ -406,7 +427,7 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.type==='column'?1.65:p.type==='window'?.18:1;p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
@@ -417,6 +438,6 @@ export function createStructuralCity(THREE,scene,bank){
  return {fireAnchorHeight,buildings,groups,addBuilding,finalize,impact,forceDamage,update,restore,fragmentBurst,setIntactBuildingVisible,
   setAtmosphere(darkness){materials.room.emissiveIntensity=.05+darkness*.55;materials.glass.color.setHex(0x7d9ea9).lerp(new THREE.Color(0xd4b184),darkness*.35)},
   setParticlesEnabled(on){particlesEnabled=!!on;dustMesh.visible=!!on},
-  setRubbleVisible(on){contact.visible=on;for(const m of chipMeshes)m.visible=on},
+  setRubbleVisible(on){rubbleVisible=on;contact.visible=on;for(const [i,m] of chipMeshes.entries())m.visible=on&&chips.slice(i*1600,(i+1)*1600).some(Boolean)},
   stats:()=>({buildings:buildings.length,components:parts.length,drawBatches:buckets.size*2+5,activeFragments:moving.size,smallDebris:chips.filter(Boolean).length,collapsed:buildings.filter(b=>b.damage>=.97).length,attached:parts.filter(p=>p.state==='attached').length,types:Object.fromEntries(['slab','partition','stair','furniture','window'].map(t=>[t,parts.filter(p=>p.type===t).length]))})};
 }

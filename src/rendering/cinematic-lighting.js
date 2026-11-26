@@ -126,7 +126,7 @@ export function createReflectionController(scene,width=256,height=128){
  return {
   update(dt,darkness){
    clock+=Math.max(0,dt);
-   if(clock-lastScan>0.2||dt===0){
+   if(clock-lastScan>0.8||dt===0){
     lastScan=clock;
     materials.clear();
     scene.traverse(o=>{

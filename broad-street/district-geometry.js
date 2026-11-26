@@ -9,9 +9,9 @@ import {bostonProfile} from './boston-frontage.mjs';
 import {hasDocumentedBrick} from './boston-masonry.mjs';
 import {hasParkBrick} from './park-masonry.mjs';
 import {renderSecondaryRoof} from './secondary-roofs-review43.mjs';
-export function addDistrict({block,box,tree,mesh,T,audit=null,onlyAddress=null}) {
+export function addDistrict({block,box,tree,mesh,T,audit=null,onlyAddress=null,onlyRecord=null}) {
   const districtIndex=indexDistrict(buildings);
-  if(!onlyAddress){
+  if(!onlyAddress&&onlyRecord===null){
   box(-165,-.56,-50,1110,.35,165,0xa6a394);
   box(185,-.15,0,370,.2,28,0x535759);
   for(let x=8;x<365;x+=9)box(x,-.025,0,4,.04,.16,0xe3c469);
@@ -22,7 +22,7 @@ export function addDistrict({block,box,tree,mesh,T,audit=null,onlyAddress=null})
   const brick=[0x996e59,0xb39c88,0x9b8477,0xb7afa0];
   const parkMainFacadeDone=new Set();
   for(const [record,[polys,height,name]] of buildings.entries()){
-    if(onlyAddress&&name!==onlyAddress)continue;
+    if((onlyAddress&&name!==onlyAddress)||(onlyRecord!==null&&record!==onlyRecord))continue;
     audit?.({type:"record",record,name,polys,height});
     if(renderYorkDistrict(polys,height,name,{block,box,mesh,T}))continue;
     if(renderSouthDistrict(polys,height,name,{block,box,mesh,T}))continue;
@@ -79,7 +79,7 @@ export function addDistrict({block,box,tree,mesh,T,audit=null,onlyAddress=null})
       }
     }
   }
-  if(onlyAddress)return;
+  if(onlyAddress||onlyRecord!==null)return;
   audit?.({type:"public-realm"});
   renderWattsYards(buildings,{block,box,mesh,T});
   // The source aerial is the ground surface at y=.10. Construct the

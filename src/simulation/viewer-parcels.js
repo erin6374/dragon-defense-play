@@ -3,27 +3,43 @@ import { buildings } from '../../broad-street/district.js';
 export const VIEWER_TO_GAME_X = 255.88;
 export const VIEWER_TO_GAME_Z = 22.06;
 
-// Confirmed addresses with individual geometry in the pinned Viewer source.
-const parkNumbers = [
-  2228, 2250, 2252, 2316, 2318, 2328, 2330, 2332,
-  2336, 2338, 2350, 2352, 2354, 2356, 2428, 2430, 2432
-];
+export async function loadViewerGrid() {
+  const response = await fetch(new URL('../../broad-street/mapped-data.json', import.meta.url));
+  if (!response.ok) throw new Error(`Viewer layout HTTP ${response.status}`);
+  return response.json();
+}
 
-export const PARK_PARCELS = parkNumbers.map(number => {
-  const address = `${number} N PARK AVE`;
-  const records = buildings.filter(([, , name]) => name === address);
-  const points = records.flatMap(([polygons]) => polygons.flat(2));
-  const xs = points.map(([x]) => x + VIEWER_TO_GAME_X);
-  const zs = points.map(([, z]) => z + VIEWER_TO_GAME_Z);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minZ = Math.min(...zs);
-  const maxZ = Math.max(...zs);
-  const h = Math.max(...records.map(([, height]) => height));
-  return {
-    name: `park-${number}-viewer`, address,
-    x: (minX + maxX) / 2, z: (minZ + maxZ) / 2,
-    w: maxX - minX, d: maxZ - minZ, h,
-    background: true, stories: h > 9 ? 3 : 2, bays: 2, kind: 'brick'
-  };
-});
+export function viewerParcels(rows) {
+  const parcels = rows.filter(row => !row.school && row.polys?.length).map(row => ({
+    id: String(row.id), name: row.address, sourceRow: row, h: row.h, polys: row.polys
+  }));
+  for (const [index, [polys, h, name]] of buildings.entries()) {
+    parcels.push({ id: `district-${index}`, name, record: index, h, polys, background: true });
+  }
+  return parcels.map(parcel => {
+    const polys = parcel.polys.map(poly => poly.map(ring => ring.map(([x,z]) =>
+      [x + VIEWER_TO_GAME_X, z + VIEWER_TO_GAME_Z])));
+    const points = polys.flat(2);
+    const xs = points.map(point => point[0]), zs = points.map(point => point[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minZ = Math.min(...zs), maxZ = Math.max(...zs);
+    return { ...parcel, polys, x: (minX+maxX)/2, z: (minZ+maxZ)/2,
+      w: maxX-minX, d: maxZ-minZ, h: Math.max(2.3,parcel.h),
+      stories: Math.max(1,Math.min(8,Math.round(parcel.h/3))), viewerParcel: true };
+  });
+}
+
+function insideRing(x,z,ring) {
+  let inside = false;
+  for (let i=0,j=ring.length-1;i<ring.length;j=i++) {
+    const [ax,az]=ring[i], [bx,bz]=ring[j];
+    if ((az>z)!==(bz>z) && x<(bx-ax)*(z-az)/(bz-az)+ax) inside=!inside;
+  }
+  return inside;
+}
+
+export function containsParcel(building,x,z) {
+  if (Math.abs(x-building.x)>building.w/2 || Math.abs(z-building.z)>building.d/2) return false;
+  return !building.polys || building.polys.some(([outer,...holes]) =>
+    insideRing(x,z,outer) && !holes.some(ring=>insideRing(x,z,ring)));
+}

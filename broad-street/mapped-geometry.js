@@ -19,7 +19,7 @@ import {renderCommercialFrontage} from './commercial-facades-20.mjs';
 import {renderBereanRose,renderAutoZoneSign,renderMcDonaldsArches,MCDONALDS_GIS_ID} from './landmark-fidelity-21.mjs';
 import * as T from 'three';
 import {createBrickWallMaterial} from './boston-masonry.mjs';
-export function makeFrontages(scene,rows,streets,{hideTrees=false,auditOnly=false,buildingOnly=false,section=null,districtAddress=null}={}){
+export function makeFrontages(scene,rows,streets,{hideTrees=false,auditOnly=false,buildingOnly=false,section=null,districtAddress=null,districtRecord=null}={}){
  const masonryMaterials=new Map();
  const colors=new Map(),cube=new T.BoxGeometry(),placements=new Map(),dummy=new T.Object3D();
  // Selector-only context rows have no municipal footprint; districtBuildings already
@@ -157,7 +157,7 @@ export function makeFrontages(scene,rows,streets,{hideTrees=false,auditOnly=fals
   const c=document.createElement('canvas');c.width=512;c.height=90;const ctx=c.getContext('2d');ctx.fillStyle='#203735';ctx.fillRect(0,0,512,90);ctx.font='bold 55px sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.fillText(str,256,65);
   const sprite=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthTest:false}));sprite.position.set(x,3,z);sprite.scale.set(15,2.7,1);scene.add(sprite);
  }
- if(districtAddress)addDistrict({block,box,tree,mesh,T,onlyAddress:districtAddress});
+ if(districtAddress||districtRecord!==null)addDistrict({block,box,tree,mesh,T,onlyAddress:districtAddress,onlyRecord:districtRecord});
  if(!auditOnly){
  box(-345,-.45,-37,740,.5,155,0xa6a394);box(-345,-.15,0,740,.20,28,0x535759);
  for(let x=-690;x<=0;x+=9)box(x,-.025,0,4,.04,.16,0xe3c469);

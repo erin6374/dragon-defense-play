@@ -1,5 +1,4 @@
 import {occupiesCrossStreet} from './road-corridors.js';
-import {PARK_PARCELS} from './viewer-parcels.js';
 
 
 
@@ -356,7 +355,6 @@ export function populateCity(city){
 
 
  // Reserve the actual Park Avenue lot before filling undetailed rear rows.
- for(const parcel of PARK_PARCELS)house(parcel);
 
  for(let row=0;row<depthRows.length;row++){
 

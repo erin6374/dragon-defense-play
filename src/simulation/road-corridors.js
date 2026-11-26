@@ -1,28 +1,22 @@
-// Broad Street block geometry: authentic Philadelphia street grid (2221 N Broad St campus).
-// Intersecting East-West cross streets accurately calibrated to the North Broad photogrammetric survey:
-// - W York St (2400 N, x = -167, north of 2309-13 PECO corner)
-// - W Dauphin St (2300 N, x = -98, north of 2253 Doll Museum corner)
-// - W Susquehanna Ave (2200 N, x = 70, south of 2200 Crown Chicken corner)
-// - W Diamond St (2100 N, x = 245, south of 2101-07 Berean Presbyterian Church corner)
-// East-west street direction is the negative world Z axis; their road
-// centerlines remain fixed through all distant-parallax blocks.
-export const CROSS_STREETS = Object.freeze([
-  { name: 'W York St', x: -270, roadHalfWidth: 8.0 },
-  { name: 'W Dauphin St', x: -102, roadHalfWidth: 8.0 },
-  { name: 'W Susquehanna Ave', x: 78, roadHalfWidth: 8.0 },
-  { name: 'W Diamond St', x: 256, roadHalfWidth: 8.0 }
-]);
+import { JUNCTIONS,curbAt,BROAD_EXTENTS } from '../../broad-street/broad-street-grid-data.mjs';
+import { VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z } from './viewer-parcels.js';
 
-// Reserve the road plus curb/sidewalk clearance on both sides of the street.
-// A proposed building must NOT intersect the right-of-way corridor across all depths.
-export function occupiesCrossStreet(x, buildingWidth = 0, clearance = 4.5) {
-  return CROSS_STREETS.some(({ x: cx, roadHalfWidth }) =>
-    Math.abs(x - cx) < roadHalfWidth + clearance + buildingWidth * 0.5
-  );
+export const CROSS_STREETS=JUNCTIONS.map(({name,x,half})=>({name,x:x+VIEWER_TO_GAME_X,roadHalfWidth:half}));
+export const CROSS_STREET_X=CROSS_STREETS.map(street=>street.x);
+export const BROAD_LANES=[10,13.5,19,23];
+export const BROAD_CENTER=16.25;
+export const BROAD_X=BROAD_EXTENTS.map(x=>x+VIEWER_TO_GAME_X);
+
+export function isBroadRoad(x,z){
+ if(x<BROAD_X[0]||x>BROAD_X[1])return false;
+ const [min,max]=curbAt(x-VIEWER_TO_GAME_X);
+ return z>=min+VIEWER_TO_GAME_Z&&z<=max+VIEWER_TO_GAME_Z;
 }
 
-export function roadClearance(x, buildingWidth = 0) {
-  return Math.min(...CROSS_STREETS.map(({ x: cx, roadHalfWidth }) =>
-    Math.abs(x - cx) - roadHalfWidth - buildingWidth * 0.5
-  ));
+export function occupiesCrossStreet(x,buildingWidth=0,clearance=4.5){
+ return roadClearance(x,buildingWidth)<clearance;
+}
+
+export function roadClearance(x,buildingWidth=0){
+ return Math.min(...CROSS_STREETS.map(street=>Math.abs(x-street.x)-street.roadHalfWidth-buildingWidth*.5));
 }
