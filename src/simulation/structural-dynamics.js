@@ -24,3 +24,16 @@ export function integrateFragment(p,dt,ground=.08){
  if(bottom<ground){p.position.y=ground+verticalExtent(p);if(p.velocity.y<-.8){p.velocity.y*=-.06;p.velocity.x*=.53;p.velocity.z*=.53;p.spin.x*=.22;p.spin.y*=.22;p.spin.z*=.22}else{p.velocity.x*=Math.max(0,1-dt*9);p.velocity.z*=Math.max(0,1-dt*9);p.velocity.y=0;p.spin.x*=.75;p.spin.y*=.75;p.spin.z*=.75}}
  return !tipping&&p.position.y-verticalExtent(p)<=ground+.02&&Math.hypot(p.velocity.x,p.velocity.y,p.velocity.z)<.12;
 }
+
+// The prior full sort was performed for every component. Only the nearest
+// two columns on the designated floor are needed; retain stable tie order.
+export function nearestSupports(part,columnsByFloor){
+ const floor=part.type==='column'&&part.floor>0?part.floor-1:part.floor;
+ let first=null,second=null,a=Infinity,b=Infinity;
+ for(const column of columnsByFloor[floor]||[]){
+  const distance=column.position.distanceToSquared(part.position);
+  if(distance<a){second=first;b=a;first=column;a=distance;}
+  else if(distance<b){second=column;b=distance;}
+ }
+ return second?[first,second]:first?[first]:[];
+}
