@@ -1,4 +1,14 @@
 import * as THREE from 'three';
+import { CROSS_STREETS,BROAD_X } from '../simulation/road-corridors.js';
+import { curbAt } from '../../broad-street/broad-street-grid-data.mjs';
+import { VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z } from '../simulation/viewer-parcels.js';
+
+// Approximate drain offsets follow the mapped curb, not legacy lane centers.
+function gutterZ(x,side){const c=curbAt(x-VIEWER_TO_GAME_X);return c[side]+VIEWER_TO_GAME_Z+(side===0?.45:-.45);}
+function drainLocations(){return CROSS_STREETS.flatMap(j=>{
+ const x=j.x+j.roadHalfWidth+2;
+ return [0,1].map(side=>({id:`drain-${j.name.toLowerCase().replace(/[^a-z]+/g,'-')}-${side}`,x,z:gutterZ(x,side),side:side===0?'north':'south'}));
+});}
 
 /**
  * Street Curb Gutter Water Runoff & Storm Drain Catch Basin System
@@ -12,25 +22,10 @@ export function createStreetWaterRunoff(scene) {
   root.name = 'STREET-WATER-RUNOFF-SYSTEM';
   scene.add(root);
 
-  // Gutter lines along North and South edges of Broad Street roadway
-  // Broad Street roadway runs roughly Z = 15.2 to Z = 32.8
-  const NORTH_GUTTER_Z = 15.35;
-  const SOUTH_GUTTER_Z = 32.65;
-  const GUTTER_MIN_X = -280.0;
-  const GUTTER_MAX_X = 260.0;
-  const GUTTER_LENGTH = GUTTER_MAX_X - GUTTER_MIN_X;
-
-  // Storm drain catch basin locations along Broad Street curb corners
-  const DRAIN_LOCATIONS = [
-    { id: 'drain-diamond-north', x: 215.0, z: NORTH_GUTTER_Z, side: 'north' },
-    { id: 'drain-diamond-south', x: 215.0, z: SOUTH_GUTTER_Z, side: 'south' },
-    { id: 'drain-techfreire-north', x: 5.0, z: NORTH_GUTTER_Z, side: 'north' },
-    { id: 'drain-techfreire-south', x: 5.0, z: SOUTH_GUTTER_Z, side: 'south' },
-    { id: 'drain-dauphin-north', x: -75.0, z: NORTH_GUTTER_Z, side: 'north' },
-    { id: 'drain-dauphin-south', x: -75.0, z: SOUTH_GUTTER_Z, side: 'south' },
-    { id: 'drain-york-north', x: -140.0, z: NORTH_GUTTER_Z, side: 'north' },
-    { id: 'drain-york-south', x: -140.0, z: SOUTH_GUTTER_Z, side: 'south' }
-  ];
+  const GUTTER_MIN_X=BROAD_X[0],GUTTER_MAX_X=BROAD_X[1];
+  const GUTTER_LENGTH=GUTTER_MAX_X-GUTTER_MIN_X;
+  const NORTH_GUTTER_Z=gutterZ(0,0),SOUTH_GUTTER_Z=gutterZ(0,1);
+  const DRAIN_LOCATIONS=drainLocations();
 
   // Materials
   const castIronMat = new THREE.MeshStandardMaterial({
@@ -162,18 +157,23 @@ export function createStreetWaterRunoff(scene) {
     });
   }
 
-  // Continuous Gutter Water Flow Ribbons (North and South gutters)
-  const northGutterGeo = new THREE.PlaneGeometry(GUTTER_LENGTH, 0.68, 64, 1);
-  const northGutter = new THREE.Mesh(northGutterGeo, waterFlowRibbonMat);
-  northGutter.rotation.x = -Math.PI * 0.5;
-  northGutter.position.set((GUTTER_MIN_X + GUTTER_MAX_X) * 0.5, 0.035, NORTH_GUTTER_Z);
-  root.add(northGutter);
-
-  const southGutterGeo = new THREE.PlaneGeometry(GUTTER_LENGTH, 0.68, 64, 1);
-  const southGutter = new THREE.Mesh(southGutterGeo, waterFlowRibbonMat);
-  southGutter.rotation.x = -Math.PI * 0.5;
-  southGutter.position.set((GUTTER_MIN_X + GUTTER_MAX_X) * 0.5, 0.035, SOUTH_GUTTER_Z);
-  root.add(southGutter);
+  // Segmented ribbons follow the varying curb and leave junction mouths clear.
+  const gutterMeshes=[];
+  const cuts=[GUTTER_MIN_X,...CROSS_STREETS.flatMap(j=>[j.x-j.roadHalfWidth,j.x+j.roadHalfWidth]),GUTTER_MAX_X];
+  for(let i=0;i+1<cuts.length;i+=2){
+    const from=cuts[i],to=cuts[i+1];if(to<=from)continue;
+    for(const side of [0,1]){
+      const geometry=new THREE.PlaneGeometry(to-from,.68,Math.max(1,Math.ceil((to-from)/12)),1);
+      geometry.rotateX(-Math.PI/2);
+      const positions=geometry.attributes.position,mid=(from+to)/2;
+      for(let k=0;k<positions.count;k++)positions.setZ(k,positions.getZ(k)+gutterZ(mid+positions.getX(k),side));
+      positions.needsUpdate=true;
+      geometry.computeBoundingSphere();
+      const mesh=new THREE.Mesh(geometry,waterFlowRibbonMat);
+      mesh.position.set(mid,.035,0);mesh.visible=false;
+      root.add(mesh);gutterMeshes.push(mesh);
+    }
+  }
 
   let currentRunoffVolume = 0.0;
   let targetRunoffVolume = 0.0;
@@ -221,8 +221,7 @@ export function createStreetWaterRunoff(scene) {
       }
 
       const isFlowing = currentRunoffVolume > 0.04;
-      northGutter.visible = isFlowing;
-      southGutter.visible = isFlowing;
+      for(const mesh of gutterMeshes)mesh.visible=isFlowing;
 
       // Animate drain catch basin vortex rotation and suction
       for (const d of drainObjects) {
