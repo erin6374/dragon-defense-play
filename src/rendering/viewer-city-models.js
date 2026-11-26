@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { makeViewerBuilding } from './viewer-building-fit.js';
 import { containsParcel } from '../simulation/viewer-parcels.js';
+import { createParcelDamageMask } from './parcel-damage-mask.js';
 
 export function createViewerCityModels(scene,city) {
   const root=new THREE.Group();
@@ -15,11 +16,17 @@ export function createViewerCityModels(scene,city) {
       anchor:new THREE.Vector3(b.x,0,b.z),architectureSource:'Broad Street Viewer',
       worldBounds:{minX:bounds.min.x,maxX:bounds.max.x,minY:bounds.min.y,maxY:bounds.max.y,minZ:bounds.min.z,maxZ:bounds.max.z}};
   });
-  const findEntry=id=>entries.find(e=>e.def.id===id||e.def.address===id);
+  const byId=new Map(entries.map(e=>[e.def.id,e]));
+  const findEntry=id=>byId.get(id)||entries.find(e=>e.def.address===id);
+  function clearImpactMask(e){e.impactMask?.dispose();e.impactMask=null;}
+  function stampImpact(e,point,radius,strength){
+    if(!e.impactMask)e.impactMask=createParcelDamageMask(THREE,e.model,e.worldBounds);
+    e.impactMask.stamp(point,radius,strength);
+  }
   function apply(entry,damage) {
-    // Structural repair/chapter reset must restore the authored facade, not
-    // merely its parent group's visibility. Impact hides individual sections.
+    // Repair restores the original materials and removes only this parcel's mask.
     if(damage<entry.damage){
+      clearImpactMask(entry);
       for(const section of entry.sections)section.visible=true;
       entry.collapseRequested=false;
     }
@@ -46,13 +53,12 @@ export function createViewerCityModels(scene,city) {
     // damage to an adjacent footprint, even if geometry overlaps.
     if(!e||e.targetBuilding.damage>=.97||!containsParcel(e.targetBuilding,point.x,point.z))return 0;
     city.impact(e.targetBuilding,point,radius,strength);
-    const band=Math.min(3,Math.max(0,Math.floor(point.y/e.targetBuilding.h*3.5)));
-    if(e.targetBuilding.damage>.12)e.sections[band].visible=false;
     apply(e,e.targetBuilding.damage);
+    if(e.damage<.97)stampImpact(e,point,radius,strength);
     return 1;
   }
   return {
-    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,
+    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,clearImpactMask,
     collapseBuilding(id){
       const e=findEntry(id);
       if(!e)return null;
@@ -64,9 +70,9 @@ export function createViewerCityModels(scene,city) {
       e.collapseRequested=true;
       return result;
     },
-    restore(){for(const e of entries){apply(e,0);e.collapseRequested=false;for(const section of e.sections)section.visible=true;}},
+    restore(){for(const e of entries){clearImpactMask(e);apply(e,0);e.collapseRequested=false;for(const section of e.sections)section.visible=true;}},
     getStats(){return {loadedCount:entries.length,totalModels:entries.length,
       models:entries.map(e=>({id:e.def.id, address:e.def.address, loaded:true,
-        architectureSource:e.architectureSource, worldBounds:e.worldBounds, damage:e.damage}))};}
+        architectureSource:e.architectureSource, worldBounds:e.worldBounds, damage:e.damage, localizedStrikes:e.impactMask?.strikes()??0}))};}
   };
 }
