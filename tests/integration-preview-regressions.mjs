@@ -114,4 +114,45 @@ test('Floor-indexed nearest supports match the original stable sort',()=>{
  }
  assert.equal(nearestSupports({floor:8,type:'wall',position:vec(0,0,0)},groups).length,0);
 });
+test('Rubble writes are batched and capped',()=>{
+ const a=game.indexOf('let rubbleDirty=false;'),b=game.indexOf('const crashedWrecks',a);
+ const p=game.indexOf('function preserveRubble('),q=game.indexOf('function settleMeteorAsPermanentSlag',p);
+ assert.ok(a>=0&&b>a&&p>=0&&q>p);
+ let builds=0,adds=0;
+ class V{constructor(x,y,z){Object.assign(this,{x,y,z});}}
+ const api=new Function('THREE','rubblePool','scene','MAX_RUBBLE','const settledRubble=[];'+game.slice(a,b)+game.slice(p,q)+'return {preserveRubble,refreshRubble,settledRubble};')({Vector3:V},{begin(){builds++;},add(){adds++;},end(){}},{remove(){}},220);
+ for(let i=0;i<50;i++)api.preserveRubble({position:{x:i,y:0,z:0},scale:.4});
+ assert.equal(builds,0);api.refreshRubble();assert.equal(builds,1);assert.equal(adds,50);
+ api.refreshRubble();assert.equal(builds,1);
+ for(let i=0;i<300;i++)api.preserveRubble({position:{x:i,y:0,z:0},scale:.4});
+ api.refreshRubble();assert.equal(api.settledRubble.length,220);assert.equal(adds,270);
+});
+test('Barrage scheduler enforces a global cap and cancels pending launches',()=>{
+ const a=game.indexOf('const pendingBarrageTimers=new Set();'),b=game.indexOf('let dragonEnabled',a);
+ assert.ok(a>=0&&b>a);let serial=0,spawned=0;const timers=new Map();
+ const api=new Function('setTimeout','clearTimeout','sandboxReticle','dragon','spawnTestMeteorAt','sound','message',game.slice(a,b)+'return {spawnMeteorBarrage,clearPendingBarrages,pending:()=>pendingBarrageTimers.size};')((fn)=>{timers.set(++serial,fn);return serial;},id=>timers.delete(id),{visible:false},null,()=>spawned++,()=>{},()=>{});
+ api.spawnMeteorBarrage(100,0,0);assert.equal(api.pending(),24);
+ api.spawnMeteorBarrage(10,0,0);assert.equal(api.pending(),24);
+ const fn=timers.get(1);timers.delete(1);fn();assert.equal(spawned,1);assert.equal(api.pending(),23);
+ api.clearPendingBarrages();assert.equal(timers.size,0);assert.equal(api.pending(),0);
+});
+test('Cinematic particle upload ranges are bounded to active instances',()=>{
+ const {uploadActivePrefix}=load('src/rendering/cinematic-effects.js',{},['uploadActivePrefix']);
+ let ranges=[],versions=0;
+ const attr={clearUpdateRanges(){ranges=[];},addUpdateRange(a,b){ranges.push([a,b]);},set needsUpdate(v){if(v)versions++;}};
+ assert.equal(uploadActivePrefix(attr,0,16),false);assert.equal(versions,0);
+ uploadActivePrefix(attr,7,16);assert.equal(ranges[0][1],112);
+ uploadActivePrefix(attr,4,3);assert.equal(ranges.length,1);assert.equal(ranges[0][1],12);
+ const legacy={needsUpdate:false};uploadActivePrefix(legacy,4,1);assert.equal(legacy.needsUpdate,true);
+});
+test('Generic particle pool respects capacity and active matrix ranges',()=>{
+ const {InstancedParticlePool}=load('src/rendering/instanced-particles.js',{},['InstancedParticlePool']);
+ class Mesh{constructor(){this.instanceMatrix={ranges:[],setUsage(){},clearUpdateRanges(){this.ranges=[];},addUpdateRange(a,b){this.ranges.push([a,b]);},needsUpdate:false};}setMatrixAt(){}}
+ const T={Object3D:class{constructor(){this.position={copy(){}};this.rotation={set(){}};this.scale={setScalar(){}};}updateMatrix(){}},InstancedMesh:Mesh,DynamicDrawUsage:1};
+ const pool=new InstancedParticlePool({THREE:T,parent:{add(){}},geometry:{},material:{},capacity:4});
+ pool.begin();for(let i=0;i<3;i++)pool.add({},1);pool.end();
+ assert.equal(pool.mesh.instanceMatrix.ranges[0][1],48);
+ pool.begin();for(let i=0;i<4;i++)pool.add({},1);assert.equal(pool.add({},1),false);pool.end();
+ assert.equal(pool.mesh.instanceMatrix.ranges[0][1],64);pool.clear();assert.equal(pool.mesh.count,0);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
