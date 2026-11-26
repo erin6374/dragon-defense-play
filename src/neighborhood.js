@@ -59,7 +59,7 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
 
  const city=createStructuralCity(THREE,scene,visualBank);
  for(const parcel of viewerParcels(grid.rows))city.addBuilding(parcel);
- const school=city.addBuilding({name:'tech-freire-school',x:0,w:26.52,h:28,d:18,z:-8.6,
+ const school=city.addBuilding({name:'tech-freire-school',x:0,w:27,h:28,d:58.8,z:-29,
   stories:5,bays:6,school:true,kind:'brick'});
  city.finalize();
  const buildings=city.buildings.filter(b=>!b.school);
