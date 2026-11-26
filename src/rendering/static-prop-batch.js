@@ -16,7 +16,9 @@ export function batchStaticStreetProps(root){
    }
   });
   for(const mesh of allMeshes){
-   if(!mesh.geometry?.attributes?.position||Array.isArray(mesh.material)||mesh.material.transparent||mesh.material.opacity<1){skipped++;continue;}
+   if(!mesh.geometry?.attributes?.position||Array.isArray(mesh.material)){skipped++;continue;}
+   // Allow opaque materials and transparent materials with depthWrite: false (e.g. road stripes, lane paint, decals)
+   if(mesh.material.transparent && mesh.material.depthWrite !== false){skipped++;continue;}
    if(mesh.geometry.attributes.position.count>10000){skipped++;continue;}
    const key=mesh.material.uuid;
    if(!candidates.has(key))candidates.set(key,[]);
@@ -38,8 +40,18 @@ export function batchStaticStreetProps(root){
    for(const mesh of meshes){
     mesh.updateWorldMatrix(true, false);
     const relMatrix = new THREE.Matrix4().multiplyMatrices(invParent, mesh.matrixWorld);
-    const g=mesh.geometry.clone();g.applyMatrix4(relMatrix);if(g.index){const expanded=g.toNonIndexed();g.dispose();geometries.push(expanded);}else geometries.push(g);
-    source.push(mesh);vertexCount+=geometries[geometries.length-1].attributes.position.count;
+    let g=mesh.geometry.clone();
+    g.applyMatrix4(relMatrix);
+    if(g.index){const expanded=g.toNonIndexed();g.dispose();g=expanded;}
+    if(!g.attributes.normal)g.computeVertexNormals();
+    const count=g.attributes.position.count;
+    if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(count*2),2));
+    for(const attr of Object.keys(g.attributes)){
+     if(!['position','normal','uv'].includes(attr))g.deleteAttribute(attr);
+    }
+    geometries.push(g);
+    source.push(mesh);
+    vertexCount+=count;
     if(vertexCount>70000)flush();
    }
    flush();

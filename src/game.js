@@ -2359,6 +2359,21 @@ function addCrater(x,z,radius=3,opts={}){
   const slabS=new THREE.Mesh(new THREE.BoxGeometry(apertureW*0.65,0.24,D*0.28),slabMat);
   slabS.position.set(0,-1.2,apertureD*0.42);slabS.rotation.x=-0.45;subwayGroup.add(slabS);
 
+  // RC166: Subterranean gutter waterfall cascade sheets pouring into subway tunnel
+  const waterfallMat=new THREE.MeshStandardMaterial({
+    color:0xd4effc,roughness:0.12,metalness:0.35,transparent:true,opacity:0.72,depthWrite:false
+  });
+  const fallN=new THREE.Mesh(new THREE.PlaneGeometry(apertureW*0.55,H*0.85),waterfallMat);
+  fallN.name='subway-waterfall-north';
+  fallN.position.set(0,-H*0.45,-apertureD*0.46);
+  subwayGroup.add(fallN);
+
+  const fallS=new THREE.Mesh(new THREE.PlaneGeometry(apertureW*0.55,H*0.85),waterfallMat);
+  fallS.name='subway-waterfall-south';
+  fallS.position.set(0,-H*0.45,apertureD*0.46);
+  fallS.rotation.y=Math.PI;
+  subwayGroup.add(fallS);
+
   // Exposed rebar rods dangling into void
   for(let r=0;r<8;r++){
    const rebar=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.2+Math.random()*0.8,6),rebarMat);
@@ -2676,13 +2691,25 @@ function updateCraters(dt){
   if(c.subwayGroup){
    const floodWater=c.subwayGroup.getObjectByName('subway-flooded-water');
    if(floodWater){
-    c.floodLevel=Math.min(0.55,(c.floodLevel||0.14)+dt*0.015);
+    c.floodLevel=Math.min(0.68,(c.floodLevel||0.14)+dt*0.022);
     floodWater.position.y=-5.2+c.floodLevel+Math.sin(elapsed*3.5+c.x*0.3)*0.03;
    }
+   // RC166: Animate subterranean waterfall curtains & foaming track bed spray
+   const wfN=c.subwayGroup.getObjectByName('subway-waterfall-north');
+   const wfS=c.subwayGroup.getObjectByName('subway-waterfall-south');
+   if(wfN&&wfS){
+    const pulse=0.68+Math.sin(elapsed*14.0)*0.12;
+    wfN.material.opacity=pulse;
+    wfS.material.opacity=pulse;
+   }
    if(c.isSubway&&cinematicFX.waterSpray){
-    _craterV1.set(c.x-2.4,-3.8,c.z);
+    _craterV1.set(c.x-2.4,-4.2,c.z);
     _craterV2.set(1.0,0.22,0.18).normalize();
-    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:3,power:0.85});
+    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:4,power:0.95});
+    // Waterfall base impact mist
+    _craterV1.set(c.x,-5.0,c.z-2.2);
+    _craterV2.set(0,0.85,0.25).normalize();
+    cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:3,power:0.75});
    }
    const beacon=c.subwayGroup.getObjectByName('subway-emergency-beacon');
    if(beacon){

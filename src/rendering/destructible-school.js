@@ -575,14 +575,32 @@ export function createDestructibleSchool(THREE,scene,bounds){
    position.set(p.x,p.y,p.z);
    const tumble=p.resting?0:p.rot;
    let rx=tumble,ry=p.rot,rz=tumble*.63;
-   if(!p.falling&&!p.resting&&(p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column'||p.zone==='basement-column')&&p.integrity<0.95){
+   if(!p.falling&&!p.resting){
     const deform=(1.0-p.integrity);
-    const sag=deform*0.38;
-    position.y-=sag*0.45;
-    position.x+=Math.sin(p.homeY*2.5)*deform*0.35;
-    position.z+=Math.cos(p.homeY*2.5)*deform*0.35;
-    rz+=Math.sin(p.homeX*2.8)*deform*0.35;
-    rx+=Math.cos(p.homeZ*2.4)*deform*0.25;
+    if(deform>0.03){
+     if(p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column'||p.zone==='basement-column'){
+      // Structural column & beam axial deflection, plastic yield & shear twist
+      const sag=deform*0.42;
+      position.y-=sag*0.50;
+      position.x+=Math.sin(p.homeY*2.5)*deform*0.38;
+      position.z+=Math.cos(p.homeY*2.5)*deform*0.38;
+      rz+=Math.sin(p.homeX*2.8)*deform*0.38;
+      rx+=Math.cos(p.homeZ*2.4)*deform*0.28;
+     }else if(p.zone==='floor'||p.zone==='basement-floor'){
+      // RC166: Floor slab cantilever shear sag — unsupported slabs tilt down toward void
+      const floorSag=deform*0.65;
+      position.y-=floorSag*0.55;
+      const tiltDir=Math.sin(p.homeX*3.1+p.homeZ*2.3)>0?1:-1;
+      rz+=tiltDir*deform*0.24;
+      rx+=Math.cos(p.homeZ*2.7)*deform*0.18;
+     }else if(p.zone==='rebar'){
+      // RC166: Twisted rebar tensile elongation and dangling wire oscillation
+      const sway=Math.sin(supportClock*4.5+p.homeX*2.0)*deform*0.22;
+      position.x+=sway;
+      position.y-=deform*0.35;
+      rz+=sway*0.45;
+     }
+    }
    }
    if(p.falling&&p.isBuckled){
     rx+=p.buckleAngle;
