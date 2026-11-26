@@ -667,6 +667,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
   }
   if(ratio<=0)return;
   if(ratio>=1){collapse();return;}
+  // With original FBX visible, localized impacts and support failures drive
+  // debris. Do not fabricate additional room fragments merely to fill a gauge.
+  if(overlayMode)return;
   const targetDetached=Math.floor(pieces.length*Math.min(1.0,ratio*0.92));
   // Most fixed steps advance the gauge by less than one component. Do not
   // allocate or sort the entire reconstruction until the quota changes.
