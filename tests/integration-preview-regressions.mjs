@@ -191,4 +191,17 @@ test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  api.impactBuilding('b',{x:2,y:4,z:0},3,1);assert.equal(api.entries[1].impactMask.strikes(),2);
  api.restore();assert.equal(api.entries[1].impactMask,null);
 });
+test('Exposed interior geometry is floor-specific and conservatively footprint-contained',()=>{
+ const structural=read('src/rendering/structural-city.js');
+ const a=structural.indexOf(' function interiorFitsParcel('),b=structural.indexOf(' function scheduleSupport(',a);
+ assert.ok(a>=0&&b>a);const writes=[];
+ const api=new Function('write','containsParcel',structural.slice(a,b)+'return {interiorFitsParcel,exposeInterior};')(p=>writes.push(p),(b,x,z)=>x>=0&&x<=10&&z>=0&&z<=10&&!(x>4&&x<6&&z>4&&z<6));
+ const part=(x,z,w,d)=>({original:{position:{x,z},size:{x:w,z:d}}});
+ assert.equal(api.interiorFitsParcel({},part(2,2,2,2)),true);
+ assert.equal(api.interiorFitsParcel({},part(1,1,4,4)),false);
+ assert.equal(api.interiorFitsParcel({},part(5,5,8,8)),false);
+ const building={viewerParcel:true,exposedFloors:new Set(),floorHeight:3,stories:4,parts:[{floor:1,state:'attached',type:'slab',interiorFits:true},{floor:1,state:'attached',type:'column',interiorFits:false},{floor:1,state:'attached',type:'wall',interiorFits:true}]};
+ assert.equal(api.exposeInterior(building,{y:4.5},1),1);assert.equal(writes.length,1);assert.equal(writes[0],building.parts[0]);
+ assert.equal(api.exposeInterior(building,{y:4.5},1),0);assert.equal(writes.length,1);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
