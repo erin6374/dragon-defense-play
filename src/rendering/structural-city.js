@@ -1,4 +1,4 @@
-import {distanceToBox,supportedFloors,integrateFragment,verticalExtent} from '../simulation/structural-dynamics.js';
+import {distanceToBox,supportedFloors,integrateFragment,verticalExtent,nearestSupports} from '../simulation/structural-dynamics.js';
 // Physical components, not an opaque backing volume. All static and broken pieces
 // share instanced draw batches. This is a bounded game simulation, not an engineering solver.
 
@@ -262,7 +262,7 @@ export function createStructuralCity(THREE,scene,bank){
  function finalize(){
   for(const p of parts){const key=p.building.layer+':'+p.mat;if(!buckets.has(key))buckets.set(key,{parts:[],material:materials[p.mat],group:groups[p.building.layer]});const bucket=buckets.get(key);p.bucket=bucket;p.index=bucket.parts.length;bucket.parts.push(p)}
   for(const bucket of buckets.values()){const mesh=new THREE.InstancedMesh(cube,bucket.material,bucket.parts.length);mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.name='physical-components';mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);bucket.mesh=mesh;const bm=bucket.material.clone();bm.color?.multiplyScalar(.75);if(bm.emissive)bm.emissiveIntensity=0;const broken=new THREE.InstancedMesh(brokenGeometry,bm,bucket.parts.length);broken.frustumCulled=false;broken.instanceMatrix.setUsage(THREE.DynamicDrawUsage);bucket.broken=broken;broken.visible=false;bucket.group.add(mesh,broken);for(let i=0;i<bucket.parts.length;i++){broken.setMatrixAt(i,zero);broken.setColorAt(i,new THREE.Color(0xffffff))}for(const p of bucket.parts){mesh.setColorAt(p.index,new THREE.Color(0xffffff));write(p)}mesh.instanceColor.needsUpdate=true;mesh.instanceMatrix.needsUpdate=true}
-  for(const b of buildings){b.columns=b.parts.filter(p=>p.type==='column');for(const p of b.parts)p.supports=b.columns.filter(c=>c.floor===(p.type==='column'&&p.floor>0?p.floor-1:p.floor)).sort((a,b)=>a.position.distanceToSquared(p.position)-b.position.distanceToSquared(p.position)).slice(0,2);}
+  for(const b of buildings){b.columns=b.parts.filter(p=>p.type==='column');const byFloor=Array.from({length:b.stories},()=>[]);for(const c of b.columns)(byFloor[c.floor]??=[]).push(c);for(const p of b.parts)p.supports=nearestSupports(p,byFloor);}
   finalized=true;
  }
  function write(p){
