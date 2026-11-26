@@ -38,7 +38,13 @@ export function createViewerCityModels(scene,city) {
   }
   function impact(point,radius,strength){
     const e=entries.find(e=>e.targetBuilding.damage<.97&&containsParcel(e.targetBuilding,point.x,point.z));
-    if(!e)return 0;
+    return e?impactBuilding(e.def.id,point,radius,strength):0;
+  }
+  function impactBuilding(id,point,radius,strength){
+    const e=findEntry(id);
+    // A penetrating meteor retains its original parcel owner. Never redirect
+    // damage to an adjacent footprint, even if geometry overlaps.
+    if(!e||e.targetBuilding.damage>=.97||!containsParcel(e.targetBuilding,point.x,point.z))return 0;
     city.impact(e.targetBuilding,point,radius,strength);
     const band=Math.min(3,Math.max(0,Math.floor(point.y/e.targetBuilding.h*3.5)));
     if(e.targetBuilding.damage>.12)e.sections[band].visible=false;
@@ -46,7 +52,7 @@ export function createViewerCityModels(scene,city) {
     return 1;
   }
   return {
-    root,entries,findEntry,update,impact,damageBuilding,
+    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,
     collapseBuilding(id){
       const e=findEntry(id);
       if(!e)return null;
