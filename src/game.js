@@ -777,19 +777,22 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  const currentDmg=school?.damage||0;
  const isExtinction=r>=13.0||strength>=6.0;
  const isTitanic=r>=9.0||strength>=4.0;
- const isColossal=r>=4.2||strength>=2.0;
- const maxHitDmg=isExtinction?1.0:isTitanic?0.85:isColossal?0.50:0.12;
+ const isColossal=r>=4.0||strength>=2.0;
+ const maxHitDmg=isExtinction?1.0:isTitanic?1.0:isColossal?0.85:0.25;
  const targetMaxDmg=Math.min(1.0,currentDmg+maxHitDmg);
- const impactRadius=isExtinction?Math.min(r,20.0):isTitanic?Math.min(r,14.0):isColossal?Math.min(r,9.0):Math.min(r,4.5);
- const impactStrength=isExtinction?3.5:isTitanic?2.2:isColossal?1.5:Math.min(strength,0.9);
+ const impactRadius=isExtinction?Math.min(r,22.0):isTitanic?Math.min(r,16.0):isColossal?Math.min(r,11.0):Math.min(r,4.5);
+ const impactStrength=isExtinction?4.5:isTitanic?3.0:isColossal?2.0:Math.min(strength,0.9);
  neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),impactRadius,impactStrength);
  if(school){school.damage=Math.max(school.damage||0,targetMaxDmg);}
+ schoolDamage=Math.max(schoolDamage,targetMaxDmg);
  schoolReconstruction?.impact({x,y,z,radius:impactRadius,strength:impactStrength,type,speed});
  sourceDamage.stamp(x,y,z,impactRadius);
  const range=schoolBounds.getSize(new THREE.Vector3());
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
- if(isColossal||isTitanic||isExtinction){
-  schoolReconstruction?.punchBorehole?.({x,y,z,radius:impactRadius*0.75,isHeavyIron:true,isMassive:isTitanic||isExtinction});
+ if(isExtinction||isTitanic||targetMaxDmg>=0.95){
+  schoolReconstruction?.collapse();
+ }else if(isColossal){
+  schoolReconstruction?.punchBorehole?.({x,y,z,radius:impactRadius*0.85,isHeavyIron:true,isMassive:true});
  }
 }
 function setRowhouseSourceVisible(role,on){
@@ -4477,9 +4480,10 @@ function damage(x,z,y=7,meteor=null){
     neighborhood.city.forceDamage(effectiveTarget,1.0);
     damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
    }else if(isColossalStrike){
-    effectiveTarget.damage=Math.max(effectiveTarget.damage||0, 0.95);
-    neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
-    damageOrCollapseNorthBroad(effectiveTarget,effectiveTarget.damage,true);
+    effectiveTarget.damage=1.0;
+    neighborhood.city.forceDamage(effectiveTarget,1.0);
+    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
+    message(`☄️ COLOSSAL METEOR CRUSHED ${effectiveTarget.name||'STRUCTURE'}!`);
    }else{
     effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.35*Math.max(1.0,mSzVal));
     neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);

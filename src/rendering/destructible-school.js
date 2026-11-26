@@ -531,7 +531,15 @@ export function createDestructibleSchool(THREE,scene,bounds){
 
    dimensions(p);
    const insideFootprint=p.x>=min.x+0.6&&p.x<=max.x-0.6&&p.z>=back+0.6&&p.z<=front-0.6;
-   const floor=insideFootprint?(min.y-2.2+scale.y*.5):(min.y+scale.y*.5);
+   const centerZ=(front+back)*0.5;
+   const normX=(p.x-centerX)/(width*0.52);
+   const normZ=(p.z-centerZ)/(depth*0.52);
+   const distFromCenter=Math.hypot(normX,normZ);
+   const normDist=Math.min(1.0,distFromCenter);
+   // RC172: Volumetric rubble bulking: collapsed masonry piles into a natural 2.4m central mound rather than a flat sheet
+   const pileMound=(1.0-normDist*normDist)*2.35;
+   const stackJitter=(Math.sin(p.homeX*13.7+p.homeZ*19.3+(p.homeY||0))*0.5+0.5)*0.85;
+   const floor=insideFootprint?(min.y-1.8+pileMound+stackJitter+scale.y*.5):(min.y+scale.y*.5);
    if(p.y<=floor){
     p.y=floor;
     const impactVy=Math.abs(p.vy);
@@ -559,7 +567,15 @@ export function createDestructibleSchool(THREE,scene,bounds){
     }
 
     if(Math.abs(p.vy)<1.4){
-     if(!p.resting){p.resting=true;activeFallingPieces=Math.max(0,activeFallingPieces-1);}
+     if(!p.resting){
+      p.resting=true;
+      activeFallingPieces=Math.max(0,activeFallingPieces-1);
+      // RC172: Authentic resting tilt angles: slabs and girders lean against each other at 10-32 deg angles
+      const tiltMax=isFloor?0.32:(isSteel?0.58:(isFacade?0.42:0.28));
+      p.restingRotX=(Math.sin(p.x*6.3+p.z*4.7)*0.5)*tiltMax;
+      p.restingRotZ=(Math.cos(p.x*5.1-p.z*7.2)*0.5)*tiltMax;
+      p.restingRotY=p.rot;
+     }
      dimensions(p);
      p.y=floor;
     }
@@ -586,8 +602,10 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const index=counts[kind]++;
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
    position.set(p.x,p.y,p.z);
-   const tumble=p.resting?0:p.rot;
-   let rx=tumble,ry=p.rot,rz=tumble*.63;
+   const tumble=p.rot;
+   let rx=p.resting?(p.restingRotX||0):tumble;
+   let ry=p.resting?(p.restingRotY||p.rot):p.rot;
+   let rz=p.resting?(p.restingRotZ||0):tumble*.63;
    if(!p.falling&&!p.resting){
     const deform=(1.0-p.integrity);
     if(deform>0.03){
@@ -672,7 +690,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
   collapsing=false;activeFallingPieces=0;supportClock=0;impactSerial=0;lastImpact={x:centerX,y:min.y+height*.5,z:front};
   for(const p of pieces){
    Object.assign(p,{x:p.homeX,y:p.homeY,z:p.homeZ,
-     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,removed:false,profile:null,isFlaming:false,hitGround:false});
+     integrity:1,falling:false,resting:false,delay:0,vx:0,vy:0,vz:0,rot:0,vr:0,
+     restingRotX:0,restingRotY:0,restingRotZ:0,
+     removed:false,profile:null,isFlaming:false,hitGround:false});
   }
   flush();
  }
