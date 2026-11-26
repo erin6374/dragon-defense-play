@@ -768,28 +768,26 @@ function stampPermanentDamage(key,u,v,ru,rv){
  ctx.restore();
  schoolDamageTextures[key].needsUpdate=true;
 }
+// One health budget per meteor, independent of the visual crater energy.
+function schoolMeteorBudget(size=1.8){
+ const n=Number.isFinite(size)?size:1.8;
+ if(n<1.35)return 0;
+ return .05+.10*Math.min(1,Math.max(0,(n-2.0)/1.6));
+}
+function penetrationDamageStep(budget,remaining,startY,stopY,previousY,currentY){
+ const distance=Math.max(0,startY-stopY);
+ const descent=Math.max(0,Math.min(previousY,startY)-Math.max(currentY,stopY));
+ return Math.min(Math.max(0,remaining),distance>0?budget*descent/distance:0);
+}
 function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
- const school=neighborhood.school;
- const currentDmg=school?.damage||0;
- const isExtinction=r>=13.0||strength>=6.0;
- const isTitanic=r>=9.0||strength>=4.0;
- const isColossal=r>=4.0||strength>=2.0;
- const maxHitDmg=isExtinction?1.0:isTitanic?1.0:isColossal?0.85:0.25;
- const targetMaxDmg=Math.min(1.0,currentDmg+maxHitDmg);
- const impactRadius=isExtinction?Math.min(r,22.0):isTitanic?Math.min(r,16.0):isColossal?Math.min(r,11.0):Math.min(r,4.5);
- const impactStrength=isExtinction?4.5:isTitanic?3.0:isColossal?2.0:Math.min(strength,0.9);
+ // Local physical carving only: never mutate the school health gauge.
+ const impactRadius=Math.min(Math.max(.1,r),4.5);
+ const impactStrength=Math.min(Math.max(0,strength),.9);
  neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),impactRadius,impactStrength);
- if(school){school.damage=Math.max(school.damage||0,targetMaxDmg);}
- schoolDamage=Math.max(schoolDamage,targetMaxDmg);
  schoolReconstruction?.impact({x,y,z,radius:impactRadius,strength:impactStrength,type,speed});
  sourceDamage.stamp(x,y,z,impactRadius);
  const range=schoolBounds.getSize(new THREE.Vector3());
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
- if(isExtinction||isTitanic||targetMaxDmg>=0.95){
-  schoolReconstruction?.collapse();
- }else if(isColossal){
-  schoolReconstruction?.punchBorehole?.({x,y,z,radius:impactRadius*0.85,isHeavyIron:true,isMassive:true});
- }
 }
 function setRowhouseSourceVisible(role,on){
  // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
@@ -4426,44 +4424,10 @@ function damage(x,z,y=7,meteor=null){
   // Damage accumulates against the actual school. When the gauge reaches 0%,
   // the architectural building is fully removed, not just cosmetically scarred.
   const previousDamage=schoolDamage;
-  // User directive: smaller meteors (<= 2.0m) do no more than 5% damage,
-  // really big meteors (>= 3.6m) do maybe 15% damage. Gradual proportional destruction.
   const mSize=meteor?.size??1.8;
-  const isExtinctionHit = mSize >= 13.0;
-  const isTitanicHit = mSize >= 9.0;
-  const isColossal=mSize>=4.0||meteor?.colossus||meteor?.boss;
-  const isBig=mSize>=2.8||meteor?.isMassive;
-  let hitDmg=0.025;
-  if(isExtinctionHit){
-   hitDmg=1.0;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:12.0,isHeavyIron:true,isMassive:true});
-   schoolReconstruction?.collapse?.();
-  }else if(isTitanicHit){
-   hitDmg=0.85;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:8.5,isHeavyIron:true,isMassive:true});
-   if(schoolDamage+hitDmg>=0.88)schoolReconstruction?.collapse?.();
-  }else if(isColossal){
-   hitDmg=0.48;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:6.0,isHeavyIron:true,isMassive:true});
-   if(schoolDamage+hitDmg>=0.88)schoolReconstruction?.collapse?.();
-  }else if(isBig){
-   hitDmg=0.18;
-   schoolReconstruction?.punchBorehole?.({x:targetX,y:targetY,z:hitZ,radius:3.8,isHeavyIron:false,isMassive:false});
-  }else if(mSize>=1.8){
-   hitDmg=0.065;
-  }else if(mSize>=1.2){
-   hitDmg=0.025;
-  }else{
-   hitDmg=0.005;
-  }
-  if(meteor?.crunched||meteor?.crunchDamageDealt>0){
-   hitDmg=0.0;
-  }
-  schoolDamage=Math.min(1.0,schoolDamage+hitDmg);
-  hp=Math.max(0,Math.round((1-schoolDamage)*100));
-  if(schoolDamage>=0.95){
-   schoolReconstruction?.collapse?.();
-  }
+  const hitDmg=meteor?.crunched||meteor?.crunchDamageDealt>0?0:schoolMeteorBudget(mSize);
+  schoolDamage=Math.min(1,schoolDamage+hitDmg);
+  hp=schoolDamage>=1?0:Math.max(1,Math.round((1-schoolDamage)*100));
   // Small masonry chips and glass descend from the exact impact point, rather
   // than unrelated random locations around the roof. Reuse instanced VFX pools.
   if(performanceLab.isEnabled('particles')){
@@ -4503,7 +4467,7 @@ function damage(x,z,y=7,meteor=null){
  }
  // Health represents the school's surviving structure; neighboring impacts
  // do not magically destroy the school. No wave-based health regeneration.
- hp=Math.max(0,Math.round((1-schoolDamage)*100));
+ hp=schoolDamage>=1?0:Math.max(1,Math.round((1-schoolDamage)*100));
  sound('impact',{x:targetX});shake=Math.min(1.5,profile.strength);blast(targetX,targetY,hitZ,profile.shockRadius);emitImpact(targetX,targetY,hitZ,Math.round(35+profile.strength*40),profile.strength);
  updateHud();if(hp<=0)gameOver();
 }
@@ -6419,25 +6383,21 @@ if(m.grounded){
 
   // Progressive downward meteor crunching through building structure
   if(m.crunching){
-   m.mesh.position.y+=m.vel.y*dt;
-   const currY=m.mesh.position.y;
+   // The general meteor integrator already advanced this tick.
+   const stopY=m.crunchStopY??.6;
+   const currY=Math.max(stopY,m.mesh.position.y);
+   m.mesh.position.y=currY;
    const b=m.crunchBuilding;
    const sz=m.size||1;
 
    const isSchool=(b===neighborhood?.school)||!!b?.school;
-   // Bounded damage budget distributed strictly proportionally over vertical distance
-   const totalDist=Math.max(1.0,(m.crunchStartY||currY)-(m.crunchStopY||0.5));
-   const stepDist=Math.abs(m.vel.y*dt);
-   const maxBudget=isSchool
-    ? (sz>=8.0?0.22:(sz>=4.5?0.08:(sz>=3.0?0.05:(sz>=1.8?0.025:0.012))))
-    : (sz>=8.0?1.0:(sz>=4.5?0.85:(sz>=3.0?0.50:(sz>=1.8?0.25:0.10))));
-   const stepDmg=Math.min(m.crunchDamageBudget||0,(stepDist/totalDist)*maxBudget);
+   const stepDmg=penetrationDamageStep(m.crunchMaxBudget,m.crunchDamageBudget,m.crunchStartY,stopY,meteorStart.y,currY);
    m.crunchDamageBudget=Math.max(0,(m.crunchDamageBudget||0)-stepDmg);
    m.crunchDamageDealt=(m.crunchDamageDealt||0)+stepDmg;
 
    // Sectional floor-by-floor coring destruction: punch localized holes every ~2.8m of vertical descent
    const punchInterval=2.8;
-   const shouldPunchFloor=Math.abs((m.lastPunchY||currY)-currY)>=punchInterval;
+   const shouldPunchFloor=Math.abs((m.lastPunchY??currY)-currY)>=punchInterval;
    if(shouldPunchFloor){
     m.lastPunchY=currY;
     const punchRad=Math.min(3.8,Math.max(1.4,sz*(m.kind==='iron'?0.42:0.52)));
@@ -6451,7 +6411,6 @@ if(m.grounded){
       isHeavyIron:m.kind==='iron',
       isMassive:!!(m.isMassive||sz>=3.8)
      });
-     neighborhood.city.impact(neighborhood.school,m.mesh.position,punchRad,0.28);
     }else if(b){
      northBroadModels.impact(m.mesh.position,punchRad,0.38);
     }
@@ -6466,9 +6425,12 @@ if(m.grounded){
    }
 
    if(isSchool){
-    schoolDamage=Math.min(0.98,schoolDamage+stepDmg);
-    hp=Math.max(2,Math.round((1-schoolDamage)*100));
-    syncStructuralDamage();updateHud();
+    if(stepDmg>0){
+     schoolDamage=Math.min(1,schoolDamage+stepDmg);
+     hp=schoolDamage>=1?0:Math.max(1,Math.round((1-schoolDamage)*100));
+     syncStructuralDamage();updateHud();
+     if(hp===0){gameOver();break;}
+    }
    }else if(b){
     b.damage=Math.min(1.0,(b.damage||0)+stepDmg);
     if(b.damage>=0.95){
@@ -6505,7 +6467,7 @@ if(m.grounded){
    }
 
    // Check if meteor reached its crunch stopping depth
-   if(currY<=(m.crunchStopY||0.6)){
+   if(currY<=stopY){
     m.crunching=false;
     m.crunched=true;
     m.mesh.position.y=(m.crunchStopY!==undefined&&m.crunchStopY<0)?m.crunchStopY:Math.max(0.4,m.crunchStopY||0.6);
@@ -6595,14 +6557,16 @@ if(m.grounded){
   }
 
   // Roof breach triggers progressive crunching through the building
-  if(sweepHit&&!m.dragonHunter&&!m.boss&&!m.opening&&m.mesh.position.y>1.2){
+  if(sweepHit&&hitSchool&&elapsed<schoolShieldUntil){groundFireball(sweepHit.x,sweepHit.y,sweepHit.z,m.size);remove(meteors,i);continue;}
+  if(sweepHit&&!m.harmless&&(m.size??1)>=1.35&&!m.dragonHunter&&!m.boss&&!m.opening&&m.mesh.position.y>1.2){
    m.crunching=true;
    m.crunchBuilding=hitBuilding||(hitSchool?neighborhood.school:null);
    m.crunchStartY=m.mesh.position.y;
    const sz=m.size||1;
    const maxMeteorDmg=hitSchool
-    ? (sz>=8.0?0.22:(sz>=4.5?0.08:(sz>=3.0?0.05:(sz>=1.8?0.025:0.012))))
+    ? schoolMeteorBudget(sz)
     : (sz>=8.0?1.0:(sz>=4.5?0.85:(sz>=3.0?0.50:(sz>=1.8?0.25:0.10))));
+   m.crunchMaxBudget=maxMeteorDmg;
    m.crunchDamageBudget=maxMeteorDmg;
    m.crunchDamageDealt=0;
    m.lastPunchY=m.mesh.position.y;
@@ -6617,7 +6581,9 @@ if(m.grounded){
     // Big / heavy iron / massive / colossal meteors crunch all the way through into basement!
     m.crunchStopY=(hitSchool||(hitBuilding&&hitBuilding.h>10))?-0.8:0.4;
    }
-   m.vel.set(m.vel.x*0.15,-16.0,m.vel.z*0.15);
+   // Keep penetration within its original building footprint.
+   m.crunchStopY=Math.min(m.crunchStopY,m.crunchStartY-.01);
+   m.vel.set(0,-16.0,0);
    neighborhood.roofBreach(m.mesh.position.x,m.mesh.position.y,m.mesh.position.z,Math.max(1.5,sz*1.4));
    cinematicFX.burst(m.mesh.position,Math.max(0.4,sz*0.7));
    sound('impact',{x:m.mesh.position.x});
