@@ -204,4 +204,35 @@ test('Exposed interior geometry is floor-specific and conservatively footprint-c
  assert.equal(api.exposeInterior(building,{y:4.5},1),1);assert.equal(writes.length,1);assert.equal(writes[0],building.parts[0]);
  assert.equal(api.exposeInterior(building,{y:4.5},1),0);assert.equal(writes.length,1);
 });
+test('Landmark-aware interior profiles preserve open assembly spaces and school exception',()=>{
+ const {interiorProfile,interiorFurnishings}=load('src/simulation/interior-profiles.js',{},['interiorProfile','interiorFurnishings']);
+ const expected={'1005656':'worship','1000951':'worship','district-5':'worship','district-29':'assembly','1005655':'restaurant','1003022':'retail','1073318':'retail','district-1':'residence-hall'};
+ for(const [id,kind] of Object.entries(expected)){
+  const b=list.find(p=>p.id===id);assert.ok(b);
+  const profile=interiorProfile(b);assert.equal(profile.kind,kind);
+  if(['worship','assembly','restaurant'].includes(kind)||['1003022','1073318'].includes(id))assert.equal(profile.stories,1);
+  assert.ok(interiorFurnishings(b,profile).length>0);
+ }
+ const school=interiorProfile({school:true,h:28,stories:5});
+ assert.equal(school.kind,'school-source');assert.equal(school.requiresSourceVerification,true);
+ assert.equal(interiorFurnishings({school:true,w:27,d:58.8,h:28},school).length,0);
+});
+test('All 122 mapped parcels have interior profiles and conservative furnishing placement',()=>{
+ const {interiorProfile,interiorFurnishings}=load('src/simulation/interior-profiles.js',{},['interiorProfile','interiorFurnishings']);
+ const structural=read('src/rendering/structural-city.js');
+ const a=structural.indexOf(' function interiorFitsParcel('),b=structural.indexOf(' function exposeInterior(',a);
+ const fits=new Function('containsParcel',structural.slice(a,b)+'return interiorFitsParcel;')(parcels.containsParcel);
+ let total=0,worship=0,assembly=0;
+ for(const p of list){
+  const profile=interiorProfile(p);assert.ok(profile.kind&&profile.stories>0);
+  const plan=interiorFurnishings(p,profile);
+  const placed=plan.filter(q=>q.y-q.h/2>=0&&q.y+q.h/2<=p.h&&fits(p,{original:{position:{x:q.x,y:q.y,z:q.z},size:{x:q.w,y:q.h,z:q.d}}}));
+  assert.ok(placed.every(q=>q.w>0&&q.h>0&&q.d>0));
+  total+=placed.length;
+  if(profile.kind==='worship'){worship++;assert.equal(profile.stories,1);assert.ok(placed.length>0);}
+  if(profile.kind==='assembly'){assembly++;assert.equal(profile.stories,1);assert.ok(placed.length>0);}
+ }
+ assert.equal(list.length,122);assert.equal(worship,3);assert.equal(assembly,1);assert.ok(total>1000);
+ console.log('  Accepted interior furnishings: '+total);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
