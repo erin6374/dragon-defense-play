@@ -559,7 +559,7 @@ function updateFires(dt){
     bldg.damage=Math.max(bldg.damage||0,bldg.fireDamage);
     // Periodically weaken and detach localized structural parts
     if(Math.random()<0.38){
-     neighborhood.city.impact(bldg,f.root.position,2.8,0.24);
+     northBroadModels.impactBuilding(bldg.id,f.root.position,2.8,0.24);
      debrisPiece(f.root.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.6,-0.5,(Math.random()-.5)*1.6)),Math.random()<0.3?'glass':'brick',f.root.position);
     }
     // RC167: Radiative heat transfer between adjacent burning buildings within 12m radius
