@@ -32,6 +32,7 @@ export function createViewerCityModels(scene,city) {
     }
     entry.damage=damage;
     entry.model.visible=damage<.97;
+    if(!entry.model.visible)clearImpactMask(entry);
   }
   function update() {
     for(const e of entries)if(e.damage!==e.targetBuilding.damage)apply(e,e.targetBuilding.damage);
