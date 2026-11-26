@@ -685,8 +685,11 @@ function clearFires(){for(const f of schoolFire)fireGroup.remove(f.root);schoolF
 const schoolFragments=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshStandardMaterial({color:0x8c7770,roughness:1,flatShading:true}),240);
 schoolFragments.count=0;schoolFragments.frustumCulled=false;scene.add(schoolFragments);
 const schoolChunkMatrix=new THREE.Matrix4(),schoolChunkPos=new THREE.Vector3(),schoolChunkScale=new THREE.Vector3(),schoolChunkQuaternion=new THREE.Quaternion();
+let previousSchoolFragmentStages=-1;
 function updateSchoolFragments(){
  const stages=Math.min(6,Math.floor(schoolDamage*5.99));
+ if(stages===previousSchoolFragmentStages&&schoolFragments.count===stages*35)return;
+ previousSchoolFragmentStages=stages;
  let n=0;const x0=schoolBounds.min.x,x1=schoolBounds.max.x,z0=schoolBounds.min.z,z1=schoolBounds.max.z;
  for(let level=0;level<stages;level++)for(let i=0;i<35;i++){
   const a=Math.sin((i+level*71)*78.233)*43758.54,r=a-Math.floor(a);
@@ -6450,7 +6453,9 @@ if(m.grounded){
    }
 
    // Shards giving way directly beneath the meteor as it crunches through
-   const shardCount=Math.min(4,Math.max(1,Math.round((m.size||1)*1.2)));
+   m.crunchShardClock=(m.crunchShardClock??0)-dt;
+   const shardCount=m.crunchShardClock<=0?Math.min(4,Math.max(1,Math.round((m.size||1)*1.2))):0;
+   if(shardCount)m.crunchShardClock=.10;
    for(let s=0;s<shardCount;s++){
     const shardPos=m.mesh.position.clone().add(new THREE.Vector3(
      (Math.random()-.5)*(m.size||1)*0.7,
@@ -6576,6 +6581,7 @@ if(m.grounded){
    m.crunchMaxBudget=maxMeteorDmg;
    m.crunchDamageBudget=maxMeteorDmg;
    m.crunchDamageDealt=0;
+   m.crunchShardClock=0;
    m.lastPunchY=m.mesh.position.y;
    const roofY=hitBuilding?hitBuilding.h:(hitSchool?schoolBounds.max.y:m.mesh.position.y);
    if(sz<1.8&&!m.isMassive&&m.kind!=='iron'){
