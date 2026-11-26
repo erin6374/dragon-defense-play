@@ -10,7 +10,7 @@ import {DEFENSE_REAR_Z,projectDefensePoint} from './simulation/defense-zone.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConfig,MAX_PLAYABLE_METEORS} from './simulation/fireball-balance.js';
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
-import {occupiesCrossStreet,CROSS_STREET_X,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
+import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
 import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
@@ -1355,12 +1355,7 @@ function updateSkylineDamage(dt){
 // Four-lane traffic; red lights hold civilian vehicles, responders bypass signals.
 let trafficLightRed=false;
 const trafficSignals=[];const trafficGreen=new THREE.MeshBasicMaterial({color:0x22ed62}),trafficRed=new THREE.MeshBasicMaterial({color:0xf34135}),trafficOff=new THREE.MeshBasicMaterial({color:0x222a30});
-const CROSS_STREET_CONFIG=[
- {name:'W YORK ST',x:-167},
- {name:'W DAUPHIN ST',x:-98},
- {name:'W SUSQUEHANNA AVE',x:70},
- {name:'W DIAMOND ST',x:245}
-];
+const CROSS_STREET_CONFIG=CROSS_STREETS;
 const streetSignBladeMaterial=(text)=>{
  const canvas=document.createElement('canvas');canvas.width=384;canvas.height=96;
  const ctx=canvas.getContext('2d');
@@ -1374,14 +1369,14 @@ const streetSignBladeMaterial=(text)=>{
 const broadSignMat=streetSignBladeMaterial('N BROAD ST');
 for(const street of CROSS_STREET_CONFIG){
  const streetSignMat=streetSignBladeMaterial(street.name);
- for(const sx of [-7.8, 7.8]){
+ for(const sx of [-street.roadHalfWidth-1.5,street.roadHalfWidth+1.5]){
   const px=street.x+sx;
-  for(const z of [12.5,35.7]){
+  for(const z of [4,29]){
    const pole=block(scene,px,3.2,z,.23,6.4,.23,material(0x34383c));
    const housing=block(scene,px,6.2,z,.75,1.65,.75,material(0x191c22));
    const red=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficOff),green=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),trafficGreen);
    red.position.set(px,6.55,z+.42);green.position.set(px,5.95,z+.42);scene.add(red,green);trafficSignals.push({red,green});
-   if(z===12.5){
+   if(z===4){
     const crossBlade=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.58),streetSignMat);
     crossBlade.position.set(px,5.35,z+.18);scene.add(crossBlade);
     const broadBlade=new THREE.Mesh(new THREE.PlaneGeometry(2.1,.58),broadSignMat);
@@ -1472,7 +1467,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  if(!emergency&&forcedLaneZ===null&&Math.random()<.1){
   crossStreet=true;
   crossDir=Math.random()<.5?1:-1;
-  laneZ=crossDir>0?-32:40;
+  laneZ=crossDir>0?-2:34;
  }
  const streetScale=backgroundStreet?.52:(midgroundStreet?.66:(rearStreet?.82:1.0));
  const spawnDist=260+Math.random()*40;
@@ -1502,7 +1497,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  }
  beacon=root.userData.vehicleBeacon||null;
  const isCorridor=!emergency&&!rearStreet&&!midgroundStreet&&!backgroundStreet&&!crossStreet;
- const turnAt=isCorridor&&Math.random()<.25?(dir>0?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:[245,70,-98,-167][Math.floor(Math.random()*4)]):null;
+ const turnAt=isCorridor&&Math.random()<.25?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:null;
  const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
  cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
  if(bike&&!scooter&&wave<=10&&cars.length<carCap-2&&Math.random()<.68&&forcedX===null){
@@ -1548,7 +1543,7 @@ function animateVehicleSteering(car,dt){
 }
 function curvedIntersectionPath(car){
  const x=car.root.position.x,y=car.root.position.y,z=car.root.position.z;
- const endZ=z>23?51:7,sign=Math.sign(endZ-z)||1,span=Math.abs(endZ-z);
+ const endZ=z>BROAD_CENTER?34:-2,sign=Math.sign(endZ-z)||1;
  const endX=car.turnAt+car.dir*5;
  // Cubic approach: initial tangent faces down the road, the exit tangent
  // faces across it. Sampled once when the car enters the intersection.
@@ -1561,10 +1556,10 @@ function updateVehicleRoute(car,dt){if(car.burning)return true;
  if(car.crossStreet){
   car.root.position.z+=car.crossDir*dt*car.speed;
   car.root.rotation.y=car.crossDir<0?-Math.PI/2:Math.PI/2;
-  if(car.crossDir<0?car.root.position.z<-135:car.root.position.z>135){recycleCar(car);car.life=0;}
+  if(car.crossDir<0?car.root.position.z<-2:car.root.position.z>34){recycleCar(car);car.life=0;}
   return true;
  }
- if(car.turnPath?.length){const target=car.turnPath[0],delta=target.clone().sub(car.root.position);const distance=delta.length();if(distance<.75){car.turnPath.shift();if(!car.turnPath.length){car.crossStreet=true;car.turning=false;car.turnPath=null;car.turnAt=null;car.crossDir=car.root.position.z>23?1:-1;car.speed=Math.max(car.speed,6.0);car.root.rotation.y=car.crossDir<0?-Math.PI/2:Math.PI/2;return true;}}else{vehicleYawTowards(car,Math.atan2(-delta.z,delta.x),dt);car.root.position.addScaledVector(delta,Math.min(distance,dt*car.speed)/distance);}return true;}
+ if(car.turnPath?.length){const target=car.turnPath[0],delta=target.clone().sub(car.root.position);const distance=delta.length();if(distance<.75){car.turnPath.shift();if(!car.turnPath.length){car.crossStreet=true;car.turning=false;car.turnPath=null;car.turnAt=null;car.crossDir=car.root.position.z>BROAD_CENTER?1:-1;car.speed=Math.max(car.speed,6.0);car.root.rotation.y=car.crossDir<0?-Math.PI/2:Math.PI/2;return true;}}else{vehicleYawTowards(car,Math.atan2(-delta.z,delta.x),dt);car.root.position.addScaledVector(delta,Math.min(distance,dt*car.speed)/distance);}return true;}
  if(car.turnAt!==null&&!car.turning&&(car.turnAt-car.root.position.x)*car.dir<1.6&&(car.turnAt-car.root.position.x)*car.dir> -2){
   if((wave>=6||hp<75)&&!car.emergency&&!car.police){car.turnAt=null;return false;}
   car.turning=true;car.turnPath=curvedIntersectionPath(car);return true;
@@ -1681,7 +1676,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const obstruction=craters.find(q=>q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
-   if(obstruction){
+   if(obstruction&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
     c.hazardLights=true;
     c.evadingCrater=true;
     if(!c.hasSkidded){
@@ -1689,17 +1684,16 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
      sound('skid',{volume:0.32,pitch:1.15});
      c.speed=Math.max(1.8,c.speed*0.52);
     }
-    const lateralShift=(obstruction.z>=c.root.position.z)?-(obstruction.radius+2.4):(obstruction.radius+2.4);
-    const targetEvadeZ=THREE.MathUtils.clamp(obstruction.z+lateralShift,8.5,24.5);
-    c.laneZ=targetEvadeZ;
+    // No free lateral steering across opposing lanes. The gap-checked
+    // lane planner below chooses the only allowed detour.
     c.overtakeUntil=elapsed+5.0;
-   }else if(c.evadingCrater){
+   }else if(c.evadingCrater&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
     c.evadingCrater=false;
     c.hasSkidded=false;
     c.laneZ=c.dir>0?BROAD_LANES[1]:BROAD_LANES[2];
     c.hazardLights=false;
    }
-  if(obstruction){
+  if(obstruction&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
    c.hazardLights=true;
    if(!c.rearStreet&&!c.emergency){
     const detour=choosePassingLane(c,cars,craters,{allowWithoutLeader:true});
@@ -1708,7 +1702,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
     }
    }
   }
-  if(Math.abs(c.root.position.z-c.laneZ)>0.05){
+  if(!c.crossStreet&&!c.turnPath?.length&&Math.abs(c.root.position.z-c.laneZ)>0.05){
    const latError=c.laneZ-c.root.position.z;
    const steerRate=obstruction?4.2:2.4;
    c.root.position.z+=Math.sign(latError)*Math.min(Math.abs(latError),dt*steerRate);
@@ -1722,17 +1716,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
   const hazardOn=c.hazardLights&&(Math.sin(elapsed*16.0)>0);
   for(const lamp of c.root.userData.brakes||[])lamp.material=(c.braking||hazardOn)?c.root.userData.tailBright:c.root.userData.tailDim;
-  if(blockedAhead&&c.speed<0.25&&!c.emergency&&!c.rearStreet){
-   c.blockedTimer=(c.blockedTimer||0)+dt;
-   if(c.blockedTimer>2.2&&!c.turningAround){
-    c.turningAround=true;
-    c.dir=-c.dir;
-    c.root.rotation.y+=Math.PI;
-    c.laneZ=c.dir>0?BROAD_LANES[0]:BROAD_LANES[3];
-    c.blockedTimer=0;
-    c.overtakeUntil=elapsed+7.0;
-   }
-  }
+  // A fully obstructed road stops traffic rather than making unsafe U-turns.
   if(!c.emergency&&!c.rearStreet&&!c.turnPath?.length&&!c.routing&&c.stun===0&&!(c.windSettle>0)&&!chapterSettlement.active&&!obstruction){
    const passing=choosePassingLane(c,cars,craters);
    if(passing!==null&&elapsed>=(c.overtakeUntil||0)){
@@ -1754,7 +1738,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
       if(passing!==null)c.laneZ=passing;
      }
     }
-    if(Math.abs(c.root.position.x-other.root.position.x)<4.6&&absLat<2.3){
+    if(!c.crossStreet&&!c.turnPath?.length&&Math.abs(c.root.position.x-other.root.position.x)<4.6&&absLat<2.3){
      const steerNudge=latDiff>=0?1.2:-1.2;
      c.root.position.z+=steerNudge*dt*2.5;
      c.steerAngle=(c.steerAngle||0)+steerNudge*0.12;
@@ -1764,16 +1748,15 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
      }
     }
    }
-   if(!c.crossStreet){
-    if(c.laneZ>-20){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,8.5,24.5);}
+   if(!c.crossStreet&&!c.turnPath?.length){
+    if(c.laneZ>-20){const lanes=c.dir>0?BROAD_LANES.slice(0,2):BROAD_LANES.slice(2);c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,lanes[0]-.6,lanes[1]+.6);}
     else if(c.laneZ===-37){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-39.0,-35.0);}
     else if(c.laneZ===-88){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-90.0,-86.0);}
     else if(c.laneZ===-112){c.root.position.z=THREE.MathUtils.clamp(c.root.position.z,-114.0,-110.0);}
    }
 if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery>0?.18:1);
   if(c.root.userData.ladder)c.root.userData.ladder.rotation.z=THREE.MathUtils.lerp(c.root.userData.ladder.rotation.z,c.serviceStop?.35:0,Math.min(1,dt*.8));
-  if(streetStop<=0&&obstruction&&obstruction.life>0){const laneZ=c.laneZ;c.root.position.z=THREE.MathUtils.lerp(c.root.position.z,laneZ+(c.dir>0?2:-2),Math.min(1,dt*1.2));}
-  else if(!c.turnPath?.length&&!c.crossStreet){const laneZ=c.laneZ;const error=laneZ-c.root.position.z;const lateralStep=Math.min(1,dt*(c.windRecovery>0?.05:c.windSettle>0?.48:1.65));c.root.position.z+=error*lateralStep;vehicleYawTowards(c,(c.dir<0?Math.PI:0)+laneChangeYaw(error,c.dir,c.speed),dt);c.laneChangeTime=(c.laneChangeTime||0)+dt;}
+  if(!c.turnPath?.length&&!c.crossStreet){const laneZ=c.laneZ;const error=laneZ-c.root.position.z;const lateralStep=Math.min(1,dt*(c.windRecovery>0?.05:c.windSettle>0?.48:1.65));c.root.position.z+=error*lateralStep;vehicleYawTowards(c,(c.dir<0?Math.PI:0)+laneChangeYaw(error,c.dir,c.speed),dt);c.laneChangeTime=(c.laneChangeTime||0)+dt;}
   // RC158: Vehicle tire water spray splash when driving through wet asphalt/puddle zones
   if(c.speed>1.5&&c.stun===0){
    for(const cr of craters){
@@ -1820,6 +1803,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
    sound('siren',{x:c.root.position.x,doppler});
    c.blink=0;
   }
+  if(c.recycled){cars.splice(i,1);continue;}
   if(c.life<=0&&!c.turning&&!c.turnPath?.length&&!c.emergency){
    const exitCross=CROSS_STREET_X.find(x=>Math.abs(c.root.position.x-x)<22);
    if(exitCross!==undefined)c.turnAt=exitCross;
@@ -1911,10 +1895,10 @@ function spawnCrowd(forcedX=null,forcedZ=null){
  const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;
  const crowdCap=chapter===1?64:chapter===2?56:48;
  if(crowd.length>=crowdCap&&forcedX===null)return;
- const count=forcedX!==null?1:4;
+ const count=forcedX!==null?1:Math.min(4,crowdCap-crowd.length);
  for(let i=0;i<count;i++){
   const g=buildPerson(THREE,Math.floor(Math.random()*12));scene.add(g);
-  const jaywalker=Math.random()<.18,crossing=i<2||jaywalker,fromFar=Math.random()<.5;
+  const jaywalker=forcedX===null&&Math.random()<.18,crossing=forcedX===null?(i<2||jaywalker):CROSS_STREET_X.some(cx=>Math.abs(cx-forcedX)<.5),fromFar=forcedZ!==null?forcedZ>BROAD_CENTER:Math.random()<.5;
   const isRear=forcedZ!==null&&forcedZ<-20;
   let x,z;
   if(forcedX!==null&&forcedZ!==null){
@@ -3127,7 +3111,7 @@ function updateWorld(dt){
    p.panicDir=p.dx;
    p.panic=Math.max(p.panic||0,3.5);
    p.life=Math.max(p.life,4);
-   if(p.crossing){p.dz=p.g.position.z>24?1:-1;}
+   if(p.crossing){p.dz=p.g.position.z>BROAD_CENTER?1:-1;}
   }
   if(isPanicked){p.walkSpeed=Math.max(p.walkSpeed,6.2);}
   if(advancePedestrianWind(p,dt)){animatePerson(p.g,p.walkCycle||0,false,false);}
@@ -3135,7 +3119,7 @@ function updateWorld(dt){
   else{
    if(p.crossing){
     if(trafficLightRed||p.jaywalker||isPanicked||(isBroadRoad(p.g.position.x,p.g.position.z)))p.g.position.z+=p.dz*dt*(isPanicked?5.8:p.walkSpeed);
-    if(p.g.position.z>46||p.g.position.z<7)p.life=0;
+    if((p.dz>0&&p.g.position.z>=29)||(p.dz<0&&p.g.position.z<=4))p.life=0;
    }else{
     p.g.position.x+=(p.panic>0?p.panicDir:p.dx)*dt*(isPanicked?p.walkSpeed:2+Math.sin(elapsed+p.phase));
    }
