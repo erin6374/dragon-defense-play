@@ -879,7 +879,8 @@ function loadActualSchoolOverlay(){
    const size=box.getSize(new THREE.Vector3());
    actualSchoolOverlay=central.model;actualSchoolOverlayReady=true;
    actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.batches,
-    inputTriangles:central.inputTriangles,sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy'},
+    inputTriangles:central.inputTriangles,outputTriangles:central.outputTriangles,
+    sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy',spatialRegions:central.spatialRegions,largestBatchVertices:central.largestBatchVertices,triangleCountPreserved:central.inputTriangles===central.outputTriangles},
     visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:size.toArray()},
     calibration:{...placement,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
