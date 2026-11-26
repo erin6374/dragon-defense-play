@@ -11,6 +11,14 @@ export class InstancedParticlePool {
   const t=this.temp;t.position.copy(position);t.rotation.set(0,rotation,0);t.scale.setScalar(scale);t.updateMatrix();
   this.mesh.setMatrixAt(this.count++,t.matrix);return true;
  }
- end(){this.mesh.count=this.count;if(this.count)this.mesh.instanceMatrix.needsUpdate=true;}
+ end(){
+  this.mesh.count=this.count;
+  if(!this.count)return;
+  const matrix=this.mesh.instanceMatrix;
+  if(typeof matrix.addUpdateRange==='function'&&typeof matrix.clearUpdateRanges==='function'){
+   matrix.clearUpdateRanges();matrix.addUpdateRange(0,this.count*16);
+  }
+  matrix.needsUpdate=true;
+ }
  clear(){this.count=0;this.mesh.count=0;}
 }
