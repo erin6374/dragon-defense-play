@@ -2281,7 +2281,7 @@ function addCrater(x,z,radius=3,opts={}){
  const isSubwayBreach=!opts.waterOnly&&isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
  const hasWater=!!opts.waterOnly||isSubwayBreach||(isBroadStreetCorridor&&radius>=3.2);
  // Reuse overlapping road cavities and cap detailed subway scenes before allocating meshes.
- const existing=craters.find(c=>c.isSubway===isSubwayBreach&&!!c.geyserGroup===hasWater&&Math.hypot(c.x-x,c.z-z)<Math.min(c.radius,radius)*.65&&c.radius>=radius*.9);
+ const existing=craters.find(c=>c.isSubway===isSubwayBreach&&!!c.waterOnly===!!opts.waterOnly&&!!c.geyserGroup===hasWater&&Math.hypot(c.x-x,c.z-z)<Math.min(c.radius,radius)*.65&&c.radius>=radius*.9);
  if(existing){existing.life=existing.initialLife;return existing;}
  if(isSubwayBreach&&craters.filter(c=>c.isSubway).length>=2){
   const index=craters.findIndex(c=>c.isSubway);
