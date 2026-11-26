@@ -2254,8 +2254,7 @@ function disposeCrater(c){
  if(!c)return;
  if(c.mesh){scene.remove(c.mesh);c.mesh.geometry?.dispose();c.mesh.material?.dispose();}
  if(c.inner){scene.remove(c.inner);c.inner.geometry?.dispose();c.inner.material?.dispose();}
- if(c.thermalUpdate)c.thermalUpdate(elapsed);
- if(c.ember){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
+ if(c.ember&&!c.thermalGroup){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
  if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
  if(c.sootDecal){scene.remove(c.sootDecal);c.sootDecal.geometry?.dispose();c.sootDecal.material?.dispose();}
@@ -2279,16 +2278,17 @@ function addCrater(x,z,radius=3,opts={}){
  const isTitanic=opts.isTitanic||mSzVal>=9.0;
  const isColossal=opts.isMassive||mSzVal>=4.5||radius>=4.0;
  const isTitanicOrExtinction=isExtinction||isTitanic;
- const isSubwayBreach=isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
+ const isSubwayBreach=!opts.waterOnly&&isBroadStreetCorridor&&(isTitanicOrExtinction||isColossal||opts.isSubway||radius>=2.8);
+ const hasWater=!!opts.waterOnly||isSubwayBreach||(isBroadStreetCorridor&&radius>=3.2);
  // Reuse overlapping road cavities and cap detailed subway scenes before allocating meshes.
- const existing=craters.find(c=>c.isSubway===isSubwayBreach&&Math.hypot(c.x-x,c.z-z)<Math.min(c.radius,radius)*.65&&c.radius>=radius*.9);
+ const existing=craters.find(c=>c.isSubway===isSubwayBreach&&!!c.geyserGroup===hasWater&&Math.hypot(c.x-x,c.z-z)<Math.min(c.radius,radius)*.65&&c.radius>=radius*.9);
  if(existing){existing.life=existing.initialLife;return existing;}
  if(isSubwayBreach&&craters.filter(c=>c.isSubway).length>=2){
   const index=craters.findIndex(c=>c.isSubway);
   disposeCrater(craters.splice(index,1)[0]);
  }
 
- let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null;
+ let mesh=null,inner=null,ember=null,rimMesh=null,subwayGroup=null,bowlMesh=null,sootDecal=null,thermalCore=null;
 
  if(isSubwayBreach){
   // 3D BROAD STREET SUBWAY CHASM & CAVERN
@@ -2301,7 +2301,7 @@ function addCrater(x,z,radius=3,opts={}){
   rimMesh=createHeavedAsphaltRim(radius,true);
   rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
-  const sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1));
+  sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1));
   sootDecal.position.set(x,0.03,z);
   scene.add(sootDecal);
 
@@ -2332,6 +2332,7 @@ function addCrater(x,z,radius=3,opts={}){
   const subwayWaterMat=new THREE.MeshStandardMaterial({color:0x0f2330,roughness:0.15,metalness:0.82,transparent:true,opacity:0.82});
   const waterPool=new THREE.Mesh(new THREE.BoxGeometry(W*0.95,0.20,D*0.90),subwayWaterMat);
   waterPool.position.set(0,-H+0.14,0);
+  subwayGroup.userData.floodBaseY=-H;
   waterPool.name='subway-flooded-water';
   subwayGroup.add(waterPool);
 
@@ -2624,7 +2625,7 @@ function addCrater(x,z,radius=3,opts={}){
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
   message('🚇 BROAD STREET SUBWAY BREACH! SEPTA TRAIN CAR & CAVERN COLLAPSED');
- } else {
+ } else if(!opts.waterOnly){
   // TRUE 3D PROCEDURAL VOLUMETRIC IMPACT CAVITY & HEAVED ASPHALT CREST
   const bowlObj=createVolumetricImpactBowl(radius);
   bowlMesh=bowlObj.mesh;
@@ -2637,19 +2638,19 @@ function addCrater(x,z,radius=3,opts={}){
   scene.add(rimMesh);
 
   // Feathered radial scorch decal (zero polygon borders)
-  const sootDecal=createFeatheredRadialSootDecal(radius);
+  sootDecal=createFeatheredRadialSootDecal(radius);
   sootDecal.position.set(x,0.03,z);
   scene.add(sootDecal);
 
   // Pulsating subsurface thermal magma fissure bed
-  const thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth);
+  thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth);
   thermalCore.group.position.set(x,-bowlObj.depth+0.06,z);
   scene.add(thermalCore.group);
   ember=thermalCore.mesh;
  }
 
  let geyserGroup=null;
- if(isSubwayBreach||radius>=3.2){
+ if(hasWater){
   geyserGroup=new THREE.Group();
   geyserGroup.name='water-main-geyser';
   const gx=x+(Math.random()-0.5)*(radius*0.75);
@@ -2693,11 +2694,12 @@ function addCrater(x,z,radius=3,opts={}){
   streetWaterRunoff?.triggerRipple?.(x, z, 1.8);
  }
 
- craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,sootDecal:typeof sootDecal!=='undefined'?sootDecal:null,thermalGroup:typeof thermalCore!=='undefined'?thermalCore?.group:null,thermalUpdate:typeof thermalCore!=='undefined'?thermalCore?.update:null,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
+ craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,sootDecal,thermalGroup:thermalCore?.group??null,thermalUpdate:thermalCore?.update??null,waterOnly:!!opts.waterOnly,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
  streetStop=Math.max(streetStop,1.5);
  sound('steam',{x});
  if(craters.length>8){const c=craters.shift();disposeCrater(c);}
  neighborhood.syncCraterHoles?.(craters);cinematicFX.syncSubwayCraters?.(craters);
+ return craters.at(-1);
 }
 function updateCraters(dt){
  streetStop=Math.max(0,streetStop-dt);
@@ -2731,8 +2733,11 @@ function updateCraters(dt){
   if(c.subwayGroup){
    const floodWater=c.subwayGroup.getObjectByName('subway-flooded-water');
    if(floodWater){
-    c.floodLevel=Math.min(0.68,(c.floodLevel||0.14)+dt*0.022);
-    floodWater.position.y=-5.2+c.floodLevel+Math.sin(elapsed*3.5+c.x*0.3)*0.03;
+    c.floodLevel=Math.min(0.68,(c.floodLevel??0.14)+dt*0.022);
+    const floodY=(c.subwayGroup.userData.floodBaseY??-5.4)+c.floodLevel+Math.sin(elapsed*3.5+c.x*0.3)*0.03;
+    floodWater.position.y=floodY;
+    const secondaryWater=c.subwayGroup.getObjectByName('subway-flood-water-pool');
+    if(secondaryWater)secondaryWater.position.y=floodY-.04;
    }
    // RC166: Animate subterranean waterfall curtains & foaming track bed spray
    const wfN=c.subwayGroup.getObjectByName('subway-waterfall-north');
@@ -2782,11 +2787,11 @@ function updateCraters(dt){
     }
    }
   }
-  if(heatRatio>0.25&&Math.random()<dt*5&&quality.allowTrail(trailParticles.length)){
+  if(!c.waterOnly&&heatRatio>0.25&&Math.random()<dt*5&&quality.allowTrail(trailParticles.length)){
    _craterV1.set(c.x+(Math.random()-.5)*c.radius*.5,0.5,c.z+(Math.random()-.5)*c.radius*.5);
    emitTrail(_craterV1,true);
   }
-  if(c.life>0&&Math.abs(c.x)<25&&c.z>10&&c.z<32){
+  if(!c.waterOnly&&c.life>0&&Math.abs(c.x)<25&&isBroadRoad(c.x,c.z)){
    _craterV1.set(c.x,.35,c.z);
    cinematicFX.fire(_craterV1,elapsed,c.radius*.65,.28,'structure');
   }
@@ -5109,7 +5114,7 @@ function runPresetTitanic(){
 
 function runPresetWaterMain(){
  basementCamActive=false;
- addCrater(0,BROAD_CENTER,4.5,{isSubway:true,size:6.8});
+ addCrater(0,BROAD_CENTER,4.5,{waterOnly:true});
  message('💧 PRESET: MUNICIPAL WATER MAIN RUPTURE ACTIVATED!');
 }
 
@@ -6725,7 +6730,8 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  let targetZoom=freeFlightMode?sandboxZoomLevel:THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
 
 
- const subwayView=subwayCamActive?craters.findLast(c=>c.isSubway):null;
+ const subwayView=subwayCamActive?craters.findLast(c=>c.isSubway&&c.life>0):null;
+ if(subwayCamActive&&!subwayView){subwayCamActive=false;document.getElementById('dd-tb-subway-cam')?.classList.remove('active');}
  if(subwayView){
   camera.position.set(subwayView.x,Math.max(2.5,subwayView.radius*.8),subwayView.z+subwayView.radius*.6);
   camera.lookAt(subwayView.x,-3.2,subwayView.z);
@@ -6913,7 +6919,7 @@ window.__DD_QA={snap,
   triggerBrickDustBurst:(x=0,y=2.0,z=0,p=1.5)=>{cinematicFX.dustBurst(new THREE.Vector3(x,y,z),p,{brick:true});return true;},
   hasAsphaltWaterPuddle:()=>{return craters.some(c=>c.geyserGroup?.getObjectByName('asphalt-water-puddle')||c.subwayGroup?.getObjectByName('subway-flooded-water'));},
   getSubwayFloodLevel:()=>{const c=craters.find(cr=>cr.isSubway);return c?c.floodLevel||0.14:0;},
-   triggerWaterMain:(x=0,z=23.5,r=4.2)=>{addCrater(x,z,r,{isSubway:true,size:6.8});return craters.at(-1);},
+   triggerWaterMain:(x=0,z=BROAD_CENTER,r=4.2)=>addCrater(x,z,r,{waterOnly:true}),
   runPresetConflagration:()=>runPresetConflagration(),
   getGlassDebrisCount:()=>debris.filter(d=>d.type==='glass'||d.isGlass).length,
   getDebrisCount:()=>debris.length,
