@@ -65,6 +65,7 @@ import {schoolFitDimensions} from './rendering/school-fit.js';
 import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMesh,schoolSourceCategory} from './rendering/tech-freire-source-fit.js';
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
+import {createSchoolComponentIndex,sourceComponentMaterial} from './simulation/school-source-impact.js';
 import {createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
 
 import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,createCinematicWeather} from './rendering/cinematic-assets.js';
@@ -785,6 +786,17 @@ function penetrationDamageStep(budget,remaining,startY,stopY,previousY,currentY)
  const descent=Math.max(0,Math.min(previousY,startY)-Math.max(currentY,stopY));
  return Math.min(Math.max(0,remaining),distance>0?budget*descent/distance:0);
 }
+let schoolComponentIndex=null;
+function emitSourceSchoolDebris(point,radius){
+ if(!schoolComponentIndex)return;
+ for(const component of schoolComponentIndex.query(point,radius,3)){
+  const pos=new THREE.Vector3(component.point.x,component.point.y,component.point.z);
+  for(let i=0;i<3;i++){
+   const shard=pos.clone().add(new THREE.Vector3((Math.random()-.5)*.4,(Math.random()-.5)*.4,(Math.random()-.5)*.4));
+   debrisPiece(shard,component.material,point);
+  }
+ }
+}
 function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  // Local physical carving only: never mutate the school health gauge.
  const impactRadius=Math.min(Math.max(.1,r),4.5);
@@ -792,6 +804,7 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  neighborhood.city.impact(neighborhood.school,new THREE.Vector3(x,y,z),impactRadius,impactStrength);
  schoolReconstruction?.impact({x,y,z,radius:impactRadius,strength:impactStrength,type,speed});
  sourceDamage.stamp(x,y,z,impactRadius);
+ if(actualSchoolOverlayReady&&schoolComponentIndex)emitSourceSchoolDebris(new THREE.Vector3(x,y,z),impactRadius);
  const range=schoolBounds.getSize(new THREE.Vector3());
  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
 }
@@ -812,9 +825,15 @@ function loadActualSchoolOverlay(){
    const meshRoles=new WeakMap(),roleMeshCounts={school:0,leftRowhouse:0,rightRowhouse:0,excluded:0};
    const bounds=new THREE.Box3();
    const sourceInteriorAudit={retained:{},excluded:{},sourceVerificationRequired:true};
+   const sourceComponents=[];
+   const fittedPoint=p=>({x:p.x*placement.scale+placement.translation.x,y:p.y*placement.scale+placement.translation.y,z:p.z*placement.scale+placement.translation.z});
    fbx.traverse(mesh=>{if(!mesh.isMesh)return;bounds.setFromObject(mesh);
     const role=classifyArchitecturalMesh(mesh,bounds);
     meshRoles.set(mesh,role);
+    if(role==='school'){
+     const category=schoolSourceCategory(mesh);
+     sourceComponents.push({category,material:sourceComponentMaterial(category,mesh.name||''),min:fittedPoint(bounds.min),max:fittedPoint(bounds.max)});
+    }
     if(role)roleMeshCounts[role]++;else roleMeshCounts.excluded++;
     if(role==='school'||!role&&bounds.min.x>=SCHOOL_SOURCE.keepMinX&&bounds.max.x<=SCHOOL_SOURCE.keepMaxX&&bounds.min.z>=SCHOOL_SOURCE.keepMinZ&&bounds.max.z<=SCHOOL_SOURCE.keepMaxZ){
      const category=schoolSourceCategory(mesh),bucket=role==='school'?sourceInteriorAudit.retained:sourceInteriorAudit.excluded;
@@ -877,10 +896,11 @@ function loadActualSchoolOverlay(){
    scene.add(central.model);
    const box=new THREE.Box3().setFromObject(central.model,true);
    const size=box.getSize(new THREE.Vector3());
+   schoolComponentIndex=createSchoolComponentIndex(sourceComponents);
    actualSchoolOverlay=central.model;actualSchoolOverlayReady=true;
    actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.batches,
     inputTriangles:central.inputTriangles,outputTriangles:central.outputTriangles,
-    sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy',spatialRegions:central.spatialRegions,largestBatchVertices:central.largestBatchVertices,triangleCountPreserved:central.inputTriangles===central.outputTriangles},
+    sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy',spatialRegions:central.spatialRegions,largestBatchVertices:central.largestBatchVertices,triangleCountPreserved:central.inputTriangles===central.outputTriangles,componentIndex:schoolComponentIndex.stats()},
     visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:size.toArray()},
     calibration:{...placement,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
