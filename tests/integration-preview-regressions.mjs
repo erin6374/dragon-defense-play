@@ -235,4 +235,29 @@ test('All 122 mapped parcels have interior profiles and conservative furnishing 
  assert.equal(list.length,122);assert.equal(worship,3);assert.equal(assembly,1);assert.ok(total>1000);
  console.log('  Accepted interior furnishings: '+total);
 });
+test('School source fixtures retained only within the original school zone',()=>{
+ const {schoolSourceCategory,classifyArchitecturalMesh,schoolInteriorSourceEligible}=load('src/rendering/tech-freire-source-fit.js',{},['schoolSourceCategory','classifyArchitecturalMesh','schoolInteriorSourceEligible']);
+ const box={min:{x:0,y:1,z:-10},max:{x:2,y:3,z:-8}};
+ for(const [name,category] of [['Furniture_Desk','furniture'],['Stairs_123','circulation'],['Basic Wall','walls'],['Floor_Slab','floors'],['Structural Column','structure'],['Door_14','doors'],['Lighting_Fixture','lighting'],['Plumbing_Sink','plumbing']])assert.equal(schoolSourceCategory({name}),category);
+ assert.equal(classifyArchitecturalMesh({name:'Furniture_Desk'},box),'school');
+ assert.equal(classifyArchitecturalMesh({name:'Furniture_Desk'},{min:{...box.min,x:49},max:{...box.max,x:51}}),null);
+ assert.equal(schoolInteriorSourceEligible({name:'Furniture_Desk'},{min:{...box.min,x:-29},max:{...box.max,x:46}}),false);
+});
+test('Production FBX batching retains source interiors and suppresses approximate attached geometry',()=>{
+ const batch=read('src/rendering/school-source-batch.js'),proxy=read('src/rendering/destructible-school.js');
+ assert.ok(!/if\s*\(role\s*===\s*['"]interior['"]\)\s*continue/.test(batch));
+ assert.ok(batch.includes('bySurface'));
+ assert.ok(proxy.includes('if(overlayMode&&!p.falling&&!p.resting)continue;'));
+ assert.ok(game.includes("attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy'"));
+});
+test('Spatial batches separate floors and bays without clipping large components',()=>{
+ const {schoolBatchRegion}=load('src/rendering/school-source-batch.js',{},['schoolBatchRegion']);
+ const box=(x,y,z,w=4,h=3,d=4)=>({min:{x,y,z},max:{x:x+w,y:y+h,z:z+d}});
+ assert.equal(schoolBatchRegion('brick',box(0,0,0)),'shell');
+ assert.equal(schoolBatchRegion('interior',box(1,1,1)),schoolBatchRegion('interior',box(6,3,9)));
+ assert.ok(schoolBatchRegion('interior',box(1,1,1))!==schoolBatchRegion('interior',box(1,20,1)));
+ assert.ok(schoolBatchRegion('interior',box(1,1,1))!==schoolBatchRegion('interior',box(1,1,-70)));
+ assert.equal(schoolBatchRegion('interior',box(0,0,0,60,1,60)),'large');
+ assert.equal(schoolBatchRegion('interior',box(0,0,0,-1)),'unbounded');
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
