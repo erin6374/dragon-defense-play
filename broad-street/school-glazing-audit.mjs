@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import * as T from './vendor/three.module.js';
+registerHooks({resolve(s,c,next){return s==='three'?{url:new URL('./vendor/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c)}});
+globalThis.window={innerWidth:1280,innerHeight:720};
+const {FBXLoader}=await import('./vendor/FBXLoader.bundle.mjs');
+const {keepFBXExteriorOnly,ORIGINAL_FBX_SHA256,STREET_VISIBLE_MESH}=await import('./school-original-fbx.mjs');
+const bytes=readFileSync(new URL('./assets/tech-freire-original.fbx',import.meta.url));
+assert.equal(createHash('sha256').update(bytes).digest('hex'),ORIGINAL_FBX_SHA256);
+const root=new FBXLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');root.updateMatrixWorld(true);
+const expected=new Map();root.traverse(o=>{if(o.isMesh&&STREET_VISIBLE_MESH.test(o.name))expected.set(o,{geometry:o.geometry,matrix:o.matrixWorld.elements.slice()})});
+const stats=keepFBXExteriorOnly(root);root.updateMatrixWorld(true);
+let retained=0,glass=0,skylights=0,shutter=0;const thickness=[];const materials=new Set();
+root.traverse(o=>{if(!o.isMesh)return;retained++;const old=expected.get(o);assert.ok(old);assert.equal(o.geometry,old.geometry);assert.deepEqual(o.matrixWorld.elements,old.matrix);assert.ok(o.material.isMeshStandardMaterial);assert.ok(o.material.name.startsWith('school:'));materials.add(o.material.name);
+ const panel=/^System_Panel_Glazed/i.test(o.name);assert.equal(o.material.transparent,panel);if(panel){glass++;assert.equal(o.material.name,'school:curtainGlass');assert.equal(o.material.opacity,.72);assert.equal(o.material.depthWrite,false);assert.equal(o.material.side,T.FrontSide);assert.equal(o.geometry.groups.length,1);const size=new T.Box3().setFromObject(o).getSize(new T.Vector3());const depth=size.y*.3048;assert.ok(Math.abs(depth-.0254)<.0001);thickness.push(depth);}else{assert.equal(o.material.opacity,1);assert.equal(o.material.depthWrite,true);}
+ if(/^Window-skylight-VELUX_/i.test(o.name)){skylights++;assert.equal(o.material.name,'school:skylightAssembly');}if(/^window_opening_with_roll_up/i.test(o.name))shutter++;
+});
+assert.equal(retained,3395);assert.equal(expected.size,retained);assert.equal(stats.excludedMeshes,2182);assert.equal(glass,80);assert.equal(skylights,9);assert.equal(shutter,1);
+console.log(JSON.stringify({pass:true,sourceSha256:ORIGINAL_FBX_SHA256,retained,excluded:stats.excludedMeshes,transparentCurtainPanels:glass,opaqueOtherMeshes:retained-glass,opaqueSkylights:skylights,opaqueShutterAssembly:shutter,materialRoles:materials.size,facadeNormalThicknessMeters:[Math.min(...thickness),Math.max(...thickness)],opacity:.72,scope:'Explicit source-named single-group curtain panels; unchanged geometry and transforms, no verified optical properties or GPU visual test.'},null,2));

@@ -117,6 +117,25 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
   roofBox(64.7,-64.9,1.7,1.9,.18,6.54,0xacaea3);
   // Dining connector/frontage along the actual long street-facing edges.
   edges(broad,(len,f)=>{const n=Math.max(1,Math.floor(len/3.4));for(let j=0;j<n;j++){const t=(j+.5)/n,bay=len/n;f(t,2.35,bay*.89,3.25,0x444948,.09,.40);f(t,2.39,bay*.76,2.88,glass,.29,.20);f(t,2.39,.095,2.88,frame,.43,.12);f(t,3.30,bay*.77,.11,frame,.43,.12);f(t,.56,bay*.92,.38,0xbab2a0,.14,.42);}f(.5,4.52,len-.10,.24,trim,.14,.48);});
+  // November 2023 Temple housing photograph shows the Diamond Club
+  // on the low south wing: dark glazed bays below a red fascia. 2021
+  // Temple announcement establishes the south-side location. Follow the
+  // actual long south GIS edge; exact bay count and dimensions provisional.
+  const clubEdge=(a,b)=>Math.min(a[0],b[0])>R-1&&Math.abs(b[1]-a[1])>20;
+  edges(clubEdge,(len,f)=>{
+   const n=Math.max(1,Math.round(len*.78/3.2)),span=.78,bay=len*span/n;
+   f(.5,2.45,len*span+.24,3.10,0x4c4844,.07,.38);
+   for(let j=0;j<n;j++){
+    const t=.5-span/2+(j+.5)*span/n;
+    f(t,2.45,bay-.13,2.86,0x40545a,.26,.21);
+    f(t,2.45,bay-.13,.085,0x353a3a,.39,.11);
+    f(t-bay/(2*len),2.45,.10,3.04,0x343939,.36,.13);
+   }
+   f(.5+span/2,2.45,.10,3.04,0x343939,.36,.13);
+   f(.5,4.23,len*span+.45,.53,0x9b2335,.23,.68);
+   f(.5,4.55,len*span+.50,.12,0xd1c9b9,.22,.77);
+   f(.5,.76,len*span+.18,.22,0xbdb7a8,.13,.46);
+  });
   return true;
  }
  if(name==='Liacouras Walk Residence Hall'){
@@ -135,8 +154,8 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
     }
     lower.push(b);
    }
-   block([lower,...poly.slice(1)],3.72,0xa99c87);
-   block(poly,height-3.70,0x9a6e50,3.70);
+   block([lower,...poly.slice(1)],3.72,0xa99c87,0,{wallFinish:"residence-brick"});
+   block(poly,height-3.70,0x9a6e50,3.70,{wallFinish:"residence-brick"});
    block(poly,.15,RESIDENCE_ROOF_COLOR,height-.06,{aerialRoof:false});
   }
   // Street-facing sections have brick bands, dark paired glazing and cap panels.
@@ -146,13 +165,29 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
    const n=Math.max(1,Math.round(len/3.6)),floor=height/5;
    for(let k=0;k<n;k++)for(let i=first;i<5;i++){
     const t=(k+.5)/n,y=(i+.54)*floor,w=Math.min(1.95,len/n*.68);
-    f(t,y,w+.18,1.77,0x745d4e,.10,.36);
-    f(t,y,w,1.55,glass,.27,.20);f(t,y,.075,1.55,dark,.36,.09);f(t,y-.83,w+.22,.10,trim,.17,.45);
+    // November 2023 housing photo: dark frames with paired glazing and
+    // a horizontal meeting rail. Retain opening dimensions and locations.
+    f(t,y,w+.18,1.77,0x594a40,.10,.36);
+    f(t,y,w,1.55,glass,.27,.20);f(t,y,.075,1.55,dark,.36,.09);
+    f(t,y,w,.075,dark,.37,.10);
+    f(t,y-.83,w+.22,.10,0x76634f,.17,.45);
+    f(t,y+.80,w+.10,.065,dark,.26,.22);
+    for(const off of [-1,1])f(t+off*w/(2*len),y,.065,1.55,dark,.36,.10);
     if(i===4){f(t,y+.95,w+.45,.35,0xc2b9a7,.08,.28);for(const off of [-.5,.5])f(t+off*w/len,y+.20,.25,2.0,0xc2b9a7,.09,.35);}
    }
    for(let i=1;i<5;i++)f(.5,i*floor,len-.10,.09,0xa78362,.08,.30);
    f(.5,height-.10,len-.08,.22,0xbcb2a0,.09,.38);
   };
+  edges(entryEdge,(len,f)=>{
+   // Pale base and warm soldier-course strip above the entrance canopy,
+   // from the dated Liacouras Walk photograph. Individual brick widths
+   // are illustrative, not measured; backing remains attached.
+   const count=Math.max(1,Math.floor((len-.20)/.095)),pitch=(len-.20)/count;
+   for(const y of [4.12,11.16]){
+    f(.5,y,len-.20,.19,0xa47c5d,.065,.22);
+    for(let j=0;j<count;j++)f(.5+((j+.5)*pitch-(len-.20)/2)/len,y,pitch*.82,.16,[0x946f53,0xa47b5d,0xb08a69][j%3],.16,.12);
+   }
+  });
   edges((a,b)=>!entryEdge(a,b)&&Math.hypot(a[0]-b[0],a[1]-b[1])>5,(len,f)=>residenceWindows(len,f,0));
   edges(entryEdge,(len,f)=>residenceWindows(len,f,1));
   // Overhead tile shows perimeter coping and a run of light exhaust units
@@ -247,7 +282,9 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
    if(!portal)f(.5,.32,len-.08,.55,0xa7a092,.10,.42);
    else for(const [lo,hi] of [[0,.12*len-2.2],[.12*len+2.2,len]])if(hi>lo)f((hi+lo)/(2*len),.32,hi-lo,.55,0xa7a092,.10,.42);
   };
-  edges((a,b)=>!portalEdge(a,b)&&Math.hypot(a[0]-b[0],a[1]-b[1])>7,(len,f)=>stonework(len,f,false));
+  // Mitten Hall: carry existing fieldstone courses around exposed short wall returns.
+  // Keep tiny GIS jogs (<2 m) and the separate recessed portal unchanged.
+  edges((a,b)=>!portalEdge(a,b)&&Math.hypot(a[0]-b[0],a[1]-b[1])>=2,(len,f)=>stonework(len,f,false));
   edges(portalEdge,(len,f)=>stonework(len,f,true));
   const window=(f,t,w,bot,s,peak)=>{
    f(t,(s+bot)/2,w+.6,s-bot,trim,.19,.63);
@@ -257,6 +294,15 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
     f(t,s+u*peak,(w+.6)*k,peak/24+.045,trim,.19,.63);
     f(t,s+u*peak,w*k,peak/24+.035,glass,.39,.27);
    }
+  };
+  // Photo-informed lower sash: preserve opening dimensions and positions.
+  // Pane subdivision is provisional; the 2019 contractor photo shows divided
+  // lower windows and projecting stone sills, not a measured Broad facade.
+  const lowerSash=(f,t,w,y,h,len)=>{
+   const metal=0x989184;
+   for(const q of [-1/6,1/6])f(t+q*w/len,y,.065,h,metal,.445,.10);
+   for(const q of [-1/6,1/6])f(t,y+q*h,w,.065,metal,.445,.10);
+   f(t,y-h/2-.10,w+.30,.15,trim,.28,.65);
   };
   edges(mainEdge,(len,f)=>{
    for(let k=0;k<3;k++){
@@ -270,7 +316,7 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
      f(u,19.95,.91,.55,trim,.27,1.12);
      f(u,3.0,.95,5.8,trim,.35,1.18);
     }
-    for(const q of [-.23,.23]){f(t+q/3,3.7,w*.40,2.55,trim,.13,.43);f(t+q/3,3.7,w*.34,2.30,glass,.30,.22);}
+    for(const q of [-.23,.23]){f(t+q/3,3.7,w*.40,2.55,trim,.13,.43);f(t+q/3,3.7,w*.34,2.30,glass,.30,.22);lowerSash(f,t+q/3,w*.34,3.7,2.30,len);}
    }
   });
   edges((a,b)=>broad(a,b)&&!mainEdge(a,b),(len,f)=>{
@@ -278,7 +324,7 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
    for(let k=0;k<n;k++){
     const t=(k+.5)/n,w=Math.min(2.8,len/n*.62);
     window(f,t,w,8.2,15.8,2.15);
-    if(len<20||Math.abs(t-.12)*len>2.30+w/2){f(t,3.55,w+.35,3.15,trim,.14,.43);f(t,3.55,w,2.86,glass,.30,.24);}
+    if(len<20||Math.abs(t-.12)*len>2.30+w/2){f(t,3.55,w+.35,3.15,trim,.14,.43);f(t,3.55,w,2.86,glass,.30,.24);lowerSash(f,t,w,3.55,2.86,len);}
    }
    // Pointed door surround is rebuilt separately below.
   });
@@ -348,7 +394,7 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
  if(name==='The Shops on Liacouras Walk'){
   // May 2018 / April 2023 Temple photos: west-side historic retail row
   // faces east (negative Z in the mapped coordinate system).
-  mass(height,0x985c45);
+  for(const poly of polys){block(poly,height,0x985c45,0,{wallFinish:"liacouras-brick"});block(poly,.15,0x66686a,height-.06,{aerialRoof:false});}
   // Both retail sections have flat dark roofs and pale perimeter coping.
   roofRim(height,0xb5ac9c);
   if(L>270){
@@ -389,11 +435,21 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
      f(t+q/n,height*.61,bay*.16,1.87,glass,.31,.24);
      f(t+q/n,height*.85,bay*.20,1.75,trim,.14,.44);
      f(t+q/n,height*.85,bay*.16,1.52,glass,.31,.24);
+     // Pale projecting sills and horizontal sash meeting rails seen in 2018 facade photos.
+     for(const [yy,hh] of [[height*.61,1.87],[height*.85,1.52]]){
+      if(yy===height*.61&&k%3===0)continue;
+      f(t+q/n,yy-hh/2-.08,bay*.20+.10,.15,trim,.24,.64);
+      f(t+q/n,yy,bay*.16,.065,0xbdb6a7,.44,.12);
+     }
     }
     // The 2017 Temple photo also documents projecting bays near Mitten Hall.
     if(k%3===0){
      f(t,height*.64,bay*.49,2.8,0xbcb4a4,.22,.88);
-     for(const q of [-.14,.14])f(t+q/n,height*.64,bay*.19,2.20,glass,.64,.18);
+     for(const q of [-.14,.14]){
+      f(t+q/n,height*.64,bay*.19,2.20,glass,.64,.18);
+      f(t+q/n,height*.64,bay*.19,.075,0xbdb6a7,.73,.11);
+     }
+     f(t,height*.64-1.43,bay*.53,.18,trim,.40,.80);
      f(t,height*.79,bay*.56,.24,trim,.22,.94);
     }
     // Layered pale cornice, dentils and repeated rowhouse pilasters.
@@ -408,13 +464,28 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
     f(t,1.05,bay+.04,.15,0xb7b2a6,1.30,2.85);
     // Preserve true open railings. Use the solid raised deck as support;
     // raw depth rather than embedding every rail all the way to the wall.
-    for(const q of [-.48,0,.48])f(t+q/n,1.55,.11,1.10,0x646c69,2.62,.16,false);
-    for(let j=0;j<Math.max(3,Math.round(bay/.17));j++){
-     const nbar=Math.max(3,Math.round(bay/.17)),u=t+((j+.5)/nbar-.5)*.94/n;
-     f(u,1.56,.045,.90,0x737c77,2.62,.065,false);
+    const stairs=k===0||k===n-1, gap=.23, railing=0x646c69;
+    // Split all three rails and their balusters at existing stair access.
+    const spans=stairs?[[-.50,-gap],[gap,.50]]:[[-.50,.50]];
+    for(const [lo,hi] of spans){
+     const qmid=(lo+hi)/2,span=(hi-lo)*bay;
+     const posts=stairs?[lo+.02,hi-.02]:[lo+.02,qmid,hi-.02];
+     for(const q of posts)f(t+q/n,1.55,.11,1.10,railing,2.62,.16,false);
+     const nbar=Math.max(2,Math.round(span/.17));
+     for(let j=0;j<nbar;j++)f(t+(lo+(j+.5)*(hi-lo)/nbar)/n,1.56,.045,.90,0x737c77,2.62,.065,false);
+     for(const y of [1.15,1.55,2.03])f(t+qmid/n,y,span+.025,.10,railing,2.62,.15,false);
     }
-    for(const y of [1.15,1.55,2.03])f(t,y,bay+.04,.10,0x646c69,2.62,.15,false);
-    if(k===0||k===n-1)for(let j=0;j<6;j++){let hh=(j+1)*.17,d=1.80-j*.24;f(t,hh/2,bay*.42,hh,0xa8a79f,2.65+d/2,d+.18,false);}
+    if(stairs){
+     for(let j=0;j<6;j++){let hh=(j+1)*.17,d=1.80-j*.24;f(t,hh/2,bay*.42,hh,0xa8a79f,2.65+d/2,d+.18,false);}
+     // Handrail posts overlap the actual corresponding tread or terrace.
+     for(const side of [-1,1]){
+      const u=t+side*.18/n;
+      for(const [p,base,top] of [[2.60,1.125,2.03],[3.05,1.02,1.93],[3.50,.85,1.76],[4.36,.17,1.08]]){
+       f(u,(base+top)/2-.035,.08,top-base+.10,railing,p,.08,false);
+      }
+      for(const [p0,y0,p1,y1] of [[2.60,2.03,3.05,1.93],[3.05,1.93,3.50,1.76],[3.50,1.76,4.36,1.08]])f.beam(u,y0,p0,u,y1,p1,.075,railing);
+     }
+    }
    }
   });
   // Do not falsely mirror the retail facade onto the service side.
@@ -516,6 +587,41 @@ export function renderSouthDistrict(polys,height,name,{block,box,mesh,T}){
   }
   f(cx,y0-.10,12.2,.37,trim,.38,.95);
   f(cx,y0-.63,11.9,.54,0xb9b09f,.38,.81);
+  // Official TPAC exterior gallery and 2012 close-up: raised stone title
+  // on the band directly beneath the half-rose. Approximate capital strokes
+  // keep the inscription as supported physical geometry.
+  const glyph={
+   T:[[0,1,1,1],[.5,0,.5,1]],
+   H:[[0,0,0,1],[1,0,1,1],[0,.5,1,.5]],
+   E:[[0,0,0,1],[0,1,1,1],[0,.5,.82,.5],[0,0,1,0]],
+   M:[[0,0,0,1],[0,1,.5,.37],[.5,.37,1,1],[1,1,1,0]],
+   P:[[0,0,0,1],[0,1,.80,1],[.80,1,1,.84],[1,.84,1,.66],[1,.66,.80,.52],[.80,.52,0,.52]],
+   L:[[0,1,0,0],[0,0,1,0]]
+  };
+  const title='THE TEMPLE',advance=.88,letterW=.69,letterH=.35;
+  for(let i=0;i<title.length;i++){
+   const strokes=glyph[title[i]];if(!strokes)continue;
+   const left=cx-(title.length*advance-advance+letterW)/2+i*advance;
+   for(const [x0,yA,x1,yB] of strokes){
+    const ax=left+x0*letterW,ay=y0-.805+yA*letterH,bx=left+x1*letterW,by=y0-.805+yB*letterH;
+    const dx=bx-ax,dy=by-ay;
+    const part=mesh(new T.BoxGeometry(Math.hypot(dx,dy)+.06,.065,.17),0xd0c7b6,(ax+bx)/2,(ay+by)/2,face+.79);
+    part.rotation.z=Math.atan2(dy,dx);
+   }
+  }
+  // Slender flanking openings visible in the official exterior gallery.
+  // Preserve central rose and masonry mass. Exact dimensions estimated.
+  for(const side of [-1,1]){
+   const x=cx+side*7.55,bot=11.55,spring=13.52,w=.39;
+   f(x,(bot+spring)/2,w+.24,spring-bot,trim,.36,.70);
+   f(x,(bot+spring)/2,w,spring-bot,glass,.73,.18);
+   for(let j=0;j<8;j++){
+    const t=(j+.5)/8,k=Math.sqrt(1-t*t);
+    f(x,spring+t*w/2,(w+.24)*k,w/16+.03,trim,.36,.70);
+    f(x,spring+t*w/2,w*k,w/16+.022,glass,.73,.18);
+   }
+   f(x,bot-.08,w+.33,.13,trim,.43,.80);
+  }
   // 2022 photo and official exterior gallery: shallow curved upper canopy,
   // stone courses and finial above the central gable.
   f(cx,17.7,13.5,.28,dark,.65,1.85);

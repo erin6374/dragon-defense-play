@@ -55,18 +55,27 @@ export function detail2241(row,layout,{box,mesh,T}){
   }
   // On April 2025 reference, the rear wall is NOT visible; avoid invented
   // side windows and chimneys. Retain the GIS-extruded original mass.
-  for(const o of openings){
-    box(o.x,o.y+o.h/2+.17,z+.015,o.w+.38,.22,.30,stone);
-    box(o.x,o.y-o.h/2-.11,z+.045,o.w+.37,.16,.30,mortar);
-    for(const side of [-1,1])box(o.x+side*(o.w/2+.13),o.y,z+.04,.15,o.h+.21,.15,trim);
-    box(o.x,o.y-.10,z+.08,o.w,.026,.42,ink);
-    box(o.x-.15,o.y,z+.266,.033,o.h*.91,.038,ink);
+  // Address-anchored Bright MLS facade photograph: dark perimeter casing,
+  // pale single-width sash, two visible AC units in the LEFT upper bays.
+  // Relief panes cover the old schematic cross bars, with positive overlap.
+  for(const o of [...openings,...groundOpenings]){
+    const faceZ=edge.z+.46, casing=0x4b4038, sash=0xd1cfc5;
+    box(o.x,o.y,faceZ,o.w+.15,o.h+.17,.23,casing);
+    box(o.x,o.y,faceZ+.105,o.w-.075,o.h-.10,.085,sash);
+    box(o.x,o.y,faceZ+.158,o.w-.19,o.h-.22,.055,glass);
+    box(o.x,o.y-.04,faceZ+.19,o.w-.15,.044,.05,sash);
+    box(o.x,o.y-o.h/2-.10,faceZ-.04,o.w+.26,.12,.24,trim);
+    if(o.floor>0&&o.bay===1){
+      // Photograph shows window units in the top portion, with light trim.
+      const y=o.y+o.h*.30,acW=o.w*.57;
+      box(o.x,y,faceZ+.27,acW,.32,.30,0xd2cfc3);
+      box(o.x,y,faceZ+.427,acW-.095,.235,.045,0x777a76);
+      for(let i=0;i<5;i++)box(o.x,y-.085+i*.042,faceZ+.454,acW-.11,.011,.025,0xbcbdb5);
+    }
   }
-  for(const o of groundOpenings){
-    box(o.x,o.y+o.h/2+.14,z+.06,o.w+.33,.19,.34,stone);
-    box(o.x,o.y-o.h/2-.10,z+.085,o.w+.35,.17,.36,mortar);
-    for(const side of [-1,1])box(o.x+side*(o.w/2+.075),o.y,z+.055,.10,o.h+.11,.22,trim);
-    box(o.x,o.y-.11,z+.11,o.w,.032,.41,ink);
+  // Stone panel seams follow visible head/sill courses rather than a brick grid.
+  for(const o of openings.filter(o=>o.bay===1)){
+    for(const y of [o.y-o.h/2-.25,o.y+o.h/2+.28])box(edge.x,y,edge.z+.223,width-.10,.018,.055,mortar);
   }
   for(const y of [4.06,8.36]){
     box(edge.x,y,z+.01,width+.05,.18,.31,trim);

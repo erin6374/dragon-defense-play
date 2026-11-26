@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+import * as T from './vendor/three.module.js';
+registerHooks({resolve(s,c,next){return s==='three'?{url:new URL('./vendor/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c)}});
+const {makeFrontages}=await import('./mapped-geometry.js');
+const {renderPass15}=await import('./six-building-pass15.mjs');
+const data=JSON.parse(readFileSync(new URL('./mapped-data.json',import.meta.url),'utf8'));
+const row=data.rows.find(r=>String(r.id)==='1536713');assert.ok(row);
+const boxes=[],blocks=[];assert.equal(renderPass15(row,{T,box:(x,y,z,w,h,d,c)=>boxes.push({x,y,z,w,h,d,c}),block:(poly,h,c,base,opts)=>blocks.push({poly,h,c,base,opts})}),true);
+const skin=blocks.filter(b=>b.opts?.wallFinish==='broad-2251-brick');assert.equal(skin.length,1);assert.equal(skin[0].h,4.5);
+const frames=boxes.filter(b=>b.c===0xb8c2c5&&b.h===3.04&&b.w>.1);assert.equal(frames.length,3);
+const panes=boxes.filter(b=>b.c===0x52646a);assert.equal(panes.length,3);
+const transoms=boxes.filter(b=>b.c===0xb8c2c5&&b.y===2.33);assert.equal(transoms.length,3);
+assert.equal(boxes.filter(b=>b.c===0xb64139).length,1);assert.equal(boxes.filter(b=>b.c===0xf1efdf).length,0);
+const scene=new T.Scene();makeFrontages(scene,[row],[],{auditOnly:true});let walls=0;scene.traverse(o=>{if(o.userData.wallFinish!=='broad-2251-brick')return;walls++;assert.equal(o.material.length,2);assert.ok(o.material[1].map.isDataTexture);assert.ok(o.geometry.groups.some(g=>g.materialIndex===1));assert.ok(o.geometry.getAttribute('uv').array.every(Number.isFinite));});assert.equal(walls,1);
+console.log(JSON.stringify({pass:true,address:row.address,brickFrontWalls:walls,glazedBanks:panes.length,transoms:transoms.length,entryDoors:2,displayBanks:1,fireConnection:1,blankSignRemoved:true,scope:'Source callbacks and actual Three.js UV/material creation; photo published 2022, capture date and current condition unverified; not physical glazing, GPU review or survey.'},null,2));

@@ -1,32 +1,26 @@
-# Dragon Defense — Integration Preview 1
+# Dragon Defense — Integration Preview 2
 
-## Play on Windows
+Extract the Windows ZIP and double-click `PLAY-INTEGRATION-PREVIEW.cmd`. The
+launcher uses Python 3 to open the game in your default browser on a free
+loopback port. Leave its window open while playing. Choose **Defend Philadelphia**
+for combat or **Director Sandbox** to inspect the combined scene. The startup
+screen links to the full Broad Street Viewer layout.
 
-Extract the ZIP and double-click `PLAY-INTEGRATION-PREVIEW.cmd`. The launcher
-uses Python 3 to start a loopback server on a free port and opens your default
-browser. Leave its window open while playing. Choose **Defend Philadelphia**
-for combat or **Director Sandbox** for scene inspection.
+## Sources and compatibility
 
-The title screen links to the Broad Street Viewer layout for street and parcel
-comparison. Exact build IDs, upstream archive hashes, and the school FBX hash
-are in `build-info.json`.
-
-## Integration boundaries
-
-- Antigravity RC174 supplies the game, controls, traffic, collision, school
-  reconstruction, shockwave and destruction systems. The school FBX is
-  byte-identical to the original file in the RC174 archive.
-- Nineteen mapped Broad Street buildings use Viewer v21.1.7 visuals fitted
-  to RC174's gameplay parcels. This keeps visual replacements registered with
-  the existing structural components and crossroads. The 2228 N Park Avenue
-  fixture comes from v21.1.13. Its parcel is registered against the Viewer
-  school anchor and replaces overlapping generated rear-row slots.
-- The bundled Viewer shows the full v21.1.7 neighborhood with the original GIS
-  layout, including street alignments outside the combat retrofit. The full
-  road-grid remap and district-wide collision conversion are still open.
-- Later Viewer revisions, including v21.1.32, were available as review images.
-  The matching runnable model source was unavailable for this snapshot.
-- An approximate fit can change a facade's proportions. Park and Broad
-  collisions still use RC174 structural proxies. Detailed mesh-level
-  collision, hardware performance, full-campaign QA, and a native Windows
-  launcher run are open.
+- Antigravity RC174 supplies the game, controls, traffic, physics, school
+  reconstruction, shockwave and destruction systems. The original Tech Freire
+  Revit FBX is byte-identical to the RC174 upload.
+- Broad Street Viewer v21.1.33 supplies 19 Broad Street buildings and 17 Park
+  Avenue buildings, including 2428–2432 N. Park Ave. Broad buildings are fitted
+  to RC174's existing parcels to keep gameplay collision and demolition
+  registered. Park parcels use the Viewer footprint positions translated
+  from the school anchor. Overlapping generated rear-row slots are skipped.
+- The full Viewer remains available for comparison. Existing game roads and
+  traffic lanes were kept, so this is a partial district layout integration.
+  Building collisions use RC174 structural proxies. The complete road-grid
+  conversion, hardware performance, full-campaign QA, and a native Windows
+  launcher run remain open.
+- The Viewer input is a candidate. Its upstream district contact audit
+  timed out. Source commit, archive hash, and the original school FBX hash
+  are recorded in `build-info.json`.

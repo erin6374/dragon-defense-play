@@ -16,7 +16,7 @@ import {openingProfile,openingSurvey,OPENING_SURVEY_VERSION} from './opening-sur
 import {chooseBuiltEvidence} from './chronology-policy-20.mjs';
 const search=new URLSearchParams(location.search);
 const previous=search.has('previous'),review13=search.has('review13'),qaClose=search.has('qaClose'),qaReview=search.has('qaReview'),qaOblique=search.has('qaOblique');
-const {makeFrontages}=await import(previous?'./frontage-before.js':review13?'./mapped-geometry-review13.js':'./mapped-geometry.js?build=v21.1.5');
+const {makeFrontages}=await import(previous?'./frontage-before.js':review13?'./mapped-geometry-review13.js':'./mapped-geometry.js?build=v21.1.33');
 const {rows,streets}=await (async()=>{
  const response=await fetch('./mapped-data.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Municipal footprint snapshot could not load: HTTP '+response.status);

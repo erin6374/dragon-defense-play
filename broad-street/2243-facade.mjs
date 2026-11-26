@@ -27,12 +27,15 @@ export function mass2243(row,{block,box}){
  box(-313.15,(parapet+row.h)/2,-55.8,2.7,row.h-parapet+.10,2.8,0xb3ada3);
  return true;
 }
-export function detail2243(row,layout,{box}){
+export function detail2243(row,layout,{box,block,mesh,T}){
  if(!is2243(row))return {applied:false};
  const {openings,doors,groundOpenings}=layout;
  if(openings.length!==6||doors.length!==2||groundOpenings.length!==1)throw Error('2243 as-built opening inventory mismatch');
  // Continuous backing overlaps clipped mass by 0.18m, spans small GIS seam.
- box(x(.5),parapet/2,face-.07,w,parapet,.25,brick);
+ // The street photograph confirms continuous light brick cladding. Replace
+ // only the existing front backing with its equal-envelope UV-bearing solid.
+ const frontSkin=[[[left,face-.195],[right,face-.195],[right,face+.055],[left,face+.055],[left,face-.195]]];
+ block(frontSkin,parapet,brick,0,{wallFinish:"broad-2243-brick"});
  // Dark center wall panels around the full-height doors, left textured brick.
  box(x(.46),(floors[0]+roof)/2,face+.085,w*.49,roof-floors[0],.12,panel);
  // Each protruding brick is real relief, not a texture or detached plane.
@@ -64,15 +67,31 @@ export function detail2243(row,layout,{box}){
  const canopyL=x(.20),canopyR=x(.83),canopyW=canopyR-canopyL,canopyX=(canopyL+canopyR)/2;
  box(canopyX,parapet-.90,(face-.12+frontZ)/2,canopyW,1.80,frontZ-face+.12,black);
  for(let j=1;j<8;j++)box(canopyL+canopyW*j/8,parapet-.90,frontZ+.002,.015,1.76,.018,0x202327);
- // Ground-level central display window between two glazed pedestrian doors.
+ // Listing photograph shows a glazed light-framed left entry, a central
+ // display window and a separate ivory solid right door. Exact dimensions
+ // are still those of the existing model, not a surveyed photograph.
+ const entryTrim=0xc9c5b6,ivory=0xd9d3c3;
  for(const o of [...groundOpenings,...doors]){
-  box(o.x,o.y,face+.105,o.w+.085,o.h+.085,.14,frame);
-  box(o.x,o.y,face+.183,o.w-.06,o.h-.07,.055,glass);
-  if(o.kind==='door'){
-   box(o.x,o.y+o.h*.39,face+.216,o.w-.04,.05,.045,0xc0beb4);
+  const entry=o.kind==='door',rightDoor=entry&&o.x>x(.5);
+  box(o.x,o.y,face+.105,o.w+.085,o.h+.085,.14,entry?entryTrim:frame);
+  box(o.x,o.y,face+.183,o.w-.06,o.h-.07,.055,rightDoor?ivory:glass);
+  if(entry){
+   box(o.x,o.y+o.h*.39,face+.216,o.w-.04,.05,.045,entryTrim);
    box(o.x+o.w*.34,1.05,face+.216,.045,.15,.045,0xb9bcb9);
+   if(rightDoor){
+    for(const y of [o.y-.65,o.y+.65])box(o.x,y,face+.211,o.w*.67,.43,.035,0xc5beae);
+    const diamond=new T.Shape();diamond.moveTo(0,.14);diamond.lineTo(.13,0);diamond.lineTo(0,-.14);diamond.lineTo(-.13,0);diamond.closePath();
+    mesh(new T.ExtrudeGeometry(diamond,{depth:.04,bevelEnabled:false}),0x504a43,o.x,o.y,face+.195);
+   }else{
+    box(o.x,.26,face+.213,o.w-.07,.23,.045,entryTrim);
+    box(o.x,o.y-.15,face+.215,o.w-.07,.04,.045,entryTrim);
+   }
   }
  }
  box(x(.5),3.02,face+.12,w*.40,.18,.20,0xc1b5a1);
- return {applied:true,candidate:MODERN_2243_CANDIDATE,buildingId:MODERN_2243_GIS_ID,levels:3,openings:6,doorEvidence:'photo-visible',sourceDate:'2022-12',note:'As-built front; published floor heights, inferred GIS-aligned wall and balcony projection; rear unresolved'};
+ // Four small address glyphs attached to the existing stone lintel.
+ const strokes=[[0,.052,.09,.014],[.045,.026,.014,.052],[.045,-.026,.014,.052],[0,-.052,.09,.014],[-.045,-.026,.014,.052],[-.045,.026,.014,.052],[0,0,.09,.014]];
+ const digits={2:[0,1,6,4,3],4:[5,6,1,2],3:[0,1,6,2,3]};
+ [...'2243'].forEach((digit,i)=>{for(const k of digits[digit]){const [dx,dy,ww,hh]=strokes[k];box(x(.5)+(i-1.5)*.18+dx,3.02+dy,face+.225,ww,hh,.065,0x504a43);}});
+ return {applied:true,candidate:MODERN_2243_CANDIDATE,buildingId:MODERN_2243_GIS_ID,levels:3,openings:6,doorEvidence:'photo-visible',sourceDate:'2022-12',note:'As-built front; published floor heights, inferred GIS-aligned wall and balcony projection; white brick and differentiated entries from listing photograph (capture date unconfirmed); rear unresolved'};
 }

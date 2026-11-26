@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+import * as T from './vendor/three.module.js';
+registerHooks({resolve(s,c,next){return s==='three'?{url:new URL('./vendor/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c)}});
+const {makeFrontages}=await import('./mapped-geometry.js');
+const {layout2243,DIM2243,detail2243}=await import('./2243-facade.mjs');
+const data=JSON.parse(readFileSync(new URL('./mapped-data.json',import.meta.url),'utf8'));
+const row=data.rows.find(r=>String(r.id)==='3000277');assert.ok(row);
+const layout=layout2243(row,{}),boxes=[],blocks=[],meshes=[];
+detail2243(row,layout,{T,box:(x,y,z,w,h,d,c)=>boxes.push({x,y,z,w,h,d,c}),block:(poly,h,c,base,opts)=>blocks.push({poly,h,c,base,opts}),mesh:(g,c,x,y,z)=>{meshes.push({g,c,x,y,z});return new T.Mesh(g);}});
+assert.equal(layout.openings.length,6);assert.equal(layout.doors.length,2);assert.equal(layout.groundOpenings.length,1);
+assert.equal(blocks.length,1);const front=blocks[0];assert.equal(front.opts.wallFinish,'broad-2243-brick');assert.equal(front.h,DIM2243.parapet);assert.equal(front.base,0);
+const door=layout.doors.reduce((a,b)=>a.x>b.x?a:b);assert.equal(boxes.filter(b=>b.c===0xd9d3c3&&b.x===door.x&&b.y===door.y).length,1);
+assert.equal(meshes.length,1);assert.equal(meshes[0].x,door.x);assert.equal(meshes[0].g.type,'ExtrudeGeometry');
+const digits=boxes.filter(b=>b.c===0x504a43&&b.y>2.9&&b.y<3.2);assert.equal(digits.length,19);assert.ok(digits.every(b=>b.z-b.d/2<DIM2243.face+.22));
+const scene=new T.Scene();makeFrontages(scene,[row],[],{auditOnly:true});let walls=0;scene.traverse(o=>{if(o.userData.wallFinish!=='broad-2243-brick')return;walls++;assert.equal(o.material.length,2);assert.ok(o.material[1].map.isDataTexture);assert.ok(o.geometry.groups.some(g=>g.materialIndex===1));assert.ok(o.geometry.getAttribute('uv').array.every(Number.isFinite));});assert.equal(walls,1);
+console.log(JSON.stringify({pass:true,address:row.address,brickFrontWalls:walls,upperOpenings:layout.openings.length,groundDoors:layout.doors.length,displayWindows:layout.groundOpenings.length,ivoryDoor:1,diamondRelief:1,addressStrokes:digits.length,scope:'Source callbacks and real Three.js wall material/UV; no GPU test, measured dimensions or exact photographic color certification.'},null,2));

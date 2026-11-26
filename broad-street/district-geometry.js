@@ -7,18 +7,22 @@ import {renderYorkDistrict} from './york-facades.mjs';
 import {indexDistrict,renderSecondaryEdge} from './secondary-contact.mjs';
 import {bostonProfile} from './boston-frontage.mjs';
 import {hasDocumentedBrick} from './boston-masonry.mjs';
+import {hasParkBrick} from './park-masonry.mjs';
 import {renderSecondaryRoof} from './secondary-roofs-review43.mjs';
-export function addDistrict({block,box,tree,mesh,T,audit=null}) {
+export function addDistrict({block,box,tree,mesh,T,audit=null,onlyAddress=null}) {
   const districtIndex=indexDistrict(buildings);
+  if(!onlyAddress){
   box(-165,-.56,-50,1110,.35,165,0xa6a394);
   box(185,-.15,0,370,.2,28,0x535759);
   for(let x=8;x<365;x+=9)box(x,-.025,0,4,.04,.16,0xe3c469);
   for(const [name,[[x,z],[u,v]]] of roads){
     box((x+u)/2,-.11,(z+v)/2,name==='WATTS'?6:10,.17,Math.hypot(u-x,v-z),0x535759,Math.atan2(u-x,v-z));
   }
+  }
   const brick=[0x996e59,0xb39c88,0x9b8477,0xb7afa0];
   const parkMainFacadeDone=new Set();
   for(const [record,[polys,height,name]] of buildings.entries()){
+    if(onlyAddress&&name!==onlyAddress)continue;
     audit?.({type:"record",record,name,polys,height});
     if(renderYorkDistrict(polys,height,name,{block,box,mesh,T}))continue;
     if(renderSouthDistrict(polys,height,name,{block,box,mesh,T}))continue;
@@ -28,7 +32,7 @@ export function addDistrict({block,box,tree,mesh,T,audit=null}) {
       const boston=bostonProfile(poly,name);
       const secondaryEave=renderSecondaryRoof(poly,height,name,{block,box,mesh,T},shade);
       const h=secondaryEave??(twin?5.4:Math.max(2.3,height));
-      if(secondaryEave===null){block(poly,h,shade,0,hasDocumentedBrick(name)?{wallFinish:"boston-brick"}:{});block(poly,.19,boston?.roof??0x797a76,h-.06,{aerialRoof:!boston});}
+      if(secondaryEave===null){block(poly,h,shade,0,hasDocumentedBrick(name)?{wallFinish:"boston-brick"}:hasParkBrick(name,h)?{wallFinish:"park-brick"}:{});block(poly,.19,boston?.roof??0x797a76,h-.06,{aerialRoof:!boston});}
       const wattsHandled=renderWattsTarget(poly,h,name,{block,box,mesh,T,assessments});
       const parkHouse=/^2[234]\d{2} N PARK AVE$/.test(name) && !name.startsWith('2210 ');
       const rearZ=Math.max(...ring.map(point=>point[1]));
@@ -61,7 +65,7 @@ export function addDistrict({block,box,tree,mesh,T,audit=null}) {
       // selected from the full parcel geometry, not from a rear extension.
       if(parkHouse&&!parkMainFacadeDone.has(name)&&PARK_REVIEW_ADDRESSES.includes(name)){
         const plan=parkFacadePlan(polys,h,name,assessments[name]?.number_stories);
-        if(plan){renderParkFrontage(plan,{box});parkMainFacadeDone.add(name);}
+        if(plan){renderParkFrontage(plan,{box,mesh,T});parkMainFacadeDone.add(name);}
       }
       if(twin){
         for(const x of [40.7,89.0]){
@@ -75,6 +79,7 @@ export function addDistrict({block,box,tree,mesh,T,audit=null}) {
       }
     }
   }
+  if(onlyAddress)return;
   audit?.({type:"public-realm"});
   renderWattsYards(buildings,{block,box,mesh,T});
   // The source aerial is the ground surface at y=.10. Construct the

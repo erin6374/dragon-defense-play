@@ -182,6 +182,8 @@ export function openingLayout(row){
  // The adjacent 2241 has a separately photographed elevated entrance and
  // a light rusticated base.  Keep its GIS vertices and opening inventory.
  if(String(row.id)==='1508518'){
+   // Listing facade shows tall single-width sash, not squat divided panes.
+   for(const o of openings)o.h=1.85;
    for(const o of groundOpenings)o.y=2.77;
    for(const d of doors)d.y=2.32;
  }
@@ -210,7 +212,7 @@ export function renderOpeningSurveyFrontage(row,{block,box:rawBox,mesh:rawMesh,T
  if(renderPass14(row,{block,box,mesh,T}))return true;
  if(!p||p.renderMode!=='opening-layout-15'||!edges.length)return false;
  if(String(row.id)==='3000277'){
-  mass2243(row,{block,box});detail2243(row,{profile:p,openings,groundOpenings,doors,edges},{box});
+  mass2243(row,{block,box});detail2243(row,{profile:p,openings,groundOpenings,doors,edges},{box,block,mesh,T});
   return true;
  }
  if(renderPass13(row,{profile:p,openings,groundOpenings,doors,edges},{block,box,mesh,T}))return true;
@@ -222,7 +224,7 @@ export function renderOpeningSurveyFrontage(row,{block,box:rawBox,mesh:rawMesh,T
  const roof=0x565456, trim=0xd1c4ae, dark=0x424b50, glazing=0x53747f;
  // Pass23 exact STL union exposed a face-only roof cap on 2239. Embed
  // that cap by 4 cm while preserving the existing visible top elevation.
- for(const poly of row.polys){block(poly,row.h,wall);const embed=String(row.id)==='1536711'?.04:0;block(poly,.17+embed,roof,row.h-embed)}
+ for(const poly of row.polys){block(poly,row.h,wall,0,String(row.id)==='1542243'?{wallFinish:"broad-2253-brick"}:{});const embed=String(row.id)==='1536711'?.04:0;block(poly,.17+embed,roof,row.h-embed)}
  // Facade-only overlays; the original City of Philadelphia polygon is the
  // entire building mass. These instanced boxes never move polygon vertices.
  const mainEdge=edges.reduce((a,b)=>a.width>=b.width?a:b);

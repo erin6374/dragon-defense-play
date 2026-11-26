@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.1",
-  "build": "combined-preview.1-rc174-bsv21.1.7",
-  "timestamp": "2026-11-26T19:17:16+00:00",
+  "version": "5.5.0-integration.2",
+  "build": "combined-preview.2-rc174-bsv21.1.33",
+  "timestamp": "2026-11-26T19:23:40+00:00",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
@@ -12,14 +12,13 @@
       "sha256": "c2cc8fef189ab2a7e5e6632d4b8e7c166ce90a548d36696f890f016604b97517"
     },
     "architecture": {
-      "version": "21.1.7",
-      "build": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
-      "sha256": "cfbbbc480bba2a8c0706f2a220296870c05dbcb041c87cb8c42ff2e13305622b"
-    },
-    "park2228": {
-      "version": "21.1.13",
-      "sourceCommit": "1145173923c9b54abcefa1391de8f21c8d99812e",
-      "sha256": "1551af3cd391c9c59ff9af300b593b7370c230173a96652f02cfe3ebe3ebe681"
+      "repository": "erin6374/tech-freire-dragon-defense",
+      "branch": "qa-exchange/broad-street",
+      "commit": "605c767ad7a9f1f5406484349866626f96979fbf",
+      "version": "21.1.33",
+      "build": "BSV-21.1.33-20261126-2428-PARK-PORCH-CANDIDATE",
+      "sourceTreeSHA256": "ffbb37cd3109516cac248602c6a5c345e63727ebc91034b2478b5edfbcec8633",
+      "upstreamQA": "incomplete: district-contact audit timed out; geometry is a candidate"
     },
     "schoolFBX": {
       "path": "assets/tech-freire-original.fbx",

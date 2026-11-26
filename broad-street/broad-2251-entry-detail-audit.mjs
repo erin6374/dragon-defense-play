@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {renderPass15} from './six-building-pass15.mjs';
+const {rows}=JSON.parse(readFileSync(new URL('./mapped-data.json',import.meta.url),'utf8'));
+const row=rows.find(r=>String(r.id)==='1536713');assert.ok(row);
+const boxes=[],blocks=[];
+assert.equal(renderPass15(row,{box:(x,y,z,w,h,d,c)=>boxes.push({x,y,z,w,h,d,c}),block:(poly,h,c,base,opts)=>blocks.push({poly,h,c,base,opts})}),true);
+const addr=boxes.filter(b=>b.c===0xe8e7df&&b.h===.12);assert.equal(addr.length,1);
+const addrStrokes=boxes.filter(b=>b.c===0x353737&&b.d===.022);assert.equal(addrStrokes.length,17);
+const fdc=boxes.filter(b=>b.c===0xeae7df&&b.h===.105);assert.equal(fdc.length,1);
+const fdcStrokes=boxes.filter(b=>b.c===0xb02d32&&b.d===.025);assert.equal(fdcStrokes.length,14);
+const kick=boxes.filter(b=>b.c===0xaab5b8&&b.h===.20);assert.equal(kick.length,2);
+const handles=boxes.filter(b=>b.c===0xc4cbcc&&b.h===.27);assert.equal(handles.length,2);
+assert.equal(boxes.filter(b=>b.c===0xb9bcb7&&b.h===.24).length,1);
+assert.equal(boxes.filter(b=>b.c===0xa73737&&b.h===.16).length,1);
+const contained=(a,b)=>Math.abs(a.x-b.x)+a.w/2<=b.w/2+1e-8&&Math.abs(a.y-b.y)+a.h/2<=b.h/2+1e-8;
+const overlap=(a,b)=>['x','y','z'].every((k,i)=>{const d=['w','h','d'][i];return Math.min(a[k]+a[d]/2,b[k]+b[d]/2)-Math.max(a[k]-a[d]/2,b[k]-b[d]/2)>.0001;});
+for(const [strokes,plaque] of [[addrStrokes,addr[0]],[fdcStrokes,fdc[0]]])for(const b of strokes){assert.ok(contained(b,plaque));assert.ok(overlap(b,plaque));}
+const panes=boxes.filter(b=>b.c===0x52646a);assert.equal(panes.length,3);
+for(const b of [...addr,...kick])assert.ok(panes.some(p=>overlap(b,p)));
+assert.equal(blocks.filter(b=>b.opts?.wallFinish==='broad-2251-brick').length,1);
+console.log(JSON.stringify({pass:true,address:row.address,addressStrokes:addrStrokes.length,fdcStrokes:fdcStrokes.length,kickPlates:kick.length,pullHandles:handles.length,intercoms:1,alarms:1,scope:'Address and FDC plaque relief containment/contact, door detail count and glass overlap; approximate dimensions from historical listing photo, not measured or GPU verified.'},null,2));

@@ -76,14 +76,21 @@ export function detail2239(row,layout,{box,mesh,T}) {
     box(fullCenter,y,z-.25,fullWidth-.10,.07,.16,c);
   // Upper windows. The shared source renderer owns their four counted panes;
   // these merely give each opening photographed recessed stonework/headers.
+  // The newer adjacent 2243 listing clearly shows brown/red surrounds
+  // and lighter meeting rails on 2239, not pale projecting lintels.
+  // Keep the existing counted apertures and previously established positions.
   for(const o of openings){
-    box(o.x,o.y+o.h/2+.20,z-.20,o.w+.36,.24,.38,stone);
-    box(o.x,o.y-o.h/2-.10,z-.10,o.w+.34,.17,.43,deepStone);
-    for(const side of [-1,1])
-      box(o.x+side*(o.w/2+.095),o.y,z-.21,.11,o.h+.18,.27,trim);
-    box(o.x,o.y-.03,z+.05,o.w,.035,.09,frame);
-    // Narrow inner mullions remain one architectural sash opening.
-    box(o.x+.12,o.y,z+.06,.033,o.h*.92,.06,frame);
+    const faceZ=o.z+.27, brown=0x765045, pale=0xa69886;
+    box(o.x,o.y,faceZ,o.w+.24,o.h+.22,.25,brown);
+    box(o.x,o.y,faceZ+.126,o.w-.065,o.h-.06,.085,frame);
+    box(o.x,o.y,faceZ+.181,o.w-.16,o.h-.16,.05,glass);
+    box(o.x,o.y-.055,faceZ+.213,o.w-.13,.038,.045,pale);
+    box(o.x,o.y+o.h*.22,faceZ+.213,.031,o.h*.38,.045,pale);
+    box(o.x,o.y-o.h/2-.10,faceZ-.055,o.w+.32,.14,.32,deepStone);
+  }
+  // Shallow ashlar joints in the observed upper spandrels. No new openings.
+  for(const o of openings.filter(o=>o.bay===1)){
+    for(const yy of [o.y-o.h/2-.29,o.y+o.h/2+.30])box(fullCenter,yy,edge.z+.10,fullWidth-.09,.020,.23,0x795e52);
   }
   // Raised first floor. Broadly comparable window scale and recessed grilles.
   for(const o of groundOpenings){

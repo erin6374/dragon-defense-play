@@ -44,22 +44,41 @@ export function keepFBXExteriorOnly(original){
   concrete:new T.MeshStandardMaterial({color:0xb5b2a7,roughness:.86}),
   panel:new T.MeshStandardMaterial({color:0x85928f,metalness:.12,roughness:.65}),
   glazing:new T.MeshStandardMaterial({color:0x405a63,metalness:.16,roughness:.22,side:T.DoubleSide}),
+  // Only explicitly named, separate curtain-wall panels receive transparency.
+  // Approximate tint/opacity; do not infer physical optical properties from FBX.
+  curtainGlass:new T.MeshStandardMaterial({color:0x63838d,metalness:0,roughness:.18,transparent:true,opacity:.72,depthWrite:false,side:T.FrontSide}),
   mullion:new T.MeshStandardMaterial({color:0x6a7b7e,metalness:.48,roughness:.52}),
   roofing:new T.MeshStandardMaterial({color:0x686e70,roughness:.9}),
   frame:new T.MeshStandardMaterial({color:0x53666d,metalness:.25,roughness:.58}),
+  // Explicit provisional display materials for previously unassigned source families.
+  // Assemblies with no material slots are not assumed to be transparent glass.
+  railMetal:new T.MeshStandardMaterial({color:0x657179,metalness:.38,roughness:.52}),
+  grateMetal:new T.MeshStandardMaterial({color:0x777d80,metalness:.40,roughness:.60}),
+  grass:new T.MeshStandardMaterial({color:0x78865e,roughness:.95}),
+  skylightAssembly:new T.MeshStandardMaterial({color:0xb4b8b9,roughness:.65}),
+  neutralAssembly:new T.MeshStandardMaterial({color:0xcccccc,roughness:.80}),
  };
+ for(const [key,material] of Object.entries(mats))material.name=`school:${key}`;
  original.traverse(object=>{
   if(object.isCamera||object.isLight)discard.push(object);
   else if(object.isMesh){
    if(!STREET_VISIBLE_MESH.test(object.name)){excludedMeshes++;discard.push(object);return;}
    retainedMeshes++;object.castShadow=false;object.receiveShadow=false;
    const n=object.name;
-   if(/^System_Panel_Glazed/i.test(n)||/^Window_/i.test(n))object.material=mats.glazing;
+   if(/^System_Panel_Glazed/i.test(n))object.material=mats.curtainGlass;
+   else if(/^Window_/i.test(n))object.material=mats.glazing;
    else if(/^Rectangular_Mullion/i.test(n))object.material=mats.mullion;
    else if(/^System_Panel/i.test(n))object.material=mats.panel;
    else if(/^Basic_Wall/i.test(n))object.material=/Brick|CMU|Party_Wall|Exterior/i.test(n)?mats.brick:mats.concrete;
    else if(/^Basic_Roof|^Roof_|^Floor_5/i.test(n))object.material=mats.roofing;
    else if(/^Door_|^Door-|^Single-Flush|^Fixed_/i.test(n))object.material=mats.frame;
+   else if(/^Railing[_ ]|^Top_Rail|^Handrail[_ ]/i.test(n))object.material=mats.railMetal;
+   else if(/^Floor_Metal/i.test(n))object.material=mats.grateMetal;
+   else if(/^Floor_Grass/i.test(n))object.material=mats.grass;
+   else if(/^Concrete[-_]|^Floor_.*(?:Sidewalk|existing_slab)/i.test(n))object.material=mats.concrete;
+   else if(/^SINGLE_FLUSH_DOOR/i.test(n))object.material=mats.frame;
+   else if(/^Window-skylight-VELUX_/i.test(n))object.material=mats.skylightAssembly;
+   else object.material=mats.neutralAssembly;
   }
  });
  for(const item of discard)item.parent?.remove(item);

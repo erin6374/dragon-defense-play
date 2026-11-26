@@ -1,17 +1,17 @@
 {
   "product": "North Broad Street Viewer",
-  "version": "21.1.7",
-  "revision": 21,
-  "buildId": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
-  "date": "2026-11-25",
+  "version": "21.1.33",
+  "revision": 47,
+  "buildId": "BSV-21.1.33-20261126-2428-PARK-PORCH-CANDIDATE",
+  "date": "2026-11-26",
   "baseEdition": "Review 43 + Park and York + Secondary Contact Candidate",
   "editionsPreviouslyIdentified": [
     "Windows Detail 02-11",
     "Accuracy Review 12-15"
   ],
-  "comment": "Restored landmark-first rendering: McDonald\u2019s model is no longer bypassed by generic sash-window layout; AutoZone sign at documented 2445 N Broad; Berean Church prominent circular five-pointed stained-glass window in street/individual viewer. Preserves original 40 municipal footprint records and v20 60-record evidence audit. All exact signage dimensions remain estimated; actual browser rendered verification pending.",
+  "comment": "Restored landmark-first rendering: McDonald’s model is no longer bypassed by generic sash-window layout; AutoZone sign at documented 2445 N Broad; Berean Church prominent circular five-pointed stained-glass window in street/individual viewer. Preserves original 40 municipal footprint records and v20 60-record evidence audit. All exact signage dimensions remain estimated; actual browser rendered verification pending.",
   "mcdonalds": {
-    "address": "2109\u20132121 N Broad St, Philadelphia, PA",
+    "address": "2109–2121 N Broad St, Philadelphia, PA",
     "gisBuildingId": "1005655",
     "roofHex": "#d2d2c8",
     "fasciaHex": "#c7c8be",
@@ -24,7 +24,7 @@
   },
   "sourceMunicipalGeometry": "unchanged since Review 15",
   "publishedSiteUpdated": false,
-  "status": "UNRELEASED 1940 RESIDENCE ROOF CANDIDATE; browser visual QA pending",
+  "status": "UNRELEASED 2428 PARK PORCH CANDIDATE; workstation visual QA pending",
   "githubPages": {
     "status": "pending initial repository creation",
     "expectedRepository": "erin6374/north-broad-street-viewer",
@@ -117,12 +117,11 @@
     }
   ],
   "qaWorkingCopy": {
-    "status": "UNRELEASED 1940 Residence Hall roof candidate; visual QA pending",
-    "sourceBaseline": "BSV-21.1.6-20261125-BOSTON-MASONRY-CANDIDATE",
-    "qaCandidateId": "BSV-21.1.7-20261125-1940-RESIDENCE-ROOF-CANDIDATE",
-    "note": "Nine pale roof bands and seven added equipment assemblies; original massing and facade preserved."
+    "status": "UNRELEASED PARK PAINTED BRICK CANDIDATE; workstation visual QA pending",
+    "sourceBaseline": "BSV-21.1.22-20261126-PARK-WATTS-MASONRY-CANDIDATE",
+    "qaCandidateId": "BSV-21.1.32-20261126-2430-2432-PARK-AWNING-CANDIDATE",
+    "note": "Photo-era frontage at 2430 and 2432 N. Park Avenue with distinct awnings, cornices and porch steps."
   },
-  "candidateBuiltAt": "2026-11-25T04:44:31-05:00",
   "startupFix": {
     "previousCandidate": "BSV-21.1.0-20261125-SITE-SUPPORT-CANDIDATE",
     "previousSourceSHA256": "6e4633bfbbd4cd2c72abe86624c8b92bd6fc0ff5edb6fdcc9abe362dcf49dd07",
@@ -179,7 +178,477 @@
     "evidence": "../1940-ROOF-EVIDENCE.jpg",
     "bands": 9,
     "equipment": 7,
-    "visualQA": "pending",
+    "visualQA": "v21.1.7 targeted render inspection, evidence 075bd154f38acc34a8cd5f41bd678e6517d1136d; provisionally accepted",
     "builtAt": "2026-11-25T04:44:31-05:00"
+  },
+  "mittenWallReturnsAudit": {
+    "record": 29,
+    "shortEdges": 12,
+    "newInstances": 2665,
+    "source": "Existing GIS and v21.1.7 isolated render; Temple 2021 entrance photo and 2019 contractor masonry photo support fieldstone character; precise short-return material placement inferred",
+    "localAudits": "11/11 passed; only Mitten district record changed",
+    "visualQA": "v21.1.8 provisional acceptance, evidence 2692e966cbbd3f8bdc1b94c7c45138d0d727f4a6; 363/387 unchanged, both changed isolated captures alias same building",
+    "builtAt": "2026-11-25T13:01:02-05:00"
+  },
+  "mittenLowerSashAudit": {
+    "record": 29,
+    "windows": 11,
+    "addedInstances": 55,
+    "source": "https://epguidi.com/uploads/application/images/1000/img_20190626_070914479-2.jpg",
+    "limitation": "2019 contractor photo illustrates lower divided sash and stone sills, not measured Broad elevation; exact pane pattern provisional",
+    "localAuditsPassed": 11,
+    "visualQA": "v21.1.9 provisional acceptance; evidence a91f92162a4922b5865e4b793a49f69c711deec4; 376/387 identical screenshots, 127/127 unrelated isolated views identical",
+    "builtAt": "2026-11-25T13:06:28-05:00"
+  },
+  "tpacFacadeAudit": {
+    "address": "1837-55 N BROAD ST",
+    "source": "https://templeperformingartscenter.org/photogallery/tpac-exterior",
+    "inscriptionSource": "https://templeperformingartscenter.org/about",
+    "inscription": "THE TEMPLE",
+    "addedParts": 69,
+    "flankingOpenings": 2,
+    "limitation": "Photographic features confirmed; typography, opening dimensions and relief approximate; photo capture dates not independently confirmed.",
+    "localAuditsPassed": 11,
+    "visualQA": "v21.1.10 targeted visual acceptance; evidence 2e3ef55c0cf74b7177a021045aaf7fd2eff4441b; 373/387 unchanged, 127/127 unrelated isolated views identical",
+    "builtAt": "2026-11-25T13:12:11-05:00"
+  },
+  "liacourasAccessAudit": {
+    "records": [
+      27,
+      57
+    ],
+    "bays": 20,
+    "stairs": 11,
+    "brickWalls": 2,
+    "source": "https://campusoperations.temple.edu/about-us/executive-leadership (2018-05-01 image); https://admissions.temple.edu/about/campuses (2023-04-25 aerial); https://piattarchitecture.com/projects/liacouras.html (capture date unconfirmed)",
+    "localAuditsPassed": 12,
+    "visualQA": "v21.1.11 oblique captures reviewed and provisionally accepted; evidence 2c38cf0b98cc0c5898e4622318a78478f8a419a3, 363/387 unchanged screenshots",
+    "limitation": "Existing stair positions and opening widths provisional; no survey or accessibility certification; running-bond appearance approximate.",
+    "builtAt": "2026-11-25T13:29:07-05:00"
+  },
+  "residenceFacadeAudit": {
+    "records": [
+      1,
+      63
+    ],
+    "windowFrames": 344,
+    "soldierBricks": 486,
+    "brickWallMaterials": 2,
+    "clubGlazedBays": 7,
+    "clubRedFascias": 1,
+    "localAuditsPassed": 13,
+    "visualQA": "v21.1.12 oblique review provisionally accepted; evidence b798510f5de56bdd076f05c240fd4841b361bebc; 363/387 unchanged; 125/125 unrelated isolated views unchanged",
+    "source": "https://studentaffairs.temple.edu/housing/residence-halls/1940-residence-hall; https://studentaffairs.temple.edu/housing/residence-halls/johnson-hardwick-halls (20231116 photograph filenames); https://now.temple.edu/news/2021-09-01/campus-might-look-little-different-you-last-remembered",
+    "limitation": "Opening counts and exact dimensions and brick finish approximate. Club frontage modeled as relief glazing, not a full interior or verified entrance layout.",
+    "builtAt": "2026-11-25T13:37:44-05:00"
+  },
+  "parkMasonryAudit": {
+    "addresses": [
+      "2228 N PARK AVE",
+      "2230 N PARK AVE",
+      "2232 N PARK AVE",
+      "2234 N PARK AVE",
+      "2240 N PARK AVE",
+      "2242 N PARK AVE",
+      "2244 N PARK AVE",
+      "2246 N PARK AVE",
+      "2306 N PARK AVE",
+      "2308 N PARK AVE",
+      "2312 N PARK AVE",
+      "2328 N PARK AVE"
+    ],
+    "localTests": [
+      "park-masonry-audit",
+      "park-contact-audit",
+      "boston-masonry-audit"
+    ],
+    "localScope": "Targeted tests on v21.1.7 archive with exact current relevant source files reconstructed and verified; latest southern geometry not reconstructed; full current-build tests pending.",
+    "visualQA": "v21.1.13 provisionally accepted; evidence 42b6c98f1ef59ecd58e4b12eb9f088c60e4cf80c; 11 live audits, 117/129 isolated fronts unchanged, exactly 12 target addresses changed",
+    "evidence": "PARK-MASONRY-EVIDENCE.json",
+    "builtAt": "2026-11-25T14:23:15-05:00"
+  },
+  "schoolMaterialAudit": {
+    "report": "SCHOOL-MATERIAL-COVERAGE-AUDIT.json",
+    "named": 3395,
+    "previousFallbacks": 428,
+    "currentFallbacks": 0,
+    "localTests": [
+      "school-material-coverage-audit.mjs",
+      "school-source-contact-audit.mjs"
+    ],
+    "localScope": "Exact school source, Three.js, FBX loader and original FBX verified against pinned baseline; contact output byte-identical before/after; not full current scene local regression.",
+    "portability": "Named browser PBR scalar palette, not portable texture maps or Unity material import; no license or geometry change. Mixed assemblies remain opaque.",
+    "visualQA": "v21.1.14 provisionally accepted, evidence 1bc9090f71d1fbc21045f7cb3a876140abb622a4; 361/387 unchanged; 128/128 unrelated isolated views unchanged",
+    "builtAt": "2026-11-26T00:34:24-05:00"
+  },
+  "schoolGlazingAudit": {
+    "report": "SCHOOL-GLAZING-AUDIT.json",
+    "localTests": [
+      "school-glazing-audit.mjs",
+      "school-material-coverage-audit.mjs",
+      "school-source-contact-audit.mjs"
+    ],
+    "transparentPanels": 80,
+    "visualQA": "v21.1.15 provisionally accepted from actual front/oblique views; evidence 57a11e30c2622247b9b5d1faac6d70e845b3a7d4; 367/387 unchanged, 128/128 unrelated isolated views unchanged",
+    "limitation": "Approximate tint and alpha blend, not physically accurate glass or a verified interior. Full current-scene regression pending."
+  },
+  "candidateBuiltAt": "2026-11-26T04:44:02-05:00",
+  "broad2243MaterialAudit": {
+    "report": "BROAD-2243-MATERIAL-AUDIT.json",
+    "localTests": [
+      "broad-2243-material-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "components": 302,
+    "netComponents": 24,
+    "unchangedBroadRecords": 38,
+    "visualQA": "v21.1.16 provisionally accepted from actual isolated and oblique views; evidence d5c9bf34a77f5068155a4a36afdb18af500688a0; 366/387 unchanged; 128/128 unrelated isolated views unchanged",
+    "source": "https://www.loopnet.com/Listing/2243-N-Broad-St-Philadelphia-PA/40265351/",
+    "limitation": "Listing photo capture date unconfirmed. Dimensions, exact finish and bond approximate. Local targeted checkout reconstructed from prior archive; exact relevant changed source checked against GitHub; combined current full-scene regression not performed.",
+    "builtAt": "2026-11-26T01:20:35-05:00"
+  },
+  "broad2251StorefrontAudit": {
+    "report": "BROAD-2251-STOREFRONT-AUDIT.json",
+    "localTests": [
+      "broad-2251-storefront-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "components": 53,
+    "netComponents": -17,
+    "unchangedBroadRecords": 38,
+    "visualQA": "v21.1.17 actual isolated and oblique views provisionally accepted for modeled appearance; evidence ab57bb5f25cca55e74204fc650fb901271b892b6; 368/387 unchanged, 128/128 unrelated isolated views unchanged; exact address attribution of historical multi-property listing photo remains provisional",
+    "source": "https://www.loopnet.com/Listing/2247-2251-N-Broad-St-Philadelphia-PA/27062689/",
+    "limitation": "Listing on market November 7, 2022; actual photo capture date and current condition unknown. Exact dimensions, bond and finish approximate; relief glazing. Targeted local reconstruction; full combined current-build regression pending.",
+    "builtAt": "2026-11-26T01:25:14-05:00",
+    "addressAttribution": "Confirmed by visible 2251 door number in listing photo https://images1.loopnet.com/i2/MxAge9sr2KbnyazI_zPKP-fSztXtgxcCj4Ik9z_JImE/110/2247-2251-N-Broad-St-Philadelphia-PA-2251-N-Broad-St-Exterior-1-1-Large.jpg ; capture date and current facade still unconfirmed."
+  },
+  "broad224547FacadeAudit": {
+    "report": "BROAD-2245-47-FACADE-AUDIT.json",
+    "localTests": [
+      "broad-2245-47-facade-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "components": [
+      93,
+      95
+    ],
+    "netComponents": 70,
+    "unchangedOtherRenderedBroadRecords": 37,
+    "visualQA": "v21.1.18 provisionally accepted after actual isolated-front review; evidence 01ef3216176da788bd8775837b339ef49c7eb443; 351/387 unchanged, 127/127 unrelated isolated views unchanged",
+    "sources": [
+      "https://www.loopnet.com/Listing/2247-2251-N-Broad-St-Philadelphia-PA/20921946/",
+      "https://www.loopnet.com/Listing/2243-N-Broad-St-Philadelphia-PA/40265351/"
+    ],
+    "limitation": "Older group listing photograph is not reliable for address labels in isolation. Later identified 2243 frontage anchors adjoining tan and blue-gray elevations. Actual image capture dates, exact paint and joint dimensions, and tenants unconfirmed. Ground components and mass/roof blocks identical in direct callback comparison. Full combined current scene local regression not performed.",
+    "builtAt": "2026-11-26T01:28:34-05:00"
+  },
+  "broad225355MaterialAudit": {
+    "report": "BROAD-2253-55-MATERIAL-AUDIT.json",
+    "localTests": [
+      "broad-2253-55-material-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "records": [
+      {
+        "id": "1542243",
+        "components": 145
+      },
+      {
+        "id": "3000691",
+        "components": 110
+      }
+    ],
+    "netComponents": -74,
+    "visualQA": "v21.1.19 provisionally accepted from actual isolated front views; evidence 4cf2ff3185b13ed07f1c97d5f91b9b417ab2b629; 353/387 unchanged; 127/127 unrelated isolated views unchanged",
+    "source": "Existing source-documented April 2025 museum red-brick interpretation and 2255 brick base/right strip. Historical museum sources confirm address, not current exposed finish: https://whyy.org/articles/doll-museum-embodies-passion-for-history-hope-for-future/ ; https://hiddencityphila.org/2013/03/at-broad-and-dauphin-the-doll-museum-lives-on/ . No new usable exterior photograph retrieved.",
+    "limitations": "Brick bond and finish approximate, hidden wall faces retain prior color with shared brick treatment; current exterior/sign condition not reverified. Targeted local reconstructed relevant files; full combined current-scene local regression not performed. Portable scalar/UV basis, not Unity HDRP import.",
+    "builtAt": "2026-11-26T01:34:24-05:00"
+  },
+  "broad2251EntryDetailAudit": {
+    "report": "BROAD-2251-ENTRY-DETAIL-AUDIT.json",
+    "localTests": [
+      "broad-2251-entry-detail-audit.mjs",
+      "broad-2251-storefront-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "components": 99,
+    "netComponents": 46,
+    "unchangedOtherRenderedBroadRecords": 38,
+    "visualQA": "v21.1.20 provisionally accepted from actual isolated render; evidence 8559ea517257cdde144065c3d146e93732c429de, 370/387 screenshots unchanged and 128/128 unrelated isolated views unchanged",
+    "source": "https://www.loopnet.com/Listing/2247-2251-N-Broad-St-Philadelphia-PA/27062689/",
+    "image": "https://images1.loopnet.com/i2/MxAge9sr2KbnyazI_zPKP-fSztXtgxcCj4Ik9z_JImE/110/2247-2251-N-Broad-St-Philadelphia-PA-2251-N-Broad-St-Exterior-1-1-Large.jpg",
+    "limitations": "Historical listing photo visibly identifies 2251. Actual capture date and present-day appearance unconfirmed; glyphs and hardware approximate. Targeted local reconstruction, not full current-scene regression.",
+    "builtAt": "2026-11-26T01:37:54-05:00"
+  },
+  "broad224139SashAudit": {
+    "report": "BROAD-2241-39-SASH-AUDIT.json",
+    "localTests": [
+      "broad-2241-39-sash-audit.mjs",
+      "broad-contact-screen.mjs"
+    ],
+    "records": [
+      {
+        "id": "1508518",
+        "address": "2241 N BROAD ST",
+        "upperWindows": 4,
+        "groundWindows": 2,
+        "doors": 1,
+        "refinedFrames": 6,
+        "windowACUnits": 2,
+        "upperWindowHeight": 1.85
+      },
+      {
+        "id": "1536711",
+        "address": "2239 N BROAD ST",
+        "upperWindows": 4,
+        "groundWindows": 2,
+        "doors": 1,
+        "refinedFrames": 4,
+        "windowACUnits": 0,
+        "upperWindowHeight": 1.48
+      }
+    ],
+    "components": [
+      201,
+      200
+    ],
+    "netComponents": 14,
+    "visualQA": "v21.1.21 actual isolated fronts provisionally accepted; evidence 983a5b7aab6dfffe6fbbbb02ad0768f684a914ab; 363/387 unchanged, 127/127 unrelated isolated views unchanged",
+    "source": "https://www.homes.com/property/2243-n-broad-st-philadelphia-pa/6fd2grd0rfjtc/",
+    "image": "https://images.homes.com/listings/102/7295983884-056602022/2243-n-broad-st-philadelphia-pa-primaryphoto.jpg",
+    "limitations": "Photograph anchors 2241 with readable door canopy address, 2239 adjacent south partly visible. Exact capture date, dimensions and hidden conditions unverified. 2239 changes limited to upper casing and shallow joints. Targeted local reconstruction, not full combined scene.",
+    "builtAt": "2026-11-26T01:41:38-05:00"
+  },
+  "parkMasonryBatch2": {
+    "newAddresses": [
+      "2236 N PARK AVE",
+      "2238 N PARK AVE",
+      "2248 N PARK AVE",
+      "2252 N PARK AVE",
+      "2254 N PARK AVE",
+      "2256 N PARK AVE",
+      "2258 N PARK AVE",
+      "2264 N PARK AVE"
+    ],
+    "totalAddresses": 20,
+    "wattsAddressesWithBrick": 16,
+    "localAudits": [
+      "park-masonry-audit.mjs",
+      "park-contact-audit.mjs",
+      "district-contact-audit.mjs",
+      "watts-rear-contact-sample.mjs"
+    ],
+    "rearSampleTotals": {
+      "addresses": 19,
+      "volumes": 21,
+      "parts": 1576,
+      "neighborCandidates": 819,
+      "frameCandidates": 222,
+      "neighborHits": 0,
+      "frameMisses": 0
+    },
+    "visualQA": "v21.1.22 eight actual isolated fronts provisionally accepted; evidence 031f89552cb19b01e3780597b366075083e7f52a; 312/387 unchanged, 121/121 unrelated isolated views unchanged; rear angle and photographic accuracy unverified",
+    "limits": "Relevant exact baseline source reconstructed locally; district/front audit output unchanged on local copy, not full combined current scene. Existing color retained; material type documented, not exact exposed rear finish. Rear sample excludes low elements and yard fixtures, not exact mesh contact.",
+    "builtAt": "2026-11-26T01:47:34-05:00"
+  },
+  "parkPorchAudit": {
+    "report": "PARK-2250-52-PORCH-AUDIT.json",
+    "localTests": [
+      "park-2250-52-porch-audit.mjs",
+      "park-contact-audit.mjs",
+      "district-contact-audit.mjs"
+    ],
+    "records": [
+      {
+        "address": "2250 N PARK AVE",
+        "boxes": 97,
+        "gables": 0,
+        "steps": 6,
+        "groundWindows": 2,
+        "door": 1,
+        "columns": 3,
+        "stairOpeningClear": true,
+        "maximumProjection": 3.01
+      },
+      {
+        "address": "2252 N PARK AVE",
+        "boxes": 103,
+        "gables": 1,
+        "steps": 6,
+        "groundWindows": 2,
+        "door": 1,
+        "columns": 3,
+        "stairOpeningClear": true,
+        "maximumProjection": 3.01
+      }
+    ],
+    "netComponents": 142,
+    "visualQA": "pending",
+    "sources": [
+      "https://ssl.cdn-redfin.com/photo/235/bigphoto/740/PAPH2484740_5.jpg",
+      "https://www.redfin.com/PA/Philadelphia/2250-N-Park-Ave-19132/home/39049024",
+      "https://www.apartments.com/2252-n-park-ave-philadelphia-pa-unit-2/89ss6l2/"
+    ],
+    "limitations": "Photo-informed ground floor only; 2250 white paint represented by solid color, upper layouts unchanged. 3.01m provisional front projection outside original GIS volume; curb/road clearance and capture dates unverified. No shared-roof continuity claim. Local district test uses reconstructed relevant source and earlier southern module; projected current aggregate report retains prior records, pending full-scene workstation verification.",
+    "builtAt": "2026-11-26T02:45:41-05:00"
+  },
+  "parkPaintedBrick": {
+    "address": "2250 N PARK AVE",
+    "scope": "Meter-scaled painted brick material on the five existing ground-floor frontage panels. Porch envelope and stair dimensions carry forward from v21.1.23.",
+    "photo": "https://www.redfin.com/PA/Philadelphia/2250-N-Park-Ave-19132/home/39049024",
+    "limitations": "Brick size and bond are illustrative. Street clearance remains provisional. The 2252 rental listing labels its images as example photos.",
+    "builtAt": "2026-11-26T03:08:29-05:00"
+  },
+  "park2238Porch": {
+    "address": "2238 N PARK AVE",
+    "scope": "Raised porch, four concrete risers, canopy, white rails with dark balusters, entry light and glass-block basement opening.",
+    "frontageComponents": {
+      "before": 30,
+      "after": 80
+    },
+    "verification": "13 local audits passed. Park frontage contact 1565/1565. District 36804 components, zero invalid or unreachable components. Only the 2238 contact records changed.",
+    "sources": [
+      "https://www.trulia.com/pictures/thumbs_6/zillowstatic/fp/aea582c0bdd12b3e04e0da0fb334ac01-f_b.jpg",
+      "https://www.coldwellbankerhomes.com/pa/philadelphia/2238-n-park-ave-a/pid_53517032/"
+    ],
+    "limits": "Photo date, dimensions, ground-floor opening positions and curb clearance are provisional. 2.13 m envelope outside existing source front, including steps.",
+    "builtAt": "2026-11-26T03:19:11-05:00"
+  },
+  "park2236Frontage": {
+    "address": "2236 N PARK AVE",
+    "scope": "Pale street-facing finish, green entry, covered porch, four risers, column bases and capitals, and three-light canted bay.",
+    "frontageComponents": {
+      "before": 29,
+      "after": 77
+    },
+    "verification": "13 local audits pass, 1613/1613 Park frontage components reachable. 36852 district components with zero unresolved or invalid. Contact report changes confined to main 2236 record.",
+    "sources": [
+      "https://www.redfin.com/PA/Philadelphia/2236-N-Park-Ave-19132/home/39049019",
+      "https://photos.zillowstatic.com/fp/bcfe04826a24a90f40f49cc92ec71db0-p_e.webp"
+    ],
+    "limits": "Front materials, bay profile, porch dimensions and exact canopy junction are approximate. Porch geometry aligns with 2238 but ends within the 2236 footprint width. Curb position and rear details remain unverified.",
+    "builtAt": "2026-11-26T03:26:46-05:00"
+  },
+  "park2318Frontage": {
+    "address": "2318 N PARK AVE",
+    "scope": "Contemporary masonry and cladding colors, shallow corrugation, raised street entry and three-sided second-floor balcony rail.",
+    "frontageComponents": {
+      "before": 39,
+      "after": 89
+    },
+    "verification": "13 local audits pass, 1663/1663 Park frontage components reachable. 36902 district components with zero unresolved or invalid. Contact report changes confined to 2318.",
+    "sources": [
+      "https://www.zillow.com/homedetails/2318-N-Park-Ave-Philadelphia-PA-19132/446892639_zpid/",
+      "https://photos.zillowstatic.com/fp/7b27ac3267c876cf34755ed0fea19c4e-cc_ft_1536.jpg",
+      "https://www.apartments.com/2318-n-park-ave-philadelphia-pa/lg6tyxg/"
+    ],
+    "limits": "Photo-informed layout; opening sizes and placements, rail profile, finish and stair dimensions are approximate. No attribution to neighbors, surveyed curb position, or rear reconstruction.",
+    "builtAt": "2026-11-26T03:46:09-05:00"
+  },
+  "park2316Frontage": {
+    "address": "2316 N PARK AVE",
+    "scope": "Recessed red masonry frontage, dark streetward wing, stacked second- and third-floor bays, and a stepped entry.",
+    "frontageComponents": {
+      "before": 30,
+      "after": 41
+    },
+    "verification": "13 local audits pass, 1674/1674 Park frontage components reachable. 36913 district components with zero unresolved or invalid. Contact report changes confined to 2316.",
+    "sources": [
+      "https://www.civus.org/proceedings/proc_zba_appeal_0b43c26d89af0a0f",
+      "https://www.openpermitdata.com/philadelphia/address/2316-n-park-ave",
+      "https://photos.zillowstatic.com/fp/3a9b66f52b24b2e6c69173810454d396-cc_ft_576.jpg"
+    ],
+    "limits": "Permit supports floor and presence of bays. Adjacent listing streetscape informs cladding via parcel adjacency. Dimensions, color, fenestration, curb and unseen rear remain approximate.",
+    "builtAt": "2026-11-26T03:53:41-05:00"
+  },
+  "park2328To2332": {
+    "addresses": [
+      "2328 N PARK AVE",
+      "2330 N PARK AVE",
+      "2332 N PARK AVE"
+    ],
+    "scope": "Three differentiated rowhouse fronts with masonry, porch entries, trim, two observable street gables, and a porch gable at 2328.",
+    "frontageComponents": {
+      "before": 87,
+      "after": 238
+    },
+    "verification": "13 local audits pass, 1825/1825 Park frontage components reachable. 37064 district components with zero unresolved or invalid. Contact reports change only for the three target homes.",
+    "sources": [
+      "https://www.zillow.com/homedetails/2332-N-Park-Ave-Philadelphia-PA-19132/10374719_zpid/",
+      "https://photos.zillowstatic.com/fp/91d31d05653a8a3b30d020abf4534cb6-cc_ft_960.jpg"
+    ],
+    "limits": "Address and adjacent alignment inferred from the listing, street order and the gap next to 2332. Photo date, dimensions, rear roofs, hidden details and curb clearances are unverified.",
+    "builtAt": "2026-11-26T04:03:37-05:00"
+  },
+  "park2336And2338": {
+    "addresses": [
+      "2336 N PARK AVE",
+      "2338 N PARK AVE"
+    ],
+    "scope": "Shared porch gable meeting the party line, paired porch columns, lower paint and window grilles, flat cornice at 2336 and curved upper gable with white diamond panel at 2338.",
+    "frontageComponents": {
+      "before": 59,
+      "after": 232
+    },
+    "verification": "13 local audits pass, 1998/1998 Park frontage components reachable. 37237 district components with zero unresolved or invalid. The two modeled canopy halves meet at the source party line.",
+    "sources": [
+      "https://www.zillow.com/homedetails/2336-N-Park-Ave-Philadelphia-PA-19132/10374721_zpid/",
+      "https://photos.zillowstatic.com/fp/ba26a6d5226b13b20441cf78fe954a75-cc_ft_960.jpg",
+      "https://www.apartmentfinder.com/Pennsylvania/Philadelphia-Apartments/2338-N-Park-Ave-Apartments-hyk4hx0"
+    ],
+    "limits": "Photo dates, exact paint, stair dimensions, and clearance are unverified. The rear roofs and footprints carry forward from GIS.",
+    "builtAt": "2026-11-26T04:11:50-05:00"
+  },
+  "park2350To2356": {
+    "addresses": [
+      "2350 N PARK AVE",
+      "2352 N PARK AVE",
+      "2356 N PARK AVE"
+    ],
+    "scope": "2350 and 2352 street-side brickwork, soldier courses, divided sash, basement windows, and stepped entries. 2356 lower street finish and dark numbered fanlight entry with kickplate.",
+    "frontageComponents": {
+      "before": 89,
+      "after": 245
+    },
+    "verification": "13 local audits pass, 2154/2154 Park frontage components reachable; 37393 district components with zero unresolved or invalid. Contact reports change only for the three target homes.",
+    "sources": [
+      "https://www.zillow.com/homedetails/2350-N-Park-Ave-Philadelphia-PA-19132/10374725_zpid/",
+      "https://photos.zillowstatic.com/fp/f90a48455b8d4ab6ae1574b0affed638-cc_ft_960.jpg",
+      "https://photos.zillowstatic.com/fp/718724949f4cb4e6a6b248c9ad1524a6-cc_ft_960.jpg"
+    ],
+    "limits": "2350 MLS photo shows 2352 number and reports 2350. 2356 uses a tight numbered entry photo. Dimensions and unseen upper details approximate; 2356 existing upper geometry retained. Curb clearance unverified.",
+    "builtAt": "2026-11-26T04:20:30-05:00"
+  },
+  "park2430And2432": {
+    "addresses": [
+      "2430 N PARK AVE",
+      "2432 N PARK AVE"
+    ],
+    "scope": "2430 yellow porch and upper-window awnings, green lower trim and dentiled cornice. 2432 green scalloped awning, barred windows, black porch rail and dark stair set.",
+    "frontageComponents": {
+      "before": 44,
+      "after": 256
+    },
+    "verification": "13 local audits passed, 2366/2366 Park frontage components reachable. 37605 district components with zero unresolved or invalid. Contact reports change only for the two target homes.",
+    "sources": [
+      "https://www.zillow.com/homedetails/2432-N-Park-Ave-Philadelphia-PA-19132/10374733_zpid/",
+      "https://photos.zillowstatic.com/fp/80cfc5bb90817de3951b90d6c063bfb5-cc_ft_960.jpg"
+    ],
+    "limits": "The 2026 MLS listing supplies a printed annotated photo with date unknown. Render depicts photographed features, with estimated scale, dimensions and colors. No current condition certification.",
+    "builtAt": "2026-11-26T04:29:09-05:00"
+  },
+  "park2428Frontage": {
+    "address": "2428 N PARK AVE",
+    "scope": "Tan masonry and dentiled cornice, brown striped and scalloped porch canopy and hooded windows, side stair with sloped iron rail, barred door and single basement grille.",
+    "sources": [
+      "https://www.redfin.com/PA/Philadelphia/2428-N-Park-Ave-19132/home/39048971",
+      "https://ssl.cdn-redfin.com/photo/235/bigphoto/128/PAPH2096128_4.jpg"
+    ],
+    "frontageComponents": {
+      "before": 21,
+      "after": 165
+    },
+    "limits": "2022 listing photo. The date of exposure, current condition, finishes, curb clearance and model dimensions are unverified.",
+    "builtAt": "2026-11-26T04:44:02-05:00"
   }
 }

@@ -1,3 +1,4 @@
+import { PARK_PARCELS } from '../simulation/viewer-parcels.js';
 import { makeViewerBuilding } from './viewer-building-fit.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -153,7 +154,7 @@ const ADDITIONAL_VIEWER_PARCELS = [
   ['1003022', '2131 N BROAD ST', 'former-cvs-2131-broad'],
   ['1000951', '2125-29 N BROAD ST', 'broad-2129-newman'],
   ['1005655', '2109-21 N BROAD ST', 'mcdonalds-2109-broad'],
-  ['park-2228', '2228 N PARK AVE', 'park-2228-viewer']
+  ...PARK_PARCELS.map(parcel => [parcel.name.replace('-viewer', ''), parcel.address, parcel.name])
 ];
 
 export function createNorthBroadModels(THREE, scene, city, referenceFacades) {

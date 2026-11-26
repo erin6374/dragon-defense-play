@@ -1,26 +1,29 @@
 import { buildings } from '../../broad-street/district.js';
 
-const SCHOOL_VIEWER_CENTER_X = -255.88;
-const SCHOOL_VIEWER_FRONT_Z = -22.06;
-const parkAddress = '2228 N PARK AVE';
-const [parkPolygons, parkHeight] = buildings.find(([, , name]) => name === parkAddress);
-const points = parkPolygons.flat();
-const xs = points.flatMap(ring => ring.map(([x]) => x - SCHOOL_VIEWER_CENTER_X));
-const zs = points.flatMap(ring => ring.map(([, z]) => z - SCHOOL_VIEWER_FRONT_Z));
-const west = Math.min(...xs);
-const east = Math.max(...xs);
-const front = Math.min(...zs);
-const rear = Math.max(...zs);
+export const VIEWER_TO_GAME_X = 255.88;
+export const VIEWER_TO_GAME_Z = 22.06;
 
-export const PARK_2228 = Object.freeze({
-  name: 'park-2228-viewer',
-  x: (west + east) / 2,
-  z: (front + rear) / 2,
-  w: east - west,
-  d: rear - front,
-  h: parkHeight,
-  background: true,
-  stories: 3,
-  bays: 2,
-  kind: 'brick'
+// Confirmed addresses with individual geometry in the pinned Viewer source.
+const parkNumbers = [
+  2228, 2250, 2252, 2316, 2318, 2328, 2330, 2332,
+  2336, 2338, 2350, 2352, 2354, 2356, 2428, 2430, 2432
+];
+
+export const PARK_PARCELS = parkNumbers.map(number => {
+  const address = `${number} N PARK AVE`;
+  const records = buildings.filter(([, , name]) => name === address);
+  const points = records.flatMap(([polygons]) => polygons.flat(2));
+  const xs = points.map(([x]) => x + VIEWER_TO_GAME_X);
+  const zs = points.map(([, z]) => z + VIEWER_TO_GAME_Z);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minZ = Math.min(...zs);
+  const maxZ = Math.max(...zs);
+  const h = Math.max(...records.map(([, height]) => height));
+  return {
+    name: `park-${number}-viewer`, address,
+    x: (minX + maxX) / 2, z: (minZ + maxZ) / 2,
+    w: maxX - minX, d: maxZ - minZ, h,
+    background: true, stories: h > 9 ? 3 : 2, bays: 2, kind: 'brick'
+  };
 });
