@@ -51,6 +51,7 @@ export function createStructuralCity(THREE,scene,bank){
   b.floorHeight=b.h/b.stories;b.fallenFloors=new Set();buildings.push(b);
   if(o.viewerParcel){
    b.hideIntactGeometry=true;
+   b.exposedFloors=new Set();
    const thick=.24;
    addPart(b,'foundation','concrete',b.x,.07,b.z,b.w,.14,b.d);
    for(let floor=0;floor<b.stories;floor++){
@@ -269,7 +270,8 @@ export function createStructuralCity(THREE,scene,bank){
   if(!p.bucket?.mesh)return;
   const {mesh,broken}=p.bucket;
   const detached=p.state==='falling'||p.state==='settled';
-  if(p.building.hideIntactGeometry && !detached && (p.building.viewerParcel || ['wall','facade','column','foundation','roof','frame','window'].includes(p.type))){
+  const exposedInterior=p.building.viewerParcel&&p.building.exposedFloors?.has(p.floor)&&['slab','column'].includes(p.type);
+  if(p.building.hideIntactGeometry && !detached && ((p.building.viewerParcel&&!exposedInterior) || (!p.building.viewerParcel&&['wall','facade','column','foundation','roof','frame','window'].includes(p.type)))){
    mesh.setMatrixAt(p.index,zero);
    broken.setMatrixAt(p.index,zero);
    dirty.add(p.bucket);
@@ -277,12 +279,25 @@ export function createStructuralCity(THREE,scene,bank){
   }
   dummy.position.copy(p.position);dummy.rotation.copy(p.rotation);dummy.scale.copy(p.size);dummy.updateMatrix();
   mesh.setMatrixAt(p.index,p.state==='attached'?dummy.matrix:zero);
+  if(exposedInterior&&p.state==='attached')mesh.visible=true;
   if(detached||broken.visible){
    broken.setMatrixAt(p.index,detached?dummy.matrix:zero);
    broken.instanceMatrix.needsUpdate=true;
   }
   if(detached)broken.visible=true;
   dirty.add(p.bucket);
+ }
+ function exposeInterior(b,point,radius){
+  if(!b?.viewerParcel||!b.exposedFloors||!Number.isFinite(point.y))return 0;
+  const r=Math.min(2.5,Math.max(.5,radius*.45));
+  const min=Math.max(0,Math.floor((point.y-r)/b.floorHeight));
+  const max=Math.min(b.stories-1,Math.floor((point.y+r)/b.floorHeight));
+  let added=0;
+  for(let floor=min;floor<=max;floor++)if(!b.exposedFloors.has(floor)){
+   b.exposedFloors.add(floor);added++;
+   for(const p of b.parts)if(p.floor===floor&&p.state==='attached'&&['slab','column'].includes(p.type))write(p);
+  }
+  return added;
  }
  function scheduleSupport(b){
   b.supportRevision=(b.supportRevision??0)+1;
@@ -443,7 +458,7 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;dustChanged=true;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}if(dustChanged){dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;}
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();supportWork.clear();supportPasses=0;pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.supportRevision=0;b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values())bucket.broken.visible=false;chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();supportWork.clear();supportPasses=0;pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.supportRevision=0;b.exposedFloors?.clear();b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values()){bucket.broken.visible=false;bucket.mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);}chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
@@ -451,7 +466,7 @@ export function createStructuralCity(THREE,scene,bank){
   for(const p of b.parts)write(p);
   for(const bucket of dirty){bucket.mesh.instanceMatrix.needsUpdate=true;}dirty.clear();return true;
  }
- return {fireAnchorHeight,buildings,groups,addBuilding,finalize,impact,forceDamage,update,restore,fragmentBurst,setIntactBuildingVisible,
+ return {fireAnchorHeight,buildings,groups,addBuilding,finalize,impact,forceDamage,update,restore,fragmentBurst,setIntactBuildingVisible,exposeInterior,
   setAtmosphere(darkness){materials.room.emissiveIntensity=.05+darkness*.55;materials.glass.color.setHex(0x7d9ea9).lerp(new THREE.Color(0xd4b184),darkness*.35)},
   setParticlesEnabled(on){particlesEnabled=!!on;dustMesh.visible=!!on},
   setRubbleVisible(on){rubbleVisible=on;contact.visible=on;for(const [i,m] of chipMeshes.entries())m.visible=on&&chips.slice(i*1600,(i+1)*1600).some(Boolean)},
