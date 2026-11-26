@@ -444,7 +444,7 @@ export function createCinematicEffects(T,scene,camera,bank){
 
   const fastTrail=style==='meteor';
   const flameCount=fastTrail?3:5;
-  const smokeCount=fastTrail?5:36; // Optimized smoke count to guarantee 60fps
+  const smokeCount=fastTrail?5:20; // RC173: Optimized to 20 for fluid 60fps without losing plume fullness
 
   for(let i=0;i<flameCount;i++){
    const t=age*(1.7+i*.19)+i*2.3;
@@ -465,7 +465,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    const swirlX=Math.cos(curlAngle)*curlR*(fastTrail?.25:.65);
    const swirlZ=Math.sin(curlAngle)*curlR*(fastTrail?.25:.65);
    const wandering=Math.sin(age*0.7+i*1.8)*size*(fastTrail?.25:.55);
-   const scale=fastTrail?size*(.82+t*.30):size*(1.55+Math.pow(t,1.22)*1.65);
+   const scale=fastTrail?size*(.85+t*.30):size*(1.85+Math.pow(t,1.22)*1.95);
    const y=fastTrail?.5+t*.80:1.6+Math.pow(t,1.52)*4.2;
    const highWind=fastTrail?0:Math.min(26.0,Math.pow(t,1.22)*1.5);
 

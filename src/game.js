@@ -3149,11 +3149,17 @@ function updateWorld(dt){
  }
  if(performanceLab.isEnabled('pedestrians')&&pedestriansActive)crowdTimer-=dt;if(performanceLab.isEnabled('pedestrians')&&pedestriansActive&&crowdTimer<=0){spawnCrowd();crowdTimer=wave<=5?1.8:(wave<=10?2.4:3.0);}
  for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>Math.abs(p.g.position.x-d.x)<d.r&&Math.abs(p.g.position.z-d.z)<d.r);
-  const isPanicked=(p.panic>0)||!!threat;
+  const nearCrater=craters.find(c=>Math.hypot(p.g.position.x-c.x,p.g.position.z-c.z)<c.radius+2.2);
+  const isPanicked=(p.panic>0)||!!threat||!!nearCrater;
   if(p.panic>0)p.panic-=dt;
-  if(threat){
+  if(threat||nearCrater){
+   const hazardX=threat?threat.x:nearCrater.x;
    if(!p.panicAudible){p.panicAudible=true;sound('crowdPanic',{x:p.g.position.x});}
-   p.dx=p.g.position.x<threat.x?-1:1;p.life=Math.max(p.life,4);
+   p.dx=p.g.position.x<hazardX?-1:1;
+   p.panicDir=p.dx;
+   p.panic=Math.max(p.panic||0,3.5);
+   p.life=Math.max(p.life,4);
+   if(p.crossing){p.dz=p.g.position.z>24?1:-1;}
   }
   if(isPanicked){p.walkSpeed=Math.max(p.walkSpeed,6.2);}
   if(advancePedestrianWind(p,dt)){animatePerson(p.g,p.walkCycle||0,false,false);}
