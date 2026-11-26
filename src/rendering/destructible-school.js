@@ -601,13 +601,9 @@ export function createDestructibleSchool(THREE,scene,bounds){
   for(const p of pieces){
    if(p.removed)continue;
    if(detachedOnly&&!p.falling)continue;
-   if(overlayMode&&!p.falling){
-    // In overlay mode, keep internal structural elements (floor slabs, columns, beams, atrium trusses,
-    // interior classroom partitions, ceiling lights, desks, roof HVAC equipment) visible inside the building!
-    // Omit duplicate exterior facade brick that would conflict with the intact FBX exterior.
-    const isInternal=['floor','beam','column','atrium-column','atrium-rail','partition','classroom-light','classroom-desk','classroom-chair','classroom-whiteboard','classroom-bookshelf','roof-hvac','basement-column','basement-floor','basement-wall'].includes(p.zone);
-    if(!isInternal)continue;
-   }
+   // The real FBX supplies all attached architecture, including the interior.
+   // The approximate physics reconstruction contributes only detached debris.
+   if(overlayMode&&!p.falling&&!p.resting)continue;
    const kind=p.profile==='glass'?shardBatch:p.kind;
    const index=counts[kind]++;
    if(index>=MAX)throw new Error('School piece batch overflow '+p.kind);
@@ -716,7 +712,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    atriumY:[levels[0],levels[2]],atriumFrontZ:front,atriumBackZ:atriumBack,
    attached:pieces.filter(p=>!p.falling).length,
    byMaterial:Object.fromEntries(['glass','structure','facade'].map(profile=>[profile,pieces.filter(p=>p.profile===profile).length])),
-   fullFiveStoryShell:!collapsing,collapsing}}
+   fullFiveStoryShell:!collapsing,collapsing,sourceOverlayMode:overlayMode,attachedGeometrySource:overlayMode?'FBX':'procedural fallback'}}
  reset();
  return {group:batches,impact,punchBorehole,collapse,update,reset,restore:reset,syncDestruction,stats,
   getPieces:()=>pieces.map(p=>({zone:p.zone,integrity:p.integrity,falling:p.falling,resting:p.resting,x:p.x,y:p.y,z:p.z,vy:p.vy,mass:p.mass,rigidity:p.rigidity,kind:p.kind,materialType:p.materialType||(p.kind===3?'steel':p.kind===2?'glass':p.kind===1?'concrete':p.kind===5?'furniture':'brick'),isFurniture:!!p.isFurniture,isImploded:!!p.isImploded,isExploded:!!p.isExploded,isBuckled:!!p.isBuckled,axialDeformation:p.axialDeformation||0})),
