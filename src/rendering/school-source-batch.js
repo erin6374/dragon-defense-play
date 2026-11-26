@@ -7,7 +7,7 @@ const palette={glass:0x75959b,metal:0x9da6a6,spandrel:0x87968e,brick:0x856657,
  roof:0x39434a,stone:0xc2b7a4,door:0x53636c,interior:0x8f8b84};
 function surface(mesh){
  const name=mesh.name.toLowerCase();
- if(/handrail|guardrail|top_rail/.test(name))return 'interior'; // Skip occluded interior stairs/railings (481k tris)
+ if(/handrail|guardrail|top_rail/.test(name))return 'interior';
  if(/mullion|window_frame/.test(name))return 'metal';
  if(/spandrel|system_panel_solid/.test(name))return 'spandrel';
  if(/glazed|glass|glazing/.test(name))return 'glass';
@@ -38,7 +38,7 @@ export function batchSchoolSource(source, prepareMaterial) {
  const buckets=new Map(), materials=new Map();
  const getMaterial=(original,role)=>{
   const usePalette=original.name==='__DEFAULT';
-  const key=usePalette?role:original.id;
+  const key=(usePalette?'palette':original.id)+'|'+role+'|'+original.side;
   if(!materials.has(key)){
    const isGlass=role==='glass';
    const isMatte=['brick','roof','stone','spandrel','interior','door'].includes(role);
@@ -67,13 +67,14 @@ export function batchSchoolSource(source, prepareMaterial) {
   }
   return materials.get(key);
  };
- let inputTriangles=0;
+ let inputTriangles=0;const bySurface={};
  for(const mesh of [...source.children]){
   const geometry=mesh.geometry, role=surface(mesh);
-  // RC167: Skip occluded interior CAD/BIM clutter (550,000 redundant triangles).
-  // The authentic physical 3D classrooms, desks, chairs, floors, columns and rebar are rendered by the destructible procedural school.
-  if(role==='interior')continue;
-  inputTriangles+=(geometry.index?.count??geometry.attributes.position.count)/3;
+  // Interior is now sourced from the actual FBX, not the fallback reconstruction.
+  const triangleCount=(geometry.index?.count??geometry.attributes.position.count)/3;
+  inputTriangles+=triangleCount;
+  const audit=bySurface[role]??={meshes:0,triangles:0};
+  audit.meshes++;audit.triangles+=triangleCount;
   if(Array.isArray(mesh.material)||mesh.isSkinnedMesh||
      mesh.morphTargetInfluences?.length||geometry.drawRange.start!==0||
      geometry.drawRange.count!==Infinity){
@@ -103,5 +104,5 @@ export function batchSchoolSource(source, prepareMaterial) {
    for(const geometry of geometries)model.add(new THREE.Mesh(geometry,material));
   }
  }
- return {model,inputTriangles,batches:model.children.length};
+ return {model,inputTriangles,batches:model.children.length,bySurface};
 }
