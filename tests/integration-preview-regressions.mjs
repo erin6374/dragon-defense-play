@@ -260,4 +260,23 @@ test('Spatial batches separate floors and bays without clipping large components
  assert.equal(schoolBatchRegion('interior',box(0,0,0,60,1,60)),'large');
  assert.equal(schoolBatchRegion('interior',box(0,0,0,-1)),'unbounded');
 });
+test('Original school component index chooses only nearby materials',()=>{
+ const {sourceComponentMaterial,createSchoolComponentIndex}=load('src/simulation/school-source-impact.js',{},['sourceComponentMaterial','createSchoolComponentIndex']);
+ const rec=(category,min,max,name='')=>({category,min,max,material:sourceComponentMaterial(category,name)});
+ const index=createSchoolComponentIndex([rec('glazing',{x:0,y:3,z:0},{x:2,y:5,z:.2}),rec('walls',{x:0,y:3,z:-20},{x:2,y:5,z:-19},'brick'),rec('structure',{x:1,y:3,z:-1},{x:1.5,y:5,z:0}),rec('floors',{x:-30,y:0,z:-60},{x:30,y:.2,z:0})]);
+ assert.equal(index.query({x:1,y:4,z:0},2).map(x=>x.material).sort().join(','),'glass,metal');
+ assert.equal(index.query({x:1,y:4,z:-20},1)[0].material,'brick');
+ assert.equal(index.query({x:0,y:.1,z:-30},1)[0].category,'floors');
+ assert.equal(index.query({x:100,y:100,z:100},4).length,0);
+ assert.equal(index.query({x:1,y:4,z:0},2,1).length,1);
+ assert.equal(sourceComponentMaterial('glazing','mullion'),'metal');
+});
+test('Source-school health gauge does not fabricate partial debris',()=>{
+ const proxy=read('src/rendering/destructible-school.js');
+ const start=proxy.indexOf(' function syncDestruction('),end=proxy.indexOf(' function reset()',start);
+ assert.ok(start>=0&&end>start);
+ let collapses=0;
+ const fn=new Function('collapse','THREE','let currentRatio=0,schoolCracksGroup=null,overlayMode=true;'+proxy.slice(start,end)+'return syncDestruction;')(()=>collapses++,{});
+ fn(.15);fn(.9);assert.equal(collapses,0);fn(1);assert.equal(collapses,1);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
