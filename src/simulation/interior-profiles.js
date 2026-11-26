@@ -5,11 +5,12 @@ const RETAIL_IDS=new Set(['1003022','1073318']);
 export function interiorProfile(b){
  const id=String(b.id??''),name=String(b.name??'').toLowerCase();
  const stories=Math.max(1,b.stories||Math.round(b.h/3)||1);
- if(b.school||id==='1003073')return {kind:'school-source',stories,approximate:false};
+ if(b.school||id==='1003073')return {kind:'school-source',stories,approximate:null,requiresSourceVerification:true};
  if(CHURCH_IDS.has(id)||/church|chapel|cathedral|sanctuary/.test(name))return {kind:'worship',stories:1,approximate:true};
  if(/mitten hall|auditorium|theat(er|re)|performance hall|concert hall/.test(name))return {kind:'assembly',stories:1,approximate:true};
  if(id==='1005655'||/mcdonald|restaurant|cafe/.test(name))return {kind:'restaurant',stories:1,approximate:true};
- if(RETAIL_IDS.has(id)||/shops|pharmacy|retail|autozone/.test(name))return {kind:'retail',stories,approximate:true};
+ if(RETAIL_IDS.has(id))return {kind:'retail',stories:1,approximate:true};
+ if(/shops|pharmacy|retail|autozone/.test(name))return {kind:'retail',stories,approximate:true};
  if(/residence hall|dormitory/.test(name))return {kind:'residence-hall',stories,approximate:true};
  if(b.w<=10&&b.h>=6&&b.d>=7)return {kind:'residential',stories,approximate:true};
  if(b.h<=6&&b.w>=10)return {kind:'commercial-open',stories:1,approximate:true};
