@@ -167,8 +167,9 @@ export class BuildingAssetRegistry {
 
     // Clean up previous model from GPU and scene
     if (entry.model && entry.model.parent) {
+      this.northBroadModels.clearImpactMask?.(entry);
       root.remove(entry.model);
-      this._disposeHierarchy(entry.model);
+      this._disposeHierarchy(entry.model,newMesh);
     }
 
     newMesh.name = `MODEL-SWAPPED-${slot.id}`;
@@ -276,6 +277,7 @@ export class BuildingAssetRegistry {
       : null;
 
     entry.model = newMesh;
+    entry.sections = [];
     entry.loaded = true;
     entry.loadError = null;
 
@@ -285,7 +287,7 @@ export class BuildingAssetRegistry {
         entry.facadeCracks.visible = true;
         if (entry.facadeCracksMat) entry.facadeCracksMat.opacity = Math.min(1.0, entry.damage * 1.5);
       }
-      if (entry.damage >= 0.70) {
+      if (entry.damage >= 0.97) {
         newMesh.visible = false;
         if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
       }
@@ -296,17 +298,25 @@ export class BuildingAssetRegistry {
     }
   }
 
-  _disposeHierarchy(obj) {
-    obj.traverse(child => {
-      if (child.isMesh) {
-        if (child.geometry) child.geometry.dispose();
-        if (Array.isArray(child.material)) {
-          child.material.forEach(m => m.dispose?.());
-        } else if (child.material) {
-          child.material.dispose?.();
-        }
-      }
+  _disposeHierarchy(obj,replacement) {
+    // Viewer meshes can share their batched masonry materials and geometry.
+    // Never invalidate resources still referenced by another live model.
+    const usedGeometry=new Set(),usedMaterial=new Set();
+    const retain=node=>{
+      if(!node.isMesh)return;
+      if(node.geometry)usedGeometry.add(node.geometry);
+      for(const mat of [node.material].flat())if(mat)usedMaterial.add(mat);
+    };
+    this.scene.traverse(retain);
+    replacement?.traverse(retain);
+    const geometry=new Set(),materials=new Set();
+    obj.traverse(node=>{
+      if(!node.isMesh)return;
+      if(node.geometry&&!usedGeometry.has(node.geometry))geometry.add(node.geometry);
+      for(const mat of [node.material].flat())if(mat&&!usedMaterial.has(mat))materials.add(mat);
     });
+    for(const geo of geometry)geo.dispose?.();
+    for(const mat of materials)mat.dispose?.();
   }
 
   /**
