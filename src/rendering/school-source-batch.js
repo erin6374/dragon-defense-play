@@ -31,6 +31,19 @@ function reverseTriangleWinding(geometry) {
  }
 }
 
+// Keep exact source triangles, but avoid a single giant interior draw batch
+// whose bounding sphere keeps every floor and room visible to the renderer.
+export function schoolBatchRegion(role,box){
+ if(role!=='interior'||!box)return 'shell';
+ const {min,max}=box;
+ const span=[max.x-min.x,max.y-min.y,max.z-min.z];
+ if(span.some(v=>!Number.isFinite(v)||v<0))return 'unbounded';
+ if(span[0]>48||span[1]>22||span[2]>48)return 'large';
+ const x=Math.floor((min.x+max.x)/2/40);
+ const y=Math.floor((min.y+max.y)/2/18);
+ const z=Math.floor((min.z+max.z)/2/40);
+ return x+':'+y+':'+z;
+}
 export function batchSchoolSource(source, prepareMaterial) {
  const model=new THREE.Group();
  model.position.copy(source.position);
@@ -68,6 +81,8 @@ export function batchSchoolSource(source, prepareMaterial) {
   return materials.get(key);
  };
  let inputTriangles=0;const bySurface={};
+ const MAX_BATCH_VERTICES=180000;
+ let outputTriangles=0,largestBatchVertices=0;
  for(const mesh of [...source.children]){
   const geometry=mesh.geometry, role=surface(mesh);
   // Interior is now sourced from the actual FBX, not the fallback reconstruction.
@@ -81,6 +96,8 @@ export function batchSchoolSource(source, prepareMaterial) {
    const copy=mesh.clone(false);
    copy.material=Array.isArray(mesh.material)?mesh.material.map(m=>getMaterial(m,role)):getMaterial(mesh.material,role);
    model.add(copy);
+   outputTriangles+=triangleCount;
+   largestBatchVertices=Math.max(largestBatchVertices,geometry.attributes.position.count);
    continue;
   }
   const material=getMaterial(mesh.material,role);
@@ -91,18 +108,39 @@ export function batchSchoolSource(source, prepareMaterial) {
   if(mesh.matrix.determinant()<0)reverseTriangleWinding(transformed);
   const format=Object.entries(transformed.attributes).sort(([a],[b])=>a.localeCompare(b))
    .map(([name,attr])=>[name,attr.itemSize,attr.normalized,attr.array.constructor.name].join(':')).join('|');
-  const key=material.id+'|'+format;
-  if(!buckets.has(key))buckets.set(key,{material,geometries:[]});
+  transformed.computeBoundingBox();
+  const region=schoolBatchRegion(role,transformed.boundingBox);
+  const key=material.id+'|'+format+'|'+region;
+  if(!buckets.has(key))buckets.set(key,{material,region,geometries:[]});
   buckets.get(key).geometries.push(transformed);
  }
- for(const {material,geometries} of buckets.values()){
-  const batch=geometries.length===1?geometries[0]:mergeGeometries(geometries,false);
-  if(batch){
-   model.add(new THREE.Mesh(batch,material));
-   if(geometries.length>1)geometries.forEach(geometry=>geometry.dispose());
-  }else{
-   for(const geometry of geometries)model.add(new THREE.Mesh(geometry,material));
-  }
+ function append(geometry,material,region){
+  geometry.computeBoundingSphere();
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.name='school-source-'+region;
+  model.add(mesh);
+  const vertices=geometry.attributes.position.count;
+  largestBatchVertices=Math.max(largestBatchVertices,vertices);
+  outputTriangles+=(geometry.index?.count??vertices)/3;
  }
- return {model,inputTriangles,batches:model.children.length,bySurface};
+ for(const {material,region,geometries} of buckets.values()){
+  let chunk=[],vertices=0;
+  function flush(){
+   if(!chunk.length)return;
+   const batch=chunk.length===1?chunk[0]:mergeGeometries(chunk,false);
+   if(batch){
+    append(batch,material,region);
+    if(chunk.length>1)chunk.forEach(geometry=>geometry.dispose());
+   }else for(const geometry of chunk)append(geometry,material,region);
+   chunk=[];vertices=0;
+  }
+  for(const geometry of geometries){
+   const count=geometry.attributes.position.count;
+   if(vertices+count>MAX_BATCH_VERTICES)flush();
+   chunk.push(geometry);vertices+=count;
+  }
+  flush();
+ }
+ return {model,inputTriangles,outputTriangles,batches:model.children.length,bySurface,
+  largestBatchVertices,spatialRegions:new Set([...buckets.values()].map(b=>b.region)).size};
 }
