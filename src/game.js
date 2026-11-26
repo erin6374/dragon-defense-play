@@ -5139,7 +5139,9 @@ function runPresetConflagration(){
 }
 
 function toggleFreeFlight(enable){
- freeFlightMode=(enable!==undefined)?!!enable:!freeFlightMode;
+ const next=(enable!==undefined)?!!enable:!freeFlightMode;
+ if(next===freeFlightMode)return;
+ freeFlightMode=next;
  const toolbar=document.getElementById('dd-sandbox-toolbar');
  if(toolbar)toolbar.hidden=!freeFlightMode;
  const flightToggle=document.getElementById('dd-sandbox-flight-toggle');
@@ -5185,7 +5187,11 @@ function toggleFreeFlight(enable){
   sandboxZoomLevel=1.0;
   const inspCard=document.getElementById('dd-inspector-card');
   if(inspCard)inspCard.hidden=true;
-  message('⚔️ STANDARD DEFENSE MODE RESUMED');
+  // Sandbox deliberately changes the world and campaign timers. Start a
+  // clean defense session instead of resuming stale/empty wave state.
+  toggleDragon(true);
+  reset();
+  message('⚔️ STANDARD DEFENSE — NEW CAMPAIGN SESSION');
  }
 }
 
@@ -6850,6 +6856,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   lighting:{explosionSlots:explosionLightPool.lights.length,activeExplosions:explosionLightPool.activeCount,helicopterSlots:helicopterLightPool.lights.length,activeHelicopters:helicopterLightPool.activeCount},
   finalSquadron:finalSquadron.stats(),counts:{meteors:meteors.length,fragmentMeteors:meteors.filter(m=>m.fragment).length,bossMeteors:meteors.filter(m=>m.boss).length,shots:shots.length,blasts:blasts.length,debris:debris.length,cars:cars.length,helicopters:helicopters.length,skylineFires:skylineFires.length},
   meteors:meteors.slice(0,60).map(m=>({x:m.mesh.position.x,y:m.mesh.position.y,z:m.mesh.position.z,size:m.size,hp:m.hp,kind:m.kind,fragment:!!m.fragment,boss:!!m.boss,generation:m.generation||0,grace:m.fragmentGrace||0})),
+  campaign:{remaining,spawnTimer,stormTimer,between,freeFlightMode,dragonEnabled},
   lastErrors:qaLog.slice(-15),elapsed,frameTimes:{frames:sessionStats.frames,seconds:sessionStats.frameTimeTotal}});
  const run=(name,fn)=>{let result;try{result=fn();qaLog.push({seq:++qaSequence,name,ok:true});return {ok:true,result};}catch(err){qaLog.push({seq:++qaSequence,name,ok:false,error:String(err)});return {ok:false,error:String(err)};}};
  // A dedicated geometry-based skyline camera for visual QA. Normal gameplay
@@ -6890,7 +6897,7 @@ window.__DD_QA={snap,
  setLevelAtmosphere:(lvl)=>run('setLevelAtmosphere',()=>{setLevelAtmosphere(lvl);return snap();}),
  spawnLevelAsset:(a)=>run('spawnLevelAsset',()=>{spawnLevelAsset(a);return snap();}),
  audioStats:()=>({muted:soundEngine.isMuted(),musicMuted:soundEngine.isMusicMuted(),sfxMuted:soundEngine.isSfxMuted(),taiko:soundEngine.getTaikoStats()}),setCameraPan:(x)=>{qaCameraScrollX=x;cameraScrollX=x;if(dragon)dragon.position.x=x;},getCity:()=>neighborhood.city,getSchoolHp:()=>hp,getSchoolDamage:()=>schoolDamage,northBroadModels:()=>run('northBroadModels',()=>northBroadModels?.getStats?.()||null),damageNorthBroad:(idOrAddr,amount=0.5)=>run('damageNorthBroad',()=>northBroadModels?.damageBuilding?.(idOrAddr,amount)),impactNorthBroad:(point,radius=5,strength=1)=>run('impactNorthBroad',()=>northBroadModels?.impact?.(point,radius,strength)),hasBereanFeatures:()=>!!scene.getObjectByName('berean-church-rose-window-and-spires'),getFiresCount:()=>schoolFire.length,
-  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getInteriorProxiesVisibleCount:()=>northBroadModels?.entries?.filter(e=>e.interiorProxy?.visible).length||0,isSchoolEffectsHooked:()=>!!schoolReconstruction,getSchoolStats:()=>schoolReconstruction?.stats?.(),collapseSchool:()=>schoolReconstruction?.collapse(),hasFloodedSubwayWater:()=>craters.some(c=>c.subwayGroup?.getObjectByName?.('subway-flooded-water')),setSubwayCam:(active)=>{subwayCamActive=!!active;const b=document.getElementById('dd-tb-subway-cam');if(b)b.classList.toggle('active',subwayCamActive);return subwayCamActive;},isSubwayCamActive:()=>subwayCamActive,setBasementCam:(active)=>{basementCamActive=!!active;if(basementCamActive)subwayCamActive=false;const b=document.getElementById('dd-tb-basement-cam');if(b)b.classList.toggle('active',basementCamActive);return basementCamActive;},isBasementCamActive:()=>basementCamActive,igniteBlock:()=>igniteBlock(),getBurningBuildingsCount:()=>neighborhood.targetBuildings.filter(b=>schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<b.w*0.6&&Math.abs(sf.root.position.z-b.z)<b.d*0.6)).length,hasWaterMainGeyser:()=>craters.some(c=>c.geyserGroup),
+  getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getInteriorProxiesVisibleCount:()=>northBroadModels?.entries?.filter(e=>e.interiorProxy?.visible).length||0,isSchoolEffectsHooked:()=>!!schoolReconstruction,getSchoolStats:()=>schoolReconstruction?.stats?.(),collapseSchool:()=>schoolReconstruction?.collapse(),hasFloodedSubwayWater:()=>craters.some(c=>c.subwayGroup?.getObjectByName?.('subway-flooded-water')),setSubwayCam:(active)=>{setInspectionCamera(active?'subway':'street');return subwayCamActive;},isSubwayCamActive:()=>subwayCamActive,setBasementCam:(active)=>{setInspectionCamera(active?'basement':'street');return basementCamActive;},isBasementCamActive:()=>basementCamActive,igniteBlock:()=>igniteBlock(),getBurningBuildingsCount:()=>neighborhood.targetBuildings.filter(b=>schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<b.w*0.6&&Math.abs(sf.root.position.z-b.z)<b.d*0.6)).length,hasWaterMainGeyser:()=>craters.some(c=>c.geyserGroup),
    getWaterParticleCount:()=>cinematicFX.getWaterParticleCount?cinematicFX.getWaterParticleCount():0,
    getCinematicStats:()=>cinematicFX.stats?cinematicFX.stats():null,
    getBuildingSlots:()=>buildingRegistry.getBuildingSlots(),
