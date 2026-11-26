@@ -1,0 +1,142 @@
+{
+  "version": "1.0.0",
+  "name": "North Broad Street Corridor Building Manifest",
+  "description": "Standardized slot registry for Broad Street 3D architectural models, bounds, and sockets",
+  "units": "meters",
+  "coordinateSystem": "game",
+  "slots": [
+    {
+      "id": "1005656",
+      "address": "2101-07 N BROAD ST",
+      "name": "Berean Presbyterian Church",
+      "gameBuilding": "south-diamond-corner",
+      "position": [223.2, 0, -0.15],
+      "frontWidthMeters": 20.29,
+      "depthMeters": 46.0,
+      "heightMeters": 28.5,
+      "modelFile": "models/1005656.glb",
+      "isChurch": true,
+      "sockets": {
+        "roseWindow": [5.3, 11.2, 0.25],
+        "spireApex": [9.8, 28.2, -1.2],
+        "naveCenter": [5.0, 6.0, -22.0]
+      }
+    },
+    {
+      "id": "1007134",
+      "address": "2217 N BROAD ST",
+      "name": "2217 N Broad Rowhouse",
+      "gameBuilding": "north-2217-brownstone",
+      "position": [22.38, 0, -0.15],
+      "frontWidthMeters": 6.16,
+      "depthMeters": 18.0,
+      "heightMeters": 14.2,
+      "modelFile": "models/1007134.glb"
+    },
+    {
+      "id": "1007133",
+      "address": "2219 N BROAD ST",
+      "name": "2219 N Broad Rowhouse",
+      "gameBuilding": "north-2219-brownstone",
+      "position": [16.28, 0, -0.15],
+      "frontWidthMeters": 6.04,
+      "depthMeters": 18.0,
+      "heightMeters": 14.2,
+      "modelFile": "models/1007133.glb"
+    },
+    {
+      "id": "1007132",
+      "address": "2227 N BROAD ST",
+      "name": "United Fund of Pennsylvania",
+      "gameBuilding": "united-fund-cream",
+      "position": [-16.13, 0, -0.15],
+      "frontWidthMeters": 5.74,
+      "depthMeters": 18.0,
+      "heightMeters": 13.8,
+      "modelFile": "models/1007132.glb",
+      "sign": "United Fund of Pennsylvania, Inc."
+    },
+    {
+      "id": "1003388",
+      "address": "2231 N BROAD ST",
+      "name": "Black United Fund Conference Center",
+      "gameBuilding": "black-united-fund",
+      "position": [-21.56, 0, -0.15],
+      "frontWidthMeters": 5.13,
+      "depthMeters": 18.0,
+      "heightMeters": 13.5,
+      "modelFile": "models/1003388.glb",
+      "sign": "Black United Fund Conference Center"
+    },
+    {
+      "id": "1525758",
+      "address": "2233 N BROAD ST",
+      "name": "blues babe FOUNDATION",
+      "gameBuilding": "blues-babe-foundation",
+      "position": [-27.25, 0, -0.15],
+      "frontWidthMeters": 6.24,
+      "depthMeters": 18.0,
+      "heightMeters": 13.8,
+      "modelFile": "models/1525758.glb",
+      "sign": "blues babe FOUNDATION"
+    },
+    {
+      "id": "1536711",
+      "address": "2239 N BROAD ST",
+      "name": "2239 N Broad Rowhouse",
+      "gameBuilding": "north-2239-rowhouse",
+      "position": [-44.67, 0, -0.15],
+      "frontWidthMeters": 5.79,
+      "depthMeters": 18.0,
+      "heightMeters": 13.8,
+      "modelFile": "models/1536711.glb"
+    },
+    {
+      "id": "1508518",
+      "address": "2241 N BROAD ST",
+      "name": "2241 N Broad Rowhouse",
+      "gameBuilding": "north-2241-rowhouse",
+      "position": [-50.40, 0, -0.15],
+      "frontWidthMeters": 5.68,
+      "depthMeters": 18.0,
+      "heightMeters": 13.8,
+      "modelFile": "models/1508518.glb"
+    },
+    {
+      "id": "1536713",
+      "address": "2251 N BROAD ST",
+      "name": "PCs for People",
+      "gameBuilding": "pcs-for-people",
+      "position": [-77.82, 0, -0.15],
+      "frontWidthMeters": 5.57,
+      "depthMeters": 18.0,
+      "heightMeters": 13.6,
+      "modelFile": "models/1536713.glb",
+      "sign": "PCs for People"
+    },
+    {
+      "id": "1542243",
+      "address": "2253 N BROAD ST",
+      "name": "Philadelphia Doll Museum",
+      "gameBuilding": "north-doll-museum",
+      "position": [-83.85, 0, -0.15],
+      "frontWidthMeters": 6.48,
+      "depthMeters": 18.0,
+      "heightMeters": 14.5,
+      "modelFile": "models/1542243.glb",
+      "sign": "PHILADELPHIA DOLL MUSEUM"
+    },
+    {
+      "id": "1051326",
+      "address": "2309-13 N BROAD ST",
+      "name": "Philadelphia Electric Company",
+      "gameBuilding": "north-2300-corner-commercial",
+      "position": [-148.225, 0, -0.15],
+      "frontWidthMeters": 20.45,
+      "depthMeters": 22.0,
+      "heightMeters": 15.2,
+      "modelFile": "models/1051326.glb",
+      "sign": "PHILADELPHIA ELECTRIC COMPANY"
+    }
+  ]
+}

@@ -328,6 +328,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    if(p.profile==='glass')effectsHooks.onGlassShatter?.(p.x,p.y,p.z);
    else if(['column','pier','atrium-column','basement-column'].includes(p.zone))effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
    else if(['floor','basement-floor'].includes(p.zone))effectsHooks.onFloorPancake?.(p.x,p.y,p.z);
+   else if(p.isFurniture||p.kind===5||['classroom-desk','classroom-chair','student-desk','classroom-bookshelf','filing-cabinet','lab-monitor'].includes(p.zone))effectsHooks.onFurnitureImpact?.(p.x,p.y,p.z,p.zone,5.0);
 
    // RC163: Live electrical wire / conduit short arc sparks
    const isElectrical=['classroom-light','lab-monitor','basement-column','rebar','partition','atrium-light'].includes(p.zone);
@@ -509,7 +510,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    const isSteel=p.kind===3||p.zone==='beam'||p.zone==='column'||p.zone==='atrium-column';
    const isGlass=p.kind===2||p.zone==='glass';
    const isDrywall=p.kind===4||p.zone==='partition'||p.zone==='classroom-whiteboard'||p.zone==='classroom-light';
-   const isFurniture=p.kind===5||p.zone==='classroom-desk'||p.zone==='classroom-chair'||p.zone==='classroom-bookshelf';
+   const isFurniture=p.isFurniture||p.kind===5||['classroom-desk','classroom-chair','student-desk','classroom-bookshelf','filing-cabinet','lab-monitor'].includes(p.zone);
    const isFacade=p.kind===0||p.zone==='facade'||p.zone==='pier';
 
    const grav=isFloor?21.0:isSteel?18.5:isFacade?16.5:isFurniture?13.5:isDrywall?10.8:isGlass?9.6:15.0;
@@ -533,7 +534,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
     p.vz*=(isFloor?0.15:isSteel?0.45:0.32);
     p.vr*=0.35;
 
-    if(impactVy>3.0&&effectsHooks){
+    if(impactVy>2.4&&effectsHooks){
      if(isGlass){
       if(!p.resting){p.resting=true;activeFallingPieces=Math.max(0,activeFallingPieces-1);}
       if(Math.random()<0.65)p.removed=true;
@@ -542,6 +543,11 @@ export function createDestructibleSchool(THREE,scene,bounds){
       effectsHooks.onFloorPancake?.(p.x,p.y,p.z);
      }else if(isSteel&&impactVy>3.2){
       effectsHooks.onColumnBuckle?.(p.x,p.y,p.z);
+     }else if(isFurniture){
+      effectsHooks.onFurnitureImpact?.(p.x,p.y,p.z,p.zone,impactVy);
+      if(impactVy>4.0&&Math.random()<0.40){
+       p.removed=true;
+      }
      }
     }
 

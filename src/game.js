@@ -550,6 +550,29 @@ function updateFires(dt){
      neighborhood.city.impact(bldg,f.root.position,2.8,0.24);
      debrisPiece(f.root.position.clone().add(new THREE.Vector3((Math.random()-.5)*1.6,-0.5,(Math.random()-.5)*1.6)),Math.random()<0.3?'glass':'brick',f.root.position);
     }
+    // RC167: Radiative heat transfer between adjacent burning buildings within 12m radius
+    if(bldg&&(bldg.fireDamage>0.25||bldg.damage>0.35)){
+     const radiantRadius=12.0;
+     for(const otherB of neighborhood.targetBuildings){
+      if(otherB===bldg||otherB.school||(otherB.damage||0)>=0.95)continue;
+      const dx=otherB.x-bldg.x, dz=otherB.z-bldg.z;
+      const distSq=dx*dx+dz*dz;
+      if(distSq<radiantRadius*radiantRadius){
+       const dist=Math.max(2.0,Math.sqrt(distSq));
+       const radiantFlux=(1.0-dist/radiantRadius)*(bldg.fireDamage||0.35)*dt*0.09;
+       otherB.radiantHeat=(otherB.radiantHeat||0)+radiantFlux;
+       if(otherB.radiantHeat>=0.28&&schoolFire.length<64){
+        otherB.radiantHeat=0;
+        const roofY=Math.max(2.0,otherB.h*0.85);
+        const corniceX=otherB.x+(Math.random()-0.5)*otherB.w*0.6;
+        const corniceZ=otherB.front-0.8;
+        ignite(corniceX,roofY,corniceZ);
+        cinematicFX.sparks(new THREE.Vector3(corniceX,roofY,corniceZ),8,1.2);
+       }
+      }
+     }
+    }
+
     // Catastrophic collapse from untended fire & neighborhood fire cascade
     if(!bldg.fireCollapsed&&(bldg.fireDamage>=0.70||bldg.damage>=0.96)){
      bldg.fireCollapsed=true;
@@ -910,6 +933,22 @@ schoolReconstruction.setEffectsHooks?.({
   cinematicFX.demolitionDustWave(new THREE.Vector3(x-3.2,0.4,z),new THREE.Vector3(x+3.2,0.4,z),1.8);
   buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y+0.6,z),new THREE.Vector3(x+(Math.random()-0.5)*3.2,Math.max(0.4,y-1.8),z+(Math.random()-0.5)*3.2),1.6,cinematicFX,sound);
   shake=Math.max(shake,0.55);
+ },
+ onFurnitureImpact:(x,y,z,zone,impactVy=3.0)=>{
+  // RC167: Classroom furniture impact fracture and debris splintering
+  sound('crash',{x,volume:0.35,pitch:1.35});
+  cinematicFX.dustBurst(new THREE.Vector3(x,y,z),0.55);
+  const chipCount=Math.min(8,Math.floor(3+impactVy*0.75));
+  for(let s=0;s<chipCount;s++){
+   const cPos=new THREE.Vector3(
+    x+(Math.random()-0.5)*0.8,
+    y+0.15+Math.random()*0.35,
+    z+(Math.random()-0.5)*0.8
+   );
+   const cOrigin=new THREE.Vector3(x,y-0.1,z);
+   const matType=zone==='lab-monitor'?'metal':(Math.random()<0.55?'wood':'furniture');
+   debrisPiece(cPos,matType,cOrigin);
+  }
  },
  onStructuralCreak:(x,y,z)=>{
   if(Math.random()<0.45){
@@ -1747,6 +1786,7 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
       _craterV1.set(c.root.position.x-c.dir*1.2,0.15,c.root.position.z+(Math.random()-0.5)*1.2);
       _craterV2.set(-c.dir*0.4+Math.random()*0.2,0.85,(Math.random()-0.5)*1.4).normalize();
       cinematicFX.waterSpray?.(_craterV1,_craterV2,dt,{rate:2,power:0.65});
+      streetWaterRunoff?.triggerRipple?.(c.root.position.x,c.root.position.z,0.45);
      }
      break;
     }
@@ -2652,6 +2692,7 @@ function addCrater(x,z,radius=3,opts={}){
   scene.add(geyserGroup);
   sound('water');
   streetWaterRunoff?.triggerWaterMainRupture(x, z);
+  streetWaterRunoff?.triggerRipple?.(x, z, 1.8);
  }
 
  craters.push({x,z,radius,mesh,inner,ember,rimMesh,bowlMesh,sootDecal:typeof sootDecal!=='undefined'?sootDecal:null,thermalGroup:typeof thermalCore!=='undefined'?thermalCore?.group:null,thermalUpdate:typeof thermalCore!=='undefined'?thermalCore?.update:null,subwayGroup,geyserGroup,isSubway:isSubwayBreach,sparkTimer:0,geyserTimer:0,life:120,initialLife:120});
@@ -6965,6 +7006,14 @@ window.__DD_QA={snap,
   getElectricalShortsCount:()=>electricalShortsCount,getNorthBroadEntry:(idOrAddr)=>{const e=northBroadModels?.entries?.find?.(x=>x.def.id===idOrAddr||x.def.address.includes(idOrAddr));return e?{id:e.def.id,damage:e.damage,cracksVisible:!!e.facadeCracks?.visible,cracksOpacity:e.facadeCracksMat?.opacity||0}:null;},getSchoolCracks:()=>{const g=scene.getObjectByName('TECH-FREIRE-FACADE-CRACKS');return g?{visible:!!g.visible,linesCount:g.children.length}:null;},getSkyBurstsCount:()=>skyBursts.filter(b=>b.smoke).length,getDistantSmokeMaxY:()=>{let maxY=0;for(const b of skyBursts){if(b.smoke)maxY=Math.max(maxY,b.m.position.y);}return maxY;},getCrunchedMeteors:()=>meteors.filter(m=>m.crunched||m.crunching).map(m=>({x:m.mesh?.position?.x,y:m.mesh?.position?.y,z:m.mesh?.position?.z,size:m.size,stopY:m.crunchStopY,kind:m.kind,crunched:m.crunched,crunching:m.crunching})),getBoreholeSeveredCount:()=>schoolReconstruction?.getPieces?.().filter(p=>p.falling&&p.vy<-5.0).length||0,getInteriorProxiesVisibleCount:()=>northBroadModels?.entries?.filter(e=>e.interiorProxy?.visible).length||0,isSchoolEffectsHooked:()=>!!schoolReconstruction,getSchoolStats:()=>schoolReconstruction?.stats?.(),collapseSchool:()=>schoolReconstruction?.collapse(),hasFloodedSubwayWater:()=>craters.some(c=>c.subwayGroup?.getObjectByName?.('subway-flooded-water')),setSubwayCam:(active)=>{subwayCamActive=!!active;const b=document.getElementById('dd-tb-subway-cam');if(b)b.classList.toggle('active',subwayCamActive);return subwayCamActive;},isSubwayCamActive:()=>subwayCamActive,setBasementCam:(active)=>{basementCamActive=!!active;if(basementCamActive)subwayCamActive=false;const b=document.getElementById('dd-tb-basement-cam');if(b)b.classList.toggle('active',basementCamActive);return basementCamActive;},isBasementCamActive:()=>basementCamActive,igniteBlock:()=>igniteBlock(),getBurningBuildingsCount:()=>neighborhood.targetBuildings.filter(b=>schoolFire.some(sf=>Math.abs(sf.root.position.x-b.x)<b.w*0.6&&Math.abs(sf.root.position.z-b.z)<b.d*0.6)).length,hasWaterMainGeyser:()=>craters.some(c=>c.geyserGroup),
    getWaterParticleCount:()=>cinematicFX.getWaterParticleCount?cinematicFX.getWaterParticleCount():0,
    getCinematicStats:()=>cinematicFX.stats?cinematicFX.stats():null,
+   getBuildingSlots:()=>buildingRegistry.getBuildingSlots(),
+   swapBuildingModel:(id,source,opts)=>buildingRegistry.swapBuildingModel(id,source,opts),
+   loadBuildingManifest:(m)=>buildingRegistry.loadBuildingManifest(m),
+   exportBuildingManifest:()=>buildingRegistry.exportManifest(),
+   createProceduralBuildingFallback:(slot)=>buildingRegistry.createProceduralFallback(slot),
+   getStreetRunoffStats:()=>streetWaterRunoff.getStats(),
+   triggerStreetRunoff:(vol)=>streetWaterRunoff.setRunoffVolume(vol),
+   getSubwayThirdRailArcLight:()=>{const g=scene.getObjectByName('subway-cavern-group');return g?g.getObjectByName('subway-third-rail-arc-light'):null;},
   getElectricalShortsCount:()=>buildingElectricalShorts.getTotalShortsTriggered(),
   getActiveArcsCount:()=>buildingElectricalShorts.getActiveArcsCount(),
   triggerElectricalShort:(x=0,y=4.5,z=-15,power=1.0)=>{buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y,z),new THREE.Vector3(x+(Math.random()-0.5)*1.5,y-0.3-Math.random()*0.8,z+(Math.random()-0.5)*1.5),power,cinematicFX,sound);return true;},

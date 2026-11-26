@@ -55,10 +55,46 @@ export function createStreetWaterRunoff(scene) {
     depthWrite: false
   });
 
+  // RC167: Procedural dynamic ripple normal map
+  function createRippleNormalTexture() {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.createImageData(size, size);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const nx = (x / size) * 2 - 1;
+        const ny = (y / size) * 2 - 1;
+        const dist = Math.sqrt(nx * nx + ny * ny);
+        const dx = Math.cos(dist * 20.0) * (nx / (dist + 0.001));
+        const dy = Math.cos(dist * 20.0) * (ny / (dist + 0.001));
+        const r = Math.floor((dx * 0.5 + 0.5) * 255);
+        const g = Math.floor((dy * 0.5 + 0.5) * 255);
+        const idx = (y * size + x) * 4;
+        imgData.data[idx] = r;
+        imgData.data[idx + 1] = g;
+        imgData.data[idx + 2] = 255;
+        imgData.data[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(24, 2);
+    return tex;
+  }
+
+  const rippleNormalTex = createRippleNormalTexture();
+
   const waterFlowRibbonMat = new THREE.MeshStandardMaterial({
     color: 0x5088aa,
     roughness: 0.12,
     metalness: 0.35,
+    normalMap: rippleNormalTex,
+    normalScale: new THREE.Vector2(0.35, 0.35),
     transparent: true,
     opacity: 0.0,
     depthWrite: false
@@ -142,6 +178,7 @@ export function createStreetWaterRunoff(scene) {
   let currentRunoffVolume = 0.0;
   let targetRunoffVolume = 0.0;
   let flowClock = 0;
+  let ripplePulse = 0.0;
 
   return {
     root,
@@ -152,6 +189,11 @@ export function createStreetWaterRunoff(scene) {
     triggerWaterMainRupture(originX, originZ) {
       // Sudden surge of runoff water flowing to curbs
       targetRunoffVolume = Math.max(targetRunoffVolume, 0.85);
+      ripplePulse = Math.min(2.5, ripplePulse + 1.2);
+    },
+    triggerRipple(x, z, intensity = 1.0) {
+      // Trigger dynamic ripple normal surge along curb gutters
+      ripplePulse = Math.min(2.5, ripplePulse + intensity * 0.65);
     },
     update(dt, hasActiveGeysers = false) {
       flowClock += dt;
@@ -168,6 +210,15 @@ export function createStreetWaterRunoff(scene) {
       const activeOpacity = currentRunoffVolume * 0.72;
       waterFlowRibbonMat.opacity = activeOpacity;
       waterFilmMat.opacity = currentRunoffVolume * 0.45;
+
+      // Animate downstream gutter wave scroll and ripple impulse decay
+      rippleNormalTex.offset.x += dt * 0.32;
+      if (ripplePulse > 0.01) {
+        ripplePulse = Math.max(0, ripplePulse - dt * 1.8);
+        waterFlowRibbonMat.normalScale.set(0.35 + ripplePulse * 0.85, 0.35 + ripplePulse * 0.85);
+      } else {
+        waterFlowRibbonMat.normalScale.set(0.35, 0.35);
+      }
 
       const isFlowing = currentRunoffVolume > 0.04;
       northGutter.visible = isFlowing;
@@ -191,6 +242,7 @@ export function createStreetWaterRunoff(scene) {
         activeDrains: drainObjects.length,
         runoffVolume: +currentRunoffVolume.toFixed(2),
         isFlowing: currentRunoffVolume > 0.04,
+        ripplePulse: +ripplePulse.toFixed(2),
         gutterWidthMeters: 0.68,
         northGutterZ: NORTH_GUTTER_Z,
         southGutterZ: SOUTH_GUTTER_Z
