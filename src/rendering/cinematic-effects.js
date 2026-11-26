@@ -1,3 +1,13 @@
+// BufferAttribute update ranges are expressed in scalar elements, not instances.
+export function uploadActivePrefix(attribute,instances,stride){
+ if(instances<=0)return false;
+ if(typeof attribute.addUpdateRange==='function'&&typeof attribute.clearUpdateRanges==='function'){
+  attribute.clearUpdateRanges();
+  attribute.addUpdateRange(0,instances*stride);
+ }
+ attribute.needsUpdate=true;
+ return true;
+}
 export function createCinematicEffects(T,scene,camera,bank){
  const dummy=new T.Object3D();let clock=0;
  const windOrigin=new T.Vector3(),windDirection=new T.Vector3(1,0,0);
@@ -23,7 +33,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxRaw=clamp(1.0-smoothstep(0.06,0.94,fxEdgeR),0.0,1.0);float fxFeather=fxRaw*fxRaw*(3.0-2.0*fxRaw);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
   };
   return {
-   m,alpha,colors,capacity,n:0,
+   m,alpha,colors,capacity,n:0,dirty:false,
    add(pos,w,h,opacity=1,rotation=0,col=null){
     if(this.n>=capacity)return;
     dummy.position.copy(pos);
@@ -35,14 +45,16 @@ export function createCinematicEffects(T,scene,camera,bank){
     if(col){colors.setXYZ(this.n,col.r,col.g,col.b);}
     else{colors.setXYZ(this.n,1.0,1.0,1.0);}
     alpha.setX(this.n++,opacity);
+    this.dirty=true;
    },
    flush(){
     m.count=this.n;
-    if(this.n>0){
-     m.instanceMatrix.needsUpdate=true;
-     colors.needsUpdate=true;
-     alpha.needsUpdate=true;
+    if(this.dirty&&this.n>0){
+     uploadActivePrefix(m.instanceMatrix,this.n,16);
+     uploadActivePrefix(colors,this.n,3);
+     uploadActivePrefix(alpha,this.n,1);
     }
+    this.dirty=false;
    }
   };
  }
@@ -130,7 +142,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  const MAX_WATER=120;
  let subwayCraters=[];
  function syncSubwayCraters(craters=[]){
-  subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0);
+  subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0&&c.subwayGroup);
  }
  const waterParticles=[];
  for(let i=0;i<MAX_WATER;i++){
@@ -303,7 +315,7 @@ export function createCinematicEffects(T,scene,camera,bank){
 
  function begin(dt){
   clock+=dt;
-  for(const p of pools)p.n=0;
+  for(const p of pools){p.n=0;p.dirty=false;}
 
   // Update smoke & steam puffs
   for(let i=0;i<MAX_PUFFS;i++){
@@ -403,7 +415,7 @@ export function createCinematicEffects(T,scene,camera,bank){
     const dx=wp.p.x-sc.x,dz=wp.p.z-sc.z;
     const rSq=sc.radius*sc.radius*0.82;
     if(dx*dx+dz*dz<rSq){
-     chasmFloorY=-5.0; // Broad Street Line track bed depth
+     chasmFloorY=sc.subwayGroup.userData.floodBaseY??-5.0; // Actual cavity depth
      break;
     }
    }
@@ -551,7 +563,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    sparkPuffs.forEach(s=>s.active=false);
    waterParticles.forEach(w=>w.active=false);
    windStrength=0;
-   for(const p of pools){p.n=0;p.flush();}
+   for(const p of pools){p.n=0;p.dirty=false;p.flush();}
   },
   setVisible(on){for(const p of pools)p.m.visible=on;},
   stats:()=>({
