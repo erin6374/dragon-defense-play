@@ -32,6 +32,30 @@ const exteriorSourceObjects=/^Mass_(?:2_Mass_2_323677|3_Mass_3_323978|4_Mass_4_3
 // These exported masonry returns occupy the gaps between the side party-wall
 // bays. Keep their exact FBX geometry, including the adjoining openings.
 const sideMasonry=/_(319636|319768|319855|319942|320026|320638|320784|320869|321343|322923|323025|323346|356207|361315|361796|361964|362038|363387|363517|449495|450412|496180|496314|496450|496592)$/;
+// Audit source names without assigning invented room uses or floor plans.
+export function schoolSourceCategory(mesh){
+ const tag=((mesh.name||'')+' '+(mesh.parent?.name||'')).toLowerCase();
+ if(/desk|chair|furniture|table|locker|casework|cabinet/.test(tag))return 'furniture';
+ if(/sink|toilet|plumbing/.test(tag))return 'plumbing';
+ if(/lighting|light_fixture|luminaire|_led_/.test(tag))return 'lighting';
+ if(/stair|ramp|railing|handrail|top_rail|baluster/.test(tag))return 'circulation';
+ if(/floor|slab/.test(tag))return 'floors';
+ if(/column|beam|structural/.test(tag))return 'structure';
+ if(/door/.test(tag))return 'doors';
+ if(/window|glaz|glass|curtain|mullion/.test(tag))return 'glazing';
+ if(/wall|partition/.test(tag))return 'walls';
+ if(/roof|parapet/.test(tag))return 'roof';
+ return 'other';
+}
+export function schoolInteriorSourceEligible(mesh,box){
+ const category=schoolSourceCategory(mesh);
+ if(!['furniture','plumbing','lighting'].includes(category))return false;
+ // Only retain small named fixtures entirely within the school source zone.
+ return box.min.x>=SCHOOL_SOURCE.keepMinX&&box.max.x<=SCHOOL_SOURCE.keepMaxX&&
+  box.min.z>=SCHOOL_SOURCE.keepMinZ&&box.max.z<=SCHOOL_SOURCE.keepMaxZ&&
+  box.min.y>=-18&&box.max.y<=SCHOOL_SOURCE.roofY&&
+  box.max.x-box.min.x<35&&box.max.z-box.min.z<35;
+}
 export function architecturalMeshEligible(mesh,box){
  const tag=((mesh.name||'')+' '+(mesh.parent?.name||'')).toLowerCase();
  const needed=/wall|floor|slab|roof|window|glaz|panel|curtain|mullion|frame|column|beam|door|stair|railing|cornice|parapet|foundation|glass|ramp|storefront|handrail|rail|structural|lintel|baluster|baseboard|trim|sill|top_rail/.test(tag);
@@ -45,6 +69,7 @@ export function architecturalMeshEligible(mesh,box){
 // horizontal midpoint, then reject huge cross-building outliers.  This avoids
 // triple-rendering a large slab in multiple render layers.
 export function classifyArchitecturalMesh(mesh,box){
+ if(schoolInteriorSourceEligible(mesh,box))return 'school';
  if(!architecturalMeshEligible(mesh,box))return null;
  const x=(box.min.x+box.max.x)*.5;
  const width=box.max.x-box.min.x;
