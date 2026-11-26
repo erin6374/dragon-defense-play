@@ -4,15 +4,16 @@
 import { BROAD_LANES,CROSS_STREET_X } from './road-corridors.js';
 
 export function adjacentLane(z,dir,detour=false){
- const [inner,outer]=dir>0?BROAD_LANES.slice(0,2):BROAD_LANES.slice(2);
- const shoulder=dir>0?7.5:25.5;
- if(Math.abs(z-inner)<1.2)return detour?shoulder:outer;
- if(Math.abs(z-outer)<1.2)return detour?shoulder:inner;
- if(Math.abs(z-shoulder)<1.2)return inner;
+ const [first,second]=dir>0?BROAD_LANES.slice(0,2):BROAD_LANES.slice(2);
+ // There are only two marked travel lanes per direction. Parking/curb
+ // space is not a third detour lane.
+ if(detour)return null;
+ if(Math.abs(z-first)<1.2)return second;
+ if(Math.abs(z-second)<1.2)return first;
  return null;
 }
 export function choosePassingLane(car,cars,craters=[],{allowWithoutLeader=false}={}){
- if(!car||car.emergency||car.rearStreet||car.turning||car.turnPath?.length||car.routing||car.frozen||car.stun>0)return null;
+ if(!car||car.emergency||car.crossStreet||car.rearStreet||car.turning||car.turnPath?.length||car.routing||car.frozen||car.stun>0)return null;
  const x=car.root.position.x,z=car.root.position.z,dir=car.dir;
  // Restrict lane changes near cross-streets
  if(CROSS_STREET_X.some(cross=>Math.abs(x-cross)<15))return null;
@@ -28,17 +29,8 @@ export function choosePassingLane(car,cars,craters=[],{allowWithoutLeader=false}
 
  let candidate=null;
  if(craterAhead){
-  // Actively find an evasive detour lane that clears this crater
-  const normalCandidate=adjacentLane(car.laneZ,dir,false);
-  if(normalCandidate!==null&&Math.abs(craterAhead.z-normalCandidate)>=craterAhead.radius+1.0){
-   candidate=normalCandidate;
-  }else{
-   // If adjacent regular lane is also clipped by wide breach -> take shoulder detour
-   const shoulderCandidate=adjacentLane(car.laneZ,dir,true);
-   if(shoulderCandidate!==null&&Math.abs(craterAhead.z-shoulderCandidate)>=craterAhead.radius+0.6){
-    candidate=shoulderCandidate;
-   }
-  }
+  const adjacent=adjacentLane(car.laneZ,dir,false);
+  if(adjacent!==null&&craters.every(c=>!c||c.life<=0||(c.x-x)*dir<=-1||(c.x-x)*dir>=c.radius+22||Math.abs(c.z-adjacent)>=c.radius+1.6))candidate=adjacent;
   if(candidate===null)return null;
  }else{
   candidate=adjacentLane(car.laneZ,dir,false);
