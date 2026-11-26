@@ -715,8 +715,9 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
           }
 
           if (node.isMesh) {
-            node.castShadow = true;
+            node.castShadow = false; // Static street buildings receive shadows but avoid 750 dynamic shadow pass draws
             node.receiveShadow = true;
+            node.matrixAutoUpdate = false;
 
             const materials = Array.isArray(node.material) ? node.material : [node.material];
             for (let i = 0; i < materials.length; i++) {

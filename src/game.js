@@ -819,7 +819,7 @@ function loadActualSchoolOverlay(){
      const mats=Array.isArray(obj.material)?obj.material:[obj.material];
      for(const mat of mats){if(!mat)continue;
       if(mat.color&&!mat.userData.originalColor)mat.userData.originalColor=mat.color.clone();
-      mat.side=THREE.DoubleSide;
+      mat.side=(mat.transparent||(mat.name&&mat.name.includes('glass')))?THREE.DoubleSide:THREE.FrontSide;
       if('roughness' in mat)mat.roughness=Math.min(.92,(mat.roughness??.7)+.08);
       if('metalness' in mat&&mat.metalness>.28)mat.metalness*=.55;
      }
@@ -845,6 +845,8 @@ function loadActualSchoolOverlay(){
     }
    });
    central.model.name='ACTUAL-TECH-FREIRE-SCHOOL';
+   central.model.matrixAutoUpdate=false;
+   central.model.updateMatrix();
    scene.add(central.model);
    const box=new THREE.Box3().setFromObject(central.model,true);
    const size=box.getSize(new THREE.Vector3());
@@ -1388,9 +1390,10 @@ for(const crossX of [-270, -102, 78, 256]){
   policeBlockades.push({cruiser,beacon,amberBeacon});
  }
 }
+try{batchStaticStreetProps(policeBlockadeGroup);}catch(e){}
 function updatePoliceBlockades(dt){
  const activeBlockade=(wave>=6||hp<75);
- policeBlockadeGroup.visible=activeBlockade;try{batchStaticStreetProps(policeBlockadeGroup);}catch(e){}
+ policeBlockadeGroup.visible=activeBlockade;
  if(!activeBlockade)return;
  for(const b of policeBlockades){
   if(b.beacon)b.beacon.material=(Math.floor(elapsed*8)%2)?redLamp:blueLamp;
@@ -3198,6 +3201,10 @@ const impactMarker=rallyLoop?new THREE.Mesh(new THREE.RingGeometry(1.08,1.45,32)
 if(impactMarker){impactMarker.visible=false;impactMarker.renderOrder=20;scene.add(impactMarker);}
 const effects=new THREE.Group();scene.add(effects);
 const effectObjects=[];
+const _sharedShockRingGeo=new THREE.RingGeometry(.84,.96,20);
+const _sharedShockPlaneGeo=new THREE.PlaneGeometry(1,1);
+const _sharedShockRingMat=new THREE.MeshBasicMaterial({color:0xffd59a,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false});
+const _sharedShockFlashMat=new THREE.MeshBasicMaterial({map:visualBank.images.flash,color:0xffd695,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
 const sharedTrailGeometry=new THREE.IcosahedronGeometry(1,0);
 const sharedSmokeMaterial=new THREE.MeshBasicMaterial({color:0x55565b,transparent:true,opacity:.45,depthWrite:false});
 const sharedEmberMaterial=new THREE.MeshBasicMaterial({color:0xffa329});
@@ -3230,8 +3237,9 @@ function emitImpact(x,y,z,count=170,power=1){
  }
  if(effectObjects.length>14)return;
  const surface=y<2.5;
- const ring=surface?new THREE.Mesh(new THREE.RingGeometry(.84,.96,28),new THREE.MeshBasicMaterial({color:0xffd59a,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false})):
-  new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:visualBank.images.flash,color:0xffd695,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+ const ringGeo=surface?_sharedShockRingGeo:_sharedShockPlaneGeo;
+ const ringMat=surface?_sharedShockRingMat:_sharedShockFlashMat;
+ const ring=new THREE.Mesh(ringGeo,ringMat);
  ring.position.set(x,y,z);if(surface)ring.rotation.x=-Math.PI/2;effects.add(ring);effectObjects.push({mesh:ring,ring:surface,life:.26,ttl:.26});
 }
 function emitTrail(position,smoky){
@@ -3242,7 +3250,7 @@ function emitTrail(position,smoky){
 function updateEffects(dt){
  for(let i=effectObjects.length-1;i>=0;i--){const e=effectObjects[i];e.life-=dt;
   const r=1+(1-e.life/e.ttl)*8;e.mesh.scale.setScalar(r);e.mesh.material.opacity=Math.max(0,e.life/e.ttl)*.8;
-  if(e.life<=0){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();effectObjects.splice(i,1)}
+  if(e.life<=0){effects.remove(e.mesh);effectObjects.splice(i,1)}
  }
  for(const pool of impactPools)pool.begin();trailSmokePool.begin();trailEmberPool.begin();
  for(let i=impactParticles.length-1;i>=0;i--){const e=impactParticles[i];e.life-=dt;

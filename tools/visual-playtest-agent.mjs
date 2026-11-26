@@ -15,8 +15,26 @@ const pwPath = 'C:/Users/Tech-Erin/.cache/codex-runtimes/codex-primary-runtime/d
 const { chromium } = await import(pathToFileURL(pwPath).href);
 const chromePath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe';
 
-const ARTIFACT_DIR = 'C:/Users/Tech-Erin/.gemini/antigravity/brain/19a75615-4ae7-44c7-9109-444c267f196a';
+const ARTIFACT_DIRS = [
+  'C:/Users/Tech-Erin/.gemini/antigravity/brain/19a75615-4ae7-44c7-9109-444c267f196a',
+  'C:/Users/Tech-Erin/.gemini/antigravity/brain/eee1f496-7181-4786-a8c7-ce86fdb71852'
+];
 const SERVER_URL = 'http://127.0.0.1:8780/?qa=1';
+
+async function captureVisual(page, filename) {
+  const pngBase64 = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return null;
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  if (!pngBase64) throw new Error('Failed to capture canvas for ' + filename);
+  for (const dir of ARTIFACT_DIRS) {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, filename), Buffer.from(pngBase64, 'base64'));
+  }
+  console.log(`   Captured WebGL canvas visual: ${filename}`);
+  return true;
+}
 
 console.log('=== DRAGON DEFENSE AUTONOMOUS VISUAL PLAYTESTING AGENT (RC166) ===');
 
@@ -83,9 +101,7 @@ for (let sec = 0; sec < 10; sec++) {
 }
 
 // Capture smooth gameplay action screenshot
-const actionShotPath = path.join(ARTIFACT_DIR, 'rc166_smooth_60fps_gameplay_action.png');
-await page.screenshot({ path: actionShotPath, timeout: 60000 });
-console.log(`   Captured live action screenshot: ${actionShotPath}`);
+await captureVisual(page, 'rc166_smooth_60fps_gameplay_action.png');
 
 // 4. Test Realistic White Particle Water Effects & Performance
 console.log('4. Testing Particle-Based White Water Effects & Optimization...');
@@ -124,9 +140,7 @@ await page.evaluate(() => {
   window.__DD_CAMERA.lookAt(6, 4, 10);
 });
 await page.waitForTimeout(600);
-const waterShotPath = path.join(ARTIFACT_DIR, 'rc166_high_velocity_white_water_stream.png');
-await page.screenshot({ path: waterShotPath, timeout: 60000 });
-console.log(`   Captured realistic water stream visual: ${waterShotPath}`);
+await captureVisual(page, 'rc166_high_velocity_white_water_stream.png');
 
 // 5. Test Deep Subway Breach on Broad Street & Subterranean Waterfall Sheets
 console.log('5. Testing Deep Subway Breach & Subterranean Waterfall Sheets...');
@@ -162,9 +176,7 @@ await page.evaluate(() => {
   window.__DD_CAMERA.lookAt(0, -3.5, 22);
 });
 await page.waitForTimeout(600);
-const subwayShotPath = path.join(ARTIFACT_DIR, 'rc166_subterranean_subway_waterfall_sheets.png');
-await page.screenshot({ path: subwayShotPath, timeout: 60000 });
-console.log(`   Captured deep subway waterfall visual: ${subwayShotPath}`);
+await captureVisual(page, 'rc166_subterranean_subway_waterfall_sheets.png');
 
 // 6. Test Tech-Freire Cantilever Shear Sag & Rebar Oscillation
 console.log('6. Testing Tech-Freire Cantilever Shear Sag & Rebar Physics...');
@@ -207,9 +219,7 @@ await page.evaluate(() => {
   window.__DD_CAMERA.lookAt(0, 10, -8);
 });
 await page.waitForTimeout(600);
-const schoolShotPath = path.join(ARTIFACT_DIR, 'rc166_cantilever_shear_sag_and_rebar_sway.png');
-await page.screenshot({ path: schoolShotPath, timeout: 60000 });
-console.log(`   Captured Tech-Freire cantilever shear sag visual: ${schoolShotPath}`);
+await captureVisual(page, 'rc166_cantilever_shear_sag_and_rebar_sway.png');
 
 // 7. Final Telemetry
 console.log('7. Final Performance Telemetry Audit...');
@@ -247,9 +257,11 @@ const verificationReport = {
   consoleErrors
 };
 
-const jsonReportPath = path.join(ARTIFACT_DIR, 'rc166_verification_report.json');
-fs.writeFileSync(jsonReportPath, JSON.stringify(verificationReport, null, 2));
-console.log(`8. Verification report saved: ${jsonReportPath}`);
+for (const dir of ARTIFACT_DIRS) {
+  const jsonReportPath = path.join(dir, 'rc166_verification_report.json');
+  fs.writeFileSync(jsonReportPath, JSON.stringify(verificationReport, null, 2));
+  console.log(`8. Verification report saved: ${jsonReportPath}`);
+}
 
 await browser.close();
 console.log('=== RC166 AUTONOMOUS VISUAL PLAYTEST SUITE COMPLETED SUCCESSFULLY ===');

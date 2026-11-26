@@ -57,8 +57,8 @@ export function createCinematicEffects(T,scene,camera,bank){
  const brickDustColor=new T.Color(0xb2533e);
  const hazeSmokeColor=new T.Color(0xb0b8c2);
 
- const flame=pool(420,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
- const smoke=pool(1400,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
+ const flame=pool(220,new T.MeshBasicMaterial({map:bank.images.flame,color:0xffffff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+ const smoke=pool(450,new T.MeshBasicMaterial({map:bank.images.smoke,color:0xffffff,transparent:true,opacity:.85,depthWrite:false}));
 
  // RC165: Photorealistic aerated water droplet & vapor mist texture (fast, white, transparent)
  // Dual-lobe Gaussian core with micro-turbulent internal droplets and guaranteed asymptotic zero edge falloff
@@ -87,9 +87,9 @@ export function createCinematicEffects(T,scene,camera,bank){
  const waterMap=new T.DataTexture(waterPixels,waterSize,waterSize,T.RGBAFormat);
  waterMap.needsUpdate=true;
 
- const spray=pool(1200,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.78,depthWrite:false}));
- const ring=pool(48,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
- const dust=pool(640,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
+ const spray=pool(350,new T.MeshBasicMaterial({map:waterMap,color:0xffffff,transparent:true,opacity:.78,depthWrite:false}));
+ const ring=pool(32,new T.MeshBasicMaterial({color:0xffdfb4,transparent:true,opacity:.27,depthWrite:false,blending:T.AdditiveBlending}),new T.RingGeometry(.90,1,64));
+ const dust=pool(240,new T.MeshBasicMaterial({map:bank.images.dust||bank.images.smoke,color:0xbab09e,transparent:true,opacity:.78,depthWrite:false}));
 
  const sparkPixels=new Uint8Array(16*16*4);
  for(let y=0;y<16;y++){
@@ -101,33 +101,33 @@ export function createCinematicEffects(T,scene,camera,bank){
  }
  const sparkMap=new T.DataTexture(sparkPixels,16,16,T.RGBAFormat);
  sparkMap.needsUpdate=true;
- const spark=pool(360,new T.MeshBasicMaterial({map:sparkMap,color:0xaeeaff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+ const spark=pool(160,new T.MeshBasicMaterial({map:sparkMap,color:0xaeeaff,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
 
  const pools=[flame,smoke,spray,ring,dust,spark];
 
  // PRE-ALLOCATED ZERO-GC POOLS
- const MAX_PUFFS=180;
+ const MAX_PUFFS=120;
  const puffs=[];
  for(let i=0;i<MAX_PUFFS;i++)puffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,size:1,isSteam:false});
  let puffHead=0;
 
- const MAX_RINGS=32;
+ const MAX_RINGS=24;
  const rings=[];
  for(let i=0;i<MAX_RINGS;i++)rings.push({active:false,p:new T.Vector3(),radius:5,age:0,life:0.55});
  let ringHead=0;
 
- const MAX_DUST_PUFFS=240;
+ const MAX_DUST_PUFFS=140;
  const dustPuffs=[];
  for(let i=0;i<MAX_DUST_PUFFS;i++)dustPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:1,initialSize:1,targetSize:3,rot:0,rotSpeed:0,maxOpacity:0.6,col:defaultDustColor});
  let dustHead=0;
 
- const MAX_SPARK_PUFFS=200;
+ const MAX_SPARK_PUFFS=100;
  const sparkPuffs=[];
  for(let i=0;i<MAX_SPARK_PUFFS;i++)sparkPuffs.push({active:false,p:new T.Vector3(),v:new T.Vector3(),age:0,life:0.25,size:0.2,power:1});
  let sparkHead=0;
 
  // DEDICATED HIGH-VELOCITY PARTICLE WATER ENGINE
- const MAX_WATER=480;
+ const MAX_WATER=120;
  let subwayCraters=[];
  function syncSubwayCraters(craters=[]){
   subwayCraters=craters.filter(c=>c&&c.isSubway&&c.life>0);

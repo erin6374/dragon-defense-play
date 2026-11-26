@@ -3,10 +3,10 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 export function batchStaticStreetProps(root){
- const supported=['urban-set-dressing','cinematic-street-dressing','v411-backstreet-gasstation-street-furniture','power-grid-infrastructure','police-intersections-blockade','Philadelphia skyline','BROAD-STREET-REFERENCE-2026'];
+ const supported=['urban-set-dressing','cinematic-street-dressing','v411-backstreet-gasstation-street-furniture','power-grid-infrastructure','police-intersections-blockade','Philadelphia skyline','PHILADELPHIA-ORIGINAL-3D-SKYLINE','Broad Street and sidewalks','STREET-WATER-RUNOFF-SYSTEM','BROAD-STREET-REFERENCE-2026'];
  let input=0,output=0,batches=0,skipped=0;
  for(const name of supported){
-  const parent=root.getObjectByName(name);if(!parent)continue;
+  const parent=root.name===name?root:root.getObjectByName(name);if(!parent)continue;
   parent.updateWorldMatrix(true,true);
   const candidates=new Map();
   const allMeshes = [];

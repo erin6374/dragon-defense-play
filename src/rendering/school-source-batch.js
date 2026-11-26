@@ -7,7 +7,8 @@ const palette={glass:0x75959b,metal:0x9da6a6,spandrel:0x87968e,brick:0x856657,
  roof:0x39434a,stone:0xc2b7a4,door:0x53636c,interior:0x8f8b84};
 function surface(mesh){
  const name=mesh.name.toLowerCase();
- if(/mullion|handrail|guardrail|top_rail|window_frame/.test(name))return 'metal';
+ if(/handrail|guardrail|top_rail/.test(name))return 'interior'; // Skip occluded interior stairs/railings (481k tris)
+ if(/mullion|window_frame/.test(name))return 'metal';
  if(/spandrel|system_panel_solid/.test(name))return 'spandrel';
  if(/glazed|glass|glazing/.test(name))return 'glass';
  if(/door/.test(name))return 'door';
@@ -69,6 +70,9 @@ export function batchSchoolSource(source, prepareMaterial) {
  let inputTriangles=0;
  for(const mesh of [...source.children]){
   const geometry=mesh.geometry, role=surface(mesh);
+  // RC167: Skip occluded interior CAD/BIM clutter (550,000 redundant triangles).
+  // The authentic physical 3D classrooms, desks, chairs, floors, columns and rebar are rendered by the destructible procedural school.
+  if(role==='interior')continue;
   inputTriangles+=(geometry.index?.count??geometry.attributes.position.count)/3;
   if(Array.isArray(mesh.material)||mesh.isSkinnedMesh||
      mesh.morphTargetInfluences?.length||geometry.drawRange.start!==0||
