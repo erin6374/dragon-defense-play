@@ -1080,25 +1080,42 @@ export function createNorthBroadModels(THREE, scene, city, referenceFacades) {
       syncWithCityDamage();
       updateLighting(darkness, brownout);
     },
+    findEntry(idOrAddress) {
+      if (!idOrAddress) return null;
+      const str = String(idOrAddress).toLowerCase();
+      return entries.find(e => {
+        if (e.def.id === idOrAddress || e.def.id === str) return true;
+        if (e.def.gameBuilding && (e.def.gameBuilding === idOrAddress || e.def.gameBuilding.toLowerCase() === str)) return true;
+        if (e.def.name && (e.def.name === idOrAddress || e.def.name.toLowerCase().includes(str))) return true;
+        if (e.def.address && (e.def.address === idOrAddress || e.def.address.toLowerCase().includes(str))) return true;
+        return false;
+      });
+    },
     damageBuilding(idOrAddress, amount = 0.5) {
-      const entry = entries.find(e => e.def.id === idOrAddress || e.def.address.includes(idOrAddress) || e.def.name.includes(idOrAddress));
+      const entry = this.findEntry(idOrAddress);
       if (!entry) return null;
-      applyDamage(entry, (entry.damage || 0) + amount);
+      const newDmg = Math.min(1.0, (entry.damage || 0) + amount);
+      applyDamage(entry, newDmg);
       if (entry.targetBuilding) {
         city.forceDamage(entry.targetBuilding, entry.damage);
+      }
+      if (entry.damage >= 0.85) {
+        return this.collapseBuilding(idOrAddress);
       }
       return { id: entry.def.id, address: entry.def.address, damage: entry.damage };
     },
     collapseBuilding(idOrAddress) {
-      const res = this.damageBuilding(idOrAddress, 1.0);
-      const entry = entries.find(e => e.def.id === idOrAddress || e.def.address.includes(idOrAddress) || e.def.name.includes(idOrAddress));
-      if (entry) {
-        if (entry.facadeCracks) entry.facadeCracks.visible = false;
-        if (entry.model) entry.model.visible = false;
-        if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
-        if (entry.def.isChurch && churchRubbleProxy) churchRubbleProxy.visible = true;
+      const entry = this.findEntry(idOrAddress);
+      if (!entry) return null;
+      applyDamage(entry, 1.0);
+      if (entry.targetBuilding) {
+        city.forceDamage(entry.targetBuilding, 1.0);
       }
-      return res;
+      if (entry.facadeCracks) entry.facadeCracks.visible = false;
+      if (entry.model) entry.model.visible = false;
+      if (entry.rubbleProxy) entry.rubbleProxy.visible = true;
+      if (entry.def.isChurch && churchRubbleProxy) churchRubbleProxy.visible = true;
+      return { id: entry.def.id, address: entry.def.address, collapsed: true };
     },
     setEffectsHooks(hooks) {
       effectsHooks = hooks;

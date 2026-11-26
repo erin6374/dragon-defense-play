@@ -19,7 +19,7 @@ import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc169';
-console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC169 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
+console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC170 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
 console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded ', 'background: #223344; color: #ffcc44; font-size: 12px; padding: 2px 6px;');
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
@@ -362,6 +362,16 @@ const northBroadModels=createNorthBroadModels(THREE,scene,neighborhood.city,refe
 window.__DD_NORTH_BROAD=northBroadModels;
 const buildingRegistry=new BuildingAssetRegistry(scene,northBroadModels,neighborhood.city);
 window.__DD_BUILDING_REGISTRY=buildingRegistry;
+function damageOrCollapseNorthBroad(bldg, damage, collapse = false) {
+  if (!northBroadModels || !bldg) return;
+  const idOrName = bldg.id || bldg.name;
+  if (!idOrName) return;
+  if (collapse || damage >= 0.80) {
+    northBroadModels.collapseBuilding(idOrName);
+  } else {
+    northBroadModels.damageBuilding(idOrName, damage);
+  }
+}
 const streetWaterRunoff=createStreetWaterRunoff(scene);
 window.__DD_STREET_RUNOFF=streetWaterRunoff;
 installNeighborhoodWindows();
@@ -580,8 +590,7 @@ function updateFires(dt){
      bldg.fireCollapsed=true;
      bldg.damage=1.0;
      neighborhood.city.forceDamage(bldg,1.0);
-     const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===bldg.id||(bldg.name&&d.name===bldg.name));
-     if(nbDef)northBroadModels.collapseBuilding(nbDef.id);
+     damageOrCollapseNorthBroad(bldg, 1.0, true);
      cinematicFX.demolitionDustWave(
       new THREE.Vector3(bldg.x-bldg.w*.45,.3,bldg.front),
       new THREE.Vector3(bldg.x+bldg.w*.45,.3,bldg.front),
@@ -4425,11 +4434,7 @@ function damage(x,z,y=7,meteor=null){
     const dmgFraction = Math.max(0.30, (1.0 - bDist / roadShockRadius)) * (isTitanic ? 1.0 : isColossal ? 0.92 : 0.55);
     b.damage = Math.min(1.0, (b.damage || 0) + dmgFraction);
     neighborhood.city.forceDamage(b, b.damage);
-    const nbDef = northBroadModels?.definitions?.find?.(d => d.id === b.id || (b.name && d.name === b.name));
-    if(nbDef){
-     if(b.damage >= 0.82) northBroadModels.collapseBuilding(nbDef.id);
-     else northBroadModels.damageBuilding(nbDef.id, b.damage);
-    }
+    damageOrCollapseNorthBroad(b, b.damage, b.damage >= 0.80);
    }
   }
   if(Math.abs(targetX) <= schoolHalfW + roadShockRadius * 0.5 && hitZ <= schoolMaxZ + roadShockRadius && architecturalReady){
@@ -4458,27 +4463,41 @@ function damage(x,z,y=7,meteor=null){
  if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
   const mSzVal = meteor?.size || (profile.radius * 0.45);
+   const isExtinctionStrike = mSzVal >= 13.0;
    const isTitanicStrike = mSzVal >= 9.0;
    const isColossalStrike = mSzVal >= 4.0;
-   if(isTitanicStrike){
+   if(isExtinctionStrike){
     effectiveTarget.damage=1.0;
     neighborhood.city.forceDamage(effectiveTarget,1.0);
-    const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
-    if(nbDef)northBroadModels.collapseBuilding(nbDef.id);
+    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
+    message(`☄️ EXTINCTION STRIKE OBLITERATED ${effectiveTarget.name||'STRUCTURE'}!`);
+   }else if(isTitanicStrike){
+    effectiveTarget.damage=1.0;
+    neighborhood.city.forceDamage(effectiveTarget,1.0);
+    damageOrCollapseNorthBroad(effectiveTarget,1.0,true);
    }else if(isColossalStrike){
-    effectiveTarget.damage=Math.max(effectiveTarget.damage||0, 0.92);
+    effectiveTarget.damage=Math.max(effectiveTarget.damage||0, 0.95);
     neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
-    const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
-    if(nbDef){
-     northBroadModels.collapseBuilding(nbDef.id);
-    }
+    damageOrCollapseNorthBroad(effectiveTarget,effectiveTarget.damage,true);
    }else{
-    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.25*Math.max(1.0,mSzVal));
+    effectiveTarget.damage=Math.min(1.0,(effectiveTarget.damage||0)+0.35*Math.max(1.0,mSzVal));
     neighborhood.city.forceDamage(effectiveTarget,effectiveTarget.damage);
-    const nbDef=northBroadModels?.definitions?.find?.(d=>d.id===effectiveTarget.id||(effectiveTarget.name&&d.name===effectiveTarget.name));
-    if(nbDef){
-     if(effectiveTarget.damage>=0.80)northBroadModels.collapseBuilding(nbDef.id);
-     else northBroadModels.damageBuilding(nbDef.id,effectiveTarget.damage);
+    damageOrCollapseNorthBroad(effectiveTarget,effectiveTarget.damage,effectiveTarget.damage>=0.80);
+   }
+
+   // RC170: Multi-building shockwave collapse:
+   // Colossal, Titanic, and Extinction strikes demolish adjacent rowhouses and shops along North Broad
+   if(isColossalStrike||isTitanicStrike||isExtinctionStrike){
+    const shockWaveRadius = isExtinctionStrike ? Math.max(50.0, mSzVal * 4.5) : (isTitanicStrike ? Math.max(34.0, mSzVal * 3.8) : Math.max(22.0, mSzVal * 3.2));
+    for(const b of neighborhood.targetBuildings){
+     if(b===effectiveTarget||b.school)continue;
+     const bDist=Math.hypot(b.x-targetX,b.z-hitZ);
+     if(bDist<=shockWaveRadius+Math.max(b.w,b.d)*0.5){
+      const dmgFraction=Math.max(0.35,(1.0-bDist/shockWaveRadius))*(isExtinctionStrike?1.0:isTitanicStrike?0.95:0.85);
+      b.damage=Math.min(1.0,(b.damage||0)+dmgFraction);
+      neighborhood.city.forceDamage(b,b.damage);
+      damageOrCollapseNorthBroad(b,b.damage,b.damage>=0.80);
+     }
     }
    }
    lost=neighborhood.impact(targetX,targetY,hitZ,blastRadius,p=>debrisPiece(p,'brick'),blastStrength);
