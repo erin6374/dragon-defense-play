@@ -21,7 +21,7 @@ export function createViewerCityModels(scene,city) {
   function clearImpactMask(e){e.impactMask?.dispose();e.impactMask=null;}
   function stampImpact(e,point,radius,strength){
     if(!e.impactMask)e.impactMask=createParcelDamageMask(THREE,e.model,e.worldBounds);
-    e.impactMask.stamp(point,radius,strength);
+    if(e.impactMask.stamp(point,radius,strength))city.exposeInterior?.(e.targetBuilding,point,radius);
   }
   function apply(entry,damage) {
     // Repair restores the original materials and removes only this parcel's mask.
