@@ -388,12 +388,12 @@ export function createDestructibleSchool(THREE,scene,bounds){
   for(const p of pieces){
    if(p.falling||p.resting||p.removed)continue;
    if(p.homeY<=min.y+1.05)continue; // foundation remains grounded
-    if(p.homeY>min.y+height*0.75&&!collapsing)continue; // roof & top level remain standing overhead
-   if(!['floor','beam','pier','column','atrium-column','partition','spandrel','glass','facade','rear','side','side-spandrel'].includes(p.zone))continue;
-   // Localize progressive failure to the impacted structural sector unless overall damage is catastrophic
-   if(currentRatio<0.82){
+   if(!['floor','beam','pier','column','atrium-column','partition','spandrel','glass','facade','rear','side','side-spandrel','roof-hvac'].includes(p.zone))continue;
+   // RC169: Dynamic structural propagation radius across school bays
+   if(currentRatio<0.90){
+    const maxPropDist = currentRatio >= 0.65 ? 28.0 : (currentRatio >= 0.35 ? 14.0 : 7.5);
     const distToImpact=Math.hypot(p.homeX-lastImpact.x,p.homeZ-lastImpact.z);
-    if(distToImpact>4.2)continue;
+    if(distToImpact>maxPropDist)continue;
    }
    const nearby=supportLinks.get(p)||[];
    if(!nearby.length)continue;
@@ -407,7 +407,14 @@ export function createDestructibleSchool(THREE,scene,bounds){
    if(fraction>=vulnerable)continue;
    const load=(vulnerable-fraction)/Math.max(.1,vulnerable);
    p.integrity-=dt*(.3+load*1.5)*(p.protectedZone?.25:1);
-   if(p.integrity<=0)detach(p,p.x*2.7+p.z+impactSerial,.05+Math.random()*.13,true);
+   // RC169: Visible cantilever deflection and sag prior to detachment
+   if(p.zone==='floor'||p.zone==='beam'){
+    p.y=Math.max(min.y+0.2, p.homeY - (1.0 - fraction) * 0.42);
+   }
+   if(p.integrity<=0){
+    const dropDelay = 0.03 + Math.max(0, (p.homeY - min.y) / height) * 0.09;
+    detach(p,p.x*2.7+p.z+impactSerial,dropDelay,true);
+   }
   }
  }
  function punchBorehole({x,y,z,radius=2.8,isHeavyIron=false,isMassive=false}){

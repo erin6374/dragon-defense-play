@@ -1,5 +1,25 @@
-const CACHE='dragon-defense-v5.5.0-rc113-north-broad';
-const STATIC=['./src/rendering/north-broad-models.js','./vendor/three/examples/jsm/loaders/GLTFLoader.js','./src/rendering/dev-lab-dragon.js','./src/rendering/cinematic-effects.js','./src/simulation/impact-profiles.js','./src/simulation/pedestrian-motion.js','./src/rendering/structural-city.js','./src/rendering/realistic-vehicles.js','./src/rendering/cinematic-environment.js','./src/simulation/structural-dynamics.js','./src/simulation/traffic-dynamics.js','./src/simulation/lane-safety.js','./src/simulation/meteor-target.js','./src/simulation/city-layout.js','./','./index.html','./src/ui/cinematic-hud.js','./src/game.js','./src/neighborhood.js','./src/rendering/cinematic-assets.js','./src/rendering/philadelphia-geometry-skyline.js','./src/rendering/static-prop-batch.js','./src/rendering/frame-governor.js','./src/rendering/static-bim-batch.js','./src/rendering/tech-freire-source-fit.js','./src/rendering/school-source-batch.js','./src/rendering/school-source-damage.js','./src/rendering/school-comparison.js','./src/rendering/school-flanking-houses.js','./src/rendering/distant-meteors.js','./src/core/performance-lab.js','./src/simulation/military-wind.js','./src/simulation/military-searchlight.js','./src/simulation/military-collateral.js','./src/simulation/ground-wind.js','./build-info.json','./assets/visuals/flame.png','./assets/visuals/smoke.png'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith('dragon-defense-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy)).catch(()=>{});}return response;}).catch(()=>caches.match(event.request)));});
+// Tech Freire Dragon Defense - Cache Purge Service Worker
+// Automatically unregisters and deletes all legacy caches from older builds (e.g. rc63, rc113).
+self.addEventListener('install', event => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => {
+        clients.forEach(client => {
+          if (client.url && 'navigate' in client) {
+            client.navigate(client.url);
+          }
+        });
+      })
+  );
+});
+
+self.addEventListener('fetch', event => {
+  // Direct bypass: always fetch from network with cache bypassed
+  return;
+});

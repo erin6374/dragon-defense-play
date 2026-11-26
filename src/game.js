@@ -18,7 +18,9 @@ window.__DD_BUILD_INFO = { version: GAME_VERSION, build: BUILD_ID };
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
-import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc63.3';
+import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc169';
+console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC169 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
+console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded ', 'background: #223344; color: #ffcc44; font-size: 12px; padding: 2px 6px;');
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
 import {hitVehicleWithWind,advanceVehicleWind,hitPedestrianWithWind,advancePedestrianWind} from './simulation/ground-wind.js';
@@ -940,6 +942,13 @@ schoolReconstruction.setEffectsHooks?.({
  onFloorPancake:(x,y,z)=>{
   sound('crash',{x});
   cinematicFX.demolitionDustWave(new THREE.Vector3(x-3.2,0.4,z),new THREE.Vector3(x+3.2,0.4,z),1.8);
+  // RC169: Air overpressure dust blown horizontally out through window openings on floor impact
+  if(cinematicFX && cinematicFX.dustBurst){
+   cinematicFX.dustBurst(new THREE.Vector3(x, Math.max(0.8, y), z + 3.8), 1.3);
+   cinematicFX.dustBurst(new THREE.Vector3(x, Math.max(0.8, y), z - 3.8), 1.3);
+   cinematicFX.dustBurst(new THREE.Vector3(x - 5.5, Math.max(0.8, y), z), 1.3);
+   cinematicFX.dustBurst(new THREE.Vector3(x + 5.5, Math.max(0.8, y), z), 1.3);
+  }
   buildingElectricalShorts.triggerArc(new THREE.Vector3(x,y+0.6,z),new THREE.Vector3(x+(Math.random()-0.5)*3.2,Math.max(0.4,y-1.8),z+(Math.random()-0.5)*3.2),1.6,cinematicFX,sound);
   shake=Math.max(shake,0.55);
  },
