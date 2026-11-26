@@ -62,7 +62,7 @@ import {createViewerCityModels} from './rendering/viewer-city-models.js';
 import {BuildingAssetRegistry} from './rendering/building-registry.js';
 import {createStreetWaterRunoff} from './rendering/street-water-runoff.js';
 import {schoolFitDimensions} from './rendering/school-fit.js';
-import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMesh} from './rendering/tech-freire-source-fit.js';
+import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMesh,schoolSourceCategory} from './rendering/tech-freire-source-fit.js';
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
 import {createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
@@ -811,10 +811,16 @@ function loadActualSchoolOverlay(){
    const placement=fitSchoolFromFacade();
    const meshRoles=new WeakMap(),roleMeshCounts={school:0,leftRowhouse:0,rightRowhouse:0,excluded:0};
    const bounds=new THREE.Box3();
+   const sourceInteriorAudit={retained:{},excluded:{},sourceVerificationRequired:true};
    fbx.traverse(mesh=>{if(!mesh.isMesh)return;bounds.setFromObject(mesh);
     const role=classifyArchitecturalMesh(mesh,bounds);
     meshRoles.set(mesh,role);
     if(role)roleMeshCounts[role]++;else roleMeshCounts.excluded++;
+    if(role==='school'||!role&&bounds.min.x>=SCHOOL_SOURCE.keepMinX&&bounds.max.x<=SCHOOL_SOURCE.keepMaxX&&bounds.min.z>=SCHOOL_SOURCE.keepMinZ&&bounds.max.z<=SCHOOL_SOURCE.keepMaxZ){
+     const category=schoolSourceCategory(mesh),bucket=role==='school'?sourceInteriorAudit.retained:sourceInteriorAudit.excluded;
+     const entry=bucket[category]??={meshes:0,triangles:0};
+     entry.meshes++;entry.triangles+=(mesh.geometry?.index?.count??mesh.geometry?.attributes?.position?.count??0)/3;
+    }
    });
    const school=new THREE.Group();
    school.scale.setScalar(placement.scale);
@@ -873,7 +879,7 @@ function loadActualSchoolOverlay(){
    const size=box.getSize(new THREE.Vector3());
    actualSchoolOverlay=central.model;actualSchoolOverlayReady=true;
    actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.batches,
-    inputTriangles:central.inputTriangles,
+    inputTriangles:central.inputTriangles,sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy'},
     visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:size.toArray()},
     calibration:{...placement,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
@@ -6859,7 +6865,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
   camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
   schoolReconstruction:schoolReconstruction?.stats()||null,
-  sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes()},
+  sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes(),interiorAudit:actualSchoolOverlayStats?.sourceInteriorAudit??null},
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
   renderVisibility:{schoolEnabled:performanceLab.isEnabled('schoolModel'),schoolVisible:Boolean(architecturalModel?.visible || actualSchoolOverlay?.visible || (!architecturalReady&&Object.values(meshes).some(m=>m.visible))),actualSchoolOverlayReady,fbxRowhouses:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},schoolModelCalibration:actualSchoolOverlayStats?.calibration||null,skylineEnabled:performanceLab.isEnabled('skyline'),skylineVisible:skylineBackdrop.group.visible,backgroundEnabled:performanceLab.isEnabled('backgroundBuildings'),particlesEnabled:performanceLab.isEnabled('particles'),fireEnabled:performanceLab.isEnabled('fires'),renderFPSCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadows:renderer.shadowMap.enabled},
   atmosphere:{phase:displayedPhase,darkness:displayedDarkness},structure:neighborhood.city.stats(),
