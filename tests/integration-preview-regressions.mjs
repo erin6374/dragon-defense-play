@@ -32,4 +32,28 @@ test('School meteor budgets bounded between 5 and 15 percent for damaging rocks'
 test('Penetration spends budget once at any tested step size',()=>{for(const size of [1.35,2,2.8,3.6,13])for(const delta of [.01,.3,2,30]){const budget=damage.schoolMeteorBudget(size);let y=16,remaining=budget;while(y>-.8){const next=Math.max(-.8,y-delta);remaining-=damage.penetrationDamageStep(budget,remaining,16,-.8,y,next);y=next;}assert.ok(Math.abs(remaining)<1e-9);}});
 test('No global partial-damage floor clipping',()=>{const shader=read('src/rendering/school-source-damage.js');assert.ok(!shader.includes('collapseCutoff'));assert.ok(shader.includes('schoolDestructionRatio>=1.0'));});
 test('Water-only preset is independent of subway breach',()=>assert.ok(game.includes('addCrater(0,BROAD_CENTER,4.5,{waterOnly:true})')));
+const collision=load('src/simulation/meteor-collision.js',{containsParcel:parcels.containsParcel},['traceMeteorCollision']);
+const school={min:{x:-13.5,z:-58.4},max:{x:13.5,z:.4,y:28}};
+test('Every mapped building owns its vertical roof collision',()=>{
+ for(const b of list){
+  let sample=null;
+  for(let u=1;u<20&&!sample;u++)for(let v=1;v<20&&!sample;v++){
+   const x=b.x-b.w/2+b.w*u/20,z=b.z-b.d/2+b.d*v/20;
+   if(parcels.containsParcel(b,x,z)&&!list.some(q=>q!==b&&parcels.containsParcel(q,x,z)))sample={x,z};
+  }
+  assert.ok(sample,'exclusive footprint sample for '+b.id);
+  const hit=collision.traceMeteorCollision({...sample,y:b.h+35},{...sample,y:-2},list,school);
+  assert.equal(hit?.building?.id,b.id);
+  assert.ok(Math.abs(hit.point.y-b.h)<1e-6);
+ }
+});
+test('Fast diagonal meteor hits facade even with endpoint beyond building',()=>{
+ const b={id:'test',x:14,z:-10,w:5,d:12,h:8,damage:0};
+ const hit=collision.traceMeteorCollision({x:5,y:7,z:-10},{x:25,y:3,z:-10},[b],school,false);
+ assert.equal(hit?.building?.id,b.id);
+});
+test('Ground and collapsed building collision',()=>{
+ const b={id:'test',x:14,z:-10,w:5,d:12,h:8,damage:1};
+ assert.equal(collision.traceMeteorCollision({x:14,y:30,z:-10},{x:14,y:0,z:-10},[b],school).kind,'ground');
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
