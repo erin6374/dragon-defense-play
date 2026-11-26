@@ -14,6 +14,7 @@ import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTE
 import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
+import {forcedVehicleRole,planResponderRoute,hoseReach} from './simulation/responder-routing.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
 window.__DD_BUILD_INFO = { version: GAME_VERSION, build: BUILD_ID };
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
@@ -1446,15 +1447,16 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const wave12FireBoost=(wave<=2&&activeFireTrucks<4);
  const fireTruckNeeded=(wave<=2&&activeFireTrucks<4)||(activeFireTrucks<Math.min(5,Math.max(2,schoolFire.length+1)));
  const fireUrgency=fireTruckNeeded||(schoolFire.length>0&&activeFireTrucks<Math.min(6,schoolFire.length+2));
- const military=chapter===3&&!fireUrgency&&Math.random()<.65;
- const emergency=forcedType==='police'||wave12FireBoost||fireTruckNeeded||(!military&&(fireUrgency||Math.random()<(severeDamage?.83:(chapter===2?Math.min(.82,.38+(wave-5)*.08):(chapter===1?.04:.15)))));
- const ambulance=!military&&!fireUrgency&&emergency&&(crowd.some(p=>p.down>0)||severeDamage)&&Math.random()<(severeDamage?.40:.30);
- const police=forcedType==='police'||(!military&&!fireUrgency&&!wave12FireBoost&&emergency&&!ambulance&&(chapter===2?Math.random()<.88:Math.random()<.47));
- const bike=!military&&!emergency&&Math.random()<.18&&forcedType!=='bus',scooter=bike&&Math.random()<.55,bus=forcedType==='bus'||(!military&&!emergency&&!bike&&Math.random()<.12),truck=(military&&Math.random()<.65)||(!emergency&&!bus&&!bike&&Math.random()<.23),garbage=!military&&truck&&Math.random()<.31,van=(military&&!truck)||(!emergency&&!bus&&!truck&&!bike&&Math.random()<.24),taxi=!military&&!emergency&&!bike&&!bus&&!truck&&!van&&Math.random()<.17,dir=forcedDir??(Math.random()<.5?1:-1);
+ const role=forcedVehicleRole(forcedType);
+ const military=!role&&chapter===3&&!fireUrgency&&Math.random()<.65;
+ const emergency=role?role!=='bus':wave12FireBoost||fireTruckNeeded||(!military&&(fireUrgency||Math.random()<(severeDamage?.83:(chapter===2?Math.min(.82,.38+(wave-5)*.08):(chapter===1?.04:.15)))));
+ const ambulance=role?role==='ambulance':!military&&!fireUrgency&&emergency&&(crowd.some(p=>p.down>0)||severeDamage)&&Math.random()<(severeDamage?.40:.30);
+ const police=role?role==='police':!military&&!fireUrgency&&!wave12FireBoost&&emergency&&!ambulance&&(chapter===2?Math.random()<.88:Math.random()<.47);
+ const bike=!role&&!military&&!emergency&&Math.random()<.18,scooter=bike&&Math.random()<.55,bus=role?role==='bus':!military&&!emergency&&!bike&&Math.random()<.12,truck=!role&&((military&&Math.random()<.65)||(!emergency&&!bus&&!bike&&Math.random()<.23)),garbage=!military&&truck&&Math.random()<.31,van=!role&&((military&&!truck)||(!emergency&&!bus&&!truck&&!bike&&Math.random()<.24)),taxi=!role&&!military&&!emergency&&!bike&&!bus&&!truck&&!van&&Math.random()<.17,dir=forcedDir??(Math.random()<.5?1:-1);
  const bodyHex=bus?0x1a4574:(military?[0x424e37,0x4d5940,0x353d2d,0x5a634e,0x3a4231][Math.floor(Math.random()*5)]:(emergency?(ambulance?0xf7f5ed:police?0xf1f1e8:0xc52c2b):(garbage?0x447b58:taxi?0xf4c747:CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)])));
- const fireTruck=(emergency&&!police&&!ambulance)||wave12FireBoost||fireTruckNeeded,ladder=fireTruck&&Math.random()<.5;
+ const fireTruck=emergency&&!police&&!ambulance,ladder=fireTruck&&Math.random()<.5;
  const bodyStyle=military?'wagon':['sedan','wagon','crossover'][Math.floor(Math.random()*3)];
- const poolKey=[bodyStyle,ladder,bike,scooter,bus,truck,garbage,van,police,ambulance,emergency,military,bodyHex].join('/');
+ const poolKey=[bodyStyle,ladder,bike,scooter,bus,truck,garbage,van,police,ambulance,emergency,military,fireTruck,taxi,bodyHex].join('/');
  const available=vehiclePool.get(poolKey);
  const reused=available?.pop();
  const root=reused?.root||new THREE.Group();scene.add(root);if(root.userData.fireCrew)root.userData.fireCrew.visible=false;
@@ -1463,7 +1465,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const laneIndex=(nextLaneByDirection[laneKey]++)%2;
  let rearStreet=false,midgroundStreet=false,backgroundStreet=false,crossStreet=false,crossDir=0;
  let laneZ=dir>0?BROAD_LANES[laneIndex]:BROAD_LANES[laneIndex+2];
- if(forcedLaneZ!==null&&BROAD_LANES.includes(forcedLaneZ))laneZ=forcedLaneZ;
+ if(forcedLaneZ!==null&&(dir>0?BROAD_LANES.slice(0,2):BROAD_LANES.slice(2)).includes(forcedLaneZ))laneZ=forcedLaneZ;
  if(!emergency&&forcedLaneZ===null&&Math.random()<.1){
   crossStreet=true;
   crossDir=Math.random()<.5?1:-1;
@@ -1499,7 +1501,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const isCorridor=!emergency&&!rearStreet&&!midgroundStreet&&!backgroundStreet&&!crossStreet;
  const turnAt=isCorridor&&Math.random()<.25?CROSS_STREET_X[Math.floor(Math.random()*CROSS_STREET_X.length)]:null;
  const laneChangeAt=!emergency&&!rearStreet&&!crossStreet&&Math.random()<.27?(-37+Math.random()*74):null;
- cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck:emergency&&!police&&!ambulance,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
+ cars.push({crossStreet,crossDir,rearStreet,midgroundStreet,backgroundStreet,turnAt,turning:false,turnPath:null,laneChangeAt,laneChanged:false,originalLane:laneZ,root,poolKey,ice:police&&wave>=6&&wave<=10,military,dir,ambulance,length,bodyStyle,ladder,desiredSpeed:military?(8+Math.random()*3):emergency?(severeDamage?16:wave>=7?13:10):bike?10:bus?6:garbage?5:6+Math.random()*6,driverPhase:Math.random()*6,bus,truck,van,fireTruck,garbage,bike,scooter,speed:military?(7+Math.random()*3):emergency?(wave>=7?12:9):bike?8+Math.random()*4:bus?5:garbage?4.6:6+Math.random()*4,emergency,police,beacon,hostile:emergency&&!ambulance&&wave>=7,laneZ,stun:0,life:90,blink:0,attackTimer:1.8,serviceStop:false,serviceSeconds:0,serviceDeparture:0,serviceProgress:0,serviceTarget:null,hoseTime:0});
  if(bike&&!scooter&&wave<=10&&cars.length<carCap-2&&Math.random()<.68&&forcedX===null){
   const posX=dir>0?-spawnDist:spawnDist;
   const companionSpeed=11+Math.random()*4;
@@ -1599,42 +1601,67 @@ function ensureFireCrew(c){
  }
  c.root.userData.fireCrew=crew;return crew;
 }
+// Advance a routed truck along mapped road segments without teleporting or
+// entering a damaged road cavity. Returning uses the same visited waypoints.
+function followResponderRoute(c,dt){
+ const goal=c.serviceRoute?.[0];
+ if(!goal)return false;
+ const p=c.root.position,dx=goal.x-p.x,dz=goal.z-p.z,distance=Math.hypot(dx,dz);
+ if(distance<.15){p.x=goal.x;p.z=goal.z;c.serviceRoute.shift();if(!c.serviceReturning)c.serviceTrail.push(goal);return !!c.serviceRoute.length;}
+ const step=Math.min(distance,dt*6.5),nx=p.x+dx*step/distance,nz=p.z+dz*step/distance;
+ if(craters.some(q=>!q.waterOnly&&q.life>0&&Math.hypot(nx-q.x,nz-q.z)<q.radius+1.8)){c.speed=0;return true;}
+ p.x=nx;p.z=nz;vehicleYawTowards(c,Math.atan2(-dz,dx),dt);c.speed=6.5;
+ return true;
+}
 function fireTruckService(c,dt){
- if(!c.fireTruck||c.frozen)return;
- // Firefighters drive to the nearest currently burning location, including
- // the school, nearby rowhouses, and parked vehicle fires. Only stop briefly
- // in the correct travel lane; never teleport the truck to the fire.
- if(c.serviceDeparture>0){c.serviceDeparture-=dt;c.serviceStop=c.serviceDeparture>0;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=c.serviceStop;return;}
- if(!c.serviceTarget||!schoolFire.includes(c.serviceTarget)){
-  c.serviceTarget=schoolFire.reduce((best,f)=>{
-   const dx=f.root.position.x-c.root.position.x;
-   return !best||Math.abs(dx)<Math.abs(best.root.position.x-c.root.position.x)?f:best;
-  },null);
-  c.serviceProgress=0;
+ if(!c.fireTruck||c.frozen||c.stun>0||c.exiting)return;
+ const p=c.root.position;
+ if(c.serviceDeparture>0){c.serviceDeparture-=dt;c.serviceStop=true;c.speed=0;return;}
+ if(c.serviceTarget&&!schoolFire.includes(c.serviceTarget)){
+  c.serviceTarget=null;c.servicePlan=null;
+ }
+ if(!c.serviceTarget&&c.serviceTrail?.length&&!c.serviceReturning){
+  c.serviceReturning=true;c.serviceRoute=[...c.serviceTrail].reverse();
+ }
+ if(c.serviceReturning){
+  c.routing=true;c.serviceStop=true;
+  if(followResponderRoute(c,dt))return;
+  c.serviceReturning=false;c.serviceTrail=[];c.serviceRoute=null;c.routing=false;c.serviceStop=false;
+  c.root.rotation.y=c.dir<0?Math.PI:0;c.laneZ=c.originalLane;return;
  }
  if(!c.serviceTarget){
-  if((wave===15||blockShield>0)&&Math.abs(c.root.position.x)<70&&c.root.position.z>-25){
-   const monitorSource=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
-   const monitorTarget=new THREE.Vector3(c.root.position.x+c.dir*16,6+Math.sin(elapsed*2)*2,-4);
-   cinematicFX.water(monitorSource,monitorTarget,c.ladder?.16:.12);
+  let best=null;
+  for(const f of schoolFire){
+   if(cars.some(other=>other!==c&&!other.destroyed&&!other.frozen&&other.fireTruck&&other.serviceTarget===f))continue;
+   const plan=planResponderRoute(p,c.dir,c.originalLane,f.root.position,c.ladder?38:30);
+   if(plan&&(!best||plan.cost<best.plan.cost))best={f,plan};
   }
-  const home=c.originalLane||c.laneZ;
-  if(Math.abs(c.root.position.z-home)>.3){
-   if(!c.returning){const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,home)];c.returning=true;}
-   const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();
-   if(distance<.3)c.route.shift();else{c.root.position.addScaledVector(delta,Math.min(distance,dt*6.5)/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);}
-   c.routing=true;c.serviceStop=true;c.speed=6.5;
-   if(c.route.length)return;c.root.position.z=home;c.laneZ=home;c.root.rotation.y=c.dir<0?Math.PI:0;
-  }
-  c.laneZ=home;c.root.position.z=home;c.root.rotation.y=c.dir<0?Math.PI:0;c.returning=false;c.routing=false;c.route=null;c.serviceStop=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;
+  c.serviceTarget=best?.f??null;c.servicePlan=best?.plan??null;c.serviceProgress=0;
  }
- c.returning=false;
- const pos=c.serviceTarget.root.position;
- if(pos.z>=-20&&c.laneZ===-37&&!c.route?.length){const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(turn,c.root.position.y,c.originalLane||17)];c.routeLane=c.originalLane||17;}
- if(pos.z< -20&&c.root.position.z> -32&&!c.route?.length){c.routeLane=-37;const turn=CROSS_STREET_X.slice().sort((a,b)=>Math.abs(a-c.root.position.x)-Math.abs(b-c.root.position.x))[0];c.route=[new THREE.Vector3(turn,c.root.position.y,c.root.position.z),new THREE.Vector3(turn,c.root.position.y,-37),new THREE.Vector3(pos.x,c.root.position.y,-37)];c.originalLane=c.laneZ;}
- if(c.route?.length){const goal=c.route[0],delta=goal.clone().sub(c.root.position),distance=delta.length();if(distance<.3)c.route.shift();else{const step=Math.min(distance,dt*6.5);c.root.position.addScaledVector(delta,step/distance);vehicleYawTowards(c,Math.atan2(-delta.z,delta.x),dt);c.speed=6.5}c.routing=!!c.route.length;c.serviceStop=true;if(c.routing)return;c.laneZ=c.routeLane;c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}
- const near=Math.abs(c.root.position.x-pos.x)<5.5;
- if(!near){if(c.laneZ===-37){c.dir=pos.x>c.root.position.x?1:-1;c.root.rotation.y=c.dir<0?Math.PI:0;}c.serviceStop=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;}
+ if(!c.serviceTarget){
+  c.serviceStop=false;c.routing=false;c.serviceEntryX=null;
+  if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;
+  if((wave===15||blockShield>0)&&Math.abs(p.x)<70){
+   const monitorSource=c.root.localToWorld(new THREE.Vector3(c.ladder?2:1.28,c.ladder?3.8:1.45,1.1));
+   cinematicFX.water(monitorSource,new THREE.Vector3(p.x+c.dir*16,6+Math.sin(elapsed*2)*2,-4),c.ladder?.16:.12);
+  }
+  return;
+ }
+ const pos=c.serviceTarget.root.position,plan=c.servicePlan;
+ c.serviceEntryX=plan.entryX;
+ if(!c.serviceTrail?.length&&!c.serviceRoute){
+  const ahead=(plan.entryX-p.x)*c.dir;
+  if(ahead>3){c.serviceStop=false;c.routing=false;if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;return;}
+  if(ahead<-4){c.serviceTarget=null;c.servicePlan=null;c.serviceEntryX=null;c.serviceStop=false;c.routing=false;return;}
+  if(plan.waypoints.length){
+   c.serviceTrail=[{x:p.x,z:p.z}];c.serviceRoute=plan.waypoints.slice();
+  }
+ }
+ if(c.serviceRoute?.length){c.routing=true;c.serviceStop=true;if(followResponderRoute(c,dt))return;}
+ if(!hoseReach(p,pos,c.ladder?38:30)){
+  c.serviceTarget=null;c.servicePlan=null;c.serviceEntryX=null;c.serviceStop=false;return;
+ }
+ c.routing=!!c.serviceTrail?.length;c.speed=0;
  c.serviceStop=true;ensureFireCrew(c).visible=true;c.serviceProgress+=dt;c.hoseTime-=dt;
  const dragonNear=c.hostile&&dragon.position.y<10&&Math.abs(dragon.position.x-c.root.position.x)<13&&Math.abs(dragon.position.z-c.root.position.z)<26;
  const target=dragonNear?dragon.position:pos;
@@ -1663,12 +1690,9 @@ function fireTruckService(c,dt){
    message('🚒 PHILLY FIREFIGHTERS SUPPRESSED BUILDING FIRE! +50 PTS');
    sound('bonus');
   }
-  const nextFire=schoolFire.find(f=>!cars.some(other=>other!==c&&other.fireTruck&&other.serviceTarget===f));
-  if(nextFire){
-   c.serviceTarget=nextFire;c.serviceProgress=0;c.serviceDeparture=0;
-  }else{
-   c.serviceTarget=null;c.serviceProgress=0;c.serviceDeparture=0.5;
-  }
+  // Replan only after returning to the Broad Street lane.
+  c.serviceTarget=null;c.servicePlan=null;c.serviceEntryX=null;c.serviceProgress=0;c.serviceDeparture=.5;
+  if(c.root.userData.fireCrew)c.root.userData.fireCrew.visible=false;
  }
 }
 function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;const activeFireTrucks=cars.filter(c=>c.fireTruck).length;carTimer=schoolFire.length&&activeFireTrucks<Math.min(5,schoolFire.length)?0.5:(chapter<=2?0.20+Math.random()*0.24:0.55+Math.random()*0.75);if(hp<55||schoolFire.length>3)carTimer*=.65;}
