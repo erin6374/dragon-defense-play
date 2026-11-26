@@ -7,7 +7,7 @@ export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActi
  if(dy>=0||start.y<.5)return null;
  const eps=1e-7;
  const point=t=>({x:start.x+dx*t,y:start.y+dy*t,z:start.z+dz*t});
- const active=buildings.filter(b=>b.damage<.97);
+ const active=buildings.filter(b=>(b.damage??0)<.97);
  let best=null;
  const offer=(t,kind,building=null)=>{
   if(t<0||t>1||best&&t>=best.t)return;
