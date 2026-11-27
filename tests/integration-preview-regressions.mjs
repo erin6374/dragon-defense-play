@@ -495,4 +495,26 @@ test('Game loop submits separate render, preparation and capture timings to stal
  assert.ok(frame.includes('frameStart:present'));assert.ok(frame.includes('collect:active&&!paused&&!motionQA&&forcedDt===null'));
  assert.ok(frame.includes('setupMs,cameraAudioMs,prepareMs,captureMs,bookkeepingMs'));
 });
+test('Projectile retirement tolerates meshless water and preserves borrowed GPU resources',()=>{
+ const a=game.indexOf('function retireProjectile('),b=game.indexOf('const sharedBlastGeometry',a);
+ assert.ok(a>=0&&b>a);
+ const shots=[],removed=[];let disposed=0;
+ const shared={dispose(){throw Error('Borrowed geometry or material was disposed');}};
+ const owned={dispose(){disposed++;}};
+ const api=new Function('scene','shots','debris','blasts','meteors',game.slice(a,b)+'return {remove,retireProjectile};')({remove(m){removed.push(m);}},shots,[],[],[]);
+ const water={mesh:{}},fire={mesh:{geometry:shared,material:shared,children:[{geometry:shared,material:shared}]}};
+ const custom={mesh:{},ownedResources:[owned,owned]};
+ shots.push(water,fire,custom);
+ while(shots.length)api.remove(shots,0);
+ assert.equal(removed.length,3);assert.equal(disposed,1);assert.equal(shots.length,0);
+ api.remove(shots,0);assert.equal(removed.length,3);
+});
+test('All current projectile producers borrow assets or use meshless markers',()=>{
+ assert.equal((game.match(/shots\.push\(/g)||[]).length,5);
+ assert.ok(game.includes('new THREE.Mesh(policeShotGeometry,policeShotMaterial)'));
+ assert.ok(game.includes('new THREE.Mesh(groundShotGeometry,mats.fire)'));
+ assert.ok(game.includes('const waterDummy=new THREE.Object3D()'));
+ assert.ok(game.includes('if(!s.hostile)remove(shots,i);'));
+ assert.ok(game.includes('for(const e of effectObjects){effects.remove(e.mesh);}effectObjects.length=0;'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
