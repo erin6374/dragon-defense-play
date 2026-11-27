@@ -4802,7 +4802,18 @@ function updateChapterSettlement(dt){
  }
  return true;
 }
-function updateHud(){document.getElementById('score').textContent=score.toLocaleString();const isTr=trainingMissions?.isActive();document.getElementById('wave').textContent=freeFlightMode?'∞ SANDBOX':(isTr?'TRAIN':wave);const chapterLabel=document.getElementById('campaign-chapter-label');if(chapterLabel)chapterLabel.textContent=freeFlightMode?'🛠️ DIRECTOR SANDBOX (INFINITE)':(isTr?'🥋 ASTRAL SIMULATION VOID':'CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title);document.getElementById('hp').textContent=isTr?'100%':hp+'%';document.getElementById('healthbar').style.width=(isTr?100:hp)+'%';updateNeighborhoodGauge();document.getElementById('lives').textContent=dragonLives;document.getElementById('school-wire').style.opacity=Math.max(.15,hp/100);}
+function updateHud(){
+ const isTr=trainingMissions?.isActive();
+ setHudText(document.getElementById('score'),score.toLocaleString());
+ setHudText(document.getElementById('wave'),freeFlightMode?'∞ SANDBOX':(isTr?'TRAIN':wave));
+ const chapterLabel=document.getElementById('campaign-chapter-label');
+ setHudText(chapterLabel,freeFlightMode?'🛠️ DIRECTOR SANDBOX (INFINITE)':(isTr?'🥋 ASTRAL SIMULATION VOID':'CH '+(CAMPAIGN_CHAPTERS.indexOf(currentChapter())+1)+' · '+currentChapter().title));
+ setHudText(document.getElementById('hp'),isTr?'100%':hp+'%');
+ setHudProperty(document.getElementById('healthbar').style,'width',(isTr?100:hp)+'%');
+ updateNeighborhoodGauge();
+ setHudText(document.getElementById('lives'),dragonLives);
+ setHudProperty(document.getElementById('school-wire').style,'opacity',String(Math.max(.15,hp/100)));
+}
 let toastTimer=0;function message(t){document.getElementById('toast').textContent=t;toastTimer=1.8}
 function isChapterEnd(wave){return CAMPAIGN_CHAPTERS.some(chapter=>chapter.start===wave+1);}
 function recordRallyClear(){
