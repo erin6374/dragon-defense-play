@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.4-dev.11",
-  "build": "combined-preview.4-dev.11-rc174-bsv21.1.33",
-  "timestamp": "2026-11-26T21:08:40Z",
+  "version": "5.5.0-integration.4-dev.22",
+  "build": "combined-preview.4-dev.22-rc174-bsv21.1.33",
+  "timestamp": "2026-11-27T04:23:37Z",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
@@ -26,6 +26,6 @@
     },
     "repositoryParent": "5888d5f54da9853e1af433db1cd74253f4671870"
   },
-  "releaseStatus": "development candidate; live browser and GPU QA pending",
-  "developmentSnapshot": "b9eb6f5b095b3decc0c2cc781cdd613cc91db408"
+  "releaseStatus": "consolidated development candidate; live browser, full campaign and GPU QA pending",
+  "developmentSnapshot": "2aef3d7eead2380d4507fea10ffeed88beb0a5a1"
 }
