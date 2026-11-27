@@ -163,7 +163,9 @@ function startChapterOneCombat(){
  trainingMissions?.reset();
  playTrainingMode=false;
  wave=1;between=0;elapsed=0;score=0;bossSpawned=false;bossDefeated=false;
- busterRamCollided=false;orbitalTheater?.reset();
+ busterRamCollided=false;orbitalTheater?.reset();cinematicFX.reset();
+ Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,damage:0,frames:0,frameTimeTotal:0,highestWave:1});
+ cooldown=0;gasCooldown=0;gasHolding=false;dragonStun=0;invulnerable=0;
  for(const c of gasClouds){scene.remove(c.mesh);c.mesh.material.dispose();}gasClouds.length=0;
  perchDragon(true);
  skipChapterIntroCinematic=true;
@@ -4867,6 +4869,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
  const chapterEnd=isChapterEnd(wave);
  const opening=openingMeteorWave(wave);
  const satBattery=orbitalTheater?orbitalTheater.getBattery():1.0;
+ const canSpawn=!!opening||satBattery>0;
  if(wave<15){
   if(!rally&&!opening&&satBattery>0&&remaining>0){
    stormTimer-=dt;
@@ -4875,7 +4878,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
     stormTimer=(chapterEnd?3.4:5.5)/Math.max(.7,difficulty())*(.75+Math.random()*.5);
    }
   }
-  if(remaining>0&&satBattery>0){
+  if(remaining>0&&canSpawn){
    spawnTimer-=dt;
    if(spawnTimer<=0){
     if(!spawnMeteor(Math.random,opening)){spawnTimer=.25;return;}
@@ -4887,7 +4890,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   // When satellite battery reaches 0 (or remaining budget exhausted), wait for active airborne meteors to clear
   if(satBattery<=0||remaining<=0||rally||opening){
    remaining=0;
-   if(orbitalTheater&&orbitalTheater.getBattery()>0&&!rally&&!opening){
+   if(orbitalTheater&&orbitalTheater.getBattery()>0){
     orbitalTheater.setBattery(0);
    }
    if(meteors.some(m=>!m.grounded)){
@@ -5873,7 +5876,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Tab'&&trainingMissions?.isActi
 const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3();
 const defenseProjectionCache=createDefenseProjectionCache();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused){cinematicFX.begin(dt);if(!trainingMissions?.isActive()){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);buildingElectricalShorts.update(dt,cinematicFX,sound,schoolDamage,neighborhood.targetBuildings,craters.some(c=>c.isSubway&&c.subwayGroup),craters.some(c=>c.geyserGroup));orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(satellitesCleared)return false;
+function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused&&active){cinematicFX.begin(dt);if(!trainingMissions?.isActive()){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);buildingElectricalShorts.update(dt,cinematicFX,sound,schoolDamage,neighborhood.targetBuildings,craters.some(c=>c.isSubway&&c.subwayGroup),craters.some(c=>c.geyserGroup));orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(satellitesCleared)return false;
  if(kind==='mega_fire_breath'&&meteors.some(m=>m.isPowerup===kind&&!m.grounded))return false;
  if(meteors.length>=MAX_PLAYABLE_METEORS)return false;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});return true;},(x,y,z)=>{
  if(satellitesCleared||meteors.length>=MAX_PLAYABLE_METEORS-(wave===15?1:0))return;
