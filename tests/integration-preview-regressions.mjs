@@ -1295,4 +1295,19 @@ test('Vehicle articulation batching preserves pivot identities and excludes unre
  assert.ok(game.includes('const articulated=batchVehicleArticulations(THREE,root)'));
  assert.ok(game.includes('vehiclePoolStats.drawCallsSaved+=baked.drawCallsSaved+articulated.drawCallsSaved'));
 });
+test('Architectural relief clone preserves indexed triangles and exact source attributes',()=>{
+ const {cloneIndexedRelief}=load('src/rendering/viewer-building-fit.js',{THREE:Three},['cloneIndexedRelief']);
+ const original=new Three.BoxGeometry(2,3,4);
+ const indexed=cloneIndexedRelief(original);
+ assert.notEqual(indexed,original);assert.equal(indexed.attributes.position.count,24);assert.equal(indexed.index.count,36);
+ assert.deepEqual([...indexed.index.array],[...original.index.array]);
+ for(const name of Object.keys(original.attributes))assert.deepEqual([...indexed.attributes[name].array],[...original.attributes[name].array]);
+ const expanded=original.toNonIndexed(),reindexed=cloneIndexedRelief(expanded);
+ assert.equal(expanded.index,null);assert.equal(reindexed.index.count,36);
+ assert.deepEqual([...reindexed.index.array],Array.from({length:36},(_,i)=>i));
+ assert.deepEqual([...reindexed.toNonIndexed().attributes.position.array],[...expanded.attributes.position.array]);
+ const large=new Three.BufferGeometry();large.setAttribute('position',new Three.BufferAttribute(new Float32Array(65538*3),3));
+ const largeIndexed=cloneIndexedRelief(large);assert.ok(largeIndexed.index.array instanceof Uint32Array);assert.equal(largeIndexed.index.array[65537],65537);
+ assert.ok(read('src/rendering/viewer-building-fit.js').includes('const geo=cloneIndexedRelief(object.geometry);'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
