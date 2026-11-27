@@ -83,11 +83,18 @@ try{
  });
  await check('Start sandbox and keyboard movement',async()=>{
   await page.evaluate(()=>{window.startSandboxDirect();window.__DD_SANDBOX.setDragonEnabled(true);window.__DD_SANDBOX.setSfxMuted(true);window.__DD_SANDBOX.setMusicMuted(true);});
-  const before=await page.evaluate(()=>window.__DD_QA.snap().dragon);
-  await page.keyboard.down('ArrowRight');await page.waitForTimeout(900);await page.keyboard.up('ArrowRight');
-  const after=await page.evaluate(()=>window.__DD_QA.snap().dragon);
-  assert(Math.abs(after.x-before.x)>.1,'Dragon did not move');
-  return {before,after};
+  // Wait for the startup transition to finish and for actual rendered frames;
+  // a 900 ms wall-clock pulse may contain zero simulation steps in SwiftShader.
+  const initial=await page.evaluate(()=>window.__DD_QA.snap());
+  await page.waitForFunction(n=>{const s=window.__DD_QA.snap();return s.active&&!s.paused&&s.campaign.freeFlightMode&&s.campaign.dragonEnabled&&s.frameTimes.frames>=n+2;},initial.frameTimes.frames,{timeout:90000});
+  const before=await page.evaluate(()=>window.__DD_QA.snap());
+  await page.keyboard.down('ArrowRight');
+  try{
+   await page.waitForFunction(x=>window.__DD_QA.snap().dragon.x>x+.1,before.dragon.x,{timeout:90000});
+  }finally{await page.keyboard.up('ArrowRight');}
+  const after=await page.evaluate(()=>window.__DD_QA.snap());
+  assert(after.dragon.x-before.dragon.x>.1,'Dragon did not move right');
+  return {before:before.dragon,after:after.dragon,renderedFrames:after.frameTimes.frames-before.frameTimes.frames,simulationSeconds:after.elapsed-before.elapsed};
  });
  await check('Continuous keyboard flight from school to south end, then north end',async()=>{
   // Use actual key events and production 60 Hz simulation. Accelerate the
@@ -194,7 +201,7 @@ try{
   assert(!report.benchmark.samples.some(s=>!Number.isFinite(s.frameMs)||!Number.isFinite(s.simMs)||!Number.isFinite(s.renderMs)),'Invalid frame timings');
   report.performanceAssessment={hardwareRequired:true,softwareRequested:software,focusedStalls1000:report.benchmark.focusedStalls1000,stalls500:report.benchmark.stalls500,notes:'Sample only; not a full campaign or hardware certification.'};
   await page.screenshot({path:resolve(out,'05-bombardment.png')});
-  return {fps:report.benchmark.fps,p95FrameMs:report.benchmark.p95FrameMs,maxFrameMs:report.benchmark.maxFrameMs,stalls500:report.benchmark.stalls500};
+  return {fps:report.benchmark.fps,p95FrameMs:report.benchmark.p95FrameMs,maxFrameMs:report.benchmark.maxFrameMs,stalls500:report.benchmark.stalls500,maxDrawCalls:report.benchmark.maxDrawCalls,meanSimulationMs:report.benchmark.meanSimulationMs,meanRenderMs:report.benchmark.meanRenderMs,focusedStalls1000:report.benchmark.focusedStalls1000};
  });
  await check('Exit sandbox to fresh playable campaign',async()=>{
   const v=await page.evaluate(()=>{const q=window.__DD_QA;q.toggleFreeFlight(false);return q.snap();});
