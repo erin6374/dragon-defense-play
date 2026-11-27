@@ -16,6 +16,7 @@ import {traceMeteorCollision} from './simulation/meteor-collision.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson,captureVehicleResources,releaseVehicleResources} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget,trafficNeighborCandidates,maximumTrafficLength} from './simulation/traffic-dynamics.js';
 import {forcedVehicleRole,planResponderRoute,hoseReach} from './simulation/responder-routing.js';
+import {freezeResponderForGas,releaseResponderFreeze,advanceResponderFreeze,applyGasPlumeToResponder} from './simulation/responder-freeze.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
 window.__DD_BUILD_INFO = { version: GAME_VERSION, build: BUILD_ID };
 import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
@@ -1607,8 +1608,7 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  return cars.at(-1);
 }
 function recycleCar(car){if(!car||car.recycled)return;car.recycled=true;scene.remove(car.root);
- if(car.frozenMaterials){for(const [mesh,original] of car.frozenMaterials){mesh.material.dispose?.();mesh.material=original;}car.frozenMaterials.clear();}
- car.frozen=false;
+ releaseResponderFreeze(car);
  let list=vehiclePool.get(car.poolKey);
  const total=Array.from(vehiclePool.values()).reduce((n,p)=>n+p.length,0);
  if((list?.length??0)>=4||total>=48){releaseVehicleResources(car.root);return;}
@@ -1804,6 +1804,7 @@ function fireTruckService(c,dt){
 function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;const activeFireTrucks=cars.filter(c=>c.fireTruck).length;carTimer=schoolFire.length&&activeFireTrucks<Math.min(5,schoolFire.length)?0.5:(chapter<=2?0.20+Math.random()*0.24:0.55+Math.random()*0.75);if(hp<55||schoolFire.length>3)carTimer*=.65;}
  const maxTrafficLength=maximumTrafficLength(cars);
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
+  if(advanceResponderFreeze(c,dt))continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
   const neighbors=trafficNeighborCandidates(c,cars,maxTrafficLength);
@@ -2115,15 +2116,16 @@ function seedChapterTrafficAndCrowd(chapterNum){
   spawnCrowd(x,z);
  }
 }
-function freezeResponder(c){if(c.frozen||(!c.emergency&&!c.trainingCop))return false;c.frozen=true;c.stun=999;c.speed=0;c.frozenMaterials=new Map();c.root.traverse(o=>{if(o.isMesh&&o.material&&!Array.isArray(o.material)){c.frozenMaterials.set(o,o.material);o.material=o.material.clone();o.material.color?.setHex(0x60e642);}});score+=65;return true;}
+function freezeResponder(c){if(!freezeResponderForGas(c))return false;score+=65;return true;}
 function gasAttack(){if(dragonStun>0||!active||paused||gasCooldown>0)return;gasCooldown=1.15;gasPose=.65;
  if(trainingMissions?.isActive()&&trainingMissions.getStats().step===5&&Math.hypot(dragon.position.x+12,dragon.position.y-1.5)<12)trainingMissions.disableCruiser();
  const rear=dragon.position.clone().add(new THREE.Vector3(-facing*1.2,-.35,0));
  // Large gas plume drifts outward, then descends and settles near street level.
+ const affectedResponders=new WeakSet();
  for(let j=0;j<38;j++){
   const m=acquireGasSprite(0x73cf5d,.42);
   m.scale.setScalar(1.1+Math.random()*.7);m.position.copy(rear).add(new THREE.Vector3((Math.random()-.5)*1.7,(Math.random()-.5)*1.7,(Math.random()-.5)*2));scene.add(m);
-  gasClouds.push({mesh:m,life:10+Math.random()*4,v:new THREE.Vector3(-facing*(5+Math.random()*5),-3-Math.random()*3,(Math.random()-.5)*3),age:0});
+  gasClouds.push({mesh:m,affectedResponders,life:10+Math.random()*4,v:new THREE.Vector3(-facing*(5+Math.random()*5),-3-Math.random()*3,(Math.random()-.5)*3),age:0});
  }
  sound('gas');message('GAS RELEASED — CLOUD DESCENDING');updateHud();
 }
@@ -3304,7 +3306,7 @@ function updateWorld(dt){
   for(const h of helicopters)if(performanceLab.isEnabled('helicopters')&&!h.crashing&&h.root.position.distanceTo(c.mesh.position)<3.8)crashHelicopter(h,true);
   militaryOccupation.applyGas(c.mesh.position,5.6,7);
   if(wave===15)finalSquadron.applyGas(c.mesh.position,6.0);
-  for(const car of cars)if(performanceLab.isEnabled('traffic')&&car.emergency&&!car.frozen&&car.life>0&&Math.abs(car.root.position.x-c.mesh.position.x)<5.6&&Math.abs(car.root.position.z-c.mesh.position.z)<22&&c.mesh.position.y<7.2)freezeResponder(car);
+  for(const car of cars)if(performanceLab.isEnabled('traffic')&&car.emergency&&!car.frozen&&car.life>0&&Math.abs(car.root.position.x-c.mesh.position.x)<5.6&&Math.abs(car.root.position.z-c.mesh.position.z)<22&&c.mesh.position.y<7.2)applyGasPlumeToResponder(c,car,freezeResponder);
   if(c.life<=0){releaseGasSprite(c.mesh);gasClouds.splice(i,1)}
  }
  for(const c of cars){if(!performanceLab.isEnabled('traffic'))break;if(c.hostile&&c.police&&!c.frozen&&c.stun<=0&&Math.abs(c.root.position.x-dragon.position.x)<16&&Math.abs(c.root.position.z-dragon.position.z)<18&&Math.random()<dt*.28){
