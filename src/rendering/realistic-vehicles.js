@@ -9,7 +9,28 @@ function kit(T){if(caches.has(T))return caches.get(T);const mats=new Map(),geo=n
  const oval=(g,m,x,y,z,w,h,d)=>part(g,sphere,m,x,y,z,w,h,d);
  function rod(g,m,a,b,r=.05){const av=new T.Vector3(...a),bv=new T.Vector3(...b),v=bv.clone().sub(av);const key=r+':c';if(!geo.has(key))geo.set(key,new T.CylinderGeometry(r,r,1,12));const o=part(g,geo.get(key),m,...av.clone().add(bv).multiplyScalar(.5).toArray(),1,v.length(),1);o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),v.normalize());return o}
  function profile(g,m,points,width){const key=JSON.stringify([points,width]);if(!geo.has(key)){const shape=new T.Shape();points.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();const e=new T.ExtrudeGeometry(shape,{depth:width,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.055,bevelThickness:.055,curveSegments:12});e.translate(0,0,-width/2);geo.set(key,e)}return part(g,geo.get(key),m,0,0,0)}
- const result={mat,part,block,oval,rod,profile,geo};caches.set(T,result);return result}
+ const result={mat,part,block,oval,rod,profile,geo,mats,sphere,box};caches.set(T,result);return result}
+// Capture only builder-owned resources, never shared cache assets or later
+// gameplay attachments. Retain pre-bake resources until the model is retired.
+const modelResources=new WeakMap();
+export function captureVehicleResources(T,root){
+ const k=kit(T),shared=new Set([k.sphere,k.box,...k.geo.values(),...k.mats.values()]);
+ let owned=modelResources.get(root);
+ if(!owned){owned=new Set();modelResources.set(root,owned);}
+ root.traverse(node=>{
+  if(!node.isMesh&&!node.isLine&&!node.isSprite)return;
+  if(node.geometry&&!shared.has(node.geometry))owned.add(node.geometry);
+  for(const m of [node.material].flat())if(m&&!shared.has(m))owned.add(m);
+ });
+ return owned.size;
+}
+export function releaseVehicleResources(root){
+ const owned=modelResources.get(root);
+ if(!owned)return 0;
+ modelResources.delete(root);
+ for(const resource of owned)resource.dispose?.();
+ return owned.size;
+}
 export function buildRoadVehicle(T,root,o){
  const k=kit(T),{mat,block,oval,rod,profile,part,geo}=k,L=o.length,body=mat(o.bodyHex,.32,.36),chrome=mat(0xaeb6ba,.78,.27),rubber=mat(0x171a1e,.03,.95),glass=mat(0x325264,.48,.16),black=mat(0x272e35,.22,.64),white=mat(0xe5e5df,.24,.42); const busGlass=mat(0xffe2a4,.15,.1); busGlass.emissive.setHex(0xe8be72); busGlass.emissiveIntensity=.38;
  const brakes=[];const tailDim=mat(0x7d1715,.1,.3),tailBright=new T.MeshStandardMaterial({color:0xff3023,emissive:0xff2014,emissiveIntensity:2.2,roughness:.2});
