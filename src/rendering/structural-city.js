@@ -400,6 +400,14 @@ export function createStructuralCity(THREE,scene,bank){
   // follow the same hit. Do not strip the tallest 5–15% of ALL school pieces
   // every time syncStructuralDamage() reconciles the health indicator.
   if(b.school&&target<1)return;
+  // Complete collapse also releases nonstructural furnishings, partitions and
+  // windows; otherwise they can remain suspended after the shell disappears.
+  if(target>=1){
+   if(b.fullCollapseReconciled)return;
+   for(const p of b.parts)if(p.state==='attached'&&p.type!=='foundation')detach(p,p.position,.5);
+   b.fullCollapseReconciled=true;
+   return;
+  }
   const count=Math.floor(b.structuralParts.length*target);
   const alreadyLost=b.structuralParts.reduce((n,p)=>n+(p.state!=='attached'?1:0),0);
   const needed=Math.max(0,count-alreadyLost);
@@ -461,7 +469,7 @@ export function createStructuralCity(THREE,scene,bank){
    const lost=b.structuralParts.filter(p=>p.state!=='attached').length/b.structuralParts.length;
    if(!b.school){
     b.damage=Math.max(b.damage,lost);
-    if(lost>.97)b.damage=1;
+    if(lost>.97)forceDamage(b,1);
    }
    if(!pendingFailure&&revision===b.supportRevision)supportWork.delete(b);
   }
@@ -479,7 +487,7 @@ export function createStructuralCity(THREE,scene,bank){
   for(let i=0;i<dust.length;i++){const d=dust[i];if(!d)continue;dustChanged=true;d.age+=dt;if(d.age>=d.life){dustMesh.setMatrixAt(i,zero);dust[i]=null;continue}d.position.addScaledVector(d.v,dt);d.v.multiplyScalar(Math.max(0,1-dt*.25));dummy.position.copy(d.position);dummy.rotation.set(-.15,.26,0);dummy.scale.setScalar(d.size*(1+d.age*.6));dummy.updateMatrix();dustMesh.setMatrixAt(i,dummy.matrix);dustAlpha.setX(i,Math.min(1,d.age*8)*(1-d.age/d.life))}if(dustChanged){dustAlpha.needsUpdate=true;dustMesh.instanceMatrix.needsUpdate=true;}
   for(const bucket of dirty)bucket.mesh.instanceMatrix.needsUpdate=true;dirty.clear();
  }
- function restore(){moving.clear();supportWork.clear();supportPasses=0;pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.supportRevision=0;b.exposedFloors?.clear();b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values()){bucket.broken.visible=false;bucket.mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);}chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
+ function restore(){moving.clear();supportWork.clear();supportPasses=0;pile.clear();for(let i=0;i<512;i++)contact.setMatrixAt(i,zero);contact.instanceMatrix.needsUpdate=true;contactCursor=0;dust.length=0;for(let i=0;i<96;i++)dustMesh.setMatrixAt(i,zero);dustMesh.instanceMatrix.needsUpdate=true;for(const b of buildings){b.damage=0;b.pressure=0;b.collapseClock=0;b.supportRevision=0;b.fullCollapseReconciled=false;b.fallenFloors?.clear();b.exposedFloors?.clear();b.fireDamage=0;b.radiantHeat=0;b.nextFireDamageAt=0;b.fireCollapsed=false;b.roofBreached=false;}for(const p of parts){p.failureAt=undefined;p.fractured=false;p.size.copy(p.original.size);p.bucket.mesh.setColorAt(p.index,new THREE.Color(0xffffff));p.bucket.mesh.instanceColor.needsUpdate=true;p.state='attached';p.health=p.initialHealth;p.age=0;p.spin.set(0,0,0);p.position.copy(p.original.position);p.rotation.copy(p.original.rotation);p.velocity.set(0,0,0);write(p)}for(const bucket of buckets.values()){bucket.broken.visible=false;bucket.mesh.visible=bucket.parts.some(p=>!p.building.viewerParcel);}chips.length=0;activeChips.clear();chipCursor=0;for(const m of chipMeshes){m.visible=false;for(let i=0;i<1600;i++)m.setMatrixAt(i,zero);m.instanceMatrix.needsUpdate=true}for(const b of dirty)b.mesh.instanceMatrix.needsUpdate=true;dirty.clear()}
  function fireAnchorHeight(point){const b=buildings.find(b=>Math.abs(point.x-b.x)<b.w*.5&&Math.abs(point.z-b.z)<b.d*.5+1);if(!b)return point.y;let y=.35;for(const p of b.slabs)if(p.state==='attached'&&p.position.y<point.y+.3&&Math.abs(p.position.x-point.x)<p.size.x*.6&&Math.abs(p.position.z-point.z)<p.size.z*.6+1)y=Math.max(y,p.position.y+.4);return Math.min(point.y,y);}
  function setIntactBuildingVisible(buildingName,visible){
   const b=buildings.find(x=>x.name===buildingName);if(!b)return false;
