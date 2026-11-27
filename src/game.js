@@ -46,7 +46,7 @@ import {createOrbitalTheater} from './rendering/orbital-theater.js';
 import {createCinematicSky,disasterSkyIntensity} from './rendering/cinematic-environment.js';
 import {createPhiladelphiaSkyline} from './rendering/philadelphia-geometry-skyline.js';
 import {skylineCameraRayX,skylineParallaxX} from './core/skyline-position.js';
-import {batchVehicleVisuals} from './rendering/vehicle-batch.js';
+import {batchVehicleVisuals,batchVehicleArticulations} from './rendering/vehicle-batch.js';
 import {createFrameHealth} from './core/frame-health.js';
 import {installWebGLResourceAudit} from './core/webgl-resource-audit.js';
 import {createDistantMeteorVisual} from './rendering/distant-meteors.js';
@@ -1488,6 +1488,7 @@ for(const crossX of CROSS_STREET_X){
   const cruiser=new THREE.Group();cruiser.position.set(crossX+(crossX>0?3.2:-3.2),-.36,z);
   cruiser.rotation.y=(crossX>0?-1:1)*0.55;
   const {beacon,brakes}=buildRoadVehicle(THREE,cruiser,{length:4.2,bodyHex:0xf1f1e8,police:true,emergency:true});
+  batchVehicleArticulations(THREE,cruiser);
   batchVehicleVisuals(THREE,cruiser,{exclude:[beacon,cruiser.userData.headlightBeam,...(brakes||[])]});
   policeBlockadeGroup.add(cruiser);
   const barrier=new THREE.Group();barrier.position.set(crossX,0,z+(z>20?3.2:-3.2));
@@ -1583,12 +1584,12 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  const built=buildRoadVehicle(THREE,root,{style:bodyStyle,length,bodyHex,bike,scooter,bus,truck,garbage,van,police,ambulance,emergency,fireTruck,ladder,taxi});
  beacon=built.beacon;
   captureVehicleResources(THREE,root);
-  for(const pivot of root.userData.frontSteer||[])batchVehicleVisuals(THREE,pivot);
+  const articulated=batchVehicleArticulations(THREE,root);
   const baked=batchVehicleVisuals(THREE,root,{exclude:[beacon,root.userData.headlightBeam,...(root.userData.brakes||[])]});
-  vehiclePoolStats.originalMeshes+=baked.sourceMeshes;
-  vehiclePoolStats.bakedBatches+=baked.batches;
-  vehiclePoolStats.drawCallsSaved+=baked.drawCallsSaved;
-  vehiclePoolStats.bakeFailures+=baked.failed;
+  vehiclePoolStats.originalMeshes+=baked.sourceMeshes+articulated.sourceMeshes;
+  vehiclePoolStats.bakedBatches+=baked.batches+articulated.batches;
+  vehiclePoolStats.drawCallsSaved+=baked.drawCallsSaved+articulated.drawCallsSaved;
+  vehiclePoolStats.bakeFailures+=baked.failed+articulated.failed;
   root.userData.vehicleBeacon=beacon;
   captureVehicleResources(THREE,root);
  }
@@ -1676,7 +1677,8 @@ const parkedMaterials=[0x596d79,0x9aaca7,0x444750,0xa69b90,0x963c36].map(vehicle
 for(const [i,x,z] of [[0,-43,7.3],[1,-10,7.3],[2,26,7.3],[3,-31,25.8],[4,34,25.8],[0,70,25.8]]){
  const root=new THREE.Group();root.position.set(x,-.35,z);if(z>BROAD_CENTER)root.rotation.y=Math.PI;scene.add(root);
  buildRoadVehicle(THREE,root,{length:3.9,bodyHex:parkedMaterials[i].color.getHex()});
- batchVehicleVisuals(THREE,root);parkedCars.push({root,destroyed:false,originalPos:new THREE.Vector3(x,-.35,z)});
+ batchVehicleArticulations(THREE,root);
+ batchVehicleVisuals(THREE,root,{exclude:[root.userData.headlightBeam,...(root.userData.brakes||[])]});parkedCars.push({root,destroyed:false,originalPos:new THREE.Vector3(x,-.35,z)});
 }
 function strikeParkedCars(x,z,radius=6){for(const c of parkedCars){if(c.destroyed||Math.abs(c.root.position.x-x)>radius||Math.abs(c.root.position.z-z)>radius)continue;
  c.destroyed=true;c.root.visible=false;
