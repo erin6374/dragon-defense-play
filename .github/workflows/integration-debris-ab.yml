@@ -1,0 +1,55 @@
+name: Integration preview debris A-B
+on:
+  push:
+    branches:
+      - integration/combined-preview
+    paths:
+      - 'qa/integration-debris-ab.mjs'
+      - '.github/workflows/integration-debris-ab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integration-debris-ab-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  comparison:
+    if: github.ref == 'refs/heads/integration/combined-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check source identity and script syntax
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node --check qa/integration-debris-ab.mjs
+      - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
+      - name: Compare frozen production scenes
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 > integration-ab-server.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8765/build-info.json >/dev/null; then break; fi
+            sleep 1
+          done
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/integration-qa/node_modules/playwright-core/index.mjs"
+          node qa/integration-debris-ab.mjs
+      - name: Retain comparison screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-debris-ab-${{ github.sha }}
+          path: |
+            integration-debris-ab-output/
+            integration-ab-server.log
+          if-no-files-found: warn
+          retention-days: 14
