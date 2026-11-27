@@ -12,7 +12,9 @@ const masonry = new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.Doub
 // inputs receive identity indices so mixed geometry can be merged without
 // expanding every indexed mesh. No approximate welding or simplification.
 export function cloneIndexedRelief(source){
-  const geometry=source.clone();
+  // Without source normals the previous expansion generated flat face normals.
+  // Preserve that fallback rather than introducing smoothing at shared vertices.
+  const geometry=source.index&&!source.attributes.normal?source.toNonIndexed():source.clone();
   if(!geometry.index){
     const n=geometry.attributes.position.count;
     const index=n>65535?new Uint32Array(n):new Uint16Array(n);
