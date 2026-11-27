@@ -45,6 +45,7 @@ try{
    const category=o=>{
     let p=o,root=o,names=[];
     while(p&&p!==scene){if(p.name)names.push(p.name);root=p;p=p.parent;}
+    if(o.material?.name==='loose-glass-shard-single-pass')return o.material.name;
     if(root.name)return root.name;
     if(o.name)return o.name;
     if(names.length)return names.at(-1);
@@ -63,6 +64,12 @@ try{
    return {phase,render:{...r.info.render},groups:[...groups].map(([name,v])=>({name,...v})).sort((a,b)=>b.submissions-a.submissions),state:q.snap().counts,schoolDamage:q.getSchoolDamage(),renderer:r.getContext().getParameter(r.getContext().RENDERER)};
   },phase);
   assert.ok(data.render.calls>0&&data.groups.length>0,'No real render submissions captured');
+  if(phase==='damage'){
+   const glass=data.groups.find(g=>g.name==='loose-glass-shard-single-pass');
+   assert.ok(glass&&glass.instances>0,'Damaged scene must exercise loose glass material');
+   assert.equal(glass.geometryElements,glass.submissions*3,'One planar triangle per shard submission');
+   console.log('GLASS_SHARDS '+JSON.stringify(glass));
+  }
   report.cases.push(data);
   console.log('SCENE_PROFILE '+JSON.stringify({phase,render:data.render,topGroups:data.groups.slice(0,15),state:data.state,schoolDamage:data.schoolDamage}));
   await page.screenshot({path:out+'/'+phase+'.png'});
