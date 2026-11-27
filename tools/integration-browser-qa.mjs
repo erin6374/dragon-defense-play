@@ -114,20 +114,23 @@ try{
   const journeys=[];
   for(const [label,key,target,dir] of [['south','KeyD',ends[1],1],['north','KeyA',ends[0],-1]]){
    const before=await page.evaluate(()=>window.__DD_QA.snap());
-   const trace=[{x:before.dragon.x,elapsed:before.elapsed}];
+   const wallStart=Date.now();
+   const trace=[{x:before.dragon.x,y:before.dragon.y,elapsed:before.elapsed,frames:before.frameTimes.frames,cameraX:before.camera.x,cameraScroll:before.camera.scroll}];
    await page.keyboard.down(key);
    try{
     for(let batch=0;batch<60&&dir*(trace.at(-1).x-target)<-.5;batch++){
      if(requireHardware)await page.waitForTimeout(2000);
      const v=await page.evaluate(accelerate=>{
       const q=window.__DD_QA;if(accelerate)q.advanceSimulation(120);
-      const s=q.snap();return {x:s.dragon.x,elapsed:s.elapsed,active:s.active,paused:s.paused,free:s.campaign.freeFlightMode};
+      const s=q.snap();return {x:s.dragon.x,y:s.dragon.y,elapsed:s.elapsed,frames:s.frameTimes.frames,cameraX:s.camera.x,cameraScroll:s.camera.scroll,active:s.active,paused:s.paused,free:s.campaign.freeFlightMode,focused:document.hasFocus()&&!document.hidden};
      },!requireHardware);
      assert(v.active&&!v.paused&&v.free,'Continuous sandbox flight interrupted at '+v.x);
      const previous=trace.at(-1);
      assert(Number.isFinite(v.x)&&dir*(v.x-previous.x)>-2,'Wrong direction or unexpected position reset: '+JSON.stringify(v));
      assert(Math.abs(v.x-previous.x)<=22*Math.max(0,v.elapsed-previous.elapsed)+2,'Movement exceeded unboosted flight speed');
-     trace.push({x:v.x,elapsed:v.elapsed});
+     if(requireHardware){assert(v.focused,'Flight test lost foreground focus');assert(v.frames>previous.frames,'No rendered frames during real-time flight');}
+     assert([v.x,v.y,v.cameraX,v.cameraScroll].every(Number.isFinite),'Invalid flight/camera coordinates');
+     trace.push(v);
     }
    }finally{await page.keyboard.up(key);}
    const after=await page.evaluate(()=>window.__DD_QA.snap());
@@ -135,11 +138,26 @@ try{
    assert(dir*(after.dragon.x-before.dragon.x)>100,'Traversal distance too short');
    await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+3,after.frameTimes.frames,{timeout:90000});
    await page.screenshot({path:resolve(out,'flight-'+label+'.png')});
-   const result={label,target,start:before.dragon.x,end:after.dragon.x,trace};
+   const result={label,target,start:before.dragon.x,end:after.dragon.x,wallSeconds:(Date.now()-wallStart)/1000,simulationSeconds:after.elapsed-before.elapsed,renderedFrames:after.frameTimes.frames-before.frameTimes.frames,trace};
    journeys.push(result);
    console.log('FLIGHT_TRAVERSE '+JSON.stringify({label,target,start:result.start,end:result.end,samples:trace.length}));
   }
-  return {journeys,method:requireHardware?'real keyboard events and ordinary real-time animation frames, no accelerated simulation or teleport during traverse':'real keyboard events with accelerated production fixed steps; not real-time FPS or a full campaign'};
+  let vertical=null;
+  if(requireHardware){
+   const start=await page.evaluate(()=>window.__DD_QA.snap());
+   const samples=[];
+   for(const [key,dir] of [['KeyW',1],['KeyS',-1]]){
+    const before=await page.evaluate(()=>window.__DD_QA.snap());
+    await page.keyboard.down(key);
+    try{await page.waitForTimeout(1200);}finally{await page.keyboard.up(key);}
+    const after=await page.evaluate(()=>window.__DD_QA.snap());
+    assert(dir*(after.dragon.y-before.dragon.y)>1,'Real-time vertical flight did not respond to '+key);
+    assert(after.frameTimes.frames>before.frameTimes.frames,'Vertical flight did not render');
+    samples.push({key,before:before.dragon,after:after.dragon,frames:after.frameTimes.frames-before.frameTimes.frames,camera:after.camera});
+   }
+   vertical={initial:start.dragon,samples};
+  }
+  return {journeys,vertical,method:requireHardware?'real keyboard events and ordinary real-time animation frames, no accelerated simulation or teleport during traverse':'real keyboard events with accelerated production fixed steps; not real-time FPS or a full campaign'};
  });
  await check('Single parcel hit does not damage neighbors',async()=>{
   const result=await page.evaluate(async()=>{
