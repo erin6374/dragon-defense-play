@@ -1,6 +1,6 @@
 // Count actual submitted object groups in frozen integrated scenes.
-// onBeforeRender counts submissions, not driver draw calls (double-sided and
-// multipass materials can issue additional calls). renderer.info is authoritative.
+// Observe renderer.renderBufferDirect without altering object callbacks or
+// eligibility for instancing. renderer.info remains authoritative.
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -39,9 +39,9 @@ try{
     cam.position.set(maxX-35,34,65);cam.lookAt(maxX-35,12,0);
    }
    // Warm up production render, creating any deferred batch objects before
-   // installing temporary observation hooks. Restore hooks even on failure.
+   // installing a temporary renderer observer. Restore it even on failure.
    q.renderFrame(cam,0);
-   const groups=new Map(),hooks=[];
+   const groups=new Map();
    const category=o=>{
     let p=o,root=o,names=[];
     while(p&&p!==scene){if(p.name)names.push(p.name);root=p;p=p.parent;}
@@ -50,20 +50,16 @@ try{
     if(names.length)return names.at(-1);
     return 'unnamed '+o.type+' / '+(o.material?.type||'material-array');
    };
-   scene.traverse(o=>{
-    if(!o.isMesh&&!o.isSprite&&!o.isPoints&&!o.isLine)return;
-    const original=o.onBeforeRender;const key=category(o);
-    hooks.push([o,original]);
-    o.onBeforeRender=function(renderer,scene,camera,geometry,material,group){
-     const count=groups.get(key)||{submissions:0,instances:0,geometryElements:0};
-     count.submissions++;count.instances+=o.isInstancedMesh?o.count:1;
-     const n=group?.count??geometry?.index?.count??geometry?.attributes?.position?.count??0;
-     count.geometryElements+=n*(o.isInstancedMesh?o.count:1);
-     groups.set(key,count);
-     return original.apply(this,arguments);
-    };
-   });
-   try{q.renderFrame(cam,0);}finally{for(const [o,original] of hooks)o.onBeforeRender=original;}
+   const original=r.renderBufferDirect;
+   r.renderBufferDirect=function(camera,sceneArg,geometry,material,o,group){
+    const key=category(o),count=groups.get(key)||{submissions:0,instances:0,geometryElements:0};
+    count.submissions++;count.instances+=o.isInstancedMesh?o.count:1;
+    const n=group?.count??geometry?.index?.count??geometry?.attributes?.position?.count??0;
+    count.geometryElements+=n*(o.isInstancedMesh?o.count:1);
+    groups.set(key,count);
+    return original.apply(this,arguments);
+   };
+   try{q.renderFrame(cam,0);}finally{r.renderBufferDirect=original;}
    return {phase,render:{...r.info.render},groups:[...groups].map(([name,v])=>({name,...v})).sort((a,b)=>b.submissions-a.submissions),state:q.snap().counts,schoolDamage:q.getSchoolDamage(),renderer:r.getContext().getParameter(r.getContext().RENDERER)};
   },phase);
   assert.ok(data.render.calls>0&&data.groups.length>0,'No real render submissions captured');
