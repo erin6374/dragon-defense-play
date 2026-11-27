@@ -434,7 +434,8 @@ test('Helicopter retirement bounds reuse and releases crashed model resources on
 test('Road vehicle pool has per-variant and global retention limits',()=>{
  const a=game.indexOf('function recycleCar('),b=game.indexOf('const burningVehicles=',a);
  let disposed=0;
- const api=new Function('scene','releaseVehicleResources','const vehiclePool=new Map(),vehiclePoolStats={recycled:0};'+game.slice(a,b)+'return {recycleCar,vehiclePool};')({remove(){}},()=>disposed++);
+ const {releaseResponderFreeze}=load('src/simulation/responder-freeze.js',{},['releaseResponderFreeze']);
+ const api=new Function('scene','releaseVehicleResources','releaseResponderFreeze','const vehiclePool=new Map(),vehiclePoolStats={recycled:0};'+game.slice(a,b)+'return {recycleCar,vehiclePool};')({remove(){}},()=>disposed++,releaseResponderFreeze);
  for(let i=0;i<5;i++)api.recycleCar({root:{},poolKey:'a'});
  assert.equal(api.vehiclePool.get('a').length,4);assert.equal(disposed,1);
  for(let i=0;i<60;i++)api.recycleCar({root:{},poolKey:'other'+i});
