@@ -533,7 +533,7 @@ test('Crater retirement preserves borrowed rim assets and releases owned resourc
  owned.n=mat.n=0;
  const start=game.indexOf('function disposeCrater(c)'),end=game.indexOf('const _craterV1',start);
  let removed=0,released=0;
- const dispose=new Function('scene','explosionLightPool','collectCraterResources','releaseCraterResources',game.slice(start,end)+'return disposeCrater;')({remove(){removed++;}},{release(){released++;}},api.collectCraterResources,api.releaseCraterResources);
+ const dispose=new Function('scene','explosionLightPool','collectCraterResources','releaseCraterResources','thermalCraterLights',game.slice(start,end)+'return disposeCrater;')({remove(){removed++;}},{release(){released++;}},api.collectCraterResources,api.releaseCraterResources,[]);
  const crater={rimMesh:rim,subwayGroup:subway};dispose(crater);dispose(crater);
  assert.equal(removed,2);assert.equal(released,1);assert.equal(owned.n,1);assert.equal(mat.n,1);assert.equal(retained.n,1);assert.ok(borrowed.every(r=>r.n===0));
 });
@@ -543,5 +543,34 @@ test('Subway batching reclaims discarded resources and uses the subway scorch ap
  const after=game.indexOf('releaseCraterResources(subwayBeforeBatch,collectCraterResources([subwayGroup]))',batch);
  assert.ok(before>=0&&batch>before&&after>batch);
  assert.ok(game.includes('createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1),true)'));
+});
+test('Thermal crater lights use a fixed budget, follow nearby craters and clear expired slots',()=>{
+ const source=read('src/rendering/procedural-crater.js'),a=source.indexOf('export function syncThermalCraterLights'),b=source.indexOf('/**',a);
+ const sync=new Function(source.slice(a,b).replace(/^export /gm,'')+'return syncThermalCraterLights;')();
+ const slots=Array.from({length:3},()=>({userData:{},position:{set(x,y,z){Object.assign(this,{x,y,z});}}}));
+ const make=(x,z,life=10)=>({x,z,life,radius:4,thermalGroup:{position:{y:-2}},thermalIntensity:1.5});
+ const craters=[make(100,0),make(8,0),make(3,0),make(5,0),make(0,0,0)];
+ sync(slots,craters,{x:0,z:0});
+ assert.equal(slots.map(l=>l.position.x).join(','),'3,5,8');
+ assert.equal(craters[0].x,100);assert.equal(slots[0].distance,14);assert.equal(slots[0].intensity,1.5);
+ craters[2].disposed=true;sync(slots,craters,{x:0,z:0});assert.equal(slots[0].position.x,5);
+ sync(slots,craters,{x:101,z:0});assert.equal(slots[0].position.x,100);
+ sync(slots,[],{x:0,z:0});assert.ok(slots.every(l=>l.intensity===0&&l.userData.thermalCrater===null));
+});
+test('Crater update uses external thermal lighting and cached animation references',()=>{
+ assert.ok(game.includes('createPulsatingThermalFissures(radius,bowlObj.depth,{externalLighting:true})'));
+ assert.ok(game.includes('syncThermalCraterLights(thermalCraterLights,craters,dragon.position)'));
+ const a=game.indexOf('function updateCraters(dt)'),b=game.indexOf('function updateWorld(dt)',a);
+ const update=game.slice(a,b);assert.ok(!update.includes('getObjectByName('));
+ assert.ok(update.includes('animatedParts'));assert.ok(update.includes('c.geyserGroup.userData.puddle'));assert.ok(update.includes('c.thermalIntensity=c.thermalUpdate(elapsed)'));
+});
+test('Fire cluster counting preserves the 28 meter radius without allocating an array',()=>{
+ const a=game.indexOf('function updateFires(dt)'),b=game.indexOf('function clearFires()',a),source=game.slice(a,b);
+ assert.ok(source.includes('distanceToSquared(f.root.position)<784'));
+ assert.ok(!source.includes('clusterFires'));
+ const pos=x=>({distanceToSquared(other){return (x-other.x)**2;},x});
+ const f={root:{position:pos(0)}},schoolFire=[f,...[3,27.99,28,40].map(x=>({root:{position:pos(x)}}))];
+ const start=source.indexOf('let clusterCount=0;'),end=source.indexOf('if(clusterCount>=2)',start);
+ assert.equal(new Function('schoolFire','f',source.slice(start,end)+'return clusterCount;')(schoolFire,f),2);
 });
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
