@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createDistantNeighborhood } from './rendering/distant-neighborhood.js';
 import { createStructuralCity } from './rendering/structural-city.js';
 import { craterHolesUniform,patchCraterDiscardShader } from './rendering/crater-holes.js';
-import { containsParcel,viewerParcels,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z } from './simulation/viewer-parcels.js';
+import { containsParcel,viewerParcels,schoolGameEnvelope,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z } from './simulation/viewer-parcels.js';
 import { createBroadStreetSurface } from '../broad-street/broad-street-surface-review35.mjs';
 import { createJunctionApproaches } from '../broad-street/junction-approaches-review36.mjs';
 import { createBlockGround } from '../broad-street/block-ground-review37.mjs';
@@ -60,7 +60,7 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
 
  const city=createStructuralCity(THREE,scene,visualBank);
  for(const parcel of viewerParcels(grid.rows))city.addBuilding(parcel);
- const school=city.addBuilding({name:'tech-freire-school',x:0,w:27,h:28,d:58.8,z:-29,
+ const school=city.addBuilding({name:'tech-freire-school',...schoolGameEnvelope(grid.rows),
   stories:5,bays:6,school:true,kind:'brick'});
  city.finalize();
  const buildings=city.buildings.filter(b=>!b.school);
