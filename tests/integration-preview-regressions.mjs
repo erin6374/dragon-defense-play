@@ -1277,4 +1277,22 @@ test('Loose planar glass shards use a single double-sided pass without changing 
  assert.equal(shard.color.getHex(),original.color.getHex());
  assert.ok(game.includes('new THREE.Mesh(isGlass?glassShardGeometry:cube,isGlass?looseGlassShardMaterial:(mats[type]||mats.stone))'));
 });
+test('Vehicle articulation batching preserves pivot identities and excludes unrelated groups',()=>{
+ const {batchVehicleArticulations}=load('src/rendering/vehicle-batch.js',{},['batchVehicleArticulations']);
+ const root=new Three.Group(),wheelA=new Three.Group(),wheelB=new Three.Group(),ladder=new Three.Group(),beacon=new Three.Group(),unattached=new Three.Group();
+ root.add(wheelA,wheelB,ladder,beacon);
+ root.userData.frontSteer=[wheelA,wheelB,wheelA,unattached];root.userData.ladder=ladder;
+ wheelA.position.set(2,0,.9);ladder.position.set(-1.2,2.35,0);ladder.rotation.z=.35;
+ const calls=[];
+ const result=batchVehicleArticulations(Three,root,(T,pivot)=>{
+  assert.equal(T,Three);calls.push(pivot);
+  return {sourceMeshes:8,batches:2,drawCallsSaved:6,failed:0};
+ });
+ assert.deepEqual(calls,[wheelA,wheelB,ladder]);assert.deepEqual(result,{sourceMeshes:24,batches:6,drawCallsSaved:18,failed:0});
+ assert.equal(ladder.parent,root);assert.equal(ladder.rotation.z,.35);assert.equal(ladder.position.y,2.35);
+ assert.deepEqual(wheelA.position.toArray(),[2,0,.9]);
+ assert.equal(beacon.parent,root);assert.equal(unattached.parent,null);
+ assert.ok(game.includes('const articulated=batchVehicleArticulations(THREE,root)'));
+ assert.ok(game.includes('vehiclePoolStats.drawCallsSaved+=baked.drawCallsSaved+articulated.drawCallsSaved'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
