@@ -1,4 +1,4 @@
-import {containsParcel} from './viewer-parcels.js';
+import {containsParcel,ownsSchoolFootprint} from './viewer-parcels.js';
 
 // Continuous descending segment vs extruded parcel footprints. Entry at the
 // roof or a side face wins by travel time, not by array order or endpoint.
@@ -40,7 +40,7 @@ export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActi
  if(schoolActive){
   const {min,max}=schoolBounds;
   const b={x:(min.x+max.x)/2,z:(min.z+max.z)/2,w:max.x-min.x,d:max.z-min.z,h:max.y};
-  prism(b,'school',(x,z)=>x>=min.x&&x<=max.x&&z>=min.z&&z<=max.z&&!active.some(p=>containsParcel(p,x,z)));
+  prism(b,'school',(x,z)=>ownsSchoolFootprint(schoolBounds,buildings,x,z));
  }
  return best;
 }
