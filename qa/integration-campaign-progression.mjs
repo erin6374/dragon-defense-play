@@ -1,5 +1,6 @@
 // Integrated campaign state-machine smoke test. Combat/escort/satellite
 // outcomes are deliberately assisted. This is NOT a human full playthrough.
+// Revalidate all campaign waves after isolating sandbox orbital projectiles.
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
