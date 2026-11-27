@@ -982,4 +982,72 @@ test('Camera zoom uses a bounded exponential interpolation and staging avoids re
  assert.ok(stage.includes('get chapter(){return chapter;}'));
  assert.ok(stage.includes('for(const resource of ownedTransientResources)resource.dispose()'));
 });
+test('Training state machine requires real actions, supports retry, and exits exactly once',()=>{
+ const nodes=new Map(),document={getElementById(id){if(!nodes.has(id))nodes.set(id,{style:{},textContent:'',innerHTML:''});return nodes.get(id);}};
+ const {createTrainingMissions}=load('src/simulation/training-missions.js',{document},['createTrainingMissions']);
+ const rocks=[],visibility=[];let completed=0;
+ const api=createTrainingMissions({scene:null,THREE:null,message(){},sound(){},spawnTargetMeteor(opts){const m={mesh:{position:{x:opts.x,y:opts.y}},isBusterTarget:opts.isBusterTarget};rocks.push(m);return m;},setCitySceneVisible:v=>visibility.push(v),onComplete:()=>completed++});
+ const ctx={dragonPos:{x:0,y:16},dragonSpeed:0,isGasDeployed:false,hasBusterCollided:false,meteorsList:rocks};
+ api.start();assert.equal(api.getStats().step,1);api.update(15,ctx);api.update(15,ctx);assert.equal(api.getStats().step,1);
+ ctx.dragonPos.x=15;api.update(.1,ctx);api.update(1.5,ctx);assert.equal(api.getStats().step,2);assert.equal(rocks.length,1);
+ rocks.length=0;api.update(.1,ctx);api.update(1.5,ctx);assert.equal(api.getStats().step,3);
+ rocks.length=0;api.update(.1,ctx);assert.equal(rocks.length,1);assert.equal(api.getStats().step,3);
+ ctx.hasBusterCollided=true;rocks.length=0;api.update(.1,ctx);api.update(1.5,ctx);assert.equal(api.getStats().step,4);
+ api.extinguishFire();api.update(.7,ctx);api.update(1.5,ctx);assert.equal(api.getStats().step,5);
+ api.disableCruiser();api.update(.7,ctx);api.update(1.5,ctx);assert.equal(api.getStats().step,6);
+ api.update(2.1,ctx);assert.equal(completed,0);api.update(.2,ctx);assert.equal(completed,1);api.skip();assert.equal(completed,1);
+ api.start();api.advanceToStep(6);api.reset();api.update(5,ctx);assert.equal(completed,1);
+ api.start();api.skip();api.skip();assert.equal(completed,2);assert.equal(visibility.at(-1),true);
+ assert.ok(game.includes('trainingMissions.start();updateHud()'));
+ assert.ok(game.includes('if(m.isTrainingTarget){'));
+ assert.ok(game.includes('m.testMeteor||m.isBusterTarget'));
+ assert.ok(game.includes('trainingMissions?.reset();cancelChapterCinematic()'));
+});
+test('Production wave progression preserves capped budgets, escorts, boundaries and one-time finale',()=>{
+ const {openingMeteorWave}=load('src/simulation/fireball-balance.js',{},['openingMeteorWave']);
+ const {waveBudget}=load('src/core/balance.js',{},['waveBudget']);
+ const a=game.indexOf('function updateWaveProgress('),b=game.indexOf('function newWave()',a);
+ const fixture=`
+ let freeFlightMode=false,training=false,active=true,paused=false,rallyLoop=false,tacticalTrialActive=false,
+ chapterSettlement={active:false},wave=1,remaining=1,spawnTimer=0,stormTimer=99,between=0,elapsed=0,
+ battery=1,satsDown=false,satellitesCleared=false,finaleAscentPrompted=false,rallyRecoveryChoice=false,
+ rallyShieldQueued=false,schoolShieldUntil=0,invulnerable=0,spawned=0,cap=false,escort=false,settlements=0,wins=0,clears=0,mode='normal';
+ const meteors=[],shots=[],dragon={position:{x:0,y:0,z:0}};
+ const orbitalTheater={getBattery:()=>battery,setBattery:v=>{battery=v},allSatellitesDestroyed:()=>satsDown};
+ const trainingMissions={isActive:()=>training},evacuationChapter={isActive:()=>escort};
+ const isChapterEnd=w=>[2,5,10,14].includes(w),easyMode=()=>mode==='easy',difficulty=()=>mode==='easy'?.4:mode==='hard'?2.2:1;
+ const document={getElementById:()=>({value:mode})},sound=()=>{},message=()=>{},updateHud=()=>{},recordRallyClear=()=>{},flashAt=()=>{},updateTacticalTrial=()=>{};
+ const finalSquadron={clear(){clears++}},cinematicFX={shock(){}},remove=(arr,i)=>arr.splice(i,1),spawnMeteor=()=>{if(cap)return null;spawned++;const m={mesh:{position:{x:0,y:0,z:0}}};meteors.push(m);return m;};
+ const beginChapterSettlement=()=>{settlements++;chapterSettlement.active=true;},newWave=()=>{},winGame=()=>{wins++;active=false};
+ `+game.slice(a,b)+`
+ return {tick:updateWaveProgress,set(v){({wave,remaining,spawnTimer,stormTimer,between,battery,satsDown,satellitesCleared,active,cap,escort,training,paused,mode}=Object.assign({wave,remaining,spawnTimer,stormTimer,between,battery,satsDown,satellitesCleared,active,cap,escort,training,paused,mode},v));},clear(){meteors.length=0;},state:()=>({wave,remaining,spawned,settlements,wins,clears,battery,between,satellitesCleared}),finishSettlement(){chapterSettlement.active=false;wave++;between=0;},addHostile(){shots.push({hostile:true})},shotCount:()=>shots.length};
+ `;
+ const create=()=>new Function('openingMeteorWave','waveBudget',fixture)(openingMeteorWave,waveBudget);
+ for(const mode of ['easy','normal','hard']){
+  const api=create();api.set({mode,cap:true,battery:0});api.tick(.1);assert.equal(api.state().remaining,1);
+  api.set({cap:false});api.tick(.3);assert.equal(api.state().remaining,0);assert.equal(api.state().spawned,1);
+  api.set({training:true});api.clear();api.tick(10);assert.equal(api.state().wave,1);
+  api.set({training:false,escort:true});api.tick(10);assert.equal(api.state().wave,1);
+  api.set({escort:false});api.tick(3);assert.equal(api.state().wave,2);
+  for(let wave=2;wave<15;wave++){
+   api.set({wave,remaining:0,between:0,battery:0});api.clear();api.tick(3);
+   if([2,5,10,14].includes(wave)){assert.equal(api.state().wave,wave);api.tick(9);assert.equal(api.state().wave,wave);api.finishSettlement();}
+   assert.equal(api.state().wave,wave+1);
+  }
+  assert.equal(api.state().settlements,4);api.set({satsDown:false,between:0});api.tick(30);assert.equal(api.state().wins,0);
+  api.addHostile();api.set({satsDown:true,battery:1});api.tick(.1);assert.equal(api.state().clears,1);assert.equal(api.state().battery,0);assert.equal(api.shotCount(),0);
+  api.tick(2.2);api.tick(10);assert.equal(api.state().wins,1);assert.equal(api.state().clears,1);
+ }
+ assert.ok(game.includes('if(!spawnMeteor(Math.random,opening)){spawnTimer=.25;return;}'));
+ assert.ok(game.includes('if(meteors.length>=MAX_PLAYABLE_METEORS+allowance)return null;'));
+});
+test('Finale powerup retry waits for spawn acknowledgement and avoids duplicate announcements',()=>{
+ const source=read('src/rendering/orbital-theater.js'),a=source.indexOf('if (goldRedPowerupTimer <= 0 && !isMegaFireActive)'),b=source.indexOf('\n      // 2. Satellites update',a);
+ const code=source.slice(a,b).trim().replace(/\}\s*$/,'');
+ const api=new Function("let goldRedPowerupTimer=0,goldRedPowerupSpawned=false,blasts=0,messages=0;return {tick(isMegaFireActive,onSpawnPowerup){const triggerTitanSurfaceBlast=()=>blasts++,message=()=>messages++;"+code+"},state:()=>({goldRedPowerupTimer,blasts,messages}),elapse(t){goldRedPowerupTimer-=t;}};")();
+ api.tick(false,()=>false);assert.equal(api.state().goldRedPowerupTimer,.5);assert.equal(api.state().messages,0);
+ api.elapse(.5);api.tick(false,()=>true);assert.equal(api.state().goldRedPowerupTimer,11);assert.equal(api.state().messages,1);
+ api.elapse(11);api.tick(true,()=>{throw Error('spawn while powered');});assert.equal(api.state().messages,1);
+ assert.ok(game.includes("meteors.some(m=>m.isPowerup===kind&&!m.grounded)"));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
