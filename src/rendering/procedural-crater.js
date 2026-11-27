@@ -338,7 +338,7 @@ export function createVolumetricImpactBowl(radius) {
 /**
  * Creates pulsating subsurface thermal fissure core with glowing magma veins.
  */
-export function createPulsatingThermalFissures(radius, depth) {
+export function createPulsatingThermalFissures(radius, depth, {externalLighting = false} = {}) {
   const group = new THREE.Group();
   group.name = 'crater-thermal-core';
 
@@ -405,10 +405,12 @@ export function createPulsatingThermalFissures(radius, depth) {
   }
 
   // Deep subsurface warm thermal glow illuminating bowl walls from beneath
-  const light = new THREE.PointLight(0xff5511, 2.8, Math.max(8.0, radius * 3.5));
-  light.position.set(0, 0.28, 0);
-  light.name = 'crater-thermal-glow-light';
-  group.add(light);
+  const light = externalLighting ? null : new THREE.PointLight(0xff5511, 2.8, Math.max(8.0, radius * 3.5));
+  if (light) {
+    light.position.set(0, 0.28, 0);
+    light.name = 'crater-thermal-glow-light';
+    group.add(light);
+  }
 
   group.position.y = -depth + 0.06;
 
@@ -420,9 +422,31 @@ export function createPulsatingThermalFissures(radius, depth) {
     update: (elapsed) => {
       const pulse = 1.4 + Math.sin(elapsed * 2.8) * 0.5;
       material.emissiveIntensity = pulse;
-      light.intensity = pulse * 1.6;
+      const intensity = pulse * 1.6;
+      if (light) light.intensity = intensity;
+      return intensity;
     }
   };
+}
+
+// Select the nearest active thermal craters without mutating simulation order.
+// Slots remain attached to the scene even when unused, preserving shader light counts.
+export function syncThermalCraterLights(slots, craters, observer) {
+  const candidates = craters.filter(c => !c.disposed && c.life > 0 && c.thermalGroup)
+    .map(c => ({c, distance: (c.x - observer.x) ** 2 + (c.z - observer.z) ** 2}))
+    .sort((a, b) => a.distance - b.distance);
+  for (let i = 0; i < slots.length; i++) {
+    const light = slots[i], c = candidates[i]?.c;
+    if (!c) {
+      light.intensity = 0;
+      light.userData.thermalCrater = null;
+      continue;
+    }
+    light.position.set(c.x, c.thermalGroup.position.y + 0.28, c.z);
+    light.distance = Math.max(8, c.radius * 3.5);
+    light.intensity = c.thermalIntensity ?? 2.8;
+    light.userData.thermalCrater = c;
+  }
 }
 
 /**
