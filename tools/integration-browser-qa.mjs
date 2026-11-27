@@ -2,7 +2,7 @@
 import {createServer} from 'node:http';
 import {readFile,stat,mkdir,writeFile} from 'node:fs/promises';
 import {createReadStream} from 'node:fs';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {resolve,extname,sep} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
@@ -11,7 +11,9 @@ await mkdir(out,{recursive:true});
 const report={started:new Date().toISOString(),commit:null,checks:[],errors:[],warnings:[],benchmark:null,releaseCertified:false};
 try{report.commit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{}
 const save=()=>writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));
-const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');report.passed=false;report.finished=new Date().toISOString();save().finally(()=>process.exit(2));},240000);
+const timeoutMs=Number(process.env.DD_QA_TIMEOUT_MS||240000);
+if(!Number.isFinite(timeoutMs)||timeoutMs<60000||timeoutMs>1800000)throw Error('DD_QA_TIMEOUT_MS must be 60000–1800000');
+const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');report.passed=false;report.finished=new Date().toISOString();save().finally(()=>process.exit(2));},timeoutMs);
 const mime={'.bin':'application/octet-stream','.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.webp':'image/webp','.wasm':'application/wasm','.woff2':'font/woff2','.ogg':'audio/ogg','.mp3':'audio/mpeg','.wav':'audio/wav'};
 const server=createServer(async(req,res)=>{
  try{
@@ -27,20 +29,22 @@ const server=createServer(async(req,res)=>{
 let browser,page;
 const assert=(ok,msg)=>{if(!ok)throw Error(msg);};
 const check=async(name,fn)=>{
- try{const details=await fn();report.checks.push({name,pass:true,details});console.log('PASS '+name);}
+ try{const details=await fn();report.checks.push({name,pass:true,details});console.log('PASS '+name);if(name.includes('performance sample'))console.log('BENCHMARK_SUMMARY '+JSON.stringify(details));}
  catch(e){report.checks.push({name,pass:false,error:String(e)});console.error('FAIL '+name+': '+e);}
  await save();
 };
 try{
  let playwright;
- try{playwright=await import('./.integration-qa-runtime/node_modules/playwright/index.mjs');}
- catch{playwright=await import('playwright');}
+ if(process.env.PLAYWRIGHT_MODULE)playwright=await import(pathToFileURL(resolve(process.env.PLAYWRIGHT_MODULE)).href);
+ else{try{playwright=await import('./.integration-qa-runtime/node_modules/playwright/index.mjs');}
+ catch{playwright=await import('playwright');}}
  const headless=process.argv.includes('--headless');
  const software=process.argv.includes('--software');
  const executablePath=process.env.DD_QA_CHROMIUM;
  const launch={headless,executablePath,args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[]};
- try{browser=await playwright.chromium.launch(executablePath?launch:{...launch,channel:'msedge'});}
- catch{browser=await playwright.chromium.launch(launch);}
+ const channel=process.env.QA_BROWSER_CHANNEL||'msedge';
+ try{browser=await playwright.chromium.launch(executablePath?launch:{...launch,channel});}
+ catch(error){if(process.env.QA_BROWSER_CHANNEL||executablePath)throw error;browser=await playwright.chromium.launch(launch);}
  report.browser=browser.version();report.headless=headless;report.softwareRequested=software;
  await new Promise((yes,no)=>{server.once('error',no);server.listen(0,'127.0.0.1',yes);});
  const url='http://127.0.0.1:'+server.address().port+'/?qa=1&benchmark=1';
@@ -163,6 +167,7 @@ try{
 finally{
  report.finished=new Date().toISOString();
  report.passed=report.errors.length===0&&report.checks.length===9&&report.checks.every(c=>c.pass);
+ console.log('QA_SUMMARY '+JSON.stringify({commit:report.commit,build:report.build,renderer:report.renderer,passed:report.passed,checks:report.checks.map(c=>({name:c.name,pass:c.pass,error:c.error})),errors:report.errors}));
  await save();console.log('Report: '+resolve(out,'report.json'));
  if(browser)await browser.close().catch(()=>{});
  server.close();clearTimeout(watchdog);process.exitCode=report.passed?0:1;
