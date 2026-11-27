@@ -6,7 +6,7 @@ import {createMilitaryOccupation} from './simulation/military-occupation.js';
 import {createCinematicEffects} from './rendering/cinematic-effects.js';
 import {impactProfile,openingMoltenHeat,structuralImpactProfile,shockDamage,CAR_COLORS} from './simulation/impact-profiles.js';
 import {updatePedestrianPose} from './simulation/pedestrian-motion.js';
-import {DEFENSE_REAR_Z,projectDefensePoint} from './simulation/defense-zone.js';
+import {DEFENSE_REAR_Z,projectDefensePoint,createDefenseProjectionCache,projectedMeteorHit} from './simulation/defense-zone.js';
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConfig,MAX_PLAYABLE_METEORS} from './simulation/fireball-balance.js';
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
@@ -3296,7 +3296,7 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
   simulationCpuMs:percentiles(detailedTimings.sim),renderSubmissionCpuMs:percentiles(detailedTimings.render),
-  parcelRenderCulling:northBroadModels.renderCuller.stats(),schoolDamageMask:sourceDamage.stats(),
+  parcelRenderCulling:northBroadModels.renderCuller.stats(),schoolDamageMask:sourceDamage.stats(),defenseProjection:defenseProjectionCache.stats(),
   framePhaseCpuMs:Object.fromEntries(Object.entries(detailedTimings).map(([key,values])=>[key,percentiles(values)])),
   stalls:stallEvents.slice(-45),
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
@@ -5830,7 +5830,8 @@ document.getElementById('settings-btn').onclick=()=>{openUnifiedSettings();};
 document.getElementById('gas-btn').onclick=gasAttack;document.getElementById('start-training')?.addEventListener('click',()=>{playTrainingMode=true;skipChapterIntroCinematic=true;safelyStart();});
 document.getElementById('start')?.addEventListener('click',()=>{playTrainingMode=false;skipChapterIntroCinematic=true;safelyStart();});
 window.addEventListener('keydown',e=>{if(e.key==='Tab'&&trainingMissions?.isActive()){e.preventDefault();trainingMissions.skip();}});document.getElementById('restart').onclick=safelyStart;document.getElementById('pause').onclick=togglePause;
-const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3(),defenseMeteor=new THREE.Vector3();
+const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3();
+const defenseProjectionCache=createDefenseProjectionCache();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
 function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);cinematicFX.begin(dt);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);buildingElectricalShorts.update(dt,cinematicFX,sound,schoolDamage,neighborhood.targetBuildings,craters.some(c=>c.isSubway&&c.subwayGroup),craters.some(c=>c.geyserGroup));orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(meteors.length>=MAX_PLAYABLE_METEORS&&kind!=='mega_fire_breath')return;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{
  if(meteors.length>=MAX_PLAYABLE_METEORS)return;
@@ -6174,6 +6175,7 @@ if(isFiring){
 if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  if(!settling)updateWaveProgress(dt);
 const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=shotScratchClosest;
+ defenseProjectionCache.begin(camera.position);
 for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.position);s.mesh.position.addScaledVector(s.vel,dt);s.life-=dt;if(wave===15&&!s.hostile&&finalSquadron.intercept(s.mesh.position,1.7,pos=>groundFireball(pos.x,pos.y,pos.z,1.4))){s.life=0;score+=75;}
  if(s.isStream||s.mega){
   const progress=Math.max(0,1-(s.life/(s.maxLife||1)));
@@ -6214,23 +6216,11 @@ for(let i=shots.length-1;i>=0;i--){const s=shots[i];shotPrevious.copy(s.mesh.pos
  if(!s.hostile&&!s.fireTarget&&s.life>0){
   projectDefensePoint(shotPrevious,camera.position,defensePrevious);
   projectDefensePoint(s.mesh.position,camera.position,defenseCurrent);
-  path.copy(defenseCurrent).sub(defensePrevious);
-  const travelSq=path.lengthSq();let hitIndex=-1,hitT=Infinity;
+  let hitIndex=-1,hitT=Infinity;
   for(let mi=0;mi<meteors.length;mi++){
    const m=meteors[mi];
    if(m.testMeteor)continue;
-   const depthScale=projectDefensePoint(m.mesh.position,camera.position,defenseMeteor);
-   const radius=(m.size*1.1+.95)*depthScale;
-   shotScratchDelta.copy(defensePrevious).sub(defenseMeteor);
-   const c=shotScratchDelta.lengthSq()-radius*radius;
-   let t=0;
-   if(c>0){
-    if(travelSq<1e-10)continue;
-    const halfB=shotScratchDelta.dot(path),disc=halfB*halfB-travelSq*c;
-    if(disc<0)continue;
-    t=(-halfB-Math.sqrt(disc))/travelSq;
-    if(t<0||t>1)continue;
-   }
+   const t=projectedMeteorHit(defensePrevious,defenseCurrent,defenseProjectionCache.get(m));
    if(t<hitT){hitT=t;hitIndex=mi;}
   }
   if(hitIndex>=0){
