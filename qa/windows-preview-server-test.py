@@ -170,9 +170,13 @@ class PreviewServerTest(unittest.TestCase):
         self.assertIsNone(metrics['documentHidden'])
         self.assertIsNone(metrics['documentHasFocus'])
 
-    def test_launcher_enables_performance_lab(self):
+    def test_launcher_opens_preview_with_access_to_performance_lab(self):
         launcher = (SCRIPT.parents[1] / 'PLAY-PREVIEW.cmd').read_text()
-        self.assertIn('GAME_URL=http://127.0.0.1:%PORT%/?devlab=1', launcher)
+        self.assertIn('PLAY-INTEGRATION-PREVIEW.cmd', launcher)
+        integration = (SCRIPT.parents[1] / 'PLAY-INTEGRATION-PREVIEW.cmd').read_text()
+        self.assertIn('launch-integration-preview.py', integration)
+        launch_script = (SCRIPT.parents[1] / 'tools/launch-integration-preview.py').read_text()
+        self.assertIn('http://127.0.0.1:{server.server_port}/', launch_script)
         game = (SCRIPT.parents[1] / 'src/game.js').read_text()
         self.assertIn('if(!schoolQA && (location.hostname', game)
         self.assertNotIn('const q=window.__DD_QA?.snap(),m=window.__DD_GAME_METRICS', game)

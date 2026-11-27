@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createDistantNeighborhood } from './rendering/distant-neighborhood.js';
 import { createStructuralCity } from './rendering/structural-city.js';
 import { craterHolesUniform,patchCraterDiscardShader } from './rendering/crater-holes.js';
 import { containsParcel,viewerParcels,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z } from './simulation/viewer-parcels.js';
@@ -66,22 +67,20 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
  const foreground=new THREE.Group();
  const activeAt=(x,z)=>buildings.find(b=>b.damage<.97&&containsParcel(b,x,z));
 
- // Keep the distant-impact interface backed by real Viewer parcels.
- const distant=buildings.filter(b=>b.background);
- const lookup=new Map(distant.map(b=>[b.id,b]));
- const targetAt=(x,z)=>distant.reduce((best,b)=>b.damage>=.97?best:!best||
-  Math.hypot(b.x-x,b.z-z)<Math.hypot(best.x-x,best.z-z)?b:best,null);
- function strikeTarget(id,strength){
-  const b=lookup.get(id);
-  if(b)city.impact(b,new THREE.Vector3(b.x,b.h*.72,b.z),2.8,strength);
- }
- const longRange={
-  root:new THREE.Group(),tiers:[],targetAt,strikeTarget,
-  strike(x,z,strength){const b=targetAt(x,z);if(b){strikeTarget(b.id,strength);return b;}},
-  burnBackgroundBuilding(){},update(){},
-  buildingState:id=>{const b=lookup.get(id);return b&&{damage:b.damage};},
-  stats:()=>({mappedParcels:distant.length,damaged:distant.filter(b=>b.damage>0).length})
- };
+ // Park/Liacouras marks the rear of the surveyed map. Continue cross
+ // streets from the imported endpoints into the RC residential grid.
+ const rearEndpoints=roads.flatMap(([name,points])=>points
+  .filter(([,z])=>z+VIEWER_TO_GAME_Z<=-90)
+  .map(([x,z])=>({name,x:x+VIEWER_TO_GAME_X,z:z+VIEWER_TO_GAME_Z})));
+ const rearEdge=Math.min(...rearEndpoints.map(point=>point.z),...buildings.map(b=>b.z-b.d/2));
+ const crossStreetX=[...new Map(rearEndpoints
+  .filter(p=>!['PARK','LIACOURAS','WATTS'].includes(p.name))
+  .map(p=>[p.name,p.x])).values()];
+ const contextRoot=new THREE.Group();
+ contextRoot.name='RC174 residential context beyond Viewer grid';
+ staticGroup.add(contextRoot);
+ const longRange=createDistantNeighborhood({root:contextRoot,flameTexture:visualBank.images.flame,
+  context:{rearEdge,crossStreetX}});
  return {
   city,school,updateWindPlanting,schoolGroup:city.groups.school,targetBuildings:buildings,buildings,windowSurfaces:[],
   foreground,longRange,activeAt,
@@ -96,12 +95,12 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
    return true;
   },
   levelAll(){for(const b of buildings)city.forceDamage(b,1);},
-  update:city.update,
-  restore(){city.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
+  update(dt){city.update(dt);longRange.update(dt);},
+  restore(){city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
   setAtmosphere(phase,darkness){city.setAtmosphere(darkness);},
-  setDistantHealth(){},
-  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;},
-  streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,city.groups.backFar]
+  setDistantHealth:longRange.setHealth,
+  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;longRange.setVisible(on);},
+  streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,city.groups.backFar,...longRange.tiers.map(tier=>tier.group)]
    .map(group=>group.getWorldPosition(new THREE.Vector3()).toArray());},
   syncCraterHoles(activeCraters=[]){
    const surfaceCraters=activeCraters.filter(c=>!c.waterOnly&&c.life>0);

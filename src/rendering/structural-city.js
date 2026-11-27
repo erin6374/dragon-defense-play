@@ -63,8 +63,18 @@ export function createStructuralCity(THREE,scene,bank){
     for(const side of [-1,1]){
      const x=b.x+side*b.w*.42,z=b.z+side*b.d*.42;
      for(const dx of [-1,1])addPart(b,'column','concrete',b.x+dx*b.w*.42,y+b.floorHeight/2,z,thick,b.floorHeight,thick,floor);
-     addPart(b,'wall','brick',x,y+b.floorHeight/2,b.z,thick,b.floorHeight,b.d*.88,floor);
-     addPart(b,'wall','brick',b.x,y+b.floorHeight/2,z,b.w*.88,b.floorHeight,thick,floor);
+     // Split each elevation into independently supported masonry panels.
+     // A small breach sheds a section instead of throwing a full storey wall.
+     const depthBays=Math.min(5,Math.max(2,Math.ceil(b.d/4)));
+     const widthBays=Math.min(5,Math.max(2,Math.ceil(b.w/4)));
+     for(let bay=0;bay<depthBays;bay++){
+      const depth=b.d*.88/depthBays;
+      addPart(b,'wall','brick',x,y+b.floorHeight/2,b.z+(bay-(depthBays-1)/2)*depth,thick,b.floorHeight,depth,floor);
+     }
+     for(let bay=0;bay<widthBays;bay++){
+      const width=b.w*.88/widthBays;
+      addPart(b,'facade','brick',b.x+(bay-(widthBays-1)/2)*width,y+b.floorHeight/2,z,width,b.floorHeight,thick,floor);
+     }
      addPart(b,'slab','concrete',b.x+side*b.w*.25,y+.12,b.z,b.w*.48,thick,b.d*.92,floor);
     }
    }

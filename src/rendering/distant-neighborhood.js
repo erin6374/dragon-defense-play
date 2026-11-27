@@ -29,7 +29,13 @@ function atmosphericFacade(hex,tier,row,lot){
 }
 function seeded(seed){return ()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};}
 const rand=seeded(1221237);
-export function createDistantNeighborhood({root,flameTexture}){
+export function createDistantNeighborhood({root,flameTexture,context}){
+ const rearEdge=context?.rearEdge??0;
+ const cross=context?.crossStreetX??CROSS_STREETS.map(s=>s.x);
+ const fitsBehindViewer=(z,d)=>!context||z+d/2<=rearEdge;
+ const clearsCrossStreet=(x,w)=>context
+  ?cross.every(streetX=>Math.abs(x-streetX)>w/2+9)
+  :!occupiesCrossStreet(x,w,5.0);
  const tiers=[
   {name:'outside-playable-block',min:-60,max:0},
   {name:'park-camac',min:-136,max:-60},
@@ -51,19 +57,27 @@ export function createDistantNeighborhood({root,flameTexture}){
   canopy:new THREE.MeshLambertMaterial({color:0x647c5e}),
   trunk:new THREE.MeshLambertMaterial({color:0x685746}),
  };
- const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,1220),materials.walk);
- base.position.set(0,-.63,-565);root.add(base);
+ const baseDepth=context?rearEdge+1175:1220;
+ const base=new THREE.Mesh(new THREE.BoxGeometry(2800,.2,baseDepth),materials.walk);
+ base.position.set(0,-.63,context?rearEdge-baseDepth/2:-565);root.add(base);
  const buildingDefs=[];
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[],canopy:[],trunk:[]}));
- function add(tier,type,x,y,z,w,h,d,color=null){instances[tier][type].push({x,y,z,w,h,d,color});}
+ function add(tier,type,x,y,z,w,h,d,color=null){
+  const depth=context?Math.min(d,rearEdge-(z-d/2)):d;
+  if(depth<=0)return;
+  instances[tier][type].push({x,y,z:z+(depth-d)/2,w,h,d:depth,color});
+ }
  function registerBuilding(tier,x,z,w,h,d,y=0){
+  if(!fitsBehindViewer(z,d+3))return null;
+  if(context&&!clearsCrossStreet(x,w+1))return null;
   const home={id:buildingDefs.length,tier,x,y,z,w,h,d,parts:[],damage:0,fall:0};
   buildingDefs.push(home);
   return home;
  }
  function addPart(home,type,x,y,z,w,h,d,color=null){
+  if(!home)return;
   const index=instances[home.tier][type].length;
   home.parts.push({type,index});
   add(home.tier,type,x,y,z,w,h,d,color);
@@ -71,9 +85,10 @@ export function createDistantNeighborhood({root,flameTexture}){
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
  function street(x,z,w,d,tier,y0=0){add(tier,'road',x,y0-.44,z,w,.12,d);}
  // Residential grid has open lots, rear yards, crossing streets and the railway/civic gap.
- const cross=CROSS_STREETS.map(s=>s.x);
- for(let k=0;k<STREET_AXIS.length;k++){
-  const s=STREET_AXIS[k],tier=Math.max(0,slot(s.z));
+
+ const streetAxis=context?[{name:"Rear neighborhood connector",z:-116},...STREET_AXIS]:STREET_AXIS;
+ for(const s of streetAxis){
+  const tier=Math.max(0,slot(s.z));
   street(0,s.z,2600,8.5,tier);
   for(const side of [-1,1])add(tier,'walk',0,-.31,s.z+side*5.1,2600,.15,1.45);
   // Intersections and crossings are an inexpensive white instanced pattern.
@@ -90,7 +105,8 @@ export function createDistantNeighborhood({root,flameTexture}){
  // The rail approach near N 11th and mixed civic/parking parcels are left open.
  const nearParapetHeights=[];
   const nearParapetBandsByRow=new Map();
- const rowCenters=[-156,-193,-230,-270,-310,-350,-390,-430,-470,-510,-550,-590,-630,-670,-710,-750,-790,-830,-870,-910,-950];
+ const standardRows=[-156,-193,-230,-270,-310,-350,-390,-430,-470,-510,-550,-590,-630,-670,-710,-750,-790,-830,-870,-910,-950];
+ const rowCenters=context?[-105,-126,...standardRows.filter(z=>z>=-390||z%80===-30)]:standardRows;
  for(const z of [-410,-450,-490,-530,-570,-610,-650,-690,-730,-770,-810,-850,-890,-930,-970]){
   const streetElev=Math.max(0,-z-100)*0.0028;
   street(0,z,2600,8.5,slot(z),streetElev);
@@ -100,12 +116,13 @@ export function createDistantNeighborhood({root,flameTexture}){
   const horizon=tier===tiers.length-1;
   const rowElev=Math.max(0,-z-100)*0.0028;
   // Extended westward and eastward so wide aspect ratios and far-left camera views maintain continuous neighborhood fabric
-  const lots=horizon?340:tier>=3?300:260;
+  const lots=context?(horizon?160:tier>=3?145:190):(horizon?340:tier>=3?300:260);
   for(let ix=0;ix<lots;ix++){
    const x=(ix-(lots-1)/2)*7.5+(row%2?2:0);
    const railGap=(row>=4&&Math.abs(x-12)<17); // diagonal railway corridor east of 11th, approximate
    const vacant=(ix+row*7)%11===0 || (row===5&&ix>15&&ix<19);
    const y0=rowElev;
+   if(!fitsBehindViewer(z,14)||!clearsCrossStreet(x,7.5))continue;
    if(railGap||vacant){
     if((ix+row)%3===0){
      add(tier,'green',x,y0-.42,z,7.1,.05,11.5);
@@ -121,7 +138,7 @@ export function createDistantNeighborhood({root,flameTexture}){
    const h=stories*(civic?4.0:commercial?3.95:3.52)+((ix*13+row*5)%7)*.19;
    const w=civic?7.3:commercial?7:5.75+((ix+row)%4)*.44;
    const d=Math.min(12.0, (civic?12.0:commercial?11.5:8.5+((ix*2+row)%5)*0.8));
-   if(occupiesCrossStreet(x,w,5.0))continue; // strict clearance for all 4 cross streets across all depths
+   if(!clearsCrossStreet(x,w))continue; // strict clearance for all 4 cross streets across all depths
    const color=facades[(ix*3+row*5)%facades.length];
    const home=registerBuilding(tier,x,z,w,h,d,y0);
    addPart(home,'main',x,y0+h/2,z,w,h,d,atmosphericFacade(color,tier,row,ix));
@@ -179,12 +196,12 @@ export function createDistantNeighborhood({root,flameTexture}){
  }
  // East/West pan limit wings aligned to middleground rows (z = -50.5, -85.0, -120.0)
  // strictly clearing N Watts St (-34.0), N Park Ave (-66.0), N 13th St (-104.0), and N Camac St (-136.0)
- for(const side of [-1,1]){
+ if(!context)for(const side of [-1,1]){
   for(const z of [-50.5,-85.0,-120.0]){
    const tier=Math.max(0,slot(z));
    for(let i=0;i<22;i++){
      const x=side*(85+i*9.4);
-     if(occupiesCrossStreet(x,8.2,5.0))continue;
+     if(!clearsCrossStreet(x,8.2))continue;
      if((x>-175&&x<-159) || (x>-106&&x<-90) || (x>62&&x<78) || (x>237&&x<253))continue;
     const h=7.6+(i*13+Math.abs(Math.round(z)))%7;
     const color=facades[(i+Math.abs(Math.round(z)))%facades.length];
@@ -888,7 +905,7 @@ export function createDistantNeighborhood({root,flameTexture}){
   while(damageMarkers.length)clearDamageMarker(damageMarkers.pop());
  }
  return {
-  root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:STREET_AXIS.map(s=>s.name),
+  root,tiers,buildingCount:buildingDefs.length,drawCalls,streetNames:streetAxis.map(s=>s.name),
   setHealth,targetAt,strikeTarget,strike,update,restore,
   burnBackgroundBuilding(home){
    addImpactSmoke(home);
@@ -947,7 +964,7 @@ export function createDistantNeighborhood({root,flameTexture}){
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },
-  stats(){return {rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
+  stats(){return {rearEdge:context?.rearEdge??null,byTier:tiers.map((_,i)=>buildingDefs.filter(b=>b.tier===i).length),rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    combustion:combustion.stats(),
    ambientRooftopFires:damageMarkers.length,

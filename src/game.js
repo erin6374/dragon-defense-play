@@ -2151,7 +2151,7 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
   const sampleZ=near?near.z:(-35-random()*120);
   const far=near?null:district.targetAt(cameraScrollX+(random()-.5)*140,sampleZ);
   if(!near&&!far)continue;
-  const point=near?new THREE.Vector3(near.x,near.h*.65,near.front-.2):
+  const point=near?new THREE.Vector3(near.x,near.h*.65,near.z):
    district.root.localToWorld(new THREE.Vector3(far.x,far.y,far.z));
   const sprite=new THREE.Sprite(distantVisual.material);
   sprite.position.copy(point).add(new THREE.Vector3(-25,95,0));
@@ -2204,8 +2204,7 @@ function updateDistantMeteors(dt){
    s.sprite.position.x-=20*remaining;s.sprite.position.y+=70*remaining;
    if(s.life<=0&&!freeFlightMode){
     if(near){
-     neighborhood.city.impact(near,point,5.5,strength);
-     neighborhood.longRange.burnBackgroundBuilding(near);
+     northBroadModels.impactBuilding(near.id,point,5.5,strength);
      updateHud();
     }else neighborhood.longRange.strikeTarget(far.id,strength);
     const spectacle=backgroundImpactEffects(neighborhoodHealth());
@@ -5499,13 +5498,14 @@ window.addEventListener('pointerdown',e=>{
 });
 
 // Unified Settings Modal Controls
+let settingsPausedGame=false;
 function openUnifiedSettings(defaultTab='gameplay'){
  const modal=document.getElementById('dd-unified-settings');
  if(!modal)return;
  modal.hidden=false;
  if(active&&!paused){
-  paused=true;
-  document.getElementById('pause').textContent='Resume';
+  settingsPausedGame=true;
+  togglePause();
  }
  switchSettingsTab(defaultTab);
  syncSettingsUI();
@@ -5514,6 +5514,8 @@ function openUnifiedSettings(defaultTab='gameplay'){
 function closeUnifiedSettings(){
  const modal=document.getElementById('dd-unified-settings');
  if(modal)modal.hidden=true;
+ if(settingsPausedGame&&active&&paused)togglePause();
+ settingsPausedGame=false;
 }
 
 function switchSettingsTab(tabName){
@@ -5626,11 +5628,19 @@ function initUnifiedSettingsEvents(){
  });
 
  // Director Toolbar Events
- document.getElementById('dd-tb-meteor-tool')?.addEventListener('click',()=>{
+ function selectMeteorTool(){
   sandboxTool='meteor';
   document.getElementById('dd-tb-meteor-tool')?.classList.add('active');
   document.getElementById('dd-tb-ignite')?.classList.remove('active');
   message('🎯 METEOR DROPPER ACTIVE — CLICK ANY BUILDING OR STREET');
+ }
+ document.getElementById('dd-tb-meteor-tool')?.addEventListener('click',selectMeteorTool);
+ document.getElementById('dd-meteor-tool-btn')?.addEventListener('click',()=>{
+  document.getElementById('dd-tb-meteor-size').value=document.getElementById('dd-test-meteor-size').value;
+  document.getElementById('dd-tb-meteor-kind').value=document.getElementById('dd-test-meteor-kind').value;
+  closeUnifiedSettings();
+  if(!freeFlightMode)toggleFreeFlight(true);
+  selectMeteorTool();
  });
  document.getElementById('dd-tb-ignite')?.addEventListener('click',()=>{
   sandboxTool=(sandboxTool==='ignite'?'meteor':'ignite');
@@ -5686,17 +5696,10 @@ function initUnifiedSettingsEvents(){
   window.__DD_AUDIO.setSfxMuted(!soundEngine.isSfxMuted());
   refreshAudioButtons();
  });
- document.getElementById('start-sandbox-direct')?.addEventListener('click',()=>{
-  document.getElementById('overlay').style.display='none';
-  if(!active){try{reset();}catch(e){}}
-  toggleFreeFlight(true);
- });
+ document.getElementById('start-sandbox-direct')?.addEventListener('click',window.startSandboxDirect);
 }
 
 initUnifiedSettingsEvents();
-window.addEventListener('DOMContentLoaded',initUnifiedSettingsEvents);
-setTimeout(initUnifiedSettingsEvents,200);
-setTimeout(initUnifiedSettingsEvents,800);
 
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'){
@@ -7054,6 +7057,8 @@ window.__DD_QA={snap,
    const idleBudget=district.stats();
    return {id:impact.id,intact,falling,settled,flightBudget,settledBudget,idleBudget,before,flight,after};
   }),
+  distantNeighborhoodStats:()=>neighborhood.longRange.stats(),
+  strikeDistantNeighborhood:(x,z,strength)=>neighborhood.longRange.strike(x,z,strength),
   distantBuildingState:id=>neighborhood.longRange.buildingState(id),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
    // Advance only the cosmetic skyline animation to sample long sessions.

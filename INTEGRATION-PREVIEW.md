@@ -1,6 +1,6 @@
-# Dragon Defense — Integration Preview 4
+# Dragon Defense — Integration Preview 5
 
-Build `5.5.0-integration.4`.
+Build `5.5.0-integration.5`.
 Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
 Exact source
 revisions, the unchanged Tech Freire FBX hash, and the development snapshot
@@ -33,8 +33,18 @@ now starts a clean defense session; it does not preserve a prior campaign.
 
 ## Development changes
 
+The surveyed Broad Street parcels and the original school asset share the
+map with the RC174-style residential grid beyond Park Avenue and Liacouras
+Walk. Contextual streets continue from the Viewer endpoints. These outer blocks
+are illustrative, with fewer instances in the far distance. Distant houses
+use RC174's progressive roof, floor, debris and combustion effects. Mapped
+buildings retain parcel-owned damage and use smaller independently supported
+masonry sections. The settings panel now registers each button once, and its
+meteor dropper transfers the selected size and material into Sandbox.
+
+
 The 122 mapped building parcels and the separate original school FBX are
-retained. Work toward Preview 4 includes localized and bounded meteor damage,
+retained. Work toward Preview 5 includes localized and bounded meteor damage,
 continuous roof/side collision, reconstruction optimizations, updated mapped
 traffic and responder routes, independent water-main rupture, crater and
 camera cleanup, parcel-local damage masks, function-specific interiors, original FBX interior restoration, spatial source batching, and regression tests. The repeatable source-level suite is
