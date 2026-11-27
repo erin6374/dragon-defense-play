@@ -14,7 +14,7 @@ import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTE
 import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
 import {traceMeteorCollision} from './simulation/meteor-collision.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson,captureVehicleResources,releaseVehicleResources} from './rendering/realistic-vehicles.js';
-import {advanceSpeed,trafficTarget} from './simulation/traffic-dynamics.js';
+import {advanceSpeed,trafficTarget,trafficNeighborCandidates,maximumTrafficLength} from './simulation/traffic-dynamics.js';
 import {forcedVehicleRole,planResponderRoute,hoseReach} from './simulation/responder-routing.js';
 import {GAME_VERSION,BUILD_ID} from './core/build-info.js';
 window.__DD_BUILD_INFO = { version: GAME_VERSION, build: BUILD_ID };
@@ -1779,9 +1779,11 @@ function fireTruckService(c,dt){
  }
 }
 function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){spawnCar();const chapter=wave<=5?1:wave<=10?2:wave<=14?3:4;const activeFireTrucks=cars.filter(c=>c.fireTruck).length;carTimer=schoolFire.length&&activeFireTrucks<Math.min(5,schoolFire.length)?0.5:(chapter<=2?0.20+Math.random()*0.24:0.55+Math.random()*0.75);if(hp<55||schoolFire.length>3)carTimer*=.65;}
+ const maxTrafficLength=maximumTrafficLength(cars);
  for(let i=cars.length-1;i>=0;i--){const c=cars[i];if(c.destroyed){recycleCar(c);cars.splice(i,1);continue;}if(c.burning)continue;
   if(c.exiting){c.root.position.x+=c.dir*Math.max(c.speed,22)*dt;if(Math.abs(c.root.position.x)>280){recycleCar(c);cars.splice(i,1);continue;}}
   if(c.ambulance){for(let pi=crowd.length-1;pi>=0;pi--){const p=crowd[pi];if(p.down>0&&Math.abs(p.g.position.x-c.root.position.x)<4&&Math.abs(p.g.position.z-c.root.position.z)<20){scene.remove(p.g);crowd.splice(pi,1);score+=40;message('AMBULANCE RESCUE +40');break;}}}c.stun=Math.max(0,c.stun-dt);if(c.fireTruck)fireTruckService(c,dt);if(c.stun===0&&!c.frozen&&!c.routing&&!c.exiting){
+  const neighbors=trafficNeighborCandidates(c,cars,maxTrafficLength);
   const obstruction=craters.find(q=>!q.waterOnly&&q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+18&&Math.abs(q.z-c.root.position.z)<q.radius+2.8&&((q.x-c.root.position.x)*c.dir)>-1.5);
    if(obstruction&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
     c.hazardLights=true;
@@ -1803,7 +1805,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   if(obstruction&&!c.crossStreet&&!c.turnPath?.length&&!c.rearStreet){
    c.hazardLights=true;
    if(!c.rearStreet&&!c.emergency){
-    const detour=choosePassingLane(c,cars,craters,{allowWithoutLeader:true});
+    const detour=choosePassingLane(c,neighbors,craters,{allowWithoutLeader:true});
     if(detour!==null){
      c.laneZ=detour;c.overtakeUntil=elapsed+4.5;
     }
@@ -1818,22 +1820,21 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
   const closeCrater=craters.find(q=>!q.waterOnly&&q.life>0&&Math.abs(q.x-c.root.position.x)<q.radius+8&&Math.abs(q.z-c.root.position.z)<q.radius+1.5&&((q.x-c.root.position.x)*c.dir)>-0.5);
   const blockedAhead=closeCrater&&Math.abs(c.root.position.z-closeCrater.z)<closeCrater.radius+0.8;
   const isBlockadeStop=(wave>=6)&&!c.emergency&&!c.crossStreet&&!c.rearStreet&&CROSS_STREET_X.some(cx=>Math.abs(c.root.position.x-cx)<13);
-  const targetSpeed=Math.min(trafficTarget(c,cars,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
+  const targetSpeed=Math.min(trafficTarget(c,neighbors,crowd,trafficLightRed||isBlockadeStop,blockedAhead||isBlockadeStop,elapsed),laneChangeSpeedCap(c));
   const oldSpeed=c.speed;c.speed=advanceSpeed(c.speed,targetSpeed,dt,c.emergency?2.8:1.8,5.8);
   c.braking=c.speed<oldSpeed-.015||c.speed<.25;
   const hazardOn=c.hazardLights&&(Math.sin(elapsed*16.0)>0);
   for(const lamp of c.root.userData.brakes||[])lamp.material=(c.braking||hazardOn)?c.root.userData.tailBright:c.root.userData.tailDim;
   // A fully obstructed road stops traffic rather than making unsafe U-turns.
   if(!c.emergency&&!c.rearStreet&&!c.turnPath?.length&&!c.routing&&c.stun===0&&!(c.windSettle>0)&&!chapterSettlement.active&&!obstruction){
-   const passing=choosePassingLane(c,cars,craters);
+   const passing=choosePassingLane(c,neighbors,craters);
    if(passing!==null&&elapsed>=(c.overtakeUntil||0)){
      c.laneZ=passing;c.overtakeUntil=elapsed+6;c.laneChangeTime=0;
    }
   }
 // Steer around other vehicles to prevent clipping:
-   for(let j=cars.length-1;j>=0;j--){
-    if(j===i)continue;
-    const other=cars[j];if(other.burning||other.destroyed)continue;
+   for(let j=neighbors.length-1;j>=0;j--){
+    const other=neighbors[j];if(other===c)continue;if(other.burning||other.destroyed)continue;
     const ahead=(other.root.position.x-c.root.position.x)*c.dir;
     const latDiff=c.root.position.z-other.root.position.z;
     const absLat=Math.abs(latDiff);
@@ -1841,7 +1842,7 @@ function updateCars(dt){if(!trafficActive)return;carTimer-=dt;if(carTimer<=0){sp
      c.speed=Math.min(c.speed,Math.max(0,other.speed*0.88-(7.5-ahead)*0.35));
      c.braking=true;
      if(ahead<5.0&&other.speed<1.2&&!c.rearStreet&&!c.emergency){
-      const passing=choosePassingLane(c,cars,craters);
+      const passing=choosePassingLane(c,neighbors,craters);
       if(passing!==null)c.laneZ=passing;
      }
     }
