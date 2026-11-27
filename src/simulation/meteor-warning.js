@@ -7,7 +7,7 @@ export function selectMeteorWarning(meteors,school,buildings,containsParcel=null
   const street=target.y<3&&target.z>13&&target.z<36;
   const within=building=>Math.abs(building.x-target.x)<building.w/2+1&&
    Math.abs(building.z-target.z)<building.d/2+1;
-  const occupied=buildings.some(b=>b!==school&&!b.school&&(b.damage??0)<.97&&(containsParcel?containsParcel(b,target.x,target.z):within(b)));
+  const occupied=buildings.some(b=>b!==school&&!b.school&&(containsParcel?containsParcel(b,target.x,target.z):within(b)));
   const hitsSchool=!street&&within(school)&&!occupied;
   const label=meteor.boss?'BOSS':hitsSchool?'SCHOOL':street?'STREET':'BLOCK';
   const y=meteor.mesh.position.y;
