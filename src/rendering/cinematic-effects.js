@@ -8,6 +8,21 @@ export function uploadActivePrefix(attribute,instances,stride){
  attribute.needsUpdate=true;
  return true;
 }
+// Billboard geometry is generated once per rendered frame, not per fixed
+// simulation substep. Store the last step's effect descriptors in reusable arrays.
+export function createEffectDescriptors(capacity){
+ const values=new Float64Array(capacity*10);
+ let count=0;
+ return {values,clear(){count=0;},count:()=>count,
+  add(pos,w,h,opacity,rotation,col){
+   if(count>=capacity||opacity<=0||w<=0||h<=0)return false;
+   const i=count++*10;
+   values[i]=pos.x;values[i+1]=pos.y;values[i+2]=pos.z;
+   values[i+3]=w;values[i+4]=h;values[i+5]=opacity;values[i+6]=rotation;
+   values[i+7]=col?.r??1;values[i+8]=col?.g??1;values[i+9]=col?.b??1;return true;
+  }};
+}
+
 export function createCinematicEffects(T,scene,camera,bank){
  const dummy=new T.Object3D();let clock=0;
  const windOrigin=new T.Vector3(),windDirection=new T.Vector3(1,0,0);
@@ -32,27 +47,26 @@ export function createCinematicEffects(T,scene,camera,bank){
    s.fragmentShader='varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.fragmentShader;
    s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxRaw=clamp(1.0-smoothstep(0.06,0.94,fxEdgeR),0.0,1.0);float fxFeather=fxRaw*fxRaw*(3.0-2.0*fxRaw);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
   };
+  const descriptors=createEffectDescriptors(capacity);
   return {
    m,alpha,colors,capacity,n:0,dirty:false,
+   clear(){descriptors.clear();this.n=0;this.dirty=true;},
    add(pos,w,h,opacity=1,rotation=0,col=null){
-    if(this.n>=capacity)return;
-    dummy.position.copy(pos);
-    dummy.quaternion.copy(camera.quaternion);
-    dummy.rotateZ(rotation);
-    dummy.scale.set(w,h,1);
-    dummy.updateMatrix();
-    m.setMatrixAt(this.n,dummy.matrix);
-    if(col){colors.setXYZ(this.n,col.r,col.g,col.b);}
-    else{colors.setXYZ(this.n,1.0,1.0,1.0);}
-    alpha.setX(this.n++,opacity);
-    this.dirty=true;
+    if(descriptors.add(pos,w,h,opacity,rotation,col)){this.n=descriptors.count();this.dirty=true;}
    },
-   flush(){
+   flush(renderCamera){
     m.count=this.n;
-    if(this.dirty&&this.n>0){
+    if(this.n>0){
+     const v=descriptors.values;
+     for(let j=0;j<this.n;j++){
+      const i=j*10;
+      dummy.position.set(v[i],v[i+1],v[i+2]);
+      dummy.quaternion.copy(renderCamera.quaternion);dummy.rotateZ(v[i+6]);
+      dummy.scale.set(v[i+3],v[i+4],1);dummy.updateMatrix();m.setMatrixAt(j,dummy.matrix);
+      if(this.dirty){colors.setXYZ(j,v[i+7],v[i+8],v[i+9]);alpha.setX(j,v[i+5]);}
+     }
      uploadActivePrefix(m.instanceMatrix,this.n,16);
-     uploadActivePrefix(colors,this.n,3);
-     uploadActivePrefix(alpha,this.n,1);
+     if(this.dirty){uploadActivePrefix(colors,this.n,3);uploadActivePrefix(alpha,this.n,1);}
     }
     this.dirty=false;
    }
@@ -315,7 +329,7 @@ export function createCinematicEffects(T,scene,camera,bank){
 
  function begin(dt){
   clock+=dt;
-  for(const p of pools){p.n=0;p.dirty=false;}
+  for(const p of pools)p.clear();
 
   // Update smoke & steam puffs
   for(let i=0;i<MAX_PUFFS;i++){
@@ -446,6 +460,7 @@ export function createCinematicEffects(T,scene,camera,bank){
  }
 
  function fire(pos,age,size=1,suppression=0,style='structure',sootFactor=0){
+  if(flame.n>=flame.capacity&&smoke.n>=smoke.capacity)return;
   const intensity=Math.max(0,1-suppression);
   const relX=pos.x-windOrigin.x,relY=pos.y-windOrigin.y,relZ=pos.z-windOrigin.z;
   const along=relX*windDirection.x+relY*windDirection.y+relZ*windDirection.z;
@@ -458,7 +473,7 @@ export function createCinematicEffects(T,scene,camera,bank){
   const flameCount=fastTrail?3:5;
   const smokeCount=fastTrail?5:20; // RC173: Optimized to 20 for fluid 60fps without losing plume fullness
 
-  for(let i=0;i<flameCount;i++){
+  for(let i=0;i<flameCount&&flame.n<flame.capacity;i++){
    const t=age*(1.7+i*.19)+i*2.3;
    _offset.set(Math.sin(i*4)*size*(fastTrail?.34:.65),
     (fastTrail?.5:1)+Math.sin(t)*.24,Math.cos(i)*size*.3);
@@ -468,7 +483,7 @@ export function createCinematicEffects(T,scene,camera,bank){
     (fastTrail?.61:.75)*intensity,Math.sin(t)*.12);
   }
 
-  for(let i=0;i<smokeCount;i++){
+  for(let i=0;i<smokeCount&&smoke.n<smoke.capacity;i++){
    const cycle=fastTrail?2.6:16.0;
    const t=fastTrail?(age*.75+i*.43)%cycle:(age*.38+i*(cycle/smokeCount))%cycle;
    const progress=t/cycle;
@@ -555,15 +570,16 @@ export function createCinematicEffects(T,scene,camera,bank){
  return {
   begin,fire,setWind,water,waterJet,waterSpray,syncSubwayCraters,burst,shock,dustBurst,demolitionDustWave,sparks,steamBurst,
   getWaterParticleCount:()=>waterParticles.filter(p=>p.active).length,
-  flush(){for(const p of pools)p.flush();},
+  flush(renderCamera=camera){for(const p of pools)p.flush(renderCamera);},
   reset(){
    puffs.forEach(p=>p.active=false);
    rings.forEach(r=>r.active=false);
    dustPuffs.forEach(d=>d.active=false);
    sparkPuffs.forEach(s=>s.active=false);
    waterParticles.forEach(w=>w.active=false);
-   windStrength=0;
-   for(const p of pools){p.n=0;p.dirty=false;p.flush();}
+   windStrength=0;subwayCraters=[];clock=0;
+   puffHead=ringHead=dustHead=sparkHead=waterHead=0;
+   for(const p of pools){p.clear();p.flush(camera);}
   },
   setVisible(on){for(const p of pools)p.m.visible=on;},
   stats:()=>({
