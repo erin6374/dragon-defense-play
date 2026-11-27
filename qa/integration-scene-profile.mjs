@@ -61,7 +61,20 @@ try{
     return original.apply(this,arguments);
    };
    try{q.renderFrame(cam,0);}finally{r.renderBufferDirect=original;}
-   return {phase,render:{...r.info.render},groups:[...groups].map(([name,v])=>({name,...v})).sort((a,b)=>b.submissions-a.submissions),state:q.snap().counts,schoolDamage:q.getSchoolDamage(),renderer:r.getContext().getParameter(r.getContext().RENDERER)};
+   const parcelRoot=scene.getObjectByName('Broad Street Viewer buildings');
+   const geometries=new Set();parcelRoot?.traverse(o=>{if(o.isMesh&&o.geometry)geometries.add(o.geometry);});
+   const geometryStorage={geometries:geometries.size,indexed:0,vertices:0,triangles:0,bytes:0,equivalentExpandedBytes:0};
+   for(const g of geometries){
+    const n=g.attributes.position.count,elements=g.index?.count??n;
+    geometryStorage.vertices+=n;geometryStorage.triangles+=elements/3;
+    if(g.index){geometryStorage.indexed++;geometryStorage.bytes+=g.index.array.byteLength;}
+    for(const attr of Object.values(g.attributes)){
+     if(attr.isInterleavedBufferAttribute)continue;
+     geometryStorage.bytes+=attr.array.byteLength;
+     geometryStorage.equivalentExpandedBytes+=elements*attr.itemSize*attr.array.BYTES_PER_ELEMENT;
+    }
+   }
+   return {phase,geometryStorage,render:{...r.info.render},groups:[...groups].map(([name,v])=>({name,...v})).sort((a,b)=>b.submissions-a.submissions),state:q.snap().counts,schoolDamage:q.getSchoolDamage(),renderer:r.getContext().getParameter(r.getContext().RENDERER)};
   },phase);
   assert.ok(data.render.calls>0&&data.groups.length>0,'No real render submissions captured');
   if(phase==='damage'){
@@ -71,7 +84,7 @@ try{
    console.log('GLASS_SHARDS '+JSON.stringify(glass));
   }
   report.cases.push(data);
-  console.log('SCENE_PROFILE '+JSON.stringify({phase,render:data.render,topGroups:data.groups.slice(0,15),state:data.state,schoolDamage:data.schoolDamage}));
+  console.log('SCENE_PROFILE '+JSON.stringify({phase,render:data.render,topGroups:data.groups.slice(0,15),geometryStorage:data.geometryStorage,state:data.state,schoolDamage:data.schoolDamage}));
   await page.screenshot({path:out+'/'+phase+'.png'});
  }
  assert.equal(report.errors.length,0);report.passed=true;
