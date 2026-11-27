@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
+import * as Three from '../vendor/three/build/three.module.js';
+import {createCrowdRenderer} from '../src/rendering/crowd-renderer.js';
+import {buildPerson,animatePerson} from '../src/rendering/realistic-vehicles.js';
 const root=new URL('../',import.meta.url);
 const read=path=>readFileSync(new URL(path,root),'utf8');
 const load=(path,params={},exports=[])=>{
@@ -256,6 +259,36 @@ test('Production FBX batching retains source interiors and suppresses approximat
  assert.ok(batch.includes('bySurface'));
  assert.ok(proxy.includes('if(overlayMode&&!p.falling&&!p.resting)continue;'));
  assert.ok(game.includes("attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy'"));
+});
+test('Crowd batches preserve poses and clear hidden or removed walkers',()=>{
+ const scene=new Three.Scene(),renderer=createCrowdRenderer(Three,scene);
+ const camera=new Three.PerspectiveCamera(60,1,.1,100);
+ camera.position.set(0,1,8);camera.lookAt(0,1,0);
+ const person=buildPerson(Three,2),other=buildPerson(Three,3);
+ scene.add(person,other);
+ renderer.register(person);renderer.register(other);
+ const people=[{g:person},{g:other}];
+ other.position.x=300;
+ animatePerson(person,1,true,true);
+ renderer.update(people,camera,true);
+ const batches=scene.children.filter(node=>node.isInstancedMesh);
+ assert.ok(batches.length<5);
+ assert.equal(batches.reduce((n,b)=>n+b.count,0),11);
+ const expected=[];
+ person.traverse(part=>{if(part.isMesh){assert.equal(part.visible,false);expected.push(part);}});
+ for(const batch of batches){
+  const originals=expected.filter(part=>part.geometry===batch.geometry);
+  const matrix=new Three.Matrix4(),color=new Three.Color();
+  for(const [i,part] of originals.entries()){
+   batch.getMatrixAt(i,matrix);batch.getColorAt(i,color);
+   for(let j=0;j<16;j++)assert.ok(Math.abs(matrix.elements[j]-part.matrixWorld.elements[j])<1e-6);
+   assert.ok(Math.abs(color.r-part.material.color.r)<1e-6);
+  }
+ }
+ renderer.update(people,camera,false);
+ assert.ok(batches.every(batch=>batch.count===0));
+ renderer.update([],camera,true);
+ assert.ok(batches.every(batch=>batch.count===0));
 });
 test('School play mesh matches the FBX source and stays within its render budget',()=>{
  const packed=readFileSync(new URL('assets/tech-freire-play-mesh-v1.bin',root));

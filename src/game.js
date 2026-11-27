@@ -56,6 +56,7 @@ import {createEvacuationChapter} from './simulation/evacuation-chapter.js';
 import {createPerformanceLab} from './core/performance-lab.js';
 import {createCaptureLab} from './core/capture-lab.js';
 import {batchStaticBim} from './rendering/static-bim-batch.js';
+import {createCrowdRenderer} from './rendering/crowd-renderer.js';
 import {batchStaticStreetProps} from './rendering/static-prop-batch.js';
 import {installSchoolFlankingHouses} from './rendering/school-flanking-houses.js';
 import {batchOpaqueRelief} from './rendering/viewer-building-fit.js';
@@ -1904,6 +1905,9 @@ if(!updateVehicleRoute(c,dt))c.root.position.x+=c.dir*c.speed*dt*(c.windRecovery
  }
 }
 // Dynamic arcade city activity. Stylized, not real-world simulation.
+const crowdRenderer=createCrowdRenderer(THREE,scene);
+// QA can compare the same crowd with per-component draws.
+const useCrowdBatch=!(schoolQA&&new URLSearchParams(location.search).get('crowdRender')==='individual');
 const helicopters=[],crowd=[],gasClouds=[];let ambulanceTimer=10;let helicopterTimer=8,crowdTimer=0,gasCooldown=0,dragonLives=3,invulnerable=0,waterDisable=0;
 const heliBody=material(0xe3c23d),heliGlass=material(0x32485c),rotorMat=material(0x252b33),greenGas=new THREE.MeshBasicMaterial({color:0x6cdb4b,transparent:true,opacity:.4,depthWrite:false});
 const helicopterLightPool=createStableLightPool(scene,3,()=>new THREE.SpotLight(0xe8f4ff,0,55,Math.PI/5,.75,1.5));
@@ -2004,7 +2008,9 @@ function spawnCrowd(forcedX=null,forcedZ=null){
  if(crowd.length>=crowdCap&&forcedX===null)return;
  const count=forcedX!==null?1:Math.min(4,crowdCap-crowd.length);
  for(let i=0;i<count;i++){
-  const g=buildPerson(THREE,Math.floor(Math.random()*12));scene.add(g);
+  const g=buildPerson(THREE,Math.floor(Math.random()*12));
+  if(useCrowdBatch)crowdRenderer.register(g);
+  scene.add(g);
   const jaywalker=forcedX===null&&Math.random()<.18,crossing=forcedX===null?(i<2||jaywalker):CROSS_STREET_X.some(cx=>Math.abs(cx-forcedX)<.5),fromFar=forcedZ!==null?forcedZ>BROAD_CENTER:Math.random()<.5;
   const isRear=forcedZ!==null&&forcedZ<-20;
   let x,z;
@@ -6843,7 +6849,9 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  }
  const renderStartUTC=Date.now();const renderStart=performance.now();
  visualBank.advanceFireVisuals(elapsed);
- cinematicFX.flush();renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
+ cinematicFX.flush();
+ if(useCrowdBatch)crowdRenderer.update(crowd,captureCamera||camera,performanceLab.isEnabled('pedestrians'));
+ renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
    frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames};

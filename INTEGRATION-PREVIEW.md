@@ -1,6 +1,6 @@
-# Dragon Defense — Integration Preview 6
+# Dragon Defense — Integration Preview 7
 
-Build `5.5.0-integration.6`.
+Build `5.5.0-integration.7`.
 Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
 Exact source
 revisions, the unchanged Tech Freire FBX hash, and the development snapshot
@@ -33,6 +33,13 @@ now starts a clean defense session; it does not preserve a prior campaign.
 
 ## Development changes
 
+Pedestrians retain their original meshes, pose hierarchy, and simulation.
+The renderer submits visible limbs through three shared instance batches.
+In a matched Wave 1 Chromium check with capture off and 38 pedestrians, the
+change removed 272 draw calls per frame. Frame-time and freeze improvements
+still require a sustained native Windows playtest.
+
+
 Normal play loads a 173,317-triangle mesh derived from the original Tech Freire
 FBX. Walls, floors, glazing, doors and roof geometry retain their source
 triangles. Detailed fixtures use simpler geometry and dense decorative rails
@@ -55,7 +62,7 @@ meteor dropper transfers the selected size and material into Sandbox.
 
 
 The 122 mapped building parcels and the separate original school FBX are
-retained. Work toward Preview 6 includes localized and bounded meteor damage,
+retained. Work toward Preview 7 includes localized and bounded meteor damage,
 continuous roof/side collision, reconstruction optimizations, updated mapped
 traffic and responder routes, independent water-main rupture, crater and
 camera cleanup, parcel-local damage masks, function-specific interiors, original FBX interior restoration, spatial source batching, and regression tests. The repeatable source-level suite is
