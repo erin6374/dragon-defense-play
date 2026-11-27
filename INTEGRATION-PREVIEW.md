@@ -1,6 +1,6 @@
 # Dragon Defense — Integration Preview 4 development candidate
 
-Current source version: `5.5.0-integration.4-dev.11`.
+Current source version: `5.5.0-integration.4-dev.22`.
 Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
 This is a development snapshot, not a verified playable release. Exact source
 revisions, the unchanged Tech Freire FBX hash, and the development snapshot
@@ -25,7 +25,7 @@ now starts a clean defense session; it does not preserve a prior campaign.
 4. Return the newest directory in `integration-qa-results`, especially
    `report.json` and screenshots. The report includes the exact Git commit
    when Git is available, build ID, renderer, nine functional checks and
-   a 30-second sustained bombardment measurement.
+   a 30-second sustained bombardment measurement. Critical asset failures and shader errors fail the report; the report is explicitly not a release certification.
 5. If Edge is unavailable, install Playwright Chromium using
    `npx --prefix tools/.integration-qa-runtime playwright install chromium`.
    The runner can also be invoked with `--headless --software` for software
@@ -37,15 +37,15 @@ The 122 mapped building parcels and the separate original school FBX are
 retained. Work toward Preview 4 includes localized and bounded meteor damage,
 continuous roof/side collision, reconstruction optimizations, updated mapped
 traffic and responder routes, independent water-main rupture, crater and
-camera cleanup, and regression tests. The repeatable source-level suite is
+camera cleanup, parcel-local damage masks, function-specific interiors, original FBX interior restoration, spatial source batching, and regression tests. The repeatable source-level suite is
 `node tests/integration-preview-regressions.mjs`.
 
 ## Verification limits
 
 The previous Preview 3 smoke checks are historical. The Preview 4 candidate
 has passed isolated source-level tests, including all 122 parcel roof ownership
-checks. The new browser runner has not yet executed on a live browser against
-this candidate. Native Windows GPU performance, visual architecture alignment,
+checks. The revised browser runner has not yet executed on a live browser against
+this candidate. It checks the school triangle inventory and localized damage repair as well as the original nine functional groups. Native Windows GPU performance, visual architecture alignment,
 a full campaign playthrough, and the upstream district contact audit remain
 unverified. Do not designate this candidate as a verified playable release
 until those checks have been reviewed.
