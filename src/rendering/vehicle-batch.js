@@ -3,7 +3,7 @@
 // stays separate so it can blink. Expensive source assets are not disposed:
 // most geometry is shared by the vehicle geometry cache.
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-export function batchVehicleVisuals(THREE,root,{exclude=[]}={}){
+export function batchVehicleVisuals(THREE,root,{exclude=[],minGroupSize=1,batchName='batched-vehicle-material'}={}){
  const excluded=new Set(exclude.filter(Boolean));
  const source=root.children.filter(v=>v.isMesh&&!excluded.has(v)&&v.visible&&v.geometry&&v.material&&!Array.isArray(v.material));
  const materialGroups=new Map();let saved=0,generated=0,failed=0;
@@ -23,11 +23,12 @@ export function batchVehicleVisuals(THREE,root,{exclude=[]}={}){
   }catch(err){if(g)g.dispose();failed++;console.warn('Vehicle bake skipped component',err);}
  }
  for(const {material,entries} of materialGroups.values()){
+  if(entries.length<minGroupSize){for(const e of entries)e.geometry.dispose();continue;}
   try{
    const combined=mergeGeometries(entries.map(e=>e.geometry),false);
    if(!combined)throw new Error('Incompatible geometry attributes');
    const baked=new THREE.Mesh(combined,material);
-   baked.name='batched-vehicle-material';
+   baked.name=batchName;
    combined.computeBoundingSphere();
    baked.castShadow=false;baked.receiveShadow=false;root.add(baked);generated++;
    for(const e of entries){root.remove(e.mesh);saved++;}
