@@ -36,3 +36,16 @@ export function batchVehicleVisuals(THREE,root,{exclude=[]}={}){
  }
  return {sourceMeshes:source.length,batches:generated,drawCallsSaved:Math.max(0,saved-generated),failed};
 }
+
+// Preserve the independent steering/ladder transforms. Bake only the rigid
+// children of each pivot, never flatten those pivots into the chassis.
+export function batchVehicleArticulations(THREE,root,bake=batchVehicleVisuals){
+ const totals={sourceMeshes:0,batches:0,drawCallsSaved:0,failed:0};
+ const pivots=new Set([...(root.userData.frontSteer||[]),root.userData.ladder].filter(Boolean));
+ for(const pivot of pivots){
+  if(pivot.parent!==root)continue;
+  const stats=bake(THREE,pivot);
+  for(const k of Object.keys(totals))totals[k]+=stats[k]||0;
+ }
+ return totals;
+}
