@@ -68,7 +68,7 @@ import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMes
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
 import {createSchoolComponentIndex,sourceComponentMaterial} from './simulation/school-source-impact.js';
-import {collectCraterResources,releaseCraterResources,createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
+import {syncThermalCraterLights,collectCraterResources,releaseCraterResources,createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
 
 import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,createCinematicWeather} from './rendering/cinematic-assets.js';
 const mobileVisual=window.matchMedia('(pointer:coarse)').matches;
@@ -2377,9 +2377,14 @@ function updateSkyBursts(dt){
   }
  }
 }
+// Fixed thermal lighting budget: nearest three craters, stable shader light count.
+const thermalCraterLights=Array.from({length:3},()=>{
+ const light=new THREE.PointLight(0xff5511,0,8);scene.add(light);return light;
+});
 function disposeCrater(c){
  if(!c||c.disposed)return;
  c.disposed=true;
+ for(const light of thermalCraterLights)if(light.userData.thermalCrater===c){light.intensity=0;light.userData.thermalCrater=null;}
  const roots=[c.mesh,c.inner,c.ember&&!c.thermalGroup?c.ember:null,c.rimMesh,c.bowlMesh,c.sootDecal,c.thermalGroup,c.subwayGroup,c.geyserGroup].filter(Boolean);
  if(c.subwayGroup)for(const light of new Set(c.subwayGroup.userData.lights||[]))explosionLightPool.release(light);
  const resources=collectCraterResources(roots);
@@ -2740,6 +2745,8 @@ function addCrater(x,z,radius=3,opts={}){
   const subwayBeforeBatch=collectCraterResources([subwayGroup]);
   batchOpaqueRelief(subwayGroup,{preserveNamed:true});
   releaseCraterResources(subwayBeforeBatch,collectCraterResources([subwayGroup]));
+  const names=['subway-flooded-water','subway-flood-water-pool','subway-waterfall-north','subway-waterfall-south','subway-beacon-dome','subway-third-rail-arc-light'];
+  subwayGroup.userData.animatedParts=Object.fromEntries(names.map(name=>[name,subwayGroup.getObjectByName(name)??null]));
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
@@ -2762,7 +2769,7 @@ function addCrater(x,z,radius=3,opts={}){
   scene.add(sootDecal);
 
   // Pulsating subsurface thermal magma fissure bed
-  thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth);
+  thermalCore=createPulsatingThermalFissures(radius,bowlObj.depth,{externalLighting:true});
   thermalCore.group.position.set(x,-bowlObj.depth+0.06,z);
   scene.add(thermalCore.group);
   ember=thermalCore.mesh;
@@ -2825,7 +2832,7 @@ function updateCraters(dt){
  for(let i=craters.length-1;i>=0;i--){
   const c=craters[i];c.life-=dt;
   const heatRatio=Math.max(0,c.life/120);
-  if(c.thermalUpdate)c.thermalUpdate(elapsed);
+  if(c.thermalUpdate)c.thermalIntensity=c.thermalUpdate(elapsed);
   if(c.ember){
    c.ember.material.opacity=heatRatio*(.60+.25*Math.sin(elapsed*5.0));
    if(heatRatio>0.75)c.ember.material.color.setHex(0xfff4cc);
@@ -2850,17 +2857,17 @@ function updateCraters(dt){
    }
   }
   if(c.subwayGroup){
-   const floodWater=c.subwayGroup.getObjectByName('subway-flooded-water');
+   const floodWater=c.subwayGroup.userData.animatedParts?.['subway-flooded-water'];
    if(floodWater){
     c.floodLevel=Math.min(0.68,(c.floodLevel??0.14)+dt*0.022);
     const floodY=(c.subwayGroup.userData.floodBaseY??-5.4)+c.floodLevel+Math.sin(elapsed*3.5+c.x*0.3)*0.03;
     floodWater.position.y=floodY;
-    const secondaryWater=c.subwayGroup.getObjectByName('subway-flood-water-pool');
+    const secondaryWater=c.subwayGroup.userData.animatedParts?.['subway-flood-water-pool'];
     if(secondaryWater)secondaryWater.position.y=floodY-.04;
    }
    // RC166: Animate subterranean waterfall curtains & foaming track bed spray
-   const wfN=c.subwayGroup.getObjectByName('subway-waterfall-north');
-   const wfS=c.subwayGroup.getObjectByName('subway-waterfall-south');
+   const wfN=c.subwayGroup.userData.animatedParts?.['subway-waterfall-north'];
+   const wfS=c.subwayGroup.userData.animatedParts?.['subway-waterfall-south'];
    if(wfN&&wfS){
     const pulse=0.68+Math.sin(elapsed*14.0)*0.12;
     wfN.material.opacity=pulse;
@@ -2875,13 +2882,12 @@ function updateCraters(dt){
     _craterV2.set(0,0.85,0.25).normalize();
     cinematicFX.waterSpray(_craterV1,_craterV2,dt,{rate:2,power:0.70});
    }
-   const beacon=c.subwayGroup.getObjectByName('subway-emergency-beacon');
-   if(beacon){
-    const bd=beacon.getObjectByName('subway-beacon-dome');
+   const bd=c.subwayGroup.userData.animatedParts?.['subway-beacon-dome'];
+   if(bd){
     const pulse=(Math.sin(elapsed*9.0)>0.1)?1.0:0.12;
     if(bd&&bd.material)bd.material.emissiveIntensity=1.8*pulse;
    }
-   const arcLight=c.subwayGroup.getObjectByName('subway-third-rail-arc-light');
+   const arcLight=c.subwayGroup.userData.animatedParts?.['subway-third-rail-arc-light'];
    if(arcLight){
     if(Math.random()<0.30){
      arcLight.intensity=3.2+Math.random()*4.5;
@@ -2920,6 +2926,7 @@ function updateCraters(dt){
    neighborhood.syncCraterHoles?.(craters);cinematicFX.syncSubwayCraters?.(craters);
   }
  }
+ syncThermalCraterLights(thermalCraterLights,craters,dragon.position);
 }
 function updateWorld(dt){
  if(chapterSettlement.active)militaryOccupation.suppress(1);
