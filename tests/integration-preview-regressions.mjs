@@ -1218,4 +1218,32 @@ test('Gas sprite pool reuses unique materials, resets appearance and bounds idle
  assert.ok(game.includes('releaseGasSprite(c.mesh);gasClouds.splice(i,1)'));
  assert.equal((game.match(/acquireGasSprite\(0x/g)||[]).length,3);
 });
+test('Opaque debris render batching preserves matrices, visibility, exclusions and borrowed resources',()=>{
+ const {createDebrisRenderBatch}=load('src/rendering/debris-render-batch.js',{},['createDebrisRenderBatch']);
+ const scene=new Three.Scene(),geo=new Three.BoxGeometry(),mat=new Three.MeshStandardMaterial(),glass=new Three.MeshStandardMaterial({transparent:true}),other=new Three.BoxGeometry();
+ const make=(geometry,material)=>{const mesh=new Three.Mesh(geometry,material);scene.add(mesh);return {mesh};};
+ const a=make(geo,mat),b=make(geo,mat),hidden=make(geo,mat),transparent=make(geo,glass),unique=make(other,mat),shadow=make(geo,mat),owned=make(geo,mat);
+ a.mesh.position.set(1,2,3);a.mesh.rotation.set(.2,.4,.6);a.mesh.scale.set(2,3,4);
+ b.mesh.position.set(-3,5,7);hidden.mesh.visible=false;shadow.mesh.castShadow=true;owned.ownsGeometry=true;
+ const entries=[a,b,hidden,transparent,unique,shadow,owned];
+ const api=createDebrisRenderBatch(Three,scene,geo,[mat,glass],4);
+ let instance;
+ api.render(entries,()=>{
+  instance=scene.children.find(m=>m.isInstancedMesh);
+  assert.ok(instance&&instance.visible);assert.equal(instance.count,2);
+  assert.equal(a.mesh.visible,false);assert.equal(b.mesh.visible,false);assert.equal(hidden.mesh.visible,false);
+  for(const d of [transparent,unique,shadow,owned])assert.equal(d.mesh.visible,true);
+  const m=new Three.Matrix4();instance.getMatrixAt(0,m);
+  assert.ok(m.elements.every((v,i)=>Math.abs(v-a.mesh.matrix.elements[i])<1e-6));
+  assert.equal(instance.geometry,geo);assert.equal(instance.material,mat);
+ });
+ assert.equal(a.mesh.visible,true);assert.equal(b.mesh.visible,true);assert.equal(instance.visible,false);assert.equal(instance.count,0);
+ assert.equal(api.stats().savedDraws,1);
+ assert.throws(()=>api.render(entries,()=>{throw Error('draw failed');}),/draw failed/);
+ assert.ok(a.mesh.visible&&b.mesh.visible&&!instance.visible&&!hidden.mesh.visible);
+ api.render(entries,()=>assert.ok(a.mesh.visible&&b.mesh.visible&&!instance.visible),{shadows:true});
+ let disposed=0;geo.addEventListener('dispose',()=>disposed++);mat.addEventListener('dispose',()=>disposed++);
+ api.dispose();assert.equal(instance.parent,null);assert.equal(disposed,0);
+ assert.ok(game.includes('debrisRenderBatch.render(debris'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
