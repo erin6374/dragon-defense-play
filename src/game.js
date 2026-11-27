@@ -837,7 +837,7 @@ function prepareSchoolMaterial(material){
 }
 async function loadPlaySchoolOverlay(){
  try{
-  const {model,info}=await loadSchoolPlayMesh(prepareSchoolMaterial);
+  const {model,info}=await loadSchoolPlayMesh(prepareSchoolMaterial,{allowIndex:new URLSearchParams(location.search).get('schoolIndex')!=='0'});
   model.name='ACTUAL-TECH-FREIRE-SCHOOL';
   model.matrixAutoUpdate=false;
   model.updateMatrix();
@@ -848,7 +848,7 @@ async function loadPlaySchoolOverlay(){
   actualSchoolOverlayReady=true;
   actualSchoolOverlayStats={
    loaded:true,sourceMeshes:info.roles.school,batches:model.children.length,
-   inputTriangles:info.originalTriangles,outputTriangles:info.triangles,
+   inputTriangles:info.originalTriangles,outputTriangles:info.triangles,renderStorage:info.renderStorage,
    sourceInteriorAudit:{attachedGeometrySource:'FBX-derived play mesh',damagePhysicsSource:'approximate proxy',
     sourceSHA256:info.sourceSha256,renderSimplification:info.byCategory,componentIndex:schoolComponentIndex.stats()},
    visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:box.getSize(new THREE.Vector3()).toArray()},
