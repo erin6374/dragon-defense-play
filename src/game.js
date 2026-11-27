@@ -736,27 +736,25 @@ function syncStructuralDamage(){
 // Permanent, pixel-cost-bounded damage masks. Unlike the old 48-slot FIFO uniform
 // list, past impact holes never disappear when additional meteors hit the school.
 const sourceDamage=createSchoolSourceDamage();
+// The legacy 2D damage masks are only read by the QA pixel-count probe.
+// Production uses sourceDamage's world-space volume, not these canvases.
 const SCHOOL_MASK_SIZE=384;
-const schoolDamagePlanes={front:document.createElement('canvas'),side:document.createElement('canvas')};
+const schoolDamagePlanes=new URLSearchParams(location.search).get('qa')==='1'?{front:document.createElement('canvas'),side:document.createElement('canvas')}:{};
 for(const cv of Object.values(schoolDamagePlanes)){
  cv.width=cv.height=SCHOOL_MASK_SIZE;
  cv.getContext('2d').fillStyle='#ffffff';
  cv.getContext('2d').fillRect(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE);
-}
-const schoolDamageTextures={front:new THREE.CanvasTexture(schoolDamagePlanes.front),side:new THREE.CanvasTexture(schoolDamagePlanes.side)};
-for(const tex of Object.values(schoolDamageTextures)){
- tex.colorSpace=THREE.NoColorSpace;tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.generateMipmaps=false;
 }
 function resetSchoolDamageMasks(){
  sourceDamage.reset();
  for(const [key,cv] of Object.entries(schoolDamagePlanes)){
   const c=cv.getContext('2d');c.globalCompositeOperation='source-over';
   c.fillStyle='#ffffff';c.fillRect(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE);
-  schoolDamageTextures[key].needsUpdate=true;
  }
 }
 function stampPermanentDamage(key,u,v,ru,rv){
- const cv=schoolDamagePlanes[key],ctx=cv.getContext('2d');
+ const cv=schoolDamagePlanes[key];if(!cv)return;
+ const ctx=cv.getContext('2d');
  const x=THREE.MathUtils.clamp(u,0,1)*SCHOOL_MASK_SIZE;
  const y=(1-THREE.MathUtils.clamp(v,0,1))*SCHOOL_MASK_SIZE;
  const rx=Math.max(3,ru*SCHOOL_MASK_SIZE),ry=Math.max(3,rv*SCHOOL_MASK_SIZE);
@@ -783,7 +781,6 @@ function stampPermanentDamage(key,u,v,ru,rv){
   ctx.lineTo(.87*Math.cos(a+.11),.87*Math.sin(a+.11));ctx.stroke();
  }
  ctx.restore();
- schoolDamageTextures[key].needsUpdate=true;
 }
 // One health budget per meteor, independent of the visual crater energy.
 function schoolMeteorBudget(size=1.8){
@@ -815,8 +812,10 @@ function carveSchool(x,y,z,r,strength=1,type='stone',speed=0){
  schoolReconstruction?.impact({x,y,z,radius:impactRadius,strength:impactStrength,type,speed});
  sourceDamage.stamp(x,y,z,impactRadius);
  if(actualSchoolOverlayReady&&schoolComponentIndex)emitSourceSchoolDebris(new THREE.Vector3(x,y,z),impactRadius);
- const range=schoolBounds.getSize(new THREE.Vector3());
- stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
+ if(schoolDamagePlanes.front){
+  const range=schoolBounds.getSize(new THREE.Vector3());
+  stampPermanentDamage('front',(x-schoolBounds.min.x)/range.x,(y-schoolBounds.min.y)/range.y,impactRadius/range.x,impactRadius/range.y);
+ }
 }
 function setRowhouseSourceVisible(role,on){
  // Flanking Revit FBX masses are deprecated and replaced by authentic North Broad models.
@@ -3297,7 +3296,7 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
   simulationCpuMs:percentiles(detailedTimings.sim),renderSubmissionCpuMs:percentiles(detailedTimings.render),
-  parcelRenderCulling:northBroadModels.renderCuller.stats(),
+  parcelRenderCulling:northBroadModels.renderCuller.stats(),schoolDamageMask:sourceDamage.stats(),
   framePhaseCpuMs:Object.fromEntries(Object.entries(detailedTimings).map(([key,values])=>[key,percentiles(values)])),
   stalls:stallEvents.slice(-45),
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
@@ -6975,7 +6974,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
   chapterTransition:{...chapterSettlement,postCutsceneWave,stagingMode:chapterStaging.mode,fadeOpacity:chapterFade.style.opacity},
   camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,scroll:cameraScrollX,skylineOffset:skyline.position.x-skylineAnchor,perspective:camera.isPerspectiveCamera,foregroundOffset:neighborhood.foreground.position.x,streetOrigins:neighborhood.streetOrigins()},
   schoolReconstruction:schoolReconstruction?.stats()||null,
-  sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes(),interiorAudit:actualSchoolOverlayStats?.sourceInteriorAudit??null},
+  sourceSchool:{visible:Boolean(actualSchoolOverlay?.visible),strikes:sourceDamage.strikes(),damageMask:sourceDamage.stats(),interiorAudit:actualSchoolOverlayStats?.sourceInteriorAudit??null},
   realBlockReferences:{facadeCount:referenceFacades.referenceBuildings,drawObjects:referenceFacades.drawObjects,facades:referenceFacades.snapshots()},
   renderVisibility:{schoolEnabled:performanceLab.isEnabled('schoolModel'),schoolVisible:Boolean(architecturalModel?.visible || actualSchoolOverlay?.visible || (!architecturalReady&&Object.values(meshes).some(m=>m.visible))),actualSchoolOverlayReady,fbxRowhouses:{left:!!actualRowhouseOverlays.leftRowhouse?.visible,right:!!actualRowhouseOverlays.rightRowhouse?.visible},schoolModelCalibration:actualSchoolOverlayStats?.calibration||null,skylineEnabled:performanceLab.isEnabled('skyline'),skylineVisible:skylineBackdrop.group.visible,backgroundEnabled:performanceLab.isEnabled('backgroundBuildings'),particlesEnabled:performanceLab.isEnabled('particles'),fireEnabled:performanceLab.isEnabled('fires'),renderFPSCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadows:renderer.shadowMap.enabled},
   atmosphere:{phase:displayedPhase,darkness:displayedDarkness},structure:neighborhood.city.stats(),
@@ -7785,7 +7784,7 @@ window.__DD_QA={snap,
   impactAt:(x=0,z=.4,y=10)=>run('impactAt',()=>{damage(x,z,y);return snap()}),
   impactNeighborhood:(name='north-brick')=>run('impactNeighborhood',()=>{const b=neighborhood.targetBuildings.find(t=>t.name===name&&!t.background);if(!b)throw Error('Missing target '+name);damage(b.x,b.front,Math.min(b.h-2,7));return snap()}),
   igniteAt:(x=0,y=3,z=8)=>run('igniteAt',()=>{ignite(x,y,z);return snap()}),
-  damageMaskPixels:()=>run('damageMaskPixels',()=>({front:schoolDamagePlanes.front.getContext('2d').getImageData(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE).data.length,side:schoolDamagePlanes.side.getContext('2d').getImageData(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE).data.length,schoolDamage})),
+  damageMaskPixels:()=>run('damageMaskPixels',()=>({front:schoolDamagePlanes.front?.getContext('2d').getImageData(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE).data.length??0,side:schoolDamagePlanes.side?.getContext('2d').getImageData(0,0,SCHOOL_MASK_SIZE,SCHOOL_MASK_SIZE).data.length??0,schoolDamage})),
   clearMeteors:()=>run('clearMeteors',()=>{remaining=0;while(meteors.length)remove(meteors,meteors.length-1);return snap();}),
   advanceProgress:(dt=0.1)=>run('advanceProgress',()=>{updateWaveProgress(dt);return snap();}),
   destroyAllSatellites:()=>run('destroyAllSatellites',()=>{if(orbitalTheater){for(const sat of orbitalTheater.satellites)orbitalTheater.hitSatellite(sat,100,true);}return snap();}),
