@@ -55,7 +55,8 @@ export function createParcelDamageMask(T,model,bounds){
   node.material=Array.isArray(node.material)?node.material.map(patch):patch(node.material);
  });
  function stamp(point,radius,strength=1){
-  if(disposed||!Number.isFinite(radius)||radius<=0)return false;
+  if(disposed||!Number.isFinite(radius)||radius<=0||!Number.isFinite(strength)||strength<=0||
+   !point||![point.x,point.y,point.z].every(Number.isFinite))return false;
   const r=Math.min(4.2,Math.max(.65,radius*.55))*Math.min(1,Math.max(.45,Math.sqrt(Math.max(0,strength))));
   const cell=[size.x/nx,size.y/ny,size.z/nz],center=[point.x,point.y,point.z],origin=[min.x,min.y,min.z];
   const low=center.map((v,i)=>Math.max(0,Math.floor((v-origin[i]-r*1.2)/cell[i])));
