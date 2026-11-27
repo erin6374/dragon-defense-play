@@ -57,6 +57,7 @@ import {createPerformanceLab} from './core/performance-lab.js';
 import {createCaptureLab} from './core/capture-lab.js';
 import {batchStaticBim} from './rendering/static-bim-batch.js';
 import {createCrowdRenderer} from './rendering/crowd-renderer.js';
+import {createDebrisRenderBatch} from './rendering/debris-render-batch.js';
 import {batchStaticStreetProps} from './rendering/static-prop-batch.js';
 import {installSchoolFlankingHouses} from './rendering/school-flanking-houses.js';
 import {batchOpaqueRelief} from './rendering/viewer-building-fit.js';
@@ -3334,7 +3335,7 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
   simulationCpuMs:percentiles(detailedTimings.sim),renderSubmissionCpuMs:percentiles(detailedTimings.render),
-  parcelRenderCulling:northBroadModels.renderCuller.stats(),schoolDamageMask:sourceDamage.stats(),defenseProjection:defenseProjectionCache.stats(),
+  parcelRenderCulling:northBroadModels.renderCuller.stats(),debrisRenderBatch:debrisRenderBatch.stats(),schoolDamageMask:sourceDamage.stats(),defenseProjection:defenseProjectionCache.stats(),
   framePhaseCpuMs:Object.fromEntries(Object.entries(detailedTimings).map(([key,values])=>[key,percentiles(values)])),
   stalls:stallEvents.slice(-45),
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
@@ -3446,6 +3447,8 @@ function updateEffects(dt){
  for(const pool of impactPools)pool.end();trailSmokePool.end();trailEmberPool.end();
 }
 const meteors=[],shots=[],blasts=[],debris=[];
+const debrisRenderBatch=createDebrisRenderBatch(THREE,scene,cube,Object.values(mats));
+const debrisBatchEnabled=new URLSearchParams(location.search).get('debrisBatch')!=='0';
 const radarCanvas=document.createElement('canvas');radarCanvas.id='incoming-radar';radarCanvas.width=160;radarCanvas.height=130;radarCanvas.style.cssText='position:fixed;right:14px;bottom:14px;width:160px;height:130px;z-index:22;pointer-events:none;border:1px solid #6ac6c6;background:#031e2ac9;border-radius:8px';document.body.appendChild(radarCanvas);const radarCtx=radarCanvas.getContext('2d');let radarTick=0;
 function drawRallyRecap(c,recap){
  c.fillStyle='#9be8f0';c.font='bold 11px sans-serif';
@@ -7001,11 +7004,11 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  if(useCrowdBatch)crowdRenderer.update(crowd,captureCamera||camera,performanceLab.isEnabled('pedestrians'));
  const renderStartUTC=Date.now();const renderStart=performance.now();
  const renderCamera=captureCamera||camera;
- northBroadModels.renderCuller.render(renderCamera,()=>renderer.render(scene,renderCamera),{enabled:parcelRenderCullEnabled,shadows:renderer.shadowMap.enabled});const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;const captureStart=performance.now();captureLab.afterRender();const captureEnd=performance.now();
+ northBroadModels.renderCuller.render(renderCamera,()=>debrisRenderBatch.render(debris,()=>renderer.render(scene,renderCamera),{enabled:debrisBatchEnabled,shadows:renderer.shadowMap.enabled}),{enabled:parcelRenderCullEnabled,shadows:renderer.shadowMap.enabled});const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;const captureStart=performance.now();captureLab.afterRender();const captureEnd=performance.now();
  const setupMs=simStart-present,cameraAudioMs=prepareStart-simStart-simMs,prepareMs=renderStart-prepareStart,captureMs=captureEnd-captureStart;
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
-   frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames,parcelRenderCulling:northBroadModels.renderCuller.stats()};
+   frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames,parcelRenderCulling:northBroadModels.renderCuller.stats(),debrisRenderBatch:debrisRenderBatch.stats()};
   hostMetricTime=0;hostMetricFrames=0;
  }
  if(active&&!paused)performanceLab.record({dt,simMs,renderMs,drawCalls:renderer.info.render.calls});
