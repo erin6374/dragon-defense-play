@@ -464,4 +464,35 @@ test('Adaptive resolution ignores intentional cap delay but still responds to su
   assert.ok(governor.scale<1);assert.ok(applied>0);
  }
 });
+test('Stall diagnostics attribute only preceding frame work and preserve unknown external gaps',()=>{
+ const {createFrameHealth}=load('src/core/frame-health.js',{},['createFrameHealth']);
+ let focused=true,recording=false;
+ const health=createFrameHealth({now:()=>0,isHidden:()=>false,isFocused:()=>focused,isRecording:()=>recording});
+ const base={simMs:3,renderMs:4,frameMs:16};
+ const pair=(before,after={},gap=220)=>{health.reset();health.observe({...base,frameStart:0,...before});return health.observe({...base,frameStart:gap,...after});};
+ let e=pair({renderMs:200});assert.equal(e.classification,'renderer-or-driver-block');assert.equal(e.renderMs,200);assert.equal(e.outsideMeasuredCodeMs,17);
+ e=pair({},{renderMs:300},2000);assert.equal(e.classification,'unattributed-raf-gap');assert.equal(e.renderMs,4);
+ e=pair({captureMs:140},{},160);assert.equal(e.classification,'capture-main-thread-block');
+ e=pair({prepareMs:95},{},110);assert.equal(e.classification,'render-preparation-block');
+ e=pair({setupMs:50,cameraAudioMs:40},{},110);assert.equal(e.classification,'combined-frame-work');
+ e=pair({simMs:100});assert.equal(e.classification,'simulation-main-thread-block');
+ e=pair({bookkeepingMs:100});assert.equal(e.classification,'frame-bookkeeping-block');
+ e=pair({cameraAudioMs:100});assert.equal(e.classification,'camera-or-audio-block');
+ e=pair({setupMs:100});assert.equal(e.classification,'frame-setup-block');
+ recording=true;e=pair({},{});assert.equal(e.classification,'capture-or-external-frame-gap');recording=false;
+ health.reset();focused=false;health.observe({...base,frameStart:0,renderMs:200});focused=true;
+ e=health.observe({...base,frameStart:220});assert.equal(e.classification,'visibility-or-focus-interruption');
+ assert.equal(pair({collect:false}),undefined);
+ assert.equal(pair({},{},16),undefined);
+ health.reset();assert.equal(health.summary().totalLongFrames,0);
+ health.dispose();
+});
+test('Game loop submits separate render, preparation and capture timings to stall diagnostics',()=>{
+ const a=game.indexOf('function renderFrame('),b=game.indexOf('}animate();',a);
+ assert.ok(a>=0&&b>a);const frame=game.slice(a,b+1);
+ const prepare=frame.indexOf('const prepareStart='),render=frame.indexOf('const renderStart='),submit=frame.indexOf('renderer.render('),capture=frame.indexOf('const captureStart='),report=frame.indexOf('frameHealth.observe(');
+ assert.ok(prepare>=0&&prepare<render&&render<submit&&submit<capture&&capture<report);
+ assert.ok(frame.includes('frameStart:present'));assert.ok(frame.includes('collect:active&&!paused&&!motionQA&&forcedDt===null'));
+ assert.ok(frame.includes('setupMs,cameraAudioMs,prepareMs,captureMs,bookkeepingMs'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
