@@ -5136,6 +5136,7 @@ let pedestriansActive=true;
 let sandboxTimeScale=1.0;
 let sandboxZoomLevel=1.0;
 let currentHoveredBuildingInfo=null;
+let currentHoveredBuilding=null;
 
 
 function getBuildingInspectorInfo(b){
@@ -5165,6 +5166,15 @@ function getBuildingInspectorInfo(b){
   status='Minor Exterior Impact Damage';
  }
  return {icon,title,height,health,healthPercent,status};
+}
+
+function refreshBuildingInspector(){
+ if(!freeFlightMode||!currentHoveredBuilding)return;
+ const info=getBuildingInspectorInfo(currentHoveredBuilding);
+ currentHoveredBuildingInfo=info;
+ setHudText(document.getElementById('dd-insp-icon'),info.icon);
+ setHudText(document.getElementById('dd-insp-title'),info.title);
+ setHudText(document.getElementById('dd-insp-desc'),`Height: ${info.height} · Health: ${info.health} · Status: ${info.status}`);
 }
 
 function clearSandboxDamageResidue(){
@@ -5395,6 +5405,7 @@ function toggleFreeFlight(enable){
   sandboxZoomLevel=1.0;
   const inspCard=document.getElementById('dd-inspector-card');
   if(inspCard)inspCard.hidden=true;
+  currentHoveredBuilding=null;currentHoveredBuildingInfo=null;
   // Sandbox deliberately changes the world and campaign timers. Start a
   // clean defense session instead of resuming stale/empty wave state.
   toggleDragon(true);
@@ -5599,7 +5610,7 @@ function updateSandboxReticle(e){
  if(!freeFlightMode){
   sandboxReticle.visible=false;
   if(inspCard)inspCard.hidden=true;
-  currentHoveredBuildingInfo=null;
+  currentHoveredBuilding=null;currentHoveredBuildingInfo=null;
   return;
  }
  sandboxMouse.x=(e.clientX/window.innerWidth)*2-1;
@@ -5639,16 +5650,11 @@ function updateSandboxReticle(e){
 
   if(inspCard){
    if(hitBuilding){
-    const info=getBuildingInspectorInfo(hitBuilding);
-    currentHoveredBuildingInfo=info;
-    const iconEl=document.getElementById('dd-insp-icon');
-    const titleEl=document.getElementById('dd-insp-title');
-    const descEl=document.getElementById('dd-insp-desc');
-    if(iconEl)iconEl.textContent=info.icon;
-    if(titleEl)titleEl.textContent=info.title;
-    if(descEl)descEl.textContent=`Height: ${info.height} · Health: ${info.health} · Status: ${info.status}`;
+    currentHoveredBuilding=hitBuilding;
+    refreshBuildingInspector();
     inspCard.hidden=false;
    }else{
+    currentHoveredBuilding=null;
     currentHoveredBuildingInfo={icon:'🛣️',title:'North Broad Street Corridor',height:'0.0m',health:'100%',healthPercent:100,status:'Clear Corridor'};
     const iconEl=document.getElementById('dd-insp-icon');
     const titleEl=document.getElementById('dd-insp-title');
@@ -5662,7 +5668,7 @@ function updateSandboxReticle(e){
  }else{
   sandboxReticle.visible=false;
   if(inspCard)inspCard.hidden=true;
-  currentHoveredBuildingInfo=null;
+  currentHoveredBuilding=null;currentHoveredBuildingInfo=null;
  }
 }
 window.addEventListener('pointermove',updateSandboxReticle);
@@ -7037,6 +7043,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
   }
  }
  const prepareStart=performance.now();
+ refreshBuildingInspector();
  visualBank.advanceFireVisuals(elapsed);
  cinematicFX.flush(captureCamera||camera);
  if(useCrowdBatch)crowdRenderer.update(crowd,captureCamera||camera,performanceLab.isEnabled('pedestrians'));
@@ -7130,6 +7137,7 @@ window.__DD_QA={snap,
   inspectSchool:()=>getBuildingInspectorInfo(neighborhood.school),
   advanceSimulation:(frames=1)=>{for(let i=0;i<Math.min(120,frames);i++)update(1/60);},
   verifyMeteorImpact:(x,y,z,size)=>{damage(x,z,y,{size,kind:'iron'});return snap();},
+  inspectBuilding:(id)=>run('inspectBuilding',()=>{const b=id==='school'?neighborhood.school:neighborhood.targetBuildings.find(b=>String(b.id)===String(id));if(!b)throw Error('Unknown building');currentHoveredBuilding=b;refreshBuildingInspector();return currentHoveredBuildingInfo;}),
   stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return true;},
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
