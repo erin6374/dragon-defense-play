@@ -474,13 +474,14 @@ function updateFires(dt){
   if(f.anchorClock<=0){f.anchorClock=.3;f.anchorY=neighborhood.city.fireAnchorHeight(f.root.position)}
 
   // Multi-fire convective thermal updraft & firestorm convection wind
-  const clusterFires=schoolFire.filter(other=>other!==f&&other.root.position.distanceTo(f.root.position)<28);
-  if(clusterFires.length>=2){
+  let clusterCount=0;
+  for(const other of schoolFire)if(other!==f&&other.root.position.distanceToSquared(f.root.position)<784)clusterCount++;
+  if(clusterCount>=2){
    if(Math.hypot(dragon.position.x-f.root.position.x,dragon.position.z-f.root.position.z)<16&&dragon.position.y>f.root.position.y+2&&dragon.position.y<f.root.position.y+48){
-    dragonVelY=Math.min(24.0,dragonVelY+dt*16.0*(1+clusterFires.length*0.35));
+    dragonVelY=Math.min(24.0,dragonVelY+dt*16.0*(1+clusterCount*0.35));
    }
-   if(Math.random()<dt*1.2*clusterFires.length){
-    cinematicFX.sparks(f.root.position.clone().add(new THREE.Vector3(0,f.size*1.2,0)),Math.round(4+clusterFires.length*2),0.9);
+   if(Math.random()<dt*1.2*clusterCount){
+    cinematicFX.sparks(f.root.position.clone().add(new THREE.Vector3(0,f.size*1.2,0)),Math.round(4+clusterCount*2),0.9);
    }
   }
   f.root.position.y=THREE.MathUtils.lerp(f.root.position.y,f.anchorY??f.root.position.y,Math.min(1,dt*2));
@@ -507,7 +508,7 @@ function updateFires(dt){
 
   // Realistic intra-building & neighborhood fire spread
   // Firestorm acceleration: clustered fires spread faster via thermal updraft radiation
-  const spreadRateMultiplier=1.0+Math.min(4,clusterFires.length)*.12;
+  const spreadRateMultiplier=1.0+Math.min(4,clusterCount)*.12;
   f.spreadTimer=(f.spreadTimer||0)+dt*spreadRateMultiplier;
   const spreadInterval=f.suppression<.15?3:5;
   if(f.spreadTimer>spreadInterval&&schoolFire.length<64&&f.suppression<.45){
@@ -531,7 +532,7 @@ function updateFires(dt){
      }
     }
     // High-altitude firestorm convective thermal updraft blows embers across North Broad Street
-    if(f.age>=15&&clusterFires.length>=3&&f.root.position.y>4.5&&Math.random()<dt*.37){
+    if(f.age>=15&&clusterCount>=3&&f.root.position.y>4.5&&Math.random()<dt*.37){
      const acrossX=f.root.position.x<0?(18+Math.random()*16):(-18-Math.random()*16);
      const acrossZ=f.root.position.z+(Math.random()-0.5)*14;
      const acrossBldg=neighborhood.targetBuildings.find(b=>!b.school&&(b.damage||0)<0.95&&Math.abs(b.x-acrossX)<b.w*0.6&&Math.abs(b.z-acrossZ)<b.d*0.6);
@@ -2812,6 +2813,7 @@ function addCrater(x,z,radius=3,opts={}){
    puddleMesh.rotation.x=-Math.PI*0.5;
    puddleMesh.position.set(0,0.04,0);
    geyserGroup.add(puddleMesh);
+   geyserGroup.userData.puddle=puddleMesh;
   }
 
   scene.add(geyserGroup);
@@ -2899,7 +2901,7 @@ function updateCraters(dt){
   }
   if(c.geyserGroup){
    c.geyserTimer=(c.geyserTimer||0)+dt;
-   const puddle=c.geyserGroup.getObjectByName('asphalt-water-puddle');
+   const puddle=c.geyserGroup.userData.puddle;
    if(puddle){
     puddle.scale.setScalar(1.0+Math.sin(elapsed*2.0)*0.04);
    }
