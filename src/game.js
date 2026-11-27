@@ -3295,6 +3295,7 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
   simulationCpuMs:percentiles(detailedTimings.sim),renderSubmissionCpuMs:percentiles(detailedTimings.render),
+  framePhaseCpuMs:Object.fromEntries(Object.entries(detailedTimings).map(([key,values])=>[key,percentiles(values)])),
   stalls:stallEvents.slice(-45),
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
 function exportTelemetry(){const blob=new Blob([JSON.stringify(telemetrySnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dragon-defense-session-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -4913,7 +4914,7 @@ function newWave(){waveClearZoomBlend=0.0;const chapterIndex=(wave<=5?1:wave<=10
  }
  if(wave===3){message('WAVE 3: MASS EVACUATION — PROTECT CHINOOK CHOPPERS!');evacuationChapter?.start();schoolShieldUntil=elapsed+9999;shieldMesh.visible=true;} if(wave===7||wave===9||wave===12||wave===13){secondaryEscortTimer=5.5;} if(!skipChapterIntroCinematic&&CAMPAIGN_CHAPTERS.some(c=>c.start===wave))showChapterTransition();if(wave>=6&&!schoolFire.some(f=>Math.abs(f.root.position.x-20.2)<2&&Math.abs(f.root.position.y-8.8)<2))ignite(20.2,8.8,-1.0);if(wave>=6&&!craters.some(cr=>Math.abs(cr.x)<6&&Math.abs(cr.z-18)<6))addCrater(0,18,4.4);if(wave>=6)addStorefrontSpiderwebCrack();if(wave===6)message('ICE PURSUIT — AVOID ELECTRICAL BEAMS');if(wave===11)message('MILITARY OCCUPATION — DODGE OR INTERCEPT MISSILES');if(wave===6||wave===11||wave===15)message('A NEW CHAPTER BEGINS — THE STREET RESETS, BUT SCARS REMAIN.');
 }
-function reset(){clearPendingBarrages();setInspectionCamera('street');northBroadModels?.restore?.();tacticalTrialActive=false;trialCompleted=false;trialTimer=0;rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;detailedTimings.sim.length=0;detailedTimings.render.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubbleDirty=false;rubblePool.clear();for(const w of crashedWrecks)scene.remove(w.root);crashedWrecks.length=0;skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters)retireHelicopter(h);helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
+function reset(){clearPendingBarrages();setInspectionCamera('street');northBroadModels?.restore?.();tacticalTrialActive=false;trialCompleted=false;trialTimer=0;rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;for(const a of Object.values(detailedTimings))a.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubbleDirty=false;rubblePool.clear();for(const w of crashedWrecks)scene.remove(w.root);crashedWrecks.length=0;skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters)retireHelicopter(h);helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';policeBlockadeGroup.visible=false;chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
  if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;purpleRamUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;wavePurpleRemaining=1;purpleRamShieldMesh.visible=false;satellitesCleared=false;finaleAscentPrompted=false;lastWingFlapTime=0;lastDiveWhooshTime=0;diveSonicBoomTriggered=false;introZoomProgress=(wave===1?1.0:0.0);waveClearZoomBlend=0.0;orbitalTheater?.reset();foregroundMeteors?.reset();if(wave>1)trainingMissions?.reset();evacuationChapter?.reset();secondaryEscortTimer=0;busterRamCollided=false;for(const p of escapingPilots)scene.remove(p.root);escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters)disposeCrater(c);craters.length=0;neighborhood.syncCraterHoles?.([]);cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(wave===1);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
@@ -6734,9 +6735,9 @@ function renderDeadline(now,deadline,cap){
  if(now<deadline-1)return {render:false,next:deadline};
  return {render:true,next:deadline+interval};
 }
-const detailedTimings={sim:[],render:[]};
+const detailedTimings={sim:[],render:[],setup:[],cameraAudio:[],prepare:[],capture:[],bookkeeping:[]};
 function percentiles(arr){if(!arr.length)return {p50:0,p95:0,p99:0,max:0};const v=[...arr].sort((a,b)=>a-b);return {p50:+v[Math.floor(v.length*.5)].toFixed(1),p95:+v[Math.floor(v.length*.95)].toFixed(1),p99:+v[Math.floor(v.length*.99)].toFixed(1),max:+v[v.length-1].toFixed(1)};}
-function recordCpuTimings(sim,render){for(const [key,n] of [['sim',sim],['render',render]]){const a=detailedTimings[key];a.push(Math.min(20000,n));if(a.length>1500)a.shift();}}
+function recordCpuTimings(values){for(const key of Object.keys(detailedTimings)){const a=detailedTimings[key];a.push(Math.min(20000,values[key]));if(a.length>1500)a.shift();}}
 
 // Captures are explicitly opt-in; screenshot copies just the finished WebGL frame,
 // and video records the existing canvas without a second renderer pass.
@@ -6876,23 +6877,28 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
    purpleRamShieldMesh.scale.setScalar(3.6+Math.sin(elapsed*pulseRate)*0.22+(purpleShieldImpact*0.45));
   }
  }
- const renderStartUTC=Date.now();const renderStart=performance.now();
+ const prepareStart=performance.now();
  visualBank.advanceFireVisuals(elapsed);
  cinematicFX.flush();
  if(useCrowdBatch)crowdRenderer.update(crowd,captureCamera||camera,performanceLab.isEnabled('pedestrians'));
- renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;captureLab.afterRender();recordCpuTimings(simMs,renderMs);
+ const renderStartUTC=Date.now();const renderStart=performance.now();
+ renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;const captureStart=performance.now();captureLab.afterRender();const captureEnd=performance.now();
+ const setupMs=simStart-present,cameraAudioMs=prepareStart-simStart-simMs,prepareMs=renderStart-prepareStart,captureMs=captureEnd-captureStart;
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
    frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames};
   hostMetricTime=0;hostMetricFrames=0;
  }
- if(active&&!paused)frameHealth.observe({frameMs:dt*1000,simMs,renderMs,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,wave});
  if(active&&!paused)performanceLab.record({dt,simMs,renderMs,drawCalls:renderer.info.render.calls});
- if(active&&dt>.07&&stallEvents.length<100){stallEvents.push({wave,atSeconds:Math.round(elapsed),frameMs:Math.round(dt*1000),simulationCpuMs:+simMs.toFixed(1),renderSubmissionCpuMs:+renderMs.toFixed(1),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,meteors:meteors.length,cars:cars.length,activeDebris:debris.length,renderScale:+adaptiveResolution.toFixed(2)});}
 
  if(active&&sessionStats.frames%4===0){playtestFrameMs.push(Math.min(250,dt*1000));if(playtestFrameMs.length>1500)playtestFrameMs.shift();peakDrawCalls=Math.max(peakDrawCalls,renderer.info.render.calls);}
  profiler.record({dt,simMs,renderMs,stepCount:step.steps,droppedSteps:step.dropped});
- if(window.__DD_BENCHMARK)window.__DD_BENCHMARK.frame(dt,simMs,renderMs,renderer.info.render.calls,renderer.info.render.triangles,renderStartUTC,renderEndUTC);
+ if(window.__DD_BENCHMARK)window.__DD_BENCHMARK.frame(dt,simMs,renderMs,renderer.info.render.calls,renderer.info.render.triangles,renderStartUTC,renderEndUTC,{setupMs,cameraAudioMs,prepareMs,captureMs});
+ const bookkeepingMs=performance.now()-captureEnd;
+ recordCpuTimings({sim:simMs,render:renderMs,setup:setupMs,cameraAudio:cameraAudioMs,prepare:prepareMs,capture:captureMs,bookkeeping:bookkeepingMs});
+ const stall=frameHealth.observe({frameMs:dt*1000,frameStart:present,simMs,renderMs,setupMs,cameraAudioMs,prepareMs,captureMs,bookkeepingMs,
+  drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,wave,collect:active&&!paused&&!motionQA&&forcedDt===null});
+ if(stall&&stallEvents.length<100)stallEvents.push({...stall,atSeconds:Math.round(elapsed),simulationCpuMs:stall.simMs,renderSubmissionCpuMs:stall.renderMs,observedRenderScale:+adaptiveResolution.toFixed(2)});
 }animate();
 
 // Fullscreen is a user-gesture operation; the browser must grant it.
@@ -8016,7 +8022,7 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
    maxDrawCalls:frames.length?Math.max(...frames.map(x=>x.drawCalls)):null,droppedSamples:v.droppedSampleCount,
    samples:frames,scene:window.__DD_QA.snap(),testSettings:window.__DD_BENCHMARK.state()};};
  window.__DD_BENCHMARK={start,stop,
-  frame:(dt,sim,render,drawCalls,triangles,renderStartUTC,renderEndUTC)=>{if(!phase)return;if(phase.samples.length>=50000){phase.droppedSampleCount++;return;}
+  frame:(dt,sim,render,drawCalls,triangles,renderStartUTC,renderEndUTC,phases={})=>{if(!phase)return;if(phase.samples.length>=50000){phase.droppedSampleCount++;return;}
    const focused=document.hasFocus(),frameMs=+(dt*1000).toFixed(2);
    // dt measures elapsed time since the PRECEDING animation frame. A long render()
    // on that preceding frame must be correlated with THIS frame gap, not this render call.
@@ -8024,6 +8030,7 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
    const linked=previous!==null&&previous>=100&&frameMs>=100;
    phase.samples.push({utc:renderEndUTC,renderStartUTC,renderEndUTC,frameMs,simMs:+sim.toFixed(2),renderMs:+render.toFixed(2),
     precedingRenderMs:previous===null?'':+previous.toFixed(2),precedingRendererLinked:linked,
+    setupMs:+(phases.setupMs||0).toFixed(2),cameraAudioMs:+(phases.cameraAudioMs||0).toFixed(2),prepareMs:+(phases.prepareMs||0).toFixed(2),captureMs:+(phases.captureMs||0).toFixed(2),
     drawCalls,triangles,focused,previouslyFocused:phase.lastFocused,
     visibility:document.visibilityState,contextLost:diagnosticFrames.contextLost});
    if(render>=100&&phase.rendererBlocks.length<128)phase.rendererBlocks.push({renderStartUTC,renderEndUTC,renderMs:+render.toFixed(2),
