@@ -368,6 +368,7 @@ const viewerGrid=await loadViewerGrid();
 const neighborhood=buildNeighborhood({scene,staticGroup,block,material,visualBank,grid:viewerGrid});
 // The school is drawn by the FBX ONLY when available. No second window/card facade.
 const northBroadModels=createViewerCityModels(scene,neighborhood.city);
+const parcelRenderCullEnabled=new URLSearchParams(location.search).get('parcelCull')!=='0';
 const referenceFacades={referenceBuildings:northBroadModels.entries.length,drawObjects:0,snapshots:()=>[]};
 window.__DD_NORTH_BROAD=northBroadModels;
 const buildingRegistry=new BuildingAssetRegistry(scene,northBroadModels,neighborhood.city);
@@ -3296,6 +3297,7 @@ function telemetrySnapshot(){return {version:GAME_VERSION,build:BUILD_ID,loop:ra
   adaptiveResolution:+adaptiveResolution.toFixed(2),adaptiveAdjustments,maxRenderFPS,
   performanceLab:performanceLab.export(),captureLab: {history:captureLab.history()},frameHealth:frameHealth.summary(),
   simulationCpuMs:percentiles(detailedTimings.sim),renderSubmissionCpuMs:percentiles(detailedTimings.render),
+  parcelRenderCulling:northBroadModels.renderCuller.stats(),
   framePhaseCpuMs:Object.fromEntries(Object.entries(detailedTimings).map(([key,values])=>[key,percentiles(values)])),
   stalls:stallEvents.slice(-45),
   warning:'renderSubmissionCpuMs is CPU submission time, not a GPU timestamp. Large RAF gaps may arise outside instrumented game code; see frameHealth.'}};}
@@ -6908,11 +6910,12 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  cinematicFX.flush();
  if(useCrowdBatch)crowdRenderer.update(crowd,captureCamera||camera,performanceLab.isEnabled('pedestrians'));
  const renderStartUTC=Date.now();const renderStart=performance.now();
- renderer.render(scene,captureCamera||camera);const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;const captureStart=performance.now();captureLab.afterRender();const captureEnd=performance.now();
+ const renderCamera=captureCamera||camera;
+ northBroadModels.renderCuller.render(renderCamera,()=>renderer.render(scene,renderCamera),{enabled:parcelRenderCullEnabled,shadows:renderer.shadowMap.enabled});const renderMs=performance.now()-renderStart;const renderEndUTC=Date.now();if(renderMs>=100){diagnosticFrames.rendererBlocks100++;diagnosticFrames.maxRendererBlockMs=Math.max(diagnosticFrames.maxRendererBlockMs,renderMs);diagnosticFrames.lastRendererBlockUTC=renderEndUTC;}window.__DD_LAST_RENDER_UTC=renderEndUTC;diagnosticFrames.rendered++;diagnosticFrames.lastRenderUTC=window.__DD_LAST_RENDER_UTC;const captureStart=performance.now();captureLab.afterRender();const captureEnd=performance.now();
  const setupMs=simStart-present,cameraAudioMs=prepareStart-simStart-simMs,prepareMs=renderStart-prepareStart,captureMs=captureEnd-captureStart;
  if(hostMetricTime>=1){
   window.__DD_GAME_METRICS={wave,fps:Math.round(hostMetricFrames/hostMetricTime*10)/10,drawCalls:renderer.info.render.calls,
-   frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames};
+   frameMs:+(dt*1000).toFixed(1),recording:captureLab.isRecording(),stallCount:frameHealth.summary().totalLongFrames,parcelRenderCulling:northBroadModels.renderCuller.stats()};
   hostMetricTime=0;hostMetricFrames=0;
  }
  if(active&&!paused)performanceLab.record({dt,simMs,renderMs,drawCalls:renderer.info.render.calls});
