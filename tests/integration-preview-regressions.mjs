@@ -1246,4 +1246,25 @@ test('Opaque debris render batching preserves matrices, visibility, exclusions a
  api.dispose();assert.equal(instance.parent,null);assert.equal(disposed,0);
  assert.ok(game.includes('debrisRenderBatch.render(debris'));
 });
+test('School structural instance uploads cover only the active matrix prefix',()=>{
+ const {commitSchoolInstanceRange}=load('src/rendering/destructible-school.js',{},['commitSchoolInstanceRange']);
+ const mesh=new Three.InstancedMesh(new Three.BoxGeometry(),new Three.MeshBasicMaterial(),3400);
+ const a=mesh.instanceMatrix;
+ for(const n of [1,32,3400,17]){
+  const version=a.version;
+  commitSchoolInstanceRange(mesh,n);
+  assert.equal(mesh.count,n);
+  assert.deepEqual(a.updateRanges,[{start:0,count:n*16}]);
+  assert.equal(a.version,version+1);
+ }
+ const version=a.version;
+ commitSchoolInstanceRange(mesh,0);
+ assert.equal(mesh.count,0);
+ assert.equal(a.updateRanges.length,0);
+ assert.equal(a.version,version);
+ commitSchoolInstanceRange(mesh,3);
+ assert.deepEqual(a.updateRanges,[{start:0,count:48}]);
+ assert.equal(a.version,version+1);
+ assert.ok(read('src/rendering/destructible-school.js').includes('batches.forEach((mesh,i)=>commitSchoolInstanceRange(mesh,counts[i]))'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
