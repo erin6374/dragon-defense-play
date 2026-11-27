@@ -9,6 +9,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  * with updated 3D photogrammetric or architectural models without breaking damage, physics,
  * lighting, or layout constraints.
  */
+// Fit the measured asset envelope, not its authoring origin. Uniform scaling
+// protects aspect ratio and constrains width, depth and height together.
+export function parcelFitTransform(bounds,slot,{fitParcel=true,groundAlign=true}={}){
+ const {min,max}=bounds;
+ const w=max.x-min.x,h=max.y-min.y,d=max.z-min.z;
+ if(![min.x,min.y,min.z,max.x,max.y,max.z,slot.frontWidth,slot.depth,slot.height,...slot.position].every(Number.isFinite)||Math.min(w,h,d,slot.frontWidth,slot.depth,slot.height)<=.001)throw Error('Invalid building model bounds');
+ const scale=fitParcel?Math.min(slot.frontWidth/w,slot.depth/d,slot.height/h):1;
+ const [x,y,z]=slot.position;
+ return {scale,x:x-(min.x+max.x)*.5*scale,y:groundAlign?y-min.y*scale:y,z:z-max.z*scale};
+}
+
 export class BuildingAssetRegistry {
   constructor(scene, northBroadModels, city) {
     this.scene = scene;
@@ -114,21 +125,22 @@ export class BuildingAssetRegistry {
     } = options;
 
     try {
-      let newMesh = null;
+      let newMesh = null,nextFile;
       if (typeof source === 'string') {
         newMesh = await this._loadGLTF(source);
-        slot.currentFile = source;
+        nextFile = source;
       } else if (typeof source === 'function') {
         newMesh = source(slot);
-        slot.currentFile = 'procedural-custom';
+        nextFile = 'procedural-custom';
       } else if (source && source.isObject3D) {
         newMesh = source;
-        slot.currentFile = 'object3d-instance';
+        nextFile = 'object3d-instance';
       } else {
         throw new Error(`Unsupported model source type: ${typeof source}`);
       }
 
       this._applyModelToSlot(slot, newMesh, { fitParcel, groundAlign, preserveMaterials, enhanceGlass });
+      slot.currentFile=nextFile;
       this.customModels.set(slot.id, { source, options, timestamp: Date.now() });
 
       if (onComplete) onComplete(slot, newMesh);
@@ -165,39 +177,19 @@ export class BuildingAssetRegistry {
     const entry = slot.entry;
     const root = this.northBroadModels.root;
 
-    // Clean up previous model from GPU and scene
-    if (entry.model && entry.model.parent) {
-      this.northBroadModels.clearImpactMask?.(entry);
-      root.remove(entry.model);
-      this._disposeHierarchy(entry.model,newMesh);
-    }
-
-    newMesh.name = `MODEL-SWAPPED-${slot.id}`;
-    newMesh.position.set(slot.position[0], slot.position[1], slot.position[2]);
-    newMesh.rotation.set(0, 0, 0);
-
-    // Auto-fit parcel dimensions if requested
-    if (opts.fitParcel) {
-      newMesh.updateMatrixWorld(true);
-      const preBox = new THREE.Box3().setFromObject(newMesh);
-      const curW = preBox.max.x - preBox.min.x;
-      const curH = preBox.max.y - preBox.min.y;
-
-      if (curW > 0.1 && slot.frontWidth > 0.1) {
-        const scaleFactorX = slot.frontWidth / curW;
-        // Keep proportional or fit height if needed
-        const scaleFactor = Math.min(scaleFactorX, 1.45);
-        newMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-      }
-    }
-
-    if (opts.groundAlign) {
-      newMesh.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(newMesh);
-      if (box.min.y !== 0) {
-        newMesh.position.y -= box.min.y;
-      }
-    }
+    if(!newMesh?.isObject3D||newMesh===entry.model||newMesh.parent)throw Error('Replacement must be a detached, distinct Object3D');
+    // Wrap the supplied hierarchy, retaining its authored root rotation/scale.
+    const wrapper=new THREE.Group();
+    wrapper.name=`MODEL-SWAPPED-${slot.id}`;wrapper.add(newMesh);
+    wrapper.updateMatrixWorld(true);
+    const fit=parcelFitTransform(new THREE.Box3().setFromObject(wrapper),slot,opts);
+    wrapper.scale.setScalar(fit.scale);wrapper.position.set(fit.x,fit.y,fit.z);
+    wrapper.updateMatrixWorld(true);
+    const postBox=new THREE.Box3().setFromObject(wrapper);
+    const bounds={minX:postBox.min.x,maxX:postBox.max.x,minY:postBox.min.y,maxY:postBox.max.y,minZ:postBox.min.z,maxZ:postBox.max.z};
+    if(!Object.values(bounds).every(Number.isFinite))throw Error('Replacement bounds invalid after fitting');
+    const oldModel=entry.model;
+    newMesh=wrapper;
 
     // Traverse and catalog groups, materials, glass, signs
     entry.groups = {};
@@ -235,13 +227,13 @@ export class BuildingAssetRegistry {
         node.castShadow = true;
         node.receiveShadow = true;
 
-        if (opts.enhanceGlass) {
+        if (opts.enhanceGlass&&!opts.preserveMaterials) {
           const materials = Array.isArray(node.material) ? node.material : [node.material];
           for (let i = 0; i < materials.length; i++) {
             const mat = materials[i];
             if (!mat) continue;
             const matName = (mat.name || '').toLowerCase();
-            if (matName.includes('reflective glass') || /glass|glaz|window/.test(name)) {
+            if (matName.includes('reflective glass') || /glass|glaz/.test(name) || (/window/.test(name)&&mat.transparent)) {
               const physicalGlass = new THREE.MeshPhysicalMaterial({
                 color: mat.color ? mat.color.clone() : new THREE.Color(0x6295ad),
                 roughness: 0.08,
@@ -266,16 +258,14 @@ export class BuildingAssetRegistry {
     root.add(newMesh);
     newMesh.updateMatrixWorld(true);
 
-    const postBox = new THREE.Box3().setFromObject(newMesh);
-    const bounds = {
-      minX: postBox.min.x, maxX: postBox.max.x,
-      minY: postBox.min.y, maxY: postBox.max.y,
-      minZ: postBox.min.z, maxZ: postBox.max.z
-    };
-    entry.worldBounds = Object.values(bounds).every(Number.isFinite)
-      ? Object.fromEntries(Object.entries(bounds).map(([k, v]) => [k, +v.toFixed(3)]))
-      : null;
-
+    // Commit only after validation; invalid models leave the old asset intact.
+    if(oldModel){
+      this.northBroadModels.clearImpactMask?.(entry);
+      root.remove(oldModel);
+      this._disposeHierarchy(oldModel,newMesh);
+    }
+    entry.worldBounds=bounds;
+    entry.renderCull=null;
     entry.model = newMesh;
     entry.sections = [];
     entry.loaded = true;
