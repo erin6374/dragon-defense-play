@@ -215,8 +215,8 @@ test('Swept contact includes exact parcel edges without widening parcel ownershi
 });
 test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  const {createViewerCityModels}=load('src/rendering/viewer-city-models.js',{
- THREE:{Group:class{constructor(){this.children=[];this.visible=true;}add(o){this.children.push(o);}},Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z});}}},
- makeViewerBuilding:()=>({model:{visible:true},bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}}),
+ THREE:{Group:class{constructor(){this.children=[];this.visible=true;}add(o){this.children.push(o);}},Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z});}},Frustum:class{},Matrix4:class{}},
+ makeViewerBuilding:()=>({model:{visible:true,traverse(fn){fn(this);}},bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1},clone(){return {expandByScalar(){return this;}};}}}),
  containsParcel:(b,x,z)=>Math.abs(x-b.x)<=b.w/2&&Math.abs(z)<=3,
  createParcelDamageMask:()=>{let n=0;return {stamp(){n++;},strikes(){return n;},dispose(){}};}
  },['createViewerCityModels']);
