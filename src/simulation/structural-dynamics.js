@@ -37,3 +37,34 @@ export function nearestSupports(part,columnsByFloor){
  }
  return second?[first,second]:first?[first]:[];
 }
+
+// Index the immutable AABBs of attached components; detached pieces are
+// filtered by the caller. Preserve original component order for deterministic
+// damage and debris emission, including equal-distance contacts.
+export function createStructuralImpactIndex(parts,{cellSize=5,maxCellsPerPart=64}={}){
+ const grid=new Map(),large=[],order=new Map();
+ const cell=v=>Math.floor(v/cellSize),key=(x,y,z)=>x+':'+y+':'+z;
+ for(let i=0;i<parts.length;i++){
+  const p=parts[i];order.set(p,i);
+  const {position,size}=p.original??p;
+  if(![position.x,position.y,position.z,size.x,size.y,size.z].every(Number.isFinite)||Math.min(size.x,size.y,size.z)<0){large.push(p);continue;}
+  const x0=cell(position.x-size.x*.5),x1=cell(position.x+size.x*.5);
+  const y0=cell(position.y-size.y*.5),y1=cell(position.y+size.y*.5);
+  const z0=cell(position.z-size.z*.5),z1=cell(position.z+size.z*.5);
+  if((x1-x0+1)*(y1-y0+1)*(z1-z0+1)>maxCellsPerPart){large.push(p);continue;}
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)for(let z=z0;z<=z1;z++){
+   const k=key(x,y,z);let bucket=grid.get(k);if(!bucket)grid.set(k,bucket=[]);bucket.push(p);
+  }
+ }
+ function query(point,radius){
+  if(!point||![point.x,point.y,point.z,radius].every(Number.isFinite)||radius<0)return parts;
+  const x0=cell(point.x-radius),x1=cell(point.x+radius),y0=cell(point.y-radius),y1=cell(point.y+radius),z0=cell(point.z-radius),z1=cell(point.z+radius);
+  if((x1-x0+1)*(y1-y0+1)*(z1-z0+1)>Math.max(64,grid.size*2))return parts;
+  const found=new Set(large);
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)for(let z=z0;z<=z1;z++){
+   const bucket=grid.get(key(x,y,z));if(bucket)for(const p of bucket)found.add(p);
+  }
+  return [...found].sort((a,b)=>order.get(a)-order.get(b));
+ }
+ return {query,stats:()=>({components:parts.length,cells:grid.size,large:large.length})};
+}
