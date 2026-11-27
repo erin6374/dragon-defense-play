@@ -932,4 +932,54 @@ test('Sky shader retains moon and star formulas but gates zero-contribution nois
  assert.ok(source.includes('if(chance>=.991)'));
  assert.ok(source.includes('if(chance>=.994&&starDistance<.18)'));
 });
+test('Chapter settlement boundaries follow campaign starts, and escorts block premature progression',()=>{
+ const a=game.indexOf('const CAMPAIGN_CHAPTERS='),b=game.indexOf('// Integrated, skippable',a);
+ const c=game.indexOf('function isChapterEnd(wave)'),d=game.indexOf('\n',c);
+ const ends=new Function(game.slice(a,b)+game.slice(c,d)+'return Array.from({length:15},(_,i)=>i+1).filter(isChapterEnd);')();
+ assert.equal(ends.join(','),'2,5,10,14');
+ const progress=game.slice(game.indexOf('function updateWaveProgress('),game.indexOf('function newWave()'));
+ assert.ok(progress.indexOf("if(meteors.some(m=>!m.grounded)||evacuationChapter?.isActive()){between=0;return;}")<progress.lastIndexOf('if(chapterEnd)'));
+ assert.ok(progress.includes('evacuationChapter?.isActive()){between=0;return;}'));
+});
+test('Cinematic completion consumes a pending transition once and invalidates earlier timers',()=>{
+ const a=game.indexOf('function cancelChapterCinematic()'),b=game.indexOf('function playChapterCinematic(',a);
+ const nodes=new Map(),document={getElementById(id){if(!nodes.has(id))nodes.set(id,{hidden:false,classList:{remove(){}},src:'',textContent:''});return nodes.get(id);}};
+ let canceled=0,repairs=0,resets=0,starts=0;
+ const code="let cinematicGeneration=3,cinematicActive=true,cinematicTimeout=17,postCutsceneWave=6,paused=true,wave=5,chapterSettlement={};"+game.slice(a,b)+"return {close:closeChapterTransition,cancel:cancelChapterCinematic,state:()=>({cinematicGeneration,cinematicActive,postCutsceneWave,paused,wave,chapterSettlement})};";
+ const api=new Function('document','clearTimeout','resetChapterTrafficAndCrowd','applyResidualChapterDamage','updateHud','chapterStaging','chapterFade','setChapterFade','message',code)(document,()=>canceled++,()=>resets++,()=>repairs++,()=>{},{beginNextChapter(){starts++;}},{},()=>{},()=>{});
+ assert.equal(api.close(2),false);assert.equal(repairs,0);assert.equal(api.close(3),true);
+ assert.equal(api.state().wave,6);assert.equal(api.state().chapterSettlement.phase,'departure');assert.equal(api.state().paused,false);assert.equal(canceled,1);
+ assert.equal(api.close(3),false);assert.equal(api.close(),false);assert.equal(repairs,1);assert.equal(resets,1);assert.equal(starts,1);
+ api.cancel();assert.equal(api.state().cinematicActive,false);
+ assert.ok(game.includes('generation===cinematicGeneration)player.classList.add'));
+ assert.ok(game.includes("e.source===document.getElementById('cinematic-frame').contentWindow"));
+ assert.ok(game.includes('function reset(){cancelChapterCinematic();'));
+ assert.ok(game.includes('function togglePause(){if(!active||cinematicActive)return;'));
+});
+test('Meteor warnings use intact parcel ownership and exclude invalid or test objects',()=>{
+ const {selectMeteorWarning}=load('src/simulation/meteor-warning.js',{},['selectMeteorWarning']);
+ const school={x:0,z:-29,w:27,d:58.8,school:true},m={target:{x:0,y:20,z:-10},mesh:{position:{y:60}},vel:{y:-10}};
+ assert.equal(selectMeteorWarning([m],school,[school]).label,'SCHOOL');
+ const b={x:0,z:-10,w:10,d:10,damage:1};assert.equal(selectMeteorWarning([m],school,[b]).label,'SCHOOL');
+ b.damage=0;assert.equal(selectMeteorWarning([m],school,[b],()=>false).label,'SCHOOL');
+ assert.equal(selectMeteorWarning([m],school,[b],()=>true).label,'BLOCK');
+ assert.equal(selectMeteorWarning([{...m,testMeteor:true}],school,[]),null);
+ assert.equal(selectMeteorWarning([{...m,target:null}],school,[]),null);
+ assert.equal(selectMeteorWarning([{...m,vel:{y:1}}],school,[]),null);
+ const street={...m,target:{x:10,y:0,z:19},mesh:{position:{y:20}}};
+ assert.equal(selectMeteorWarning([street],school,[]).label,'STREET');
+ assert.ok(game.includes('selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel)'));
+});
+test('Camera zoom uses a bounded exponential interpolation and staging avoids redundant rebuilds',()=>{
+ assert.ok(game.includes('Number.isFinite(dt)?Math.max(0,Math.min(dt,.05)):0'));
+ assert.ok(game.includes('1-Math.exp(-cameraDt*1.8)'));
+ const advance=(value,target,dt)=>value+(target-value)*(1-Math.exp(-Math.max(0,Math.min(dt,.05))*1.8));
+ assert.equal(advance(0,1,10),advance(0,1,.05));
+ let a=0,b=0;for(let i=0;i<60;i++)a=advance(a,1,1/60);for(let i=0;i<120;i++)b=advance(b,1,1/120);
+ assert.ok(Math.abs(a-b)<1e-12);
+ assert.ok(game.includes('chapterStaging.chapter!==chapterIndex'));
+ const stage=read('src/simulation/chapter-staging.js');
+ assert.ok(stage.includes('get chapter(){return chapter;}'));
+ assert.ok(stage.includes('for(const resource of ownedTransientResources)resource.dispose()'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
