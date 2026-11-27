@@ -573,4 +573,44 @@ test('Fire cluster counting preserves the 28 meter radius without allocating an 
  const start=source.indexOf('let clusterCount=0;'),end=source.indexOf('if(clusterCount>=2)',start);
  assert.equal(new Function('schoolFire','f',source.slice(start,end)+'return clusterCount;')(schoolFire,f),2);
 });
+test('Parcel render culling restores visibility, excludes swapped models and preserves shadow rendering',()=>{
+ const source=read('src/rendering/viewer-city-models.js');
+ const a=source.indexOf('export function createParcelRenderCuller'),b=source.indexOf('export function createViewerCityModels',a);
+ const create=new Function(source.slice(a,b).replace(/^export /gm,'')+'return createParcelRenderCuller;')();
+ const T={Frustum:class{setFromProjectionMatrix(){} intersectsBox(b){return b.x<10}},Matrix4:class{multiplyMatrices(){}}};
+ const model=(x,visible=true)=>({x,visible});
+ const on=model(5),off=model(100),collapsed=model(100,false),swap=model(100);
+ const entry=(m,x,objects=40,original=m)=>({model:m,renderCull:{model:original,bounds:{x},objects}});
+ const culler=create(T,[entry(on,5),entry(off,100),entry(collapsed,100),entry(swap,100,40,model(100))]);
+ const camera={updateWorldMatrix(){},projectionMatrix:{},matrixWorldInverse:{}};
+ const draw=()=>{assert.ok(on.visible&&!off.visible&&!collapsed.visible&&swap.visible);return 7;};
+ assert.equal(culler.render(camera,draw),7);
+ assert.ok(off.visible&&!collapsed.visible);
+ assert.equal(culler.stats().eligible,2);assert.equal(culler.stats().culled,1);assert.equal(culler.stats().skippedObjects,40);
+ try{culler.render(camera,()=>{throw Error('render failed');});assert.ok(false);}catch(e){assert.equal(e.message,'render failed');}
+ assert.ok(off.visible);
+ for(const opts of [{enabled:false},{shadows:true}])culler.render(camera,()=>assert.ok(off.visible),opts);
+ assert.equal(culler.stats().culled,0);
+ assert.ok(game.includes("get('parcelCull')!=='0'"));
+ assert.ok(game.includes('shadows:renderer.shadowMap.enabled'));
+});
+test('Parcel render culling with actual Three.js perspective and orthographic cameras',()=>{
+ const source=read('src/rendering/viewer-city-models.js');
+ const a=source.indexOf('export function createParcelRenderCuller'),b=source.indexOf('export function createViewerCityModels',a);
+ const create=new Function(source.slice(a,b).replace(/^export /gm,'')+'return createParcelRenderCuller;')();
+ const entries=[-200,0,200].map(x=>{
+  const model=new Three.Group();
+  const bounds=new Three.Box3(new Three.Vector3(x-2,-2,-22),new Three.Vector3(x+2,2,-18));
+  return {model,renderCull:{model,bounds,objects:10}};
+ });
+ const culler=create(Three,entries);
+ for(const camera of [new Three.PerspectiveCamera(60,1,.1,500),new Three.OrthographicCamera(-10,10,10,-10,.1,500)]){
+  camera.lookAt(0,0,-1);
+  culler.render(camera,()=>assert.equal(entries.map(e=>e.model.visible).join(','),'false,true,false'));
+  assert.ok(entries.every(e=>e.model.visible));
+  camera.position.x=200;camera.lookAt(200,0,-1);
+  culler.render(camera,()=>assert.equal(entries.map(e=>e.model.visible).join(','),'false,false,true'));
+  assert.equal(culler.stats().culled,2);
+ }
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
