@@ -63,7 +63,7 @@ import {batchOpaqueRelief} from './rendering/viewer-building-fit.js';
 import {createViewerCityModels} from './rendering/viewer-city-models.js';
 import {BuildingAssetRegistry} from './rendering/building-registry.js';
 import {createStreetWaterRunoff} from './rendering/street-water-runoff.js';
-import {schoolFitDimensions} from './rendering/school-fit.js';
+import {fitSchoolHorizontalEnvelope,transformSchoolComponentBounds} from './rendering/school-fit.js';
 import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMesh,schoolSourceCategory} from './rendering/tech-freire-source-fit.js';
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
@@ -552,7 +552,7 @@ function updateFires(dt){
      }
     }
    }else if(onSchoolStructure){
-    const sFires=schoolFire.filter(sf=>Math.abs(sf.root.position.x)<=14&&sf.root.position.z>=-58.4&&sf.root.position.z<=0.4).length;
+    const sFires=schoolFire.filter(sf=>ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,sf.root.position.x,sf.root.position.z)).length;
     if(sFires<10){
      const climbY=Math.min(15.0,f.root.position.y+2.8+Math.random()*1.5);
      const spreadX=(Math.random()-.5)*22;
@@ -843,15 +843,25 @@ function prepareSchoolMaterial(material){
      schoolGlazingMaterials.push(material);
     }
 }
+function alignSchoolSource(model,components){
+ model.updateMatrixWorld(true);
+ const originalBounds=new THREE.Box3().setFromObject(model);
+ const fit=fitSchoolHorizontalEnvelope(originalBounds,schoolBounds);
+ model.scale.x*=fit.scale;model.scale.z*=fit.scale;
+ model.position.x=model.position.x*fit.scale+fit.x;model.position.z=model.position.z*fit.scale+fit.z;
+ model.updateMatrix();model.updateMatrixWorld(true);
+ return {fit,components:transformSchoolComponentBounds(components,fit),originalBounds:{min:originalBounds.min.toArray(),max:originalBounds.max.toArray()}};
+}
 async function loadPlaySchoolOverlay(){
  try{
   const {model,info}=await loadSchoolPlayMesh(prepareSchoolMaterial,{allowIndex:new URLSearchParams(location.search).get('schoolIndex')!=='0'});
   model.name='ACTUAL-TECH-FREIRE-SCHOOL';
   model.matrixAutoUpdate=false;
   model.updateMatrix();
+  const alignment=alignSchoolSource(model,info.components);
   scene.add(model);
   const box=new THREE.Box3().setFromObject(model);
-  schoolComponentIndex=createSchoolComponentIndex(info.components);
+  schoolComponentIndex=createSchoolComponentIndex(alignment.components);
   actualSchoolOverlay=model;
   actualSchoolOverlayReady=true;
   actualSchoolOverlayStats={
@@ -860,7 +870,7 @@ async function loadPlaySchoolOverlay(){
    sourceInteriorAudit:{attachedGeometrySource:'FBX-derived play mesh',damagePhysicsSource:'approximate proxy',
     sourceSHA256:info.sourceSha256,renderSimplification:info.byCategory,componentIndex:schoolComponentIndex.stats()},
    visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:box.getSize(new THREE.Vector3()).toArray()},
-   calibration:{...info.fit,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},sourcePartition:info.roles
+   calibration:{...info.fit,horizontalAlignment:alignment.fit,originalBounds:alignment.originalBounds,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},sourcePartition:info.roles
   };
   setMode(viewMode);
   syncStructuralDamage();
@@ -939,19 +949,20 @@ function loadActualSchoolOverlay(){
    central.model.name='ACTUAL-TECH-FREIRE-SCHOOL';
    central.model.matrixAutoUpdate=false;
    central.model.updateMatrix();
+   const alignment=alignSchoolSource(central.model,sourceComponents);
    scene.add(central.model);
    const box=new THREE.Box3().setFromObject(central.model,true);
    const size=box.getSize(new THREE.Vector3());
-   schoolComponentIndex=createSchoolComponentIndex(sourceComponents);
+   schoolComponentIndex=createSchoolComponentIndex(alignment.components);
    actualSchoolOverlay=central.model;actualSchoolOverlayReady=true;
    actualSchoolOverlayStats={loaded:true,sourceMeshes:roleMeshCounts.school,batches:central.batches,
     inputTriangles:central.inputTriangles,outputTriangles:central.outputTriangles,
     sourceInteriorAudit:{...sourceInteriorAudit,batchedSurfaces:central.bySurface,attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy',spatialRegions:central.spatialRegions,largestBatchVertices:central.largestBatchVertices,triangleCountPreserved:central.inputTriangles===central.outputTriangles,componentIndex:schoolComponentIndex.stats()},
     visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:size.toArray()},
-    calibration:{...placement,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
+    calibration:{...placement,horizontalAlignment:alignment.fit,originalBounds:alignment.originalBounds,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},
     floorCount:5,storyBoundaries:[0,14.5,28.6,43.3,58.4,74.6].map(y=>+(y*placement.scale).toFixed(2)),
     axisCorrectionDeg:-90,originUpAxis:'Z+',worldUpAxis:'Y+',
-    fitPolicy:'central school source meshes, uniformly scaled; flanking masses handled separately'};
+    fitPolicy:'central school source meshes, original vertical scale with uniform horizontal clearance fit; flanking masses handled separately'};
    // Flanking Revit FBX masses are replaced by authentic North Broad model pack.
    // Preserve Tech Freire school in place; do not build or render flanking FBX masses.
    for(const role of ['leftRowhouse','rightRowhouse']){
@@ -1000,7 +1011,7 @@ function setMode(mode){
 }
 modeButton.onclick=()=>setMode(viewMode==='real'?'arcade':'real');
 architecturalModel=neighborhood.schoolGroup;architecturalReady=true;
-schoolBounds.set(new THREE.Vector3(-13.5,0,-58.4),new THREE.Vector3(13.5,28.0,.4));
+schoolBounds.set(new THREE.Vector3(neighborhood.school.minX,0,neighborhood.school.minZ),new THREE.Vector3(neighborhood.school.maxX,neighborhood.school.h,neighborhood.school.maxZ));
 schoolReconstruction=createDestructibleSchool(THREE,scene,schoolBounds);
 schoolReconstruction.setEffectsHooks?.({
  onGlassShatter:(x,y,z)=>{
