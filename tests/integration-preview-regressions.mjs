@@ -1426,4 +1426,29 @@ test('Power grid spark instancing retains active motion and expires/reset-clears
   grid.sparkTransformer(grid.poles[0]);grid.reset();assert.equal(grid.sparkRenderStats().active,0);assert.equal(grid.getBrownoutFactor(),1);
  }
 });
+test('Ambient skyline spatial batching preserves geometry and landmark groups',()=>{
+ const mergeGeometries=geos=>{
+  const merged=new Three.BufferGeometry();
+  for(const key of ['position','normal','uv']){
+   const n=geos[0].attributes[key].itemSize;
+   merged.setAttribute(key,new Three.Float32BufferAttribute(geos.flatMap(g=>Array.from(g.attributes[key].array)),n));
+  }
+  return merged;
+ };
+ const {batchAmbientSkyline}=load('src/rendering/philadelphia-geometry-skyline.js',{THREE:Three,mergeGeometries},['batchAmbientSkyline']);
+ const root=new Three.Group();root.position.set(30,4,-20);
+ const mat=new Three.MeshStandardMaterial(),parents=[];
+ for(const x of [5,25,105,125]){
+  const g=new Three.Group();g.position.x=x;
+  const m=new Three.Mesh(new Three.BoxGeometry().toNonIndexed(),mat);g.add(m);root.add(g);parents.push(g);
+ }
+ const landmark=new Three.Group();landmark.name='landmark';root.add(landmark);
+ root.updateMatrixWorld(true);const before=new Three.Box3().setFromObject(root);
+ const stats=batchAmbientSkyline(root,parents);
+ assert.deepEqual(stats,{input:4,output:2,saved:2});
+ assert.equal(landmark.parent,root);assert.equal(root.children.length,3);
+ const after=new Three.Box3().setFromObject(root);
+ assert.ok(before.min.distanceTo(after.min)<1e-6&&before.max.distanceTo(after.max)<1e-6);
+ assert.equal(root.children.filter(o=>o.isMesh).reduce((n,o)=>n+o.geometry.attributes.position.count,0),144);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
