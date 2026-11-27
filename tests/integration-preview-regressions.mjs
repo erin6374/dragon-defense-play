@@ -17,7 +17,7 @@ let count=0;
 const test=(name,fn)=>{fn();count++;console.log('PASS '+name);};
 const district=load('broad-street/district.js',{},['buildings','roads']);
 const grid=load('broad-street/broad-street-grid-data.mjs',{},['JUNCTIONS','curbAt','BROAD_EXTENTS']);
-const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','touchesParcel','ownsSchoolFootprint','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
+const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','touchesParcel','ownsSchoolFootprint','schoolGameEnvelope','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
 const roads=load('src/simulation/road-corridors.js',{...grid,...parcels},['CROSS_STREETS','CROSS_STREET_X','BROAD_LANES','BROAD_X','isBroadRoad']);
 const list=parcels.viewerParcels(JSON.parse(read('broad-street/mapped-data.json')).rows);
 test('Unique valid parcel inventory',()=>{assert.equal(new Set(list.map(p=>p.id)).size,list.length);assert.ok(list.length>=122);assert.ok(list.every(p=>p.w>0&&p.d>0&&p.h>0));});
@@ -1160,5 +1160,42 @@ test('Localized parcel strikes survive model replacement and are cleared on repa
  api.clearImpactMask(entry,{preserveHistory:true});entry.model={visible:true};api.rebindImpactMask(entry);
  assert.equal(JSON.stringify(entry.impactMask.values()),original);assert.equal(entry.impactMask.model,entry.model);
  api.restore();assert.equal(entry.impactHistory.length,0);assert.equal(entry.impactMask,null);
+});
+test('Mapped school envelope has clearance from both adjacent rowhouses, retaining five-storey height',()=>{
+ const rows=JSON.parse(read('broad-street/mapped-data.json')).rows,e=parcels.schoolGameEnvelope(rows);
+ assert.ok(Math.abs(e.w-21.2)<1e-8);assert.ok(Math.abs(e.d-47.36)<1e-8);assert.equal(e.h,28);
+ assert.equal(e.sourceId,'1003073');
+ for(const p of list){
+  const overlapX=Math.min(e.maxX,p.x+p.w/2)-Math.max(e.minX,p.x-p.w/2);
+  const overlapZ=Math.min(e.maxZ,p.z+p.d/2)-Math.max(e.minZ,p.z-p.d/2);
+  assert.ok(overlapX<=1e-8||overlapZ<=1e-8,'School envelope intersects '+p.id);
+ }
+ const bounds={min:{x:e.minX,z:e.minZ},max:{x:e.maxX,y:e.h,z:e.maxZ}};
+ assert.equal(collision.traceMeteorCollision({x:0,y:80,z:-20},{x:0,y:-2,z:-20},list,bounds).kind,'school');
+ assert.equal(collision.traceMeteorCollision({x:0,y:80,z:-55},{x:0,y:-2,z:-55},list,bounds).kind,'ground');
+ assert.ok(read('src/neighborhood.js').includes('...schoolGameEnvelope(grid.rows)'));
+ assert.ok(game.includes('schoolBounds.set(new THREE.Vector3(neighborhood.school.minX,0,neighborhood.school.minZ)'));
+});
+test('Horizontal source alignment preserves storey heights, source horizontal aspect and damage component registration',()=>{
+ const {fitSchoolHorizontalEnvelope,transformSchoolComponentBounds}=load('src/rendering/school-fit.js',{},['fitSchoolHorizontalEnvelope','transformSchoolComponentBounds']);
+ const rows=JSON.parse(read('broad-street/mapped-data.json')).rows,e=parcels.schoolGameEnvelope(rows),target={min:{x:e.minX,z:e.minZ},max:{x:e.maxX,z:e.maxZ}};
+ for(const raw of [
+  {min:{x:-13.5,y:-6,z:-58.4},max:{x:13.5,y:28,z:.4}},
+  {min:{x:-12,y:-5,z:-65},max:{x:13,y:29,z:1}},
+  {min:{x:5,y:-4,z:-27},max:{x:20,y:28,z:7}}
+ ]){
+  const fit=fitSchoolHorizontalEnvelope(raw,target),[b]=transformSchoolComponentBounds([raw],fit),tol=1e-8;
+  assert.ok(b.min.x>=e.minX-tol&&b.max.x<=e.maxX+tol&&b.min.z>=e.minZ-tol&&Math.abs(b.max.z-e.maxZ)<tol);
+  assert.equal(b.min.y,raw.min.y);assert.equal(b.max.y,raw.max.y);
+  assert.ok(Math.abs((b.max.x-b.min.x)/(b.max.z-b.min.z)-(raw.max.x-raw.min.x)/(raw.max.z-raw.min.z))<tol);
+  assert.ok(fit.scale<=1);
+  const component={category:'glazing',material:'glass',min:{x:raw.min.x+1,y:4,z:raw.max.z-2},max:{x:raw.min.x+2,y:6,z:raw.max.z-1}};
+  const [m]=transformSchoolComponentBounds([component],fit);
+  assert.equal(m.category,'glazing');assert.equal(m.material,'glass');assert.equal(m.min.y,4);
+  assert.ok(Math.abs(m.min.x-(component.min.x*fit.scale+fit.x))<tol);
+ }
+ assert.ok(game.includes('alignSchoolSource(model,info.components)'));
+ assert.ok(game.includes('alignSchoolSource(central.model,sourceComponents)'));
+ assert.equal((game.match(/createSchoolComponentIndex\(alignment.components\)/g)||[]).length,2);
 });
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
