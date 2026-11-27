@@ -169,6 +169,8 @@ test('Parcel damage mask persists locally and restores original shared materials
  assert.ok(shader.vertexShader.includes('instanceMatrix*parcelLocal'));
  const tex=shader.uniforms.uParcelDamageMap.value,im=tex.image;
  const sample=(x,y,z)=>{const o=shader.uniforms.uParcelDamageMin.value,s=shader.uniforms.uParcelDamageSize.value;return im.data[(Math.floor((z-o.z)/s.z*im.d)*im.h+Math.floor((y-o.y)/s.y*im.h))*im.w+Math.floor((x-o.x)/s.x*im.w)];};
+ for(const [point,radius,strength] of [[{x:2,y:4,z:0},4,0],[{x:2,y:4,z:0},4,-1],[{x:2,y:4,z:0},4,NaN],[{x:2,y:4,z:0},4,Infinity],[{x:2,y:4,z:0},0,1],[null,4,1],[{x:NaN,y:4,z:0},4,1]])assert.equal(mask.stamp(point,radius,strength),false);
+ assert.equal(mask.strikes(),0);assert.ok(im.data.every(value=>value===0));
  mask.stamp({x:2,y:4,z:0},4,1);assert.ok(sample(2,4,0)>122);
  assert.equal(sample(8,4,0),0);assert.equal(sample(2,4,10),0);
  mask.stamp({x:8,y:6,z:10},3,1);assert.ok(sample(2,4,0)>122&&sample(8,6,10)>122);
@@ -185,6 +187,9 @@ test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  },['createViewerCityModels']);
  const city={buildings:[{id:'a',name:'A',viewerParcel:true,h:6,x:0,z:0,w:6,front:3,damage:0},{id:'b',name:'B',viewerParcel:true,h:6,x:4,z:0,w:6,front:3,damage:0}],impact(b){b.damage+=.2;},forceDamage(b,v){b.damage=v;}};
  const api=createViewerCityModels({add(){}},city);
+ for(const [point,radius,strength] of [[{x:2,y:3,z:0},3,0],[{x:2,y:3,z:0},3,-1],[{x:2,y:3,z:0},3,NaN],[{x:2,y:3,z:0},3,Infinity],[{x:2,y:3,z:0},0,1],[null,3,1],[{x:NaN,y:3,z:0},3,1]])assert.equal(api.impactBuilding('b',point,radius,strength),0);
+ assert.equal(api.impact(null,3,1),0);
+ assert.equal(api.entries[1].targetBuilding.damage,0);assert.ok(!api.entries[1].impactMask);
  api.impactBuilding('b',{x:2,y:3,z:0},3,1);assert.equal(api.entries[0].damage,0);
  assert.ok(api.entries[1].sections.every(s=>s.visible));
  assert.equal(api.entries[1].impactMask.strikes(),1);
