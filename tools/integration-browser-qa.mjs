@@ -12,7 +12,7 @@ const report={started:new Date().toISOString(),commit:null,checks:[],errors:[],w
 try{report.commit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{}
 const save=()=>writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));
 const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');report.passed=false;report.finished=new Date().toISOString();save().finally(()=>process.exit(2));},240000);
-const mime={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.webp':'image/webp','.wasm':'application/wasm','.woff2':'font/woff2','.ogg':'audio/ogg','.mp3':'audio/mpeg','.wav':'audio/wav'};
+const mime={'.bin':'application/octet-stream','.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.webp':'image/webp','.wasm':'application/wasm','.woff2':'font/woff2','.ogg':'audio/ogg','.mp3':'audio/mpeg','.wav':'audio/wav'};
 const server=createServer(async(req,res)=>{
  try{
   const raw=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -48,7 +48,7 @@ try{
  page=await browser.newPage({viewport:{width:software?640:1280,height:software?360:800}});
  page.on('pageerror',e=>{if(report.errors.length<100)report.errors.push(String(e));});
  page.on('console',msg=>{const t=msg.text();if(/shader error|shader compilation|program not valid|GL_INVALID_OPERATION|WebGL context lost/i.test(t)){if(report.errors.length<100)report.errors.push(t);}else if(msg.type()==='error'&&report.warnings.length<100)report.warnings.push(t);});
- page.on('response',r=>{if(r.status()<400)return;const url=r.url(),msg=r.status()+' '+url;const critical=/\.(?:m?js|fbx|glb|gltf|wasm)(?:\?|$)|\/broad-street\/mapped-data\.json(?:\?|$)/i.test(url);const list=critical?report.errors:report.warnings;if(list.length<100)list.push(msg);});
+ page.on('response',r=>{if(r.status()<400)return;const url=r.url(),msg=r.status()+' '+url;const critical=/\.(?:m?js|fbx|glb|gltf|wasm|bin)(?:\?|$)|\/broad-street\/mapped-data\.json(?:\?|$)/i.test(url);const list=critical?report.errors:report.warnings;if(list.length<100)list.push(msg);});
  await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
  await page.waitForFunction(()=>window.__DD_QA&&window.__DD_BOOT_OK,{},{timeout:90000});
  await page.bringToFront();
@@ -56,17 +56,24 @@ try{
  report.build=await page.evaluate(()=>window.__DD_BUILD_INFO);
  report.renderer=await page.evaluate(()=>{const gl=window.__DD_RENDERER.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
  await save();
- await check('Boot, original school FBX, and all 122 mapped buildings',async()=>{
+ await check('Boot, FBX-derived school play mesh, and all 122 mapped buildings',async()=>{
   const v=await page.evaluate(()=>({snapshot:window.__DD_QA.snap(),slots:window.__DD_QA.getBuildingSlots()}));
-  assert(v.snapshot.renderVisibility.actualSchoolOverlayReady,'Original school FBX absent');
+  assert(v.snapshot.renderVisibility.actualSchoolOverlayReady,'School play mesh absent');
   assert(!v.snapshot.renderVisibility.fbxRowhouses.left&&!v.snapshot.renderVisibility.fbxRowhouses.right,'Legacy FBX flank visible');
   assert(v.slots.length===122,'Expected 122 imported building slots, got '+v.slots.length);
   assert(new Set(v.slots.map(s=>s.id)).size===122,'Duplicate building slots');
   assert(v.slots.every(s=>s.status==='loaded'),'Missing building model');
   assert(v.slots.every(s=>s.worldBounds&&Object.values(s.worldBounds).every(Number.isFinite)),'Invalid imported bounds');
   const audit=v.snapshot.sourceSchool.interiorAudit;
-  assert(audit?.triangleCountPreserved&&audit.componentIndex?.components>0,'Source school interior inventory or triangle conservation failed');
-  assert(audit.batchedSurfaces?.interior?.triangles>0,'Original FBX interior still missing');
+  const school=await page.evaluate(()=>window.__DD_QA.actualSchoolGeometry().result?.details);
+  assert(audit?.componentIndex?.components>0,'Source school impact inventory absent');
+  assert(school?.outputTriangles>0&&school.outputTriangles<250000,'School render mesh exceeds its budget');
+  assert(audit.renderSimplification?.floors?.kept>0&&audit.renderSimplification?.walls?.kept>0,
+   'Source interior walls or floors missing');
+  const bootAssets=await page.evaluate(()=>performance.getEntriesByType('resource').map(r=>r.name));
+  assert(bootAssets.some(url=>url.endsWith('/assets/tech-freire-play-mesh-v1.bin')),'Play mesh request missing');
+  assert(!bootAssets.some(url=>url.endsWith('/assets/tech-freire-original.fbx')||url.endsWith('/manifest.webmanifest')),
+   'Game boot requested an unnecessary source FBX or manifest');
   await page.screenshot({path:resolve(out,'01-architecture.png')});
   return {count:v.slots.length,build:v.snapshot.build,school:v.snapshot.renderVisibility.schoolModelCalibration,interiorAudit:audit};
  });
@@ -111,8 +118,7 @@ try{
  await check('Subway derailment, flood, exit signs and camera switching',async()=>{
   const before=await page.evaluate(()=>{const q=window.__DD_QA;q.repairAllBuildings();q.runPresetSubway();return {derailed:q.isSubwayTrainDerailed(),water:q.hasFloodedSubwayWater(),exits:q.getEmergencyExitSignsCount(),flood:q.getSubwayFloodLevel(),camera:q.setSubwayCam(true)};});
   assert(before.derailed&&before.water&&before.exits>=2&&before.camera,'Incomplete subway features');
-  await page.waitForTimeout(1800);
-  const after=await page.evaluate(()=>window.__DD_QA.getSubwayFloodLevel());assert(after>before.flood,'Flood level did not rise');
+  const after=await page.evaluate(()=>{const q=window.__DD_QA;q.advanceSimulation(120);return q.getSubwayFloodLevel();});assert(after>before.flood,'Flood level did not rise');
   await page.screenshot({path:resolve(out,'02-subway.png')});
   const switched=await page.evaluate(()=>{const q=window.__DD_QA;q.setBasementCam(true);return q.isBasementCamActive()&&!q.isSubwayCamActive();});
   assert(switched,'Camera state conflict');await page.screenshot({path:resolve(out,'03-basement.png')});

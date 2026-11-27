@@ -6,7 +6,7 @@ import { VIEWER_TO_GAME_X, VIEWER_TO_GAME_Z } from '../simulation/viewer-parcels
 
 const masonry = new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
 
-// Bake opaque relief into one mesh per damage section. Keep signs, transparent
+// Bake opaque relief into one mesh per parcel. Keep signs, transparent
 // glazing, and textured materials as authored. All pieces retain source coordinates.
 export function batchOpaqueRelief(group,{preserveNamed=false}={}) {
   group.updateMatrixWorld(true);
@@ -40,27 +40,19 @@ export function batchOpaqueRelief(group,{preserveNamed=false}={}) {
 
 export function makeViewerBuilding(target) {
   const row=target.sourceRow;
-  const sections=Array.from({length:4},()=>new THREE.Group());
-  const detail=new THREE.Group();
-  const section=(min,max)=>sections[min>=target.h*.8?3:Math.min(2,Math.max(0,Math.floor((min+max)*1.5/target.h)))];
-  makeFrontages(detail,row?[row]:[],[],{
-    hideTrees:true,auditOnly:true,buildingOnly:true,section,districtRecord:target.record??null
+  const model=new THREE.Group();
+  makeFrontages(model,row?[row]:[],[],{
+    hideTrees:true,auditOnly:true,buildingOnly:true,districtRecord:target.record??null
   });
   if(target.id==='1005656'){
     const offset=(13.5+1.78)*Math.SQRT1_2;
-    renderBereanRose(THREE,detail,{x:row.x+offset,y:9.9,z:row.front-16.1+offset,angle:Math.PI/4});
+    renderBereanRose(THREE,model,{x:row.x+offset,y:9.9,z:row.front-16.1+offset,angle:Math.PI/4});
   }
-  detail.updateMatrixWorld(true);
-  for(const object of [...detail.children]){
-    const bounds=new THREE.Box3().setFromObject(object);
-    if(!bounds.isEmpty())section(bounds.min.y,bounds.max.y).add(object);
-  }
-  const model=new THREE.Group();
-  for(const group of sections){batchOpaqueRelief(group);model.add(group);}
+  batchOpaqueRelief(model);
   model.position.set(VIEWER_TO_GAME_X,0,VIEWER_TO_GAME_Z);
   model.updateMatrixWorld(true);
   model.matrixAutoUpdate=false;
   const bounds=new THREE.Box3().setFromObject(model);
   if(bounds.isEmpty())throw new Error(`No Viewer geometry for ${target.id} ${target.name}`);
-  return {model,sections,bounds};
+  return {model,bounds};
 }

@@ -8,11 +8,11 @@ export function createViewerCityModels(scene,city) {
   root.name='Broad Street Viewer buildings';
   scene.add(root);
   const entries=city.buildings.filter(b=>b.viewerParcel).map(targetBuilding=>{
-    const b=targetBuilding,{model,sections,bounds}=makeViewerBuilding(b);
+    const b=targetBuilding,{model,bounds}=makeViewerBuilding(b);
     const def={id:b.id,name:b.name,address:b.name,gameBuilding:b.name,frontWidth:b.w,
       position:[b.x,0,b.front],isChurch:b.id==='1005656'};
     root.add(model);
-    return {def,targetBuilding,model,sections,loaded:true,damage:0,
+    return {def,targetBuilding,model,loaded:true,damage:0,
       anchor:new THREE.Vector3(b.x,0,b.z),architectureSource:'Broad Street Viewer',
       worldBounds:{minX:bounds.min.x,maxX:bounds.max.x,minY:bounds.min.y,maxY:bounds.max.y,minZ:bounds.min.z,maxZ:bounds.max.z}};
   });
@@ -27,7 +27,6 @@ export function createViewerCityModels(scene,city) {
     // Repair restores the original materials and removes only this parcel's mask.
     if(damage<entry.damage){
       clearImpactMask(entry);
-      for(const section of entry.sections)section.visible=true;
       entry.collapseRequested=false;
     }
     entry.damage=damage;
@@ -73,7 +72,7 @@ export function createViewerCityModels(scene,city) {
       e.collapseRequested=true;
       return result;
     },
-    restore(){for(const e of entries){clearImpactMask(e);apply(e,0);e.collapseRequested=false;for(const section of e.sections)section.visible=true;}},
+    restore(){for(const e of entries){clearImpactMask(e);apply(e,0);e.collapseRequested=false;}},
     getStats(){return {loadedCount:entries.length,totalModels:entries.length,
       models:entries.map(e=>({id:e.def.id, address:e.def.address, loaded:true,
         architectureSource:e.architectureSource, worldBounds:e.worldBounds, damage:e.damage, localizedStrikes:e.impactMask?.strikes()??0}))};}

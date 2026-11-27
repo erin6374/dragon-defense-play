@@ -2,6 +2,8 @@
 // Deterministic data and logic tests; no WebGL or browser is required.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
+import {createHash} from 'node:crypto';
 const root=new URL('../',import.meta.url);
 const read=path=>readFileSync(new URL(path,root),'utf8');
 const load=(path,params={},exports=[])=>{
@@ -181,7 +183,7 @@ test('Parcel damage mask persists locally and restores original shared materials
 test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  const {createViewerCityModels}=load('src/rendering/viewer-city-models.js',{
  THREE:{Group:class{constructor(){this.children=[];this.visible=true;}add(o){this.children.push(o);}},Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z});}}},
- makeViewerBuilding:()=>({model:{visible:true},sections:Array.from({length:4},()=>({visible:true})),bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}}),
+ makeViewerBuilding:()=>({model:{visible:true},bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}}),
  containsParcel:(b,x,z)=>Math.abs(x-b.x)<=b.w/2&&Math.abs(z)<=3,
  createParcelDamageMask:()=>{let n=0;return {stamp(){n++;},strikes(){return n;},dispose(){}};}
  },['createViewerCityModels']);
@@ -191,7 +193,7 @@ test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  assert.equal(api.impact(null,3,1),0);
  assert.equal(api.entries[1].targetBuilding.damage,0);assert.ok(!api.entries[1].impactMask);
  api.impactBuilding('b',{x:2,y:3,z:0},3,1);assert.equal(api.entries[0].damage,0);
- assert.ok(api.entries[1].sections.every(s=>s.visible));
+ assert.ok(api.entries[1].model.visible);
  assert.equal(api.entries[1].impactMask.strikes(),1);
  api.impactBuilding('b',{x:2,y:4,z:0},3,1);assert.equal(api.entries[1].impactMask.strikes(),2);
  api.restore();assert.equal(api.entries[1].impactMask,null);
@@ -254,6 +256,22 @@ test('Production FBX batching retains source interiors and suppresses approximat
  assert.ok(batch.includes('bySurface'));
  assert.ok(proxy.includes('if(overlayMode&&!p.falling&&!p.resting)continue;'));
  assert.ok(game.includes("attachedGeometrySource:'original FBX',damagePhysicsSource:'approximate proxy'"));
+});
+test('School play mesh matches the FBX source and stays within its render budget',()=>{
+ const packed=readFileSync(new URL('assets/tech-freire-play-mesh-v1.bin',root));
+ const payload=gunzipSync(packed);
+ const bytes=payload.readUInt32LE();
+ const info=JSON.parse(payload.subarray(4,4+bytes));
+ const fbx=readFileSync(new URL('assets/tech-freire-original.fbx',root));
+ assert.equal(info.sourceSha256,createHash('sha256').update(fbx).digest('hex'));
+ assert.equal(info.format,1);
+ assert.equal(info.triangles,info.batches.reduce((n,batch)=>n+batch.count/3,0));
+ assert.equal(payload.length,4+bytes+bytes%2+info.triangles*36);
+ assert.ok(info.triangles<250000&&packed.length<2000000);
+ for(const category of ['walls','floors','roof','glazing','doors','structure']){
+  assert.ok(info.byCategory[category].kept>0);
+  assert.equal(info.byCategory[category].original,info.byCategory[category].kept);
+ }
 });
 test('Spatial batches separate floors and bays without clipping large components',()=>{
  const {schoolBatchRegion}=load('src/rendering/school-source-batch.js',{},['schoolBatchRegion']);

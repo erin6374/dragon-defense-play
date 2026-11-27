@@ -22,7 +22,7 @@ import {clampWave,waveBudget,hunterSteering} from './core/balance.js';
 import {choosePassingLane, laneChangeYaw, laneChangeSpeedCap} from './simulation/lane-safety.js';
 import * as THREE from 'three';
 import {createStableLightPool,syncHelicopterSearchlight} from './rendering/stable-light-pool.js?v=rc169';
-console.log('%c TECH FREIRE: DRAGON DEFENSE v5.5 RC174 ACTIVE ', 'background: #008833; color: #ffffff; font-weight: 900; font-size: 14px; padding: 4px 8px; border-radius: 4px;');
+console.info('Tech Freire Dragon Defense '+GAME_VERSION);
 console.log('%c Broad Street Subway Chasm & Progressive Gravity Collapse Loaded ', 'background: #223344; color: #ffcc44; font-size: 12px; padding: 2px 6px;');
 import {createFixedStep} from './core/fixed-step.js';
 import {ACTIONS,createInputState} from './input/actions.js';
@@ -33,6 +33,7 @@ import {createProfiler} from './rendering/profiler.js';
 import {InstancedParticlePool} from './rendering/instanced-particles.js';
 import {AdaptiveQuality} from './rendering/adaptive-quality.js';
 import {AdaptiveFramebuffer} from './rendering/frame-governor.js';
+import {loadSchoolPlayMesh} from './rendering/school-play-mesh.js';
 import {batchSchoolSource} from './rendering/school-source-batch.js';
 import {createSchoolSourceDamage} from './rendering/school-source-damage.js';
 import {snapshotSchoolMesh,captureSchoolComparison,captureSchoolViews} from './rendering/school-comparison.js';
@@ -815,6 +816,44 @@ function setRowhouseSourceVisible(role,on){
 }
 const schoolQA=new URLSearchParams(location.search).get('qa')==='1';
 let sourceComparison=null;
+function prepareSchoolMaterial(material){
+    sourceDamage.patch(material);
+    if(['school-glass','school-interior'].includes(material.name)&&material.emissive){
+     material.emissive.setHex(0xffd6a2);
+     material.emissiveIntensity=0;
+     // Illuminate the retained interior surfaces behind the glazing. Keep the
+     // glass itself subdued so the facade does not become a flat glowing panel.
+     material.userData.nightEmission=material.name==='school-interior'?.55:.07;
+     schoolGlazingMaterials.push(material);
+    }
+}
+async function loadPlaySchoolOverlay(){
+ try{
+  const {model,info}=await loadSchoolPlayMesh(prepareSchoolMaterial);
+  model.name='ACTUAL-TECH-FREIRE-SCHOOL';
+  model.matrixAutoUpdate=false;
+  model.updateMatrix();
+  scene.add(model);
+  const box=new THREE.Box3().setFromObject(model);
+  schoolComponentIndex=createSchoolComponentIndex(info.components);
+  actualSchoolOverlay=model;
+  actualSchoolOverlayReady=true;
+  actualSchoolOverlayStats={
+   loaded:true,sourceMeshes:info.roles.school,batches:model.children.length,
+   inputTriangles:info.originalTriangles,outputTriangles:info.triangles,
+   sourceInteriorAudit:{attachedGeometrySource:'FBX-derived play mesh',damagePhysicsSource:'approximate proxy',
+    sourceSHA256:info.sourceSha256,renderSimplification:info.byCategory,componentIndex:schoolComponentIndex.stats()},
+   visibleBounds:{min:box.min.toArray(),max:box.max.toArray(),size:box.getSize(new THREE.Vector3()).toArray()},
+   calibration:{...info.fit,source:SCHOOL_SOURCE,target:SCHOOL_TARGET},sourcePartition:info.roles
+  };
+  setMode(viewMode);
+  syncStructuralDamage();
+  console.info('Tech Freire play mesh',info.triangles+' triangles');
+ }catch(error){
+  status.textContent='SCHOOL PLAY MESH FAILED TO LOAD · PROCEDURAL FALLBACK';
+  console.warn('School play mesh loading failed',error);
+ }
+}
 function loadActualSchoolOverlay(){
  const loader=new FBXLoader();
  loader.load('./assets/tech-freire-original.fbx',fbx=>{
@@ -880,17 +919,7 @@ function loadActualSchoolOverlay(){
    // School first: the central five-storey façade is never based on the
    // combined three-building bounding box.
    if(!school.children.length)throw new Error('Central school geometry not found in source');
-   const central=batchSchoolSource(school,material=>{
-    sourceDamage.patch(material);
-    if(['school-glass','school-interior'].includes(material.name)&&material.emissive){
-     material.emissive.setHex(0xffd6a2);
-     material.emissiveIntensity=0;
-     // Illuminate the retained interior surfaces behind the glazing. Keep the
-     // glass itself subdued so the facade does not become a flat glowing panel.
-     material.userData.nightEmission=material.name==='school-interior'?.55:.07;
-     schoolGlazingMaterials.push(material);
-    }
-   });
+   const central=batchSchoolSource(school,prepareSchoolMaterial);
    central.model.name='ACTUAL-TECH-FREIRE-SCHOOL';
    central.model.matrixAutoUpdate=false;
    central.model.updateMatrix();
@@ -1033,7 +1062,9 @@ const physicalSign=new THREE.Mesh(new THREE.PlaneGeometry(7.6,1.4),new THREE.Mes
 // already contains the correctly spaced real-block neighbors.
 const adjacentTownhouses=null;
 setMode('real');
-loadActualSchoolOverlay();
+// Only an explicit source comparison loads the heavyweight Revit export here.
+if(schoolQA&&new URLSearchParams(location.search).get('schoolSource')==='full')loadActualSchoolOverlay();
+else loadPlaySchoolOverlay();
 // V4.1 creature overhaul: sculpted meshes, smooth forms and articulated membrane wings.
 // No texture downloads; this asset ships in source and runs equally on Windows/Android WebGL.
 const dragon=new THREE.Group();scene.add(dragon);
