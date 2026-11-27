@@ -4,7 +4,23 @@
  * electrical arcing sparks, and neighborhood power outage / brownout simulation.
  */
 
-export function createPowerGrid(THREE, scene) {
+// All sparks share the same opaque geometry/material. Keep the simulation
+// records and transforms, but submit visible sparks in one bounded batch.
+export function syncPowerSparkBatch(batch, sparks){
+  if(!batch)return 0;
+  let count=0;
+  for(const spark of sparks){
+    if(!spark.mesh.visible||spark.life<=0)continue;
+    spark.mesh.updateMatrix();
+    batch.setMatrixAt(count++,spark.mesh.matrix);
+  }
+  batch.count=count;batch.visible=count>0;
+  batch.instanceMatrix.clearUpdateRanges();
+  if(count){batch.instanceMatrix.addUpdateRange(0,count*16);batch.instanceMatrix.needsUpdate=true;}
+  return count;
+}
+
+export function createPowerGrid(THREE, scene, {batchSparks=true}={}) {
   const group = new THREE.Group();
   group.name = 'power-grid-infrastructure';
   scene.add(group);
@@ -190,10 +206,16 @@ export function createPowerGrid(THREE, scene) {
   const maxSparks = 120;
   const sparkGeo = new THREE.BoxGeometry(0.06, 0.06, 0.06);
   const sparkPool = [];
+  const sparkBatch=batchSparks?new THREE.InstancedMesh(sparkGeo,sparkMat,maxSparks):null;
+  if(sparkBatch){
+    sparkBatch.name='power-grid-spark-batch';sparkBatch.count=0;sparkBatch.visible=false;
+    sparkBatch.frustumCulled=false;sparkBatch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    group.add(sparkBatch);
+  }
   for (let i = 0; i < maxSparks; i++) {
     const mesh = new THREE.Mesh(sparkGeo, sparkMat);
     mesh.visible = false;
-    group.add(mesh);
+    if(!sparkBatch)group.add(mesh);
     sparkPool.push({
       mesh,
       vel: new THREE.Vector3(),
@@ -228,6 +250,7 @@ export function createPowerGrid(THREE, scene) {
         if (spawned >= count) break;
       }
     }
+    syncPowerSparkBatch(sparkBatch,sparkPool);
   }
 
   function triggerBrownout(duration = 4.2, severity = 0.85) {
@@ -306,6 +329,8 @@ export function createPowerGrid(THREE, scene) {
       }
     }
 
+    syncPowerSparkBatch(sparkBatch,sparkPool);
+
     // Update vibrating lines
     for (const line of lines) {
       if (line.vibrateTime > 0) {
@@ -358,6 +383,7 @@ export function createPowerGrid(THREE, scene) {
       s.life = 0;
       s.mesh.visible = false;
     }
+    syncPowerSparkBatch(sparkBatch,sparkPool);
     for (const line of lines) {
       line.vibrateTime = 0;
       line.severed = false;
@@ -381,6 +407,7 @@ export function createPowerGrid(THREE, scene) {
     triggerBrownout,
     sparkTransformer,
     getBrownoutFactor,
+    sparkRenderStats:()=>({active:sparkPool.filter(s=>s.life>0&&s.mesh.visible).length,batched:!!sparkBatch,instances:sparkBatch?.count??0}),
     reset
   };
 }
