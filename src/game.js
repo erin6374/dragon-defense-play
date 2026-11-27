@@ -144,6 +144,7 @@ function setCitySceneVisible(visible){
  if(typeof staticGroup!=='undefined'&&staticGroup)staticGroup.visible=visible;
  if(typeof northBroadModels!=='undefined'&&northBroadModels?.root)northBroadModels.root.visible=visible;
  if(typeof orbitalTheater!=='undefined'&&orbitalTheater?.group)orbitalTheater.group.visible=visible;
+ if(typeof cinematicSky!=='undefined'&&cinematicSky?.mesh)cinematicSky.mesh.visible=visible;
  if(typeof actualSchoolOverlay!=='undefined'&&actualSchoolOverlay)actualSchoolOverlay.visible=visible;
  if(typeof actualRowhouseOverlays!=='undefined'){
   if(actualRowhouseOverlays.leftRowhouse)actualRowhouseOverlays.leftRowhouse.visible=visible;
@@ -2085,6 +2086,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
 }
 function freezeResponder(c){if(c.frozen||(!c.emergency&&!c.trainingCop))return false;c.frozen=true;c.stun=999;c.speed=0;c.frozenMaterials=new Map();c.root.traverse(o=>{if(o.isMesh&&o.material&&!Array.isArray(o.material)){c.frozenMaterials.set(o,o.material);o.material=o.material.clone();o.material.color?.setHex(0x60e642);}});score+=65;return true;}
 function gasAttack(){if(dragonStun>0||!active||paused||gasCooldown>0)return;gasCooldown=1.15;gasPose=.65;
+ if(trainingMissions?.isActive()&&trainingMissions.getStats().step===5&&Math.hypot(dragon.position.x+12,dragon.position.y-1.5)<12)trainingMissions.disableCruiser();
  const rear=dragon.position.clone().add(new THREE.Vector3(-facing*1.2,-.35,0));
  // Large gas plume drifts outward, then descends and settles near street level.
  for(let j=0;j<38;j++){
@@ -4124,6 +4126,10 @@ function spawnMeteor(random=Math.random,opening=null){
  const meteor={kind,isPowerup,opening:!!opening,fastImpact,isMassive,colossus,largeSplitter:isMassive||!!opening||(size>1.8&&random()<.75),burning:kind==='flaming'||kind==='molten'||kind==='blue_plasma'||kind==='green_plasma'||kind==='purple_crystal',mesh,target:new THREE.Vector3(target.x,target.y,target.z),vel:velocity,trail:0,hp:meteorHp,size,damage:isMassive?3.5:(size>2.8?2.5:size>1.6?1.8:1),baseScale:mesh.scale.clone(),hitFlash:0};meteors.push(meteor);return meteor;
 }
 function spawnFragmentMeteor(x,y,z,size=1.2,vx=0,vy=-3,vz=0,parent=null){
+ // The parent is removed immediately after a terminal split. Never allow
+ // fracture or cascade emissions to exceed the bounded active-rock budget.
+ const allowance=parent&&parent.hp<=0&&meteors.includes(parent)?1:0;
+ if(meteors.length>=MAX_PLAYABLE_METEORS+allowance)return null;
  const mesh=createPlayableRock(size);
  const opening=!!parent?.opening;
  const kind=opening?(parent.kind==='stone'?'stone':'molten'):(parent?.boss?'molten':'iron');
@@ -4890,10 +4896,13 @@ function updateWaveProgress(dt,rally=rallyLoop){
    }
   }
  }else{
-  const allSatsDown=!orbitalTheater||orbitalTheater.allSatellitesDestroyed();
+  const allSatsDown=!!orbitalTheater&&orbitalTheater.allSatellitesDestroyed();
   if(allSatsDown){
    if(!satellitesCleared){
     satellitesCleared=true;
+    orbitalTheater.setBattery(0);finalSquadron.clear();
+    schoolShieldUntil=Math.max(schoolShieldUntil,elapsed+3);invulnerable=Math.max(invulnerable,3);
+    for(let i=shots.length-1;i>=0;i--)if(shots[i].hostile)remove(shots,i);
     sound('bonus');
     sound('dragonRoar',{variant:'challenge',x:dragon.position.x});
     flashAt(dragon.position.x,dragon.position.y,dragon.position.z,6.0);
@@ -5864,8 +5873,10 @@ window.addEventListener('keydown',e=>{if(e.key==='Tab'&&trainingMissions?.isActi
 const defensePrevious=new THREE.Vector3(),defenseCurrent=new THREE.Vector3();
 const defenseProjectionCache=createDefenseProjectionCache();
 const shotScratchPrevious=new THREE.Vector3(),shotScratchPath=new THREE.Vector3(),shotScratchClosest=new THREE.Vector3(),shotScratchDelta=new THREE.Vector3();
-function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused){cinematicFX.begin(dt);if(!trainingMissions?.isActive()){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);buildingElectricalShorts.update(dt,cinematicFX,sound,schoolDamage,neighborhood.targetBuildings,craters.some(c=>c.isSubway&&c.subwayGroup),craters.some(c=>c.geyserGroup));orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(meteors.length>=MAX_PLAYABLE_METEORS&&kind!=='mega_fire_breath')return;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});},(x,y,z)=>{
- if(meteors.length>=MAX_PLAYABLE_METEORS)return;
+function update(dt){if(freeFlightMode){spawnTimer=999999;stormTimer=999999;remaining=0;dragonLives=999;}if(!paused){cinematicFX.begin(dt);if(!trainingMissions?.isActive()){schoolReconstruction?.update(dt);chapterStaging.update(dt,elapsed);neighborhood.update(dt);powerGrid.update(dt,flashAt,sound);buildingElectricalShorts.update(dt,cinematicFX,sound,schoolDamage,neighborhood.targetBuildings,craters.some(c=>c.isSubway&&c.subwayGroup),craters.some(c=>c.geyserGroup));orbitalTheater?.update(dt,elapsed,wave,dragon.position,elapsed<megaFireBreathUntil,(kind,x,y,z)=>{if(satellitesCleared)return false;
+ if(kind==='mega_fire_breath'&&meteors.some(m=>m.isPowerup===kind&&!m.grounded))return false;
+ if(meteors.length>=MAX_PLAYABLE_METEORS)return false;const mesh=createPlayableRock(2.8);mesh.material=kind==='mega_fire_breath'?goldRedPlasmaMaterial:fizzingFireMaterial;mesh.position.set(x,y,z);scene.add(mesh);meteors.push({kind,isPowerup:kind,mesh,target:new THREE.Vector3(x,0.5,z),vel:new THREE.Vector3(0,-6,0),trail:0,hp:3,size:2.8,damage:1,burning:true});return true;},(x,y,z)=>{
+ if(satellitesCleared||meteors.length>=MAX_PLAYABLE_METEORS-(wave===15?1:0))return;
  const isGiant=Math.random()<0.70;
  const size=isGiant?3.6+Math.random()*1.2:1.2+Math.random()*1.0;
  const kindRoll=Math.random();
@@ -6205,7 +6216,7 @@ if(isFiring){
 }else{
  dragonFireLight.intensity=Math.max(0,dragonFireLight.intensity-dt*16);
 }
-if(wave===15)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
+if(wave===15&&!satellitesCleared)finalSquadron.update(dt,dragon,()=>hurtDragon('FIGHTER MISSILE'));
  if(!settling)updateWaveProgress(dt);
 const shotPrevious=shotScratchPrevious;const path=shotScratchPath;const closest=shotScratchClosest;
  defenseProjectionCache.begin(camera.position);
