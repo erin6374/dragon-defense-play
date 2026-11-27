@@ -1,4 +1,4 @@
-// Controlled ambient skyline submission comparison. Keep all landmark and
+// Controlled ambient skyline submission comparison; batching now follows original alignment. Keep all landmark and
 // damage logic outside the batch, and compare the entire ambient inventory.
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
