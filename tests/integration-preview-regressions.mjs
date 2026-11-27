@@ -305,4 +305,27 @@ test('Runoff restoration clears current and queued water and hides drain effects
  api.reset();assert.ok(api.state().every(x=>x===0));assert.equal(ribbon.opacity,0);assert.equal(film.opacity,0);assert.equal(gutters[0].visible,false);assert.equal(drains[0].vortexMesh.visible,false);assert.equal(drains[0].vortexMat.opacity,0);assert.equal(tex.offset.x,0);
  assert.equal(game.split('cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();').length-1,3);
 });
+test('Frozen vehicle recycling restores original materials and bounds idle smoke pools',()=>{
+ const a=game.indexOf('function freezeResponder('),b=game.indexOf('function gasAttack(',a),c=game.indexOf('function recycleCar('),d=game.indexOf('const burningVehicles=',c),e=game.indexOf('function releaseSkyObject('),f=game.indexOf('function backgroundImpactEffects(',e);
+ let disposed=0;const mat={clone(){return {color:{setHex(){}},dispose(){disposed++;}};}},mesh={isMesh:true,material:mat},car={emergency:true,root:{traverse(fn){fn(mesh);}},poolKey:'fire'};
+ const api=new Function('scene','let score=0;const vehiclePool=new Map(),vehiclePoolStats={recycled:0},skySmokePool=[],skyBurstPool=[];'+game.slice(a,b)+game.slice(c,d)+game.slice(e,f)+'return {freezeResponder,recycleCar,releaseSkyObject,vehiclePool,skySmokePool,skyBurstPool};')({remove(){}});
+ assert.ok(api.freezeResponder(car));assert.ok(mesh.material!==mat);
+ api.recycleCar(car);assert.equal(mesh.material,mat);assert.equal(disposed,1);assert.equal(api.vehiclePool.get('fire').length,1);
+ api.recycleCar(car);assert.equal(disposed,1);
+ for(let i=0;i<100;i++)api.releaseSkyObject({smoke:true,m:{material:{dispose(){disposed++;}}}});
+ assert.equal(api.skySmokePool.length,64);assert.equal(disposed,37);
+});
+test('Sandbox repair clears debris and vehicles without removing campaign meteors',()=>{
+ const a=game.indexOf('function clearSandboxDamageResidue('),b=game.indexOf('function repairAllBuildings(',a);
+ assert.ok(a>=0&&b>a);
+ function fixture(sandbox){
+  const car={burning:2,serviceStop:true},arrays={meteors:[{}],debris:[{},{}],settledRubble:[{}],crashedWrecks:[{root:{}}],escapingPilots:[{root:{}}],burningVehicles:[{driver:{},car}]};
+  let cleared=0,removed=0;
+  const fn=new Function('scene','rubblePool','remove',...Object.keys(arrays),'let freeFlightMode='+sandbox+',rubbleDirty=true;'+game.slice(a,b)+'return {clearSandboxDamageResidue,dirty:()=>rubbleDirty};')({remove(){removed++;}},{clear(){cleared++;}},(a,i)=>a.splice(i,1),...Object.values(arrays));
+  fn.clearSandboxDamageResidue();assert.equal(arrays.meteors.length,sandbox?0:1);
+  for(const [key,value] of Object.entries(arrays))if(key!=='meteors')assert.equal(value.length,0);
+  assert.equal(car.burning,0);assert.equal(car.serviceStop,false);assert.equal(fn.dirty(),false);assert.equal(removed,3);assert.equal(cleared,1);
+ }
+ fixture(true);fixture(false);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
