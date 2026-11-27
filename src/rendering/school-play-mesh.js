@@ -2,9 +2,16 @@ import * as THREE from 'three';
 
 // Index only exactly identical quantized position AND normal tuples. This
 // preserves triangle order, winding, flat edges and the original render shape.
-export function decodeSchoolBatch(data) {
+export function decodeSchoolBatch(data,{allowIndex=true}={}) {
  if(!(data instanceof Int16Array)||data.length%18!==0)throw Error('Invalid school triangle batch');
  const count=data.length/6;
+ if(!allowIndex){
+  const positions=new Float32Array(count*3),normals=new Float32Array(count*3);
+  for(let i=0;i<count;i++)for(let axis=0;axis<3;axis++){
+   positions[i*3+axis]=data[i*6+axis]/128;normals[i*3+axis]=data[i*6+axis+3]/32767;
+  }
+  return {positions,normals,index:null,vertices:count,originalVertices:count,bytes:count*24};
+ }
  const tableSize=2**Math.ceil(Math.log2(Math.max(2,count*1.5)));
  const table=new Uint32Array(tableSize),mask=tableSize-1;
  const remap=new Uint32Array(count),uniqueOffsets=new Uint32Array(count);
@@ -38,7 +45,7 @@ export function decodeSchoolBatch(data) {
  return {positions,normals,index,vertices,originalVertices:count,bytes:positions.byteLength+normals.byteLength+(index?.byteLength||0)};
 }
 
-export async function loadSchoolPlayMesh(prepareMaterial){
+export async function loadSchoolPlayMesh(prepareMaterial,{allowIndex=true}={}){
  const response=await fetch(new URL('../../assets/tech-freire-play-mesh-v1.bin',import.meta.url));
  if(!response.ok||!response.body)throw Error(`School play mesh HTTP ${response.status}`);
  const payload=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
@@ -56,12 +63,15 @@ export async function loadSchoolPlayMesh(prepareMaterial){
  const {scale,translation}=info.fit;
  model.scale.setScalar(scale);
  model.position.set(translation.x,translation.y,translation.z);
- const storage={originalVertices:0,vertices:0,originalBytes:0,bytes:0,indexedBatches:0};
+ const storage={originalVertices:0,vertices:0,originalBytes:0,bytes:0,indexedBatches:0,allowIndex,decodeMs:0};
+ let yieldAt=performance.now();
  let offset=4+headerBytes+headerBytes%2;
  for(const {count,name,material} of info.batches){
   const data=new Int16Array(payload,offset,count*6);
   offset+=data.byteLength;
-  const {positions,normals,index,vertices,originalVertices,bytes}=decodeSchoolBatch(data);
+  const start=performance.now();
+  const {positions,normals,index,vertices,originalVertices,bytes}=decodeSchoolBatch(data,{allowIndex});
+  storage.decodeMs+=performance.now()-start;
   storage.originalVertices+=originalVertices;storage.vertices+=vertices;
   storage.originalBytes+=originalVertices*24;storage.bytes+=bytes;
   if(index)storage.indexedBatches++;
@@ -73,6 +83,8 @@ export async function loadSchoolPlayMesh(prepareMaterial){
   const mesh=new THREE.Mesh(geometry,materials[material]);
   mesh.name=name;
   model.add(mesh);
+  // Let input and the loading UI run between expensive batch conversions.
+  if(performance.now()-yieldAt>=16){await new Promise(resolve=>setTimeout(resolve,0));yieldAt=performance.now();}
  }
  if(offset!==payload.byteLength)throw Error('Invalid school play mesh payload length');
  return {model,info:{...info,renderStorage:storage}};
