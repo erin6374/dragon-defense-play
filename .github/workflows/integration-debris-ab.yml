@@ -8,6 +8,7 @@ on:
       - 'qa/integration-scene-profile.mjs'
       - 'qa/integration-subway-ab.mjs'
       - 'qa/integration-power-sparks-ab.mjs'
+      - 'qa/integration-skyline-ab.mjs'
       - '.github/workflows/integration-debris-ab.yml'
   workflow_dispatch:
 permissions:
@@ -36,6 +37,7 @@ jobs:
           node --check qa/integration-scene-profile.mjs
           node --check qa/integration-subway-ab.mjs
           node --check qa/integration-power-sparks-ab.mjs
+          node --check qa/integration-skyline-ab.mjs
       - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
       - name: Compare frozen production scenes
         run: |
@@ -52,6 +54,7 @@ jobs:
           node qa/integration-scene-profile.mjs
           node qa/integration-subway-ab.mjs
           node qa/integration-power-sparks-ab.mjs
+          node qa/integration-skyline-ab.mjs
       - name: Retain comparison screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,6 +65,7 @@ jobs:
             integration-scene-profile-output/
             integration-subway-ab-output/
             integration-power-sparks-output/
+            integration-skyline-ab-output/
             integration-ab-server.log
           if-no-files-found: warn
           retention-days: 14
