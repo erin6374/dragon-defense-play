@@ -1,5 +1,5 @@
 # Integration Preview 10 — completion tracker
-Date: 2026-11-27 (Eastern time). Code checkpoint: 3c6add504f98b6ef36ace9b7493fed1f0eaf1274.
+Date: 2026-11-27 (Eastern time). Code checkpoint: f3997510a08a288221766ef8f7dd77b62c066066.
 Scope: combined playable browser integration preview, not final production game, independent Antigravity branch, architectural viewer, or Unity port.
 
 ## Scoring
@@ -8,14 +8,14 @@ Weight each area by its contribution to preview acceptance. Stage values: 0 = no
 | Area | Weight | Stage | Weighted points | Remaining acceptance work |
 |---|---:|---:|---:|---|
 | Performance and rendering | 25 | 75 | 18.75 | Browser A/B profiling, long-frame/stall evidence, GPU/shader validation |
-| Architecture and asset integration | 15 | 50 | 7.50 | Packaged school geometry regression, mapped block visual and interior inspection |
+| Architecture and asset integration | 15 | 75 | 11.25 | Live source-model clearance, packaged school geometry regression, block and interior visual inspection |
 | School and neighborhood destruction | 15 | 75 | 11.25 | Live localized impact, gradual school damage and repair tests |
 | Flight controls and map traversal | 10 | 75 | 7.50 | Live campaign/sandbox end-to-end navigation and responsiveness |
 | Cinematics and camera | 10 | 75 | 7.50 | Live comic playback, skip/restart, tutorial framing, and transition/camera visual inspection |
 | Threat readability, traffic and pedestrians | 10 | 75 | 7.50 | Live threat distinctions, collision, traffic and responder QA |
 | Campaign/tutorial/finale | 10 | 75 | 7.50 | Live opening and tutorial walkthrough, 15-wave campaign on real browser, difficulty feel, finale and victory/defeat |
 | Release QA and packaging | 5 | 0 | 0.00 | Entire regression suite, browser stress and playthrough, verified preview build |
-| **Total** | **100** | | **67.50** | |
+| **Total** | **100** | | **71.25** | |
 
 First scored checkpoint: **62.5% (63% rounded)**. No prior comparable score exists. No live FPS, campaign completion or release is claimed.
 Latest batch: chapter ends derived from chapter starts (2, 5, 10, 14); escort progression guard; cinematic generation guard and iframe-source check; parcel-aware threat warning; bounded camera zoom; redundant staging rebuild suppression and settlement resource disposal. Four new targeted regression groups passed; full repository suite and browser execution not performed. Chapter-end change follows existing chapter start table; verify narrative intent in live play.
@@ -28,3 +28,6 @@ Report time: 2026-11-27 03:40 EST (session start). Principal cinematic/camera ch
 
 ## Checkpoint 4 — 67.5% (unchanged; architecture acceptance still open)
 Date: 2026-11-27 EST. Nine code/test commits in this batch. Actual source inventory audited: 40 frontage rows including the school, 83 district records, 122 distinct non-school parcels; every parcel has an exclusive interior sample. Actual sampled overlap between the enlarged school collision envelope and 2227/2219 N Broad (171 of 321 and 171 of 314 interior samples respectively). The mapped school footprint is 21.62 × 47.11 m vs the current 27 × 58.8 m collision envelope; these are map and proxy dimensions, not measured visible mesh extents. Existing source school geometry is unchanged pending direct visual comparison; stable parcel ownership now prevents school damage or shield credit from being incorrectly assigned to an adjacent parcel after collapse. Replacement model fitting validates finite geometry before replacement, uniformly constrains width/depth/height, centers and aligns the envelope, retains authoring transforms, and replays world-space localized damage. Four targeted regression groups passed (actual inventory and overlap ownership, fit across all 122 parcels, damage retention/repair, warning consistency). Full imported mesh/FBX visual validation and irregular polygon fit remain open; the architecture stage remains 50 rather than inflating the weighted score. No live browser or full suite executed. Next: source-model alignment against surveyed footprints and integrated visual verification, then 71.25% if architecture principal implementation and targeted acceptance are established.
+
+## Checkpoint 5 — 71.25% (+3.75 percentage points)
+Date: 2026-11-27 EST. Principal architectural alignment implementation and targeted regression tests completed. The mapped school envelope now measures 21.20 × 47.36 × 28.00 m; 0.08 m side clearance from both immediate neighboring parcel AABBs, 0.25 m front allowance, height retained at 28 m (mapped roof 27.13 m). All 122 non-school parcel AABBs tested with no intersection with the new school envelope. Both FBX and packaged play-mesh loaders apply a measured horizontal fit at runtime, preserving X/Z aspect ratio, Y coordinates, source triangles and all retained source components; component damage bounds receive the same affine transform. This intentionally changes horizontal-to-vertical proportions where clearance requires it; the chosen envelope is a game-space approximation, not a verified interior survey. Two targeted regression groups passed on actual map data and synthetic mesh bounds. Actual compressed mesh binary and live FBX visual results were not available, so geometry appearance and room proportions still require browser QA. No scoring weights changed. Full regression suite and release validation remain pending.
