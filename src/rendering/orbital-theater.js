@@ -467,13 +467,16 @@ export function createOrbitalTheater(scene, camera, visualBank, flashAt, sound, 
       // In Wave 15 finale, titan periodically ejects sparkling gold-red mega powerups until all satellites are destroyed!
       if (wave === 15 && satellites.some(s => !s.destroyed)) {
         goldRedPowerupTimer -= dt;
-        if (!goldRedPowerupSpawned || (!isMegaFireActive && goldRedPowerupTimer <= 0) || goldRedPowerupTimer <= 0) {
-          goldRedPowerupSpawned = true;
-          goldRedPowerupTimer = 11.0;
+        if (goldRedPowerupTimer <= 0 && !isMegaFireActive) {
           const ejectX = (Math.random() - 0.5) * 120;
-          triggerTitanSurfaceBlast(ejectX, 368, -165, 26);
-          onSpawnPowerup?.('mega_fire_breath', ejectX, 350, 5);
-          message?.('✨ WHITE-GOLD SPARKLING ASTEROID EJECTED! DESTROY FOR MEGA FIRE BREATH!');
+          if(onSpawnPowerup?.('mega_fire_breath', ejectX, 350, 5) === true){
+            goldRedPowerupSpawned = true;
+            goldRedPowerupTimer = 11.0;
+            triggerTitanSurfaceBlast(ejectX, 368, -165, 26);
+            message?.('✨ WHITE-GOLD SPARKLING ASTEROID EJECTED! DESTROY FOR MEGA FIRE BREATH!');
+          }else{
+            goldRedPowerupTimer = .5;
+          }
         }
       }
 
