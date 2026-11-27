@@ -89,7 +89,7 @@ test('Structural support queue drains after stable damage and retains delayed fa
  assert.ok(start>=0&&end>start&&a>=0&&b>a);
  const code=structural.slice(start,end)+structural.slice(a,b)+'\n}';
  const env=new Function('supportedFloors',
-  "let time=0,supportPasses=0;const supportWork=new Set();function detach(p){if(p.state!=='attached')return 0;p.state='falling';scheduleSupport(p.building);return 1;}"+code+
+  "let time=0,supportPasses=0;const supportWork=new Set();function detach(p){if(p.state!=='attached')return 0;p.state='falling';scheduleSupport(p.building);return 1;}function forceDamage(b,value){b.damage=value;for(const p of b.parts)detach(p);}"+code+
   'return {scheduleSupport,update,state:()=>({supportPasses,pending:supportWork.size})}'
  )((parts,stories)=>Array(stories).fill(parts.some(p=>p.type==='column'&&p.state==='attached')));
  const mk=()=>{const b={school:false,h:6,stories:1,damage:0,pressure:.4,collapseClock:0,supportRevision:0,parts:[],sections:[],slabs:[]};

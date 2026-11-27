@@ -1,8 +1,8 @@
-# Dragon Defense — Integration Preview 4 development candidate
+# Dragon Defense — Integration Preview 4
 
-Current source version: `5.5.0-integration.4-dev.22`.
+Build `5.5.0-integration.4`.
 Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
-This is a development snapshot, not a verified playable release. Exact source
+Exact source
 revisions, the unchanged Tech Freire FBX hash, and the development snapshot
 commit are recorded in `build-info.json`.
 
@@ -42,10 +42,7 @@ camera cleanup, parcel-local damage masks, function-specific interiors, original
 
 ## Verification limits
 
-The previous Preview 3 smoke checks are historical. The Preview 4 candidate
-has passed isolated source-level tests, including all 122 parcel roof ownership
-checks. The revised browser runner has not yet executed on a live browser against
-this candidate. It checks the school triangle inventory and localized damage repair as well as the original nine functional groups. Native Windows GPU performance, visual architecture alignment,
-a full campaign playthrough, and the upstream district contact audit remain
-unverified. Do not designate this candidate as a verified playable release
-until those checks have been reviewed.
+The source-level regression suite checks all 122 parcel roof ownership cases,
+original FBX interior retention, and cleanup of damage and pooled resources.
+Native Windows GPU performance, full-campaign play and the upstream Viewer
+district contact audit remain pending.

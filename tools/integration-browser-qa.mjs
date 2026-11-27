@@ -37,14 +37,15 @@ try{
  catch{playwright=await import('playwright');}
  const headless=process.argv.includes('--headless');
  const software=process.argv.includes('--software');
- const launch={headless,args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[]};
- try{browser=await playwright.chromium.launch({...launch,channel:'msedge'});}
+ const executablePath=process.env.DD_QA_CHROMIUM;
+ const launch={headless,executablePath,args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[]};
+ try{browser=await playwright.chromium.launch(executablePath?launch:{...launch,channel:'msedge'});}
  catch{browser=await playwright.chromium.launch(launch);}
  report.browser=browser.version();report.headless=headless;report.softwareRequested=software;
  await new Promise((yes,no)=>{server.once('error',no);server.listen(0,'127.0.0.1',yes);});
  const url='http://127.0.0.1:'+server.address().port+'/?qa=1&benchmark=1';
  report.url=url;
- page=await browser.newPage({viewport:{width:1280,height:800}});
+ page=await browser.newPage({viewport:{width:software?640:1280,height:software?360:800}});
  page.on('pageerror',e=>{if(report.errors.length<100)report.errors.push(String(e));});
  page.on('console',msg=>{const t=msg.text();if(/shader error|shader compilation|program not valid|GL_INVALID_OPERATION|WebGL context lost/i.test(t)){if(report.errors.length<100)report.errors.push(t);}else if(msg.type()==='error'&&report.warnings.length<100)report.warnings.push(t);});
  page.on('response',r=>{if(r.status()<400)return;const url=r.url(),msg=r.status()+' '+url;const critical=/\.(?:m?js|fbx|glb|gltf|wasm)(?:\?|$)|\/broad-street\/mapped-data\.json(?:\?|$)/i.test(url);const list=critical?report.errors:report.warnings;if(list.length<100)list.push(msg);});
