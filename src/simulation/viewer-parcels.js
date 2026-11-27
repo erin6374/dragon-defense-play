@@ -58,3 +58,10 @@ export function touchesParcel(building,x,z,tolerance=.025){
   }
   return false;
 }
+
+// The visually emphasized school overlaps parts of its real neighboring
+// parcels. Ownership stays with those mapped parcels even after collapse.
+export function ownsSchoolFootprint(bounds,buildings,x,z){
+ if(!Number.isFinite(x)||!Number.isFinite(z)||x<bounds.min.x||x>bounds.max.x||z<bounds.min.z||z>bounds.max.z)return false;
+ return !buildings.some(b=>!b.school&&containsParcel(b,x,z));
+}
