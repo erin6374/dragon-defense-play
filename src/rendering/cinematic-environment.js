@@ -41,14 +41,25 @@ export function createCinematicSky(THREE,scene){
  cloudColor=mix(cloudColor,vec3(1.0,.62,.48),dusk*rim*.75);
  col=mix(col,cloudColor,sheet*(.38+.25*dusk));
  vec2 moonUV=(vUv-vec2(.82,.86))*vec2(aspect,1.);float md=length(moonUV);float disc=1.-smoothstep(.025,.026,md);
- float craters=noise(moonUV*580.)*.14+noise(moonUV*230.)*.12;
- col+=vec3(.42,.49,.68)*exp(-md*55.)*night*.3;
- col=mix(col,vec3(.89,.90,.83)-craters,disc*night);
+ if(night>0.){
+  col+=vec3(.42,.49,.68)*exp(-md*55.)*night*.3;
+  if(disc>0.){
+   float craters=noise(moonUV*580.)*.14+noise(moonUV*230.)*.12;
+   col=mix(col,vec3(.89,.90,.83)-craters,disc*night);
+  }
+ }
  vec2 grid=uv*340.,cell=floor(grid),st=fract(grid)-.5;float chance=hash(cell);
- float star=(1.-smoothstep(.025,.20,length(st)))*step(.991,chance)*( .5+.5*hash(cell+5.));
- col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
- float highStar=(1.-smoothstep(.025,.18,length(st)))*step(.994,chance);
- col+=vec3(.85,.9,.98)*highStar*(smoothstep(.70,1.,vUv.y)+altFactor*.75)*(1.-sheet)*(.15+.85*night+altFactor*.75);
+ if(chance>=.991){
+  float starDistance=length(st);
+  if(starDistance<.20&&night>0.){
+   float star=(1.-smoothstep(.025,.20,starDistance))*(.5+.5*hash(cell+5.));
+   col+=mix(vec3(.7,.80,1.),vec3(1.,.85,.64),hash(cell+17.))*star*night*smoothstep(.25,.65,vUv.y)*(1.-sheet*.8);
+  }
+  if(chance>=.994&&starDistance<.18){
+   float highStar=1.-smoothstep(.025,.18,starDistance);
+   col+=vec3(.85,.9,.98)*highStar*(smoothstep(.70,1.,vUv.y)+altFactor*.75)*(1.-sheet)*(.15+.85*night+altFactor*.75);
+  }
+ }
  float sun=exp(-length((vUv-vec2(.18,.82))*vec2(aspect,1.))*38.);col+=vec3(1.0,.78,.52)*sun*(1.-night)*(.24+dusk*0.65);
  // Distant skyline impact glows extend above the roofline instead of
  // disappearing behind the foreground. Restrained radiance, no extra draw calls.
