@@ -953,7 +953,7 @@ test('Cinematic completion consumes a pending transition once and invalidates ea
  api.cancel();assert.equal(api.state().cinematicActive,false);
  assert.ok(game.includes('generation===cinematicGeneration)player.classList.add'));
  assert.ok(game.includes("e.source===document.getElementById('cinematic-frame').contentWindow"));
- assert.ok(game.includes('function reset(){cancelChapterCinematic();'));
+ assert.ok(game.includes('function reset(){trainingMissions?.reset();cancelChapterCinematic();'));
  assert.ok(game.includes('function togglePause(){if(!active||cinematicActive)return;'));
 });
 test('Meteor warnings use intact parcel ownership and exclude invalid or test objects',()=>{
@@ -1049,5 +1049,50 @@ test('Finale powerup retry waits for spawn acknowledgement and avoids duplicate 
  api.elapse(.5);api.tick(false,()=>true);assert.equal(api.state().goldRedPowerupTimer,11);assert.equal(api.state().messages,1);
  api.elapse(11);api.tick(true,()=>{throw Error('spawn while powered');});assert.equal(api.state().messages,1);
  assert.ok(game.includes("meteors.some(m=>m.isPowerup===kind&&!m.grounded)"));
+});
+test('Actual chapter settlement phases complete exactly once at every boundary, including benchmark bypass',()=>{
+ const a=game.indexOf('const CAMPAIGN_CHAPTERS='),b=game.indexOf('function currentChapter()',a);
+ const c=game.indexOf('function cancelChapterCinematic()'),d=game.indexOf('function playChapterCinematic(',c);
+ const e=game.indexOf('function beginChapterSettlement()'),f=game.indexOf('function updateHud()',e);
+ const pre=`
+ let wave=2,active=true,paused=false,cinematicActive=false,cinematicGeneration=0,cinematicTimeout=null,postCutsceneWave=null,skipChapterIntroCinematic=false,chapterSettlement={active:false},stormTimer=0,remaining=8,between=2,secondaryEscortTimer=9;
+ let battery=1,repairs=0,cleanup=0,spawns=0,plays=0,traffic=[],departures=[],fade=false,fires=0;
+ const nodes=new Map(),document={getElementById(id){if(!nodes.has(id))nodes.set(id,{hidden:false,classList:{remove(){}},src:'',textContent:''});return nodes.get(id);}};
+ const chapterFade={},setChapterFade=v=>{fade=v;},message=()=>{},updateHud=()=>{},clearTimeout=()=>{};
+ const meteors=[{}],shots=[{}],remove=(a,i)=>a.splice(i,1),orbitalTheater={setBattery:v=>{battery=v}};
+ const resetChapterTrafficAndCrowd=()=>traffic.push(wave),applyResidualChapterDamage=()=>repairs++,clearFires=()=>fires++;
+ const chapterStaging={setSettlement(){cleanup++;},beginNextChapter(c){departures.push(c);}};
+ const newWave=()=>{if(!skipChapterIntroCinematic)throw Error('duplicate cinematic');spawns++;};
+ const QUERY_PARAMS={get:k=>benchmark?'1':null};
+ const playChapterCinematic=()=>{plays++;cinematicActive=true;paused=true;};
+ `;
+ const code=pre+game.slice(a,b)+game.slice(c,d)+game.slice(e,f)+`
+ return {setWave(w){wave=w;},begin:beginChapterSettlement,tick:updateChapterSettlement,close:closeChapterTransition,state:()=>({wave,paused,phase:chapterSettlement.phase,active:chapterSettlement.active,postCutsceneWave,repairs,cleanup,spawns,plays,traffic,departures,fade,fires,battery,remaining,secondaryEscortTimer,meteors:meteors.length,shots:shots.length})};
+ `;
+ for(const boundary of [2,5,10,14])for(const benchmark of [true,false]){
+  const api=new Function('benchmark',code)(benchmark);api.setWave(boundary);api.begin();api.begin();
+  assert.equal(api.state().phase,'calm');assert.equal(api.state().battery,0);assert.equal(api.state().remaining,0);assert.equal(api.state().secondaryEscortTimer,0);assert.equal(api.state().meteors,0);assert.equal(api.state().shots,0);
+  api.tick(6.5);assert.equal(api.state().phase,'cleanup');api.tick(5);api.tick(1);assert.equal(api.state().fires,1);api.tick(6.5);
+  assert.equal(api.state().phase,'fade');assert.equal(api.state().fade,true);api.tick(2.6);
+  if(!benchmark){assert.equal(api.state().paused,true);assert.equal(api.state().wave,boundary);assert.equal(api.state().repairs,0);assert.equal(api.state().plays,1);assert.equal(api.close(),true);}
+  assert.equal(api.state().wave,boundary+1);assert.equal(api.state().phase,'departure');assert.equal(api.state().repairs,1);assert.equal(api.state().traffic.at(-1),boundary+1);assert.equal(api.close(),false);
+  api.tick(1.4);api.tick(.1);assert.equal(api.state().fade,false);api.tick(4);
+  assert.equal(api.state().active,false);assert.equal(api.state().spawns,1);api.tick(20);assert.equal(api.state().spawns,1);
+ }
+ assert.ok(game.includes("if(!chapterSettlement.active)orbitalTheater?.update"));
+ assert.ok(game.includes("oldFrame.cloneNode(false);frame.removeAttribute('src');oldFrame.replaceWith(frame)"));
+});
+test('Tutorial objective framing stays player-led and vertical camera catch-up is bounded',()=>{
+ const a=game.indexOf('function trainingCameraFraming('),b=game.indexOf('function renderFrame(',a);
+ const {trainingCameraFraming,dampCameraFollow}=new Function(game.slice(a,b)+'return {trainingCameraFraming,dampCameraFollow};')();
+ const player={x:0,y:0},f=trainingCameraFraming({active:true,x:100,y:200,zoom:1.45},player);
+ assert.equal(f.x,12);assert.equal(f.y,6);assert.equal(f.zoom,.94);
+ assert.equal(trainingCameraFraming({active:false},player).zoom,1);
+ assert.equal(dampCameraFollow(null,20,.016),20);
+ assert.equal(dampCameraFollow(0,10,10),dampCameraFollow(0,10,.05));
+ let y=0;for(let i=0;i<240;i++){const target=i*.5;y=dampCameraFollow(y,target,1/60);assert.ok(Math.abs(y-target)<=6.000000001);}
+ assert.ok(game.includes('trainingCameraFraming(trainingMissions?.getCameraFocus(),dragon.position)'));
+ assert.ok(game.includes('cameraFollowY=null;qaCameraScrollX=null'));
+ assert.ok(game.includes('introZoomProgress=Math.min(1,introZoomProgress+cameraDt/2.4)'));
 });
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
