@@ -37,9 +37,9 @@ export function createCinematicEffects(T,scene,camera,bank){
   const m=new T.InstancedMesh(geometry,material,capacity);
   m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(T.DynamicDrawUsage);
   scene.add(m);
-  const alpha=new T.InstancedBufferAttribute(new Float32Array(capacity),1);
+  const alpha=new T.InstancedBufferAttribute(new Float32Array(capacity),1);alpha.setUsage(T.DynamicDrawUsage);
   m.geometry.setAttribute('fxAlpha',alpha);
-  const colors=new T.InstancedBufferAttribute(new Float32Array(capacity*3),3);
+  const colors=new T.InstancedBufferAttribute(new Float32Array(capacity*3),3);colors.setUsage(T.DynamicDrawUsage);
   m.geometry.setAttribute('fxColor',colors);
   material.onBeforeCompile=s=>{
    s.vertexShader='attribute float fxAlpha;attribute vec3 fxColor;varying float vFxAlpha;varying vec3 vFxColor;varying vec2 vFxUv;\n'+s.vertexShader;
@@ -48,6 +48,7 @@ export function createCinematicEffects(T,scene,camera,bank){
    s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat fxEdgeR=length((vFxUv-vec2(0.5))*2.0);float fxRaw=clamp(1.0-smoothstep(0.06,0.94,fxEdgeR),0.0,1.0);float fxFeather=fxRaw*fxRaw*(3.0-2.0*fxRaw);diffuseColor.rgb*=vFxColor;diffuseColor.a*=vFxAlpha*fxFeather;');
   };
   const descriptors=createEffectDescriptors(capacity);
+  const lastCamera=new T.Quaternion();let hasCamera=false;
   return {
    m,alpha,colors,capacity,n:0,dirty:false,
    clear(){descriptors.clear();this.n=0;this.dirty=true;},
@@ -56,7 +57,8 @@ export function createCinematicEffects(T,scene,camera,bank){
    },
    flush(renderCamera){
     m.count=this.n;
-    if(this.n>0){
+    const cameraChanged=!hasCamera||!lastCamera.equals(renderCamera.quaternion);
+    if(this.n>0&&(this.dirty||cameraChanged)){
      const v=descriptors.values;
      for(let j=0;j<this.n;j++){
       const i=j*10;
@@ -65,6 +67,7 @@ export function createCinematicEffects(T,scene,camera,bank){
       dummy.scale.set(v[i+3],v[i+4],1);dummy.updateMatrix();m.setMatrixAt(j,dummy.matrix);
       if(this.dirty){colors.setXYZ(j,v[i+7],v[i+8],v[i+9]);alpha.setX(j,v[i+5]);}
      }
+     lastCamera.copy(renderCamera.quaternion);hasCamera=true;
      uploadActivePrefix(m.instanceMatrix,this.n,16);
      if(this.dirty){uploadActivePrefix(colors,this.n,3);uploadActivePrefix(alpha,this.n,1);}
     }
@@ -588,7 +591,8 @@ export function createCinematicEffects(T,scene,camera,bank){
    activeDustPuffs:dustPuffs.filter(d=>d.active).length,
    activeBrickDustPuffs:dustPuffs.filter(d=>d.active&&d.col===brickDustColor).length,
    activeSparks:sparkPuffs.filter(s=>s.active).length,
-   smokePuffs:smoke.n
+   smokePuffs:smoke.n,
+   submittedBillboards:pools.reduce((n,p)=>n+p.n,0),billboardCapacity:pools.reduce((n,p)=>n+p.capacity,0)
   })
  };
 }
