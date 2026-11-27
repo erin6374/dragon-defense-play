@@ -328,4 +328,34 @@ test('Sandbox repair clears debris and vehicles without removing campaign meteor
  }
  fixture(true);fixture(false);
 });
+test('Vehicle ownership preserves shared cache assets and releases unique pre-bake and baked resources once',()=>{
+ const source=read('src/rendering/realistic-vehicles.js'),a=source.indexOf('const modelResources='),b=source.indexOf('export function buildRoadVehicle',a);
+ assert.ok(a>=0&&b>a);
+ const mk=()=>({n:0,dispose(){this.n++;}}),shared=mk(),unique=mk(),old=mk(),baked=mk(),mat=mk();
+ const root={nodes:[{isMesh:true,geometry:shared,material:mat},{isMesh:true,geometry:old,material:unique}],traverse(fn){this.nodes.forEach(fn);}};
+ const api=new Function('kit',source.slice(a,b).replace(/^export /gm,'')+'return {captureVehicleResources,releaseVehicleResources};')(()=>({sphere:shared,box:mk(),geo:new Map(),mats:new Map([['m',mat]])}));
+ assert.equal(api.captureVehicleResources({},root),2);
+ root.nodes=[{isMesh:true,geometry:baked,material:unique}];assert.equal(api.captureVehicleResources({},root),3);
+ assert.equal(api.releaseVehicleResources(root),3);assert.equal(shared.n,0);assert.equal(mat.n,0);assert.equal(old.n,1);assert.equal(baked.n,1);assert.equal(unique.n,1);
+ assert.equal(api.releaseVehicleResources(root),0);
+});
+test('Helicopter retirement bounds reuse and releases crashed model resources once',()=>{
+ const a=game.indexOf('function retireHelicopter('),b=game.indexOf('function disposeHelicopterElectric(',a);
+ assert.ok(a>=0&&b>a);let disposed=0,lights=0,unique=0;
+ const api=new Function('disposeHelicopterElectric','scene','helicopterLightPool','releaseVehicleResources','const helicopterModels=new Map();'+game.slice(a,b)+'return {retireHelicopter,helicopterModels};')(()=>{},{remove(){}},{release(){lights++;}},()=>unique++);
+ for(let i=0;i<4;i++)api.retireHelicopter({root:{},variant:1,searchlight:{}});
+ assert.equal(api.helicopterModels.get(1).length,3);assert.equal(unique,1);assert.equal(lights,4);
+ const goo={dispose(){disposed++;}},h={root:{},variant:1,gasHit:true,gooResources:[goo,goo],searchlight:{}};
+ api.retireHelicopter(h);api.retireHelicopter(h);
+ assert.equal(unique,2);assert.equal(disposed,1);assert.equal(lights,5);
+});
+test('Road vehicle pool has per-variant and global retention limits',()=>{
+ const a=game.indexOf('function recycleCar('),b=game.indexOf('const burningVehicles=',a);
+ let disposed=0;
+ const api=new Function('scene','releaseVehicleResources','const vehiclePool=new Map(),vehiclePoolStats={recycled:0};'+game.slice(a,b)+'return {recycleCar,vehiclePool};')({remove(){}},()=>disposed++);
+ for(let i=0;i<5;i++)api.recycleCar({root:{},poolKey:'a'});
+ assert.equal(api.vehiclePool.get('a').length,4);assert.equal(disposed,1);
+ for(let i=0;i<60;i++)api.recycleCar({root:{},poolKey:'other'+i});
+ assert.equal([...api.vehiclePool.values()].reduce((n,p)=>n+p.length,0),48);assert.equal(disposed,17);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
