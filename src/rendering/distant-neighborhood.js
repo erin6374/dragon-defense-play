@@ -33,6 +33,7 @@ export function createDistantNeighborhood({root,flameTexture,context}){
  const rearEdge=context?.rearEdge??0;
  const cross=context?.crossStreetX??CROSS_STREETS.map(s=>s.x);
  const fitsBehindViewer=(z,d)=>!context||z+d/2<=rearEdge;
+ const isNorthContext=(x,w)=>context&&x+w/2<=context.northEdge;
  const clearsCrossStreet=(x,w)=>context
   ?cross.every(streetX=>Math.abs(x-streetX)>w/2+9)
   :!occupiesCrossStreet(x,w,5.0);
@@ -65,12 +66,12 @@ export function createDistantNeighborhood({root,flameTexture,context}){
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[],canopy:[],trunk:[]}));
  function add(tier,type,x,y,z,w,h,d,color=null){
-  const depth=context?Math.min(d,rearEdge-(z-d/2)):d;
+  const depth=context&&!isNorthContext(x,w)?Math.min(d,rearEdge-(z-d/2)):d;
   if(depth<=0)return;
   instances[tier][type].push({x,y,z:z+(depth-d)/2,w,h,d:depth,color});
  }
  function registerBuilding(tier,x,z,w,h,d,y=0){
-  if(!fitsBehindViewer(z,d+3))return null;
+  if(!isNorthContext(x,w+3)&&!fitsBehindViewer(z,d+3))return null;
   if(context&&!clearsCrossStreet(x,w+1))return null;
   const home={id:buildingDefs.length,tier,x,y,z,w,h,d,parts:[],damage:0,fall:0};
   buildingDefs.push(home);
@@ -215,6 +216,29 @@ export function createDistantNeighborhood({root,flameTexture,context}){
       addPart(home,'window',x+dx,h*floor/4,z+6.05,1.32,1.62,.12);
       addPart(home,'cornice',x+dx,h*floor/4-.92,z+6.12,1.5,.12,.24);
      }
+    }
+   }
+  }
+ }
+ // Illustrative blocks beyond Cumberland. Leave the surveyed plots alone
+ // and keep openings for two north-side crossings and the rear streets.
+ if(context){
+  const start=context.northEdge;
+  street(start-90,14,180,19,0);
+  for(const z of [-38,-66])street(start-90,z,180,7,slot(z));
+  for(const offset of [59,119])street(start-offset,-36,8,101,0);
+  for(const [row,z] of [-14,-51,-81].entries()){
+   const tier=slot(z);
+   for(let lot=0;lot<19;lot++){
+    const offset=8+lot*9;
+    if([59,119].some(crossing=>Math.abs(offset-crossing)<9))continue;
+    const x=start-offset,h=7.5+((lot+row*3)%5)*1.05;
+    const home=registerBuilding(tier,x,z,7.1,h,12);
+    addPart(home,'main',x,h/2,z,7.1,h,12,facades[(lot+row*4)%facades.length]);
+    addPart(home,'roof',x,h+.12,z,7.3,.24,12.2,0xb8bec3);
+    addPart(home,'cornice',x,h+.10,z+5.9,7.32,.30,.36);
+    for(const fraction of [.31,.65])for(const dx of [-1.65,1.65]){
+     addPart(home,'window',x+dx,h*fraction,z+6.05,1.18,1.42,.09);
     }
    }
   }
@@ -964,7 +988,7 @@ export function createDistantNeighborhood({root,flameTexture,context}){
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },
-  stats(){return {rearEdge:context?.rearEdge??null,byTier:tiers.map((_,i)=>buildingDefs.filter(b=>b.tier===i).length),rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
+  stats(){return {rearEdge:context?.rearEdge??null,northHomes:buildingDefs.filter(b=>isNorthContext(b.x,b.w)&&b.z>rearEdge).length,byTier:tiers.map((_,i)=>buildingDefs.filter(b=>b.tier===i).length),rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    combustion:combustion.stats(),
    ambientRooftopFires:damageMarkers.length,

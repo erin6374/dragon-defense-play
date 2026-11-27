@@ -75,7 +75,18 @@ export function createStructuralCity(THREE,scene,bank){
       const width=b.w*.88/widthBays;
       addPart(b,'facade','brick',b.x+(bay-(widthBays-1)/2)*width,y+b.floorHeight/2,z,width,b.floorHeight,thick,floor);
      }
-     addPart(b,'slab','concrete',b.x+side*b.w*.25,y+.12,b.z,b.w*.48,thick,b.d*.92,floor);
+    }
+    // Narrow floor sections follow irregular wings, cutouts and courtyards.
+    // A hole can remove one section while adjacent supported slabs remain.
+    const columns=Math.min(5,Math.max(2,Math.ceil(b.w/4)));
+    const rows=Math.min(6,Math.max(2,Math.ceil(b.d/4)));
+    const width=b.w/columns,depth=b.d/rows;
+    for(let ix=0;ix<columns;ix++)for(let iz=0;iz<rows;iz++){
+     const x=b.x+(ix-(columns-1)/2)*width,z=b.z+(iz-(rows-1)/2)*depth;
+     const candidate={original:{position:{x,y,z},size:{x:width*.98,y:thick,z:depth*.98}}};
+     if(interiorFitsParcel(b,candidate))addPart(b,'slab',
+      b.interiorProfile.kind==='residential'&&floor?'wood':'concrete',
+      x,y+.12,z,width*.98,thick,depth*.98,floor);
     }
    }
    for(const side of [-1,1])addPart(b,'roof','roof',b.x+side*b.w*.25,b.h,b.z,b.w*.48,thick,b.d*.96,b.stories-1);

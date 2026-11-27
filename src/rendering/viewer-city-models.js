@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { makeViewerBuilding } from './viewer-building-fit.js';
-import { containsParcel } from '../simulation/viewer-parcels.js';
+import { containsParcel,touchesParcel } from '../simulation/viewer-parcels.js';
 import { createParcelDamageMask } from './parcel-damage-mask.js';
 
 export function createViewerCityModels(scene,city) {
@@ -48,12 +48,13 @@ export function createViewerCityModels(scene,city) {
     const e=entries.find(e=>e.targetBuilding.damage<.97&&containsParcel(e.targetBuilding,point.x,point.z));
     return e?impactBuilding(e.def.id,point,radius,strength):0;
   }
-  function impactBuilding(id,point,radius=5,strength=1){
+  function impactBuilding(id,point,radius=5,strength=1,ownsSweep=false){
     if(!point||![point.x,point.y,point.z,radius,strength].every(Number.isFinite)||radius<=0||strength<=0)return 0;
     const e=findEntry(id);
     // A penetrating meteor retains its original parcel owner. Never redirect
     // damage to an adjacent footprint, even if geometry overlaps.
-    if(!e||e.targetBuilding.damage>=.97||!containsParcel(e.targetBuilding,point.x,point.z))return 0;
+    const containsContact=ownsSweep?touchesParcel:containsParcel;
+    if(!e||e.targetBuilding.damage>=.97||!containsContact(e.targetBuilding,point.x,point.z))return 0;
     city.impact(e.targetBuilding,point,radius,strength);
     apply(e,e.targetBuilding.damage);
     if(e.damage<.97)stampImpact(e,point,radius,strength);

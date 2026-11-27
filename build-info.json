@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.8",
-  "build": "combined-preview.8-rc174-bsv21.1.33",
-  "timestamp": "2026-11-27T07:02:01Z",
+  "version": "5.5.0-integration.9",
+  "build": "combined-preview.9-rc174-bsv21.1.33",
+  "timestamp": "2026-11-27T07:17:37Z",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
@@ -24,7 +24,7 @@
       "path": "assets/tech-freire-original.fbx",
       "sha256": "8fe8c980ea7b73795db4c5b947853615d861c2b0c50db37e8a5541560b1d77e4"
     },
-    "repositoryParent": "b78aa21c1bf7140b27a564edafddadd1a2749fef",
+    "repositoryParent": "f0cae96d1043a3083e31819e73c437d98d72843d",
     "schoolPlayMesh": {
       "path": "assets/tech-freire-play-mesh-v1.bin",
       "sha256": "2e575c16f4361f3f57cbcdd6de7d089dd25c0546b4a994e4b17a27fd83147643",

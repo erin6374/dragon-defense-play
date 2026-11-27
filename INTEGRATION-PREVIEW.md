@@ -1,6 +1,6 @@
-# Dragon Defense — Integration Preview 8
+# Dragon Defense — Integration Preview 9
 
-Build `5.5.0-integration.8`.
+Build `5.5.0-integration.9`.
 Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
 Exact source
 revisions, the unchanged Tech Freire FBX hash, and the development snapshot
@@ -32,6 +32,18 @@ now starts a clean defense session; it does not preserve a prior campaign.
    smoke testing, but that is not native GPU performance verification.
 
 ## Development changes
+
+Sandbox flight uses the projected Viewer map bounds and continues past the
+southernmost surveyed buildings. The map also gains illustrative residential
+context beyond Cumberland. Swept meteor contacts retain their assigned parcel
+at façade edges, and smaller floor sections fit irregular building footprints.
+Church and auditorium interiors keep their open single-volume layout. Tech
+Freire retains its dedicated FBX-derived school path.
+
+Camera follow and zoom recover gradually after a missed frame, and Balanced
+mode shades at most 1152 by 648 pixels. The long frame gaps reported on Windows
+still require native playtesting.
+
 
 Baked vehicle meshes now use their computed bounds, letting the renderer
 skip bodywork outside the camera view. Traffic simulation and vehicle
@@ -69,7 +81,7 @@ meteor dropper transfers the selected size and material into Sandbox.
 
 
 The 122 mapped building parcels and the separate original school FBX are
-retained. Work toward Preview 8 includes localized and bounded meteor damage,
+retained. Work toward Preview 9 includes localized and bounded meteor damage,
 continuous roof/side collision, reconstruction optimizations, updated mapped
 traffic and responder routes, independent water-main rupture, crater and
 camera cleanup, parcel-local damage masks, function-specific interiors, original FBX interior restoration, spatial source batching, and regression tests. The repeatable source-level suite is

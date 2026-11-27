@@ -43,3 +43,18 @@ export function containsParcel(building,x,z) {
   return !building.polys || building.polys.some(([outer,...holes]) =>
     insideRing(x,z,outer) && !holes.some(ring=>insideRing(x,z,ring)));
 }
+
+// Swept side contacts can land exactly on an edge that the interior ray
+// predicate excludes. Accept that contact only for the assigned parcel.
+export function touchesParcel(building,x,z,tolerance=.025){
+  if(containsParcel(building,x,z))return true;
+  if(!building.polys||Math.abs(x-building.x)>building.w/2+tolerance||
+    Math.abs(z-building.z)>building.d/2+tolerance)return false;
+  for(const poly of building.polys)for(const ring of poly)for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const [ax,az]=ring[j],[bx,bz]=ring[i];
+    const dx=bx-ax,dz=bz-az,length=dx*dx+dz*dz;
+    const t=length?Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/length)):0;
+    if((x-ax-t*dx)**2+(z-az-t*dz)**2<=tolerance*tolerance)return true;
+  }
+  return false;
+}

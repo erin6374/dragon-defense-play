@@ -1112,6 +1112,11 @@ dragon.scale.setScalar(1.20);
 const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
 let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0,restBlend=1.0,isBoosting=false,lastIntenseRoarElapsed=0,rearUpBlend=0.0,introZoomProgress=1.0,waveClearZoomBlend=0.0;
 const DRAGON_BOUND_X=380;
+function clampDragonX(x){
+ const bounds=neighborhood.inspectionBounds;
+ return freeFlightMode?THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX):
+  THREE.MathUtils.clamp(x,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+}
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
  dragonVelX=0;dragonVelY=0;flightRoll=0;flightYaw=0;diveEnergy=0;
@@ -4490,7 +4495,7 @@ function damage(x,z,y=7,meteor=null){
  if(effectiveTarget){
   for(const p of crowd)if(Math.abs(p.g.position.x-targetX)<25)p.dx=p.g.position.x<targetX?-1:1;
   const before=effectiveTarget.damage;
-  northBroadModels.impactBuilding(effectiveTarget.id,new THREE.Vector3(targetX,targetY,hitZ),Math.min(blastRadius,8),Math.min(blastStrength,3));
+  northBroadModels.impactBuilding(effectiveTarget.id,new THREE.Vector3(targetX,targetY,hitZ),Math.min(blastRadius,8),Math.min(blastStrength,3),Boolean(owner));
   lost=effectiveTarget.damage>before?1:0;
   cinematicFX.dustBurst(new THREE.Vector3(targetX,targetY,hitZ),Math.min(2.5,blastStrength*1.2),{brick:true,count:16});
   if(lost>0){emitMeteorShrapnel(new THREE.Vector3(targetX,targetY,hitZ),Math.min(4,lost*.3+1.2));for(let j=0;performanceLab.isEnabled('particles')&&j<Math.min(14,lost*3)&&impactParticles.length<210;j++)impactParticles.push({pool:5,position:new THREE.Vector3(targetX+(Math.random()-.5)*2,targetY+(Math.random()-.5)*1.4,hitZ+.3),velocity:new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*5,(Math.random()-.5)*5),scale:.04+Math.random()*.12,life:.7+Math.random()*.5,ttl:1.2,smoke:false});}flashAt(targetX,targetY,hitZ,4.2);panicCrowdAt(targetX,hitZ,38);
@@ -5885,8 +5890,9 @@ if(dragonLeavingRoof&&dragonStun<=0){
   if(Math.abs(dragonVelY)<0.06)dragonVelY=0;
   diveEnergy=Math.max(0,diveEnergy-dt*8.0);
  }
-dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
- if(Math.abs(dragon.position.x)>=DRAGON_BOUND_X)dragonVelX=0;
+const nextFlightX=dragon.position.x+dragonVelX*dt;
+ dragon.position.x=clampDragonX(nextFlightX);
+ if(dragon.position.x!==nextFlightX)dragonVelX=0;
  if(rise>0&&dragon.position.y<=2.25){
   dragonVelY=Math.max(dragonVelY,17.5);
   if(elapsed-lastWingFlapTime>0.45){
@@ -5912,7 +5918,7 @@ dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_
 }else if(dragonStun>0){
  dragonVelX*=Math.exp(-5.0*dt);
  dragonVelY=Math.max(-18.0,dragonVelY-22.0*dt);
- dragon.position.x=THREE.MathUtils.clamp(dragon.position.x+dragonVelX*dt,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+ dragon.position.x=clampDragonX(dragon.position.x+dragonVelX*dt);
  dragon.position.y=THREE.MathUtils.clamp(dragon.position.y+dragonVelY*dt,1.3,flightCeiling);
 }
 if(dragonVelX>1.2&&facing!==1){facing=1;turnTime=.28;}
@@ -5925,7 +5931,9 @@ dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,BASE_DRAGON_SCALE,Math.min(1,
 dragon.scale.z=BASE_DRAGON_SCALE;
 const targetRoll=-dragonVelX*0.022-move*0.16;
 flightRoll=THREE.MathUtils.lerp(flightRoll,targetRoll,Math.min(1,dt*8.5));
-const atBoardEdge=Math.abs(dragon.position.x)>=DRAGON_BOUND_X-22;
+const atBoardEdge=freeFlightMode
+ ?dragon.position.x<=neighborhood.inspectionBounds.minX+22||dragon.position.x>=neighborhood.inspectionBounds.maxX-22
+ :Math.abs(dragon.position.x)>=DRAGON_BOUND_X-22;
 const isStaticFlight=dragonLeavingRoof&&Math.abs(move)<0.1&&Math.abs(rise)<0.1&&Math.abs(dragonVelX)<1.2&&Math.abs(dragonVelY)<1.2;
 const shouldRearUp=atBoardEdge||isStaticFlight||!dragonLeavingRoof;
 rearUpBlend=THREE.MathUtils.lerp(rearUpBlend,shouldRearUp?1.0:0.0,Math.min(1,dt*5.0));
@@ -6475,7 +6483,7 @@ if(m.grounded){
       isMassive:!!(m.isMassive||sz>=3.8)
      });
     }else if(b){
-     northBroadModels.impactBuilding(b.id,m.mesh.position,punchRad,0.38);
+     northBroadModels.impactBuilding(b.id,m.mesh.position,punchRad,0.38,true);
     }
 
     // Physical furniture spillout tumbling out through facade openings onto the street
@@ -6638,7 +6646,7 @@ if(m.grounded){
    // Keep penetration within its original building footprint.
    m.crunchStopY=Math.min(m.crunchStopY,m.crunchStartY-.01);
    m.vel.set(0,-16.0,0);
-   if(hitBuilding)northBroadModels.impactBuilding(hitBuilding.id,m.mesh.position,Math.max(1.5,sz*1.4),.45);
+   if(hitBuilding)northBroadModels.impactBuilding(hitBuilding.id,m.mesh.position,Math.max(1.5,sz*1.4),.45,true);
    cinematicFX.burst(m.mesh.position,Math.max(0.4,sz*0.7));
    sound('impact',{x:m.mesh.position.x});
    emitMeteorShrapnel(m.mesh.position,Math.min(6,sz*2.0));
@@ -6766,12 +6774,14 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
   camera.aspect=w/h;
   lastW=w;lastH=h;
  }
- const jitter=shake>0?(Math.random()-.5)*shake:0;
+ // Do not turn a missed frame into a full camera catch-up jump.
+ const cameraDt=Math.min(dt,.05);
+ const jitter=shake>0?Math.sin(present*.053)*shake*.5:0;
  shake=Math.max(0,shake-Math.min(dt,.1));
  const follow=skyCameraLift(dragon.position.y);
  const deadZone=35*Math.min(1,camera.aspect/(16/9));
  const targetScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone)+(dragonVelX*0.35);
- if(qaCameraScrollX!==null){cameraScrollX=qaCameraScrollX;}else{cameraScrollX=THREE.MathUtils.lerp(cameraScrollX,targetScrollX,Math.min(1,dt*4.8));}
+ if(qaCameraScrollX!==null){cameraScrollX=qaCameraScrollX;}else{cameraScrollX=THREE.MathUtils.lerp(cameraScrollX,targetScrollX,1-Math.exp(-cameraDt*5.0));}
  skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
  const altRatio=THREE.MathUtils.clamp((dragon.position.y-44)/(flightCeiling-44),0,1);
@@ -6822,7 +6832,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  const targetDutchTilt=THREE.MathUtils.clamp(-flightRoll*0.008-(dragonVelX*0.0003),-0.012,0.012);
  if(!subwayView&&!basementCamActive)camera.rotation.z+=targetDutchTilt;
 
- const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,dt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
+ const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,cameraDt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
  soundEngine.update(dt,camera.position.y,368,altRatio>0.15,{wave,active:active&&!paused,meteorsCount:meteors.filter(m=>!m.grounded).length,bossActive:bossSpawned&&!bossDefeated,schoolHp:hp,dragonVelY,isBoosting,elapsed});
  if(active&&!paused&&elapsed-lastIntenseRoarElapsed>12.0){
@@ -7096,6 +7106,7 @@ window.__DD_QA={snap,
    const idleBudget=district.stats();
    return {id:impact.id,intact,falling,settled,flightBudget,settledBudget,idleBudget,before,flight,after};
   }),
+  inspectionBounds:()=>({...neighborhood.inspectionBounds}),
   distantNeighborhoodStats:()=>neighborhood.longRange.stats(),
   strikeDistantNeighborhood:(x,z,strength)=>neighborhood.longRange.strike(x,z,strength),
   distantBuildingState:id=>neighborhood.longRange.buildingState(id),
@@ -7607,7 +7618,7 @@ window.__DD_QA={snap,
   triggerHelicopterCrash:(variant=1)=>run('triggerHelicopterCrash',()=>{spawnHelicopter(variant);const h=helicopters.at(-1);if(h)crashHelicopter(h);return snap()}),
   stageFirefighter:()=>run('stageFirefighter',()=>{ignite(0,3,3);spawnHelicopter(2);const h=helicopters[helicopters.length-1];h.root.position.set(0,16,3);return snap()}),
   start:(at=1)=>run('start',()=>{const field=document.getElementById('start-wave');if(!field)showSettings();document.getElementById('start-wave').value=Math.max(1,Math.min(15,at));reset();if(cinematicActive)closeChapterTransition();return snap()}),
-  move:(x,y=10)=>run('move',()=>{dragon.position.set(THREE.MathUtils.clamp(x,-DRAGON_BOUND_X,DRAGON_BOUND_X),THREE.MathUtils.clamp(y,1.35,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
+  move:(x,y=10)=>run('move',()=>{dragon.position.set(clampDragonX(x),THREE.MathUtils.clamp(y,1.35,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;return snap()}),
   advanceOrdinaryWave:()=>run('advanceOrdinaryWave',()=>{if(!active||wave>=15||[5,10,14].includes(wave))throw Error('QA ordinary-wave transition requires active non-chapter boundary wave');const before=snap();wave++;between=0;updateHud();newWave();return {before,after:snap()}}),
   stageRallyLoop:()=>run('stageRallyLoop',()=>{
    remaining=0;

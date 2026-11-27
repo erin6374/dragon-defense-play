@@ -17,7 +17,7 @@ let count=0;
 const test=(name,fn)=>{fn();count++;console.log('PASS '+name);};
 const district=load('broad-street/district.js',{},['buildings','roads']);
 const grid=load('broad-street/broad-street-grid-data.mjs',{},['JUNCTIONS','curbAt','BROAD_EXTENTS']);
-const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
+const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','touchesParcel','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
 const roads=load('src/simulation/road-corridors.js',{...grid,...parcels},['CROSS_STREETS','CROSS_STREET_X','BROAD_LANES','BROAD_X','isBroadRoad']);
 const list=parcels.viewerParcels(JSON.parse(read('broad-street/mapped-data.json')).rows);
 test('Unique valid parcel inventory',()=>{assert.equal(new Set(list.map(p=>p.id)).size,list.length);assert.ok(list.length>=122);assert.ok(list.every(p=>p.w>0&&p.d>0&&p.h>0));});
@@ -182,6 +182,12 @@ test('Parcel damage mask persists locally and restores original shared materials
  assert.ok(mask.byteLength<=48**3);
  const clone=a.material;mask.dispose();mask.dispose();
  assert.equal(a.material,original);assert.equal(b.material,original);assert.equal(clone.disposals,1);assert.equal(tex.disposals,1);
+});
+test('Swept contact includes exact parcel edges without widening parcel ownership',()=>{
+ const b={x:0,z:0,w:6,d:4,polys:[[[[-3,-2],[3,-2],[3,2],[-3,2]]]]};
+ assert.equal(parcels.containsParcel(b,3,0),false);
+ assert.ok(parcels.touchesParcel(b,3,0));
+ assert.equal(parcels.touchesParcel(b,3.1,0),false);
 });
 test('Viewer damage never hides an entire floor band on a partial strike',()=>{
  const {createViewerCityModels}=load('src/rendering/viewer-city-models.js',{

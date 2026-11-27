@@ -79,11 +79,17 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
  const contextRoot=new THREE.Group();
  contextRoot.name='RC174 residential context beyond Viewer grid';
  staticGroup.add(contextRoot);
+ // The north boundary is Cumberland (negative game X). Include mapped
+ // roads as well as parcels when computing the Sandbox camera range.
+ const roadXs=roads.flatMap(([,points])=>points.map(([x])=>x+VIEWER_TO_GAME_X));
+ const northEdge=Math.min(...roadXs,...buildings.map(b=>b.x-b.w/2))-6;
+ const southEdge=Math.max(...roadXs,...buildings.map(b=>b.x+b.w/2));
+ const inspectionBounds={minX:northEdge-105,maxX:southEdge+24};
  const longRange=createDistantNeighborhood({root:contextRoot,flameTexture:visualBank.images.flame,
-  context:{rearEdge,crossStreetX}});
+  context:{rearEdge,crossStreetX,northEdge}});
  return {
   city,school,updateWindPlanting,schoolGroup:city.groups.school,targetBuildings:buildings,buildings,windowSurfaces:[],
-  foreground,longRange,activeAt,
+  foreground,longRange,activeAt,inspectionBounds,
   bounds:buildings.filter(b=>!b.background).map(b=>[b.x-b.w/2,b.x+b.w/2]),
   batchStats:{mappedBuildings:buildings.length,drawBatches:city.stats().drawBatches},
   impact(x,y,z,radius=6.6,emit=()=>{},strength=1){return city.impact(activeAt(x,z),new THREE.Vector3(x,y,z),radius,strength);},
