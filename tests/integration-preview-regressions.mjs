@@ -17,7 +17,7 @@ let count=0;
 const test=(name,fn)=>{fn();count++;console.log('PASS '+name);};
 const district=load('broad-street/district.js',{},['buildings','roads']);
 const grid=load('broad-street/broad-street-grid-data.mjs',{},['JUNCTIONS','curbAt','BROAD_EXTENTS']);
-const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','touchesParcel','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
+const parcels=load('src/simulation/viewer-parcels.js',{buildings:district.buildings},['viewerParcels','containsParcel','touchesParcel','ownsSchoolFootprint','VIEWER_TO_GAME_X','VIEWER_TO_GAME_Z']);
 const roads=load('src/simulation/road-corridors.js',{...grid,...parcels},['CROSS_STREETS','CROSS_STREET_X','BROAD_LANES','BROAD_X','isBroadRoad']);
 const list=parcels.viewerParcels(JSON.parse(read('broad-street/mapped-data.json')).rows);
 test('Unique valid parcel inventory',()=>{assert.equal(new Set(list.map(p=>p.id)).size,list.length);assert.ok(list.length>=122);assert.ok(list.every(p=>p.w>0&&p.d>0&&p.h>0));});
@@ -61,7 +61,7 @@ test('School meteor budgets bounded between 5 and 15 percent for damaging rocks'
 test('Penetration spends budget once at any tested step size',()=>{for(const size of [1.35,2,2.8,3.6,13])for(const delta of [.01,.3,2,30]){const budget=damage.schoolMeteorBudget(size);let y=16,remaining=budget;while(y>-.8){const next=Math.max(-.8,y-delta);remaining-=damage.penetrationDamageStep(budget,remaining,16,-.8,y,next);y=next;}assert.ok(Math.abs(remaining)<1e-9);}});
 test('No global partial-damage floor clipping',()=>{const shader=read('src/rendering/school-source-damage.js');assert.ok(!shader.includes('collapseCutoff'));assert.ok(shader.includes('schoolDestructionRatio>=1.0'));});
 test('Water-only preset is independent of subway breach',()=>assert.ok(game.includes('addCrater(0,BROAD_CENTER,4.5,{waterOnly:true})')));
-const collision=load('src/simulation/meteor-collision.js',{containsParcel:parcels.containsParcel},['traceMeteorCollision']);
+const collision=load('src/simulation/meteor-collision.js',{containsParcel:parcels.containsParcel,ownsSchoolFootprint:parcels.ownsSchoolFootprint},['traceMeteorCollision']);
 const school={min:{x:-13.5,z:-58.4},max:{x:13.5,z:.4,y:28}};
 test('Every mapped building owns its vertical roof collision',()=>{
  for(const b of list){
@@ -960,7 +960,7 @@ test('Meteor warnings use intact parcel ownership and exclude invalid or test ob
  const {selectMeteorWarning}=load('src/simulation/meteor-warning.js',{},['selectMeteorWarning']);
  const school={x:0,z:-29,w:27,d:58.8,school:true},m={target:{x:0,y:20,z:-10},mesh:{position:{y:60}},vel:{y:-10}};
  assert.equal(selectMeteorWarning([m],school,[school]).label,'SCHOOL');
- const b={x:0,z:-10,w:10,d:10,damage:1};assert.equal(selectMeteorWarning([m],school,[b]).label,'SCHOOL');
+ const b={x:0,z:-10,w:10,d:10,damage:1};assert.equal(selectMeteorWarning([m],school,[b]).label,'BLOCK');
  b.damage=0;assert.equal(selectMeteorWarning([m],school,[b],()=>false).label,'SCHOOL');
  assert.equal(selectMeteorWarning([m],school,[b],()=>true).label,'BLOCK');
  assert.equal(selectMeteorWarning([{...m,testMeteor:true}],school,[]),null);
@@ -1094,5 +1094,71 @@ test('Tutorial objective framing stays player-led and vertical camera catch-up i
  assert.ok(game.includes('trainingCameraFraming(trainingMissions?.getCameraFocus(),dragon.position)'));
  assert.ok(game.includes('cameraFollowY=null;qaCameraScrollX=null'));
  assert.ok(game.includes('introZoomProgress=Math.min(1,introZoomProgress+cameraDt/2.4)'));
+});
+test('Actual mapped inventory has exclusive parcel samples and school ownership stays stable after adjacent collapse',()=>{
+ const bounds={min:{x:-13.5,z:-58.4},max:{x:13.5,z:.4,y:28}};
+ assert.equal(list.length,122);assert.equal(new Set(list.map(p=>p.id)).size,122);
+ let overlaps=0;
+ for(const p of list){
+  let own=0,sharedSchool=0;
+  for(let u=1;u<20;u++)for(let v=1;v<20;v++){
+   const x=p.x-p.w/2+p.w*u/20,z=p.z-p.d/2+p.d*v/20;
+   if(!parcels.containsParcel(p,x,z))continue;
+   if(!list.some(q=>q!==p&&parcels.containsParcel(q,x,z)))own++;
+   if(x>=bounds.min.x&&x<=bounds.max.x&&z>=bounds.min.z&&z<=bounds.max.z){
+    sharedSchool++;assert.equal(parcels.ownsSchoolFootprint(bounds,list,x,z),false);
+   }
+  }
+  assert.ok(own>0,'Exclusive footprint sample for '+p.id);if(sharedSchool)overlaps++;
+ }
+ assert.equal(overlaps,2);
+ for(const id of ['1007132','1007133']){
+  const p=list.find(b=>b.id===id);let point=null;
+  for(let u=1;u<20&&!point;u++)for(let v=1;v<20&&!point;v++){
+   const x=p.x-p.w/2+p.w*u/20,z=p.z-p.d/2+p.d*v/20;
+   if(parcels.containsParcel(p,x,z)&&x>=bounds.min.x&&x<=bounds.max.x&&z>=bounds.min.z&&z<=bounds.max.z)point={x,z};
+  }
+  assert.ok(point);
+  const start={...point,y:80},end={...point,y:-2};
+  assert.equal(collision.traceMeteorCollision(start,end,list,bounds).building?.id,id);
+  const collapsed=list.map(b=>b===p?{...b,damage:1}:b);
+  assert.equal(collision.traceMeteorCollision(start,end,collapsed,bounds).kind,'ground');
+  assert.equal(parcels.ownsSchoolFootprint(bounds,collapsed,point.x,point.z),false);
+ }
+ assert.ok(parcels.ownsSchoolFootprint(bounds,list,0,-20));
+ assert.equal(collision.traceMeteorCollision({x:0,y:80,z:-20},{x:0,y:-2,z:-20},list,bounds).kind,'school');
+ assert.ok(game.includes('ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,targetX,hitZ)'));
+});
+test('Replacement model envelope fit preserves proportions and contains all axes for the actual parcel inventory',()=>{
+ const {parcelFitTransform}=load('src/rendering/building-registry.js',{},['parcelFitTransform']);
+ const box={min:{x:100,y:-4,z:10},max:{x:120,y:16,z:50}};
+ for(const p of list){
+  const slot={position:[p.x,0,p.z+p.d/2],frontWidth:p.w,depth:p.d,height:p.h};
+  const fit=parcelFitTransform(box,slot),e=1e-8;
+  assert.ok(fit.scale>0);assert.ok(20*fit.scale<=p.w+e&&20*fit.scale<=p.h+e&&40*fit.scale<=p.d+e);
+  assert.ok(Math.abs(fit.x+110*fit.scale-p.x)<e);
+  assert.ok(Math.abs(fit.y-4*fit.scale)<e);
+  assert.ok(Math.abs(fit.z+50*fit.scale-slot.position[2])<e);
+ }
+ assert.throws(()=>parcelFitTransform({min:{x:0,y:0,z:0},max:{x:0,y:2,z:3}},{position:[0,0,0],frontWidth:4,depth:5,height:6}));
+ const source=read('src/rendering/building-registry.js');
+ assert.ok(source.indexOf('const fit')<0||source.includes('parcelFitTransform(new THREE.Box3().setFromObject(wrapper),slot,opts)'));
+ assert.ok(source.indexOf('Replacement bounds invalid after fitting')<source.indexOf('root.remove(oldModel)'));
+ assert.ok(source.includes('opts.enhanceGlass&&!opts.preserveMaterials'));
+});
+test('Localized parcel strikes survive model replacement and are cleared on repair',()=>{
+ const {createViewerCityModels}=load('src/rendering/viewer-city-models.js',{
+ THREE:{Group:class{constructor(){this.children=[];this.visible=true;}add(o){this.children.push(o);}},Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z});}},Frustum:class{},Matrix4:class{}},
+ makeViewerBuilding:()=>({model:{visible:true,traverse(fn){fn(this);}},bounds:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1},clone(){return {expandByScalar(){return this;}};}}}),
+ containsParcel:()=>true,
+ createParcelDamageMask:(T,model)=>{let values=[];return {model,stamp(p,r,s){values.push([p.x,p.y,p.z,r,s]);return true;},strikes(){return values.length;},values:()=>values,dispose(){}};}
+ },['createViewerCityModels']);
+ const city={buildings:[{id:'a',name:'A',viewerParcel:true,h:6,x:0,z:0,w:6,front:3,damage:0}],impact(b){b.damage+=.1;},forceDamage(b,v){b.damage=v;}};
+ const api=createViewerCityModels({add(){}},city),entry=api.entries[0];
+ const point={x:1,y:2,z:3};api.impactBuilding('a',point,2,1);point.x=99;api.impactBuilding('a',{x:2,y:3,z:4},3,.5);
+ const original=JSON.stringify(entry.impactMask.values());
+ api.clearImpactMask(entry,{preserveHistory:true});entry.model={visible:true};api.rebindImpactMask(entry);
+ assert.equal(JSON.stringify(entry.impactMask.values()),original);assert.equal(entry.impactMask.model,entry.model);
+ api.restore();assert.equal(entry.impactHistory.length,0);assert.equal(entry.impactMask,null);
 });
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
