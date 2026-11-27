@@ -1,5 +1,5 @@
 # Integration Preview 10 — completion tracker
-Date: 2026-11-27 (Eastern time). Code checkpoint: 6fbd274257559ff64f61aecc9761b82d6c7af6c9.
+Date: 2026-11-27 (Eastern time). Code checkpoint: 7ee8d89fc789a6ea44f7d1340bf334f4137f2478.
 Scope: combined playable browser integration preview, not final production game, independent Antigravity branch, architectural viewer, or Unity port.
 
 ## Scoring
@@ -13,9 +13,12 @@ Weight each area by its contribution to preview acceptance. Stage values: 0 = no
 | Flight controls and map traversal | 10 | 75 | 7.50 | Live campaign/sandbox end-to-end navigation and responsiveness |
 | Cinematics and camera | 10 | 50 | 5.00 | Complete chapter transition, camera, introductory and skip/reset walkthrough |
 | Threat readability, traffic and pedestrians | 10 | 75 | 7.50 | Live threat distinctions, collision, traffic and responder QA |
-| Campaign/tutorial/finale | 10 | 50 | 5.00 | Opening/tutorial, all 15 waves, difficulty, final encounter, victory/defeat |
+| Campaign/tutorial/finale | 10 | 75 | 7.50 | Live opening and tutorial walkthrough, 15-wave campaign on real browser, difficulty feel, finale and victory/defeat |
 | Release QA and packaging | 5 | 0 | 0.00 | Entire regression suite, browser stress and playthrough, verified preview build |
-| **Total** | **100** | | **62.50** | |
+| **Total** | **100** | | **65.00** | |
 
 First scored checkpoint: **62.5% (63% rounded)**. No prior comparable score exists. No live FPS, campaign completion or release is claimed.
 Latest batch: chapter ends derived from chapter starts (2, 5, 10, 14); escort progression guard; cinematic generation guard and iframe-source check; parcel-aware threat warning; bounded camera zoom; redundant staging rebuild suppression and settlement resource disposal. Four new targeted regression groups passed; full repository suite and browser execution not performed. Chapter-end change follows existing chapter start table; verify narrative intent in live play.
+
+## Checkpoint 2 — 65.0% (+2.5 percentage points)
+Campaign/tutorial/finale principal implementation and targeted tests passed. Six code/test commits: connect tutorial startup and isolate its targets, require actual flight and buster actions, make graduation/skip/reset deterministic, keep opening-wave counts when the meteor cap blocks spawning or the orbital battery expires, cap fragment emissions, retry blocked finale powerup spawns, suppress duplicate victory and post-victory hostile projectile activity. Three targeted regression groups executed against production functions in controlled fixtures: training lifecycle, all 15 wave states across three difficulties, finale retry behavior. These are not a complete integrated playthrough: settlement completion and combat outcomes were simulated in the wave-state fixture; tutorial geometry and visual controls need live checks. No new scores assigned to other areas. Full repository test suite, browser/GPU profiling and live campaign remain outstanding.
