@@ -3403,6 +3403,12 @@ function crackWindows(x,y,z,r){
 const impactPalette=[0xff4b20,0xffa52a,0xffef8b,0x544d4d,0xc7a88a,0xffffff];
 const fxPlane=new THREE.PlaneGeometry(1,1);
 const glassShardGeometry=new THREE.BufferGeometry();glassShardGeometry.setAttribute('position',new THREE.Float32BufferAttribute([-.8,-.3,0,.9,-.1,0,-.2,1,0],3));glassShardGeometry.computeVertexNormals();
+// Each shard is a single planar triangle. Rendering back and front in two
+// separate passes cannot improve its self-sorting; keep both faces visible
+// in one pass. Leave the architectural glazing material unchanged.
+const looseGlassShardMaterial=mats.glass.clone();
+looseGlassShardMaterial.forceSinglePass=true;
+looseGlassShardMaterial.name='loose-glass-shard-single-pass';
 const impactPools=impactPalette.map((color,index)=>new InstancedParticlePool({THREE,parent:effects,geometry:index===5?glassShardGeometry:fxPlane,material:new THREE.MeshBasicMaterial({color,map:index===5?null:index===3?visualBank.images.smoke:index===4?visualBank.images.dust:visualBank.images.flash,transparent:true,opacity:index===3?.52:.88,depthWrite:false,side:THREE.DoubleSide,blending:index<3?THREE.AdditiveBlending:THREE.NormalBlending}),capacity:105}));
 const trailSmokePool=new InstancedParticlePool({THREE,parent:effects,geometry:fxPlane,material:new THREE.MeshBasicMaterial({map:visualBank.images.smoke,color:0x4e525c,transparent:true,opacity:.53,depthWrite:false,side:THREE.DoubleSide}),capacity:110});
 const trailEmberPool=new InstancedParticlePool({THREE,parent:effects,geometry:fxPlane,material:new THREE.MeshBasicMaterial({map:visualBank.images.flame,color:0xffbe62,transparent:true,opacity:.90,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}),capacity:110});
@@ -4482,7 +4488,7 @@ function spawnFurnitureDebris(pos,type='wood',origin=null){
 function debrisPiece(pos,type,origin=null){
  if(debris.length>=220)return;
  const isGlass=type==='glass';
- const mesh=new THREE.Mesh(isGlass?glassShardGeometry:cube,mats[type]||mats.stone);
+ const mesh=new THREE.Mesh(isGlass?glassShardGeometry:cube,isGlass?looseGlassShardMaterial:(mats[type]||mats.stone));
  mesh.position.copy(pos);
  const large=Math.random()<.05;
  mesh.scale.setScalar(cell*(large?.48+Math.random()*.30:(isGlass?0.12+Math.random()*0.24:0.08+Math.random()*.16)));
