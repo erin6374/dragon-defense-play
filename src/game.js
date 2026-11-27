@@ -11,7 +11,7 @@ import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConfig,MAX_PLAYABLE_METEORS} from './simulation/fireball-balance.js';
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
 import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
-import {loadViewerGrid,containsParcel} from './simulation/viewer-parcels.js';
+import {loadViewerGrid,containsParcel,ownsSchoolFootprint} from './simulation/viewer-parcels.js';
 import {traceMeteorCollision} from './simulation/meteor-collision.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson,captureVehicleResources,releaseVehicleResources} from './rendering/realistic-vehicles.js';
 import {advanceSpeed,trafficTarget,trafficNeighborCandidates,maximumTrafficLength} from './simulation/traffic-dynamics.js';
@@ -4547,8 +4547,7 @@ function damage(x,z,y=7,meteor=null){
   return;
  }
 
- const isSchoolHit=owner?owner.kind==='school':!targetBuilding&&architecturalReady&&targetX>=schoolBounds.min.x&&targetX<=schoolBounds.max.x&&
-  hitZ>=schoolBounds.min.z&&hitZ<=schoolBounds.max.z&&targetY<=schoolMaxY;
+ const isSchoolHit=owner?owner.kind==='school':!targetBuilding&&architecturalReady&&ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,targetX,hitZ)&&targetY<=schoolMaxY;
  if(isSchoolHit&&hp>0)sound('dragonRoar',{variant:'furious',x:dragon.position.x});
 
  const effectiveTarget=targetBuilding;
@@ -5907,7 +5906,7 @@ if(!freeFlightMode&&active&&neighborhoodHealth()<=0){hp=0;gameOver();return;}
  }
  return;
 }
-elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;const actualSchoolFires=schoolFire.filter(f=>Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=2.0);if(!settling&&actualSchoolFires.length){const severity=Math.min(1,actualSchoolFires.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
+elapsed+=dt;const settling=chapterSettlement.active;updateChapterSettlement(dt);if(paused)return;const actualSchoolFires=schoolFire.filter(f=>f.root.position.y>=2.0&&ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,f.root.position.x,f.root.position.z));if(!settling&&actualSchoolFires.length){const severity=Math.min(1,actualSchoolFires.reduce((sum,f)=>sum+Math.max(0,1-f.suppression),0)/3);fireHealthAccumulator+=dt*(1+severity*.75)*severity;if(fireHealthAccumulator>=1){const damage=Math.floor(fireHealthAccumulator);fireHealthAccumulator-=damage;hp=Math.max(0,hp-damage);updateHud();if(hp<=0){gameOver();return;}}}blockCharge=Math.min(100,blockCharge+dt*(wave<=5?1.9:wave<=10?2.5:1.5));updateBlockButton();updatePowerHud();updateShield();updateWorld(dt);
 if(active&&!paused){
  ray.setFromCamera(aimNdc,camera);
  if(ray.ray.intersectPlane(plane,aimIntersection)){
@@ -6745,7 +6744,7 @@ if(m.grounded){
    if(sweepHit)m.target.copy(sweepHit);
    if(m.dragonHunter){groundFireball(m.target.x,Math.max(.6,m.target.y),m.target.z,1.5);remove(meteors,i);continue;}
    const heat=openingMoltenHeat(m);
-   if(elapsed<schoolShieldUntil&&(m.impactOwner?m.impactOwner.kind==='school':m.target.z<14&&Math.abs(m.target.x)<30&&!neighborhood.activeAt(m.target.x,m.target.z))){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
+   if(elapsed<schoolShieldUntil&&(m.impactOwner?m.impactOwner.kind==='school':ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,m.target.x,m.target.z))){groundFireball(m.target.x,m.target.y,m.target.z,m.size);remove(meteors,i);continue;}
    if(m.boss){groundFireball(m.target.x,m.target.y,m.target.z,8);damage(m.target.x,m.target.z,m.target.y,m);remove(meteors,i);continue;}
    groundFireball(m.target.x,m.target.y,m.target.z,m.size*heat);
    cinematicFX.burst(m.target,Math.max(.4,m.size));
