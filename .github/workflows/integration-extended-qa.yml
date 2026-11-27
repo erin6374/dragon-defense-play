@@ -1,0 +1,51 @@
+name: Integration preview extended QA
+on:
+  push:
+    branches:
+      - integration/combined-preview
+    paths:
+      - 'tools/integration-browser-qa.mjs'
+      - '.github/workflows/integration-extended-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integration-extended-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  extended:
+    if: github.ref == 'refs/heads/integration/combined-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate exact source and test syntax
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          node --check tools/integration-browser-qa.mjs
+          node qa/check-build-info.mjs
+      - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
+      - name: Run extended integration acceptance
+        env:
+          QA_BROWSER_CHANNEL: chrome
+          DD_QA_TIMEOUT_MS: '1200000'
+        run: |
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/integration-qa/node_modules/playwright-core/index.mjs"
+          node tools/integration-browser-qa.mjs --headless --software
+      - name: Retain exact-source extended QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-extended-${{ github.sha }}
+          path: integration-qa-results/
+          if-no-files-found: warn
+          retention-days: 14
