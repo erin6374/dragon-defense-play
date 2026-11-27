@@ -1406,4 +1406,24 @@ test('Subway repeated material batching retains singleton meshes and named rigid
  assert.ok(game.includes("QUERY_PARAMS.get('subwayBatch')!=='0'"));
  assert.ok(game.includes('batchVehicleVisuals(THREE,carGroup,options)'));
 });
+test('Power grid spark instancing retains active motion and expires/reset-clears all instances',()=>{
+ const {createPowerGrid}=load('src/rendering/power-grid.js',{},['createPowerGrid']);
+ for(const batchSparks of [true,false]){
+  const scene=new Three.Scene(),grid=createPowerGrid(Three,scene,{batchSparks});
+  assert.equal(grid.sparkRenderStats().active,0);
+  grid.sparkTransformer(grid.poles.find(p=>p.hasTransformer));
+  assert.equal(grid.sparkRenderStats().active,48);
+  const batch=grid.group.getObjectByName('power-grid-spark-batch');
+  if(batchSparks){
+   assert.equal(batch.count,48);assert.equal(batch.visible,true);
+   assert.equal(batch.instanceMatrix.updateRanges[0].count,48*16);
+   const before=new Three.Matrix4(),after=new Three.Matrix4();batch.getMatrixAt(0,before);
+   grid.update(.1);batch.getMatrixAt(0,after);assert.notDeepEqual(before.elements,after.elements);
+   assert.equal(grid.sparkRenderStats().active,48);
+  }else assert.equal(batch,undefined);
+  grid.update(2);assert.equal(grid.sparkRenderStats().active,0);
+  if(batchSparks){assert.equal(batch.count,0);assert.equal(batch.visible,false);}
+  grid.sparkTransformer(grid.poles[0]);grid.reset();assert.equal(grid.sparkRenderStats().active,0);assert.equal(grid.getBrownoutFactor(),1);
+ }
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
