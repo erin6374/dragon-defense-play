@@ -15,7 +15,7 @@ export function createParcelDamageMask(T,model,bounds){
  texture.needsUpdate=true;
  const uniforms={map:{value:texture},min:{value:min},size:{value:size}};
  const originals=new Map(),clones=new Map();
- let strikes=0,disposed=false;
+ let strikes=0,disposed=false,unchangedStamps=0,textureUpdates=1;
  function patch(original){
   if(clones.has(original))return clones.get(original);
   const mat=original.clone();
@@ -62,18 +62,28 @@ export function createParcelDamageMask(T,model,bounds){
   const low=center.map((v,i)=>Math.max(0,Math.floor((v-origin[i]-r*1.2)/cell[i])));
   const high=center.map((v,i)=>Math.min(dims[i]-1,Math.ceil((v-origin[i]+r*1.2)/cell[i])));
   let changed=false;
-  for(let z=low[2];z<=high[2];z++)for(let y=low[1];y<=high[1];y++)for(let x=low[0];x<=high[0];x++){
-   const dx=min.x+(x+.5)*cell[0]-point.x,dy=min.y+(y+.5)*cell[1]-point.y,dz=min.z+(z+.5)*cell[2]-point.z;
+  const maxEdgeSq=(r*1.040001)**2;
+  for(let z=low[2];z<=high[2];z++){
+   const dz=min.z+(z+.5)*cell[2]-point.z;
+   for(let y=low[1];y<=high[1];y++){
+    const dy=min.y+(y+.5)*cell[1]-point.y,dyz=dy*dy+dz*dz;
+    if(dyz>=maxEdgeSq)continue;
+    const row=(z*ny+y)*nx;
+    for(let x=low[0];x<=high[0];x++){
+     const idx=row+x;if(data[idx]===255)continue;
+     const dx=min.x+(x+.5)*cell[0]-point.x;if(dx*dx+dyz>=maxEdgeSq)continue;
    const edge=r*(.92+.12*Math.sin(dx*3.7+dy*2.9+dz*4.1));
    const t=1-Math.hypot(dx,dy,dz)/edge;
    if(t<=0)continue;
-   const idx=(z*ny+y)*nx+x,value=Math.min(255,Math.round(t*440));
+   const value=Math.min(255,Math.round(t*440));
    if(value>data[idx]){data[idx]=value;changed=true;}
+    }
+   }
   }
-  if(changed){strikes++;texture.needsUpdate=true;}
+  if(changed){strikes++;texture.needsUpdate=true;textureUpdates++;}else unchangedStamps++;
   return changed;
  }
- return {stamp,strikes:()=>strikes,byteLength:data.byteLength,dispose(){
+ return {stamp,strikes:()=>strikes,stats:()=>({strikes,unchangedStamps,textureUpdates,textureBytes:data.byteLength}),byteLength:data.byteLength,dispose(){
   if(disposed)return;disposed=true;
   for(const [node,original] of originals)node.material=original;
   for(const mat of clones.values())mat.dispose();
