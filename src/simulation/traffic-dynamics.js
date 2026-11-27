@@ -11,3 +11,20 @@ export function trafficTarget(car,cars,pedestrians,red,blocked,time){
  if(car.serviceStop||blocked||car.hostile&&car.police&&Math.abs(x)<25)target=0;
  return target;
 }
+
+// The car's X coordinate stays fixed during target-speed and passing-lane
+// decisions. Retain every possible leader, safety gap and contact candidate.
+// Preserve list order for the original forward and reverse scans.
+export function trafficNeighborCandidates(car,cars,maxLength){
+ const x=car.root.position.x,length=car.length,speed=Math.max(0,car.speed,car.desiredSpeed);
+ if(![x,length,speed,maxLength].every(Number.isFinite)||length<0||maxLength<0)return cars;
+ const radius=Math.max(28+(length+maxLength)*.5,16,length*2.6,
+  Math.max(8,length*1.5+speed*.5)+maxLength*.5,
+  Math.max(9,length*1.6+speed*.6)+maxLength*.5,7.5)+.001;
+ return cars.filter(other=>other===car||!Number.isFinite(other.root.position.x)||Math.abs(other.root.position.x-x)<=radius);
+}
+export function maximumTrafficLength(cars){
+ let max=0;
+ for(const car of cars){if(!Number.isFinite(car.length)||car.length<0)return Infinity;max=Math.max(max,car.length);}
+ return max;
+}
