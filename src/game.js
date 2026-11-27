@@ -3422,7 +3422,7 @@ function updateMeteorRadar(dt){
  radarTick-=dt;
  if(radarTick>0)return;
  radarTick=.1;
- const warning=impactMarker?selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings):null;
+ const warning=impactMarker?selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel):null;
  if(impactMarker){
   impactMarker.visible=Boolean(warning);
   if(warning){
@@ -4937,7 +4937,7 @@ function updateWaveProgress(dt,rally=rallyLoop){
   message('WAVE CLEAR — NEXT WAVE IN '+Math.max(1,Math.ceil(recovery-between))+'s');
  }
 }
-function newWave(){waveClearZoomBlend=0.0;const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode==='leaving'||chapterStaging.mode==='settlement'){}else chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1)resetChapterTrafficAndCrowd();
+function newWave(){waveClearZoomBlend=0.0;const chapterIndex=(wave<=5?1:wave<=10?2:wave<=14?3:4);if(chapterStaging.mode!=='leaving'&&chapterStaging.mode!=='settlement'&&chapterStaging.chapter!==chapterIndex)chapterStaging.setChapter(chapterIndex);if(CAMPAIGN_CHAPTERS.some(c=>c.start===wave)&&wave>1&&!skipChapterIntroCinematic)resetChapterTrafficAndCrowd();
  if(impactMarker)impactMarker.visible=false;
  for(let i=cars.length-1;i>=0;i--)if(cars[i].frozen){recycleCar(cars[i]);cars.splice(i,1)}
  updateAtmosphere();sessionStats.highestWave=Math.max(sessionStats.highestWave,wave);
@@ -6834,7 +6834,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
   lastW=w;lastH=h;
  }
  // Do not turn a missed frame into a full camera catch-up jump.
- const cameraDt=Math.min(dt,.05);
+ const cameraDt=Number.isFinite(dt)?Math.max(0,Math.min(dt,.05)):0;
  const jitter=shake>0?Math.sin(present*.053)*shake*.5:0;
  shake=Math.max(0,shake-Math.min(dt,.1));
  const follow=skyCameraLift(dragon.position.y);
@@ -6858,7 +6858,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  // RC106 Camera Movement: Gentle, smoothed, damped without extreme tilts, shifts, or zoom-ins
  const verticalVelocityLead=THREE.MathUtils.clamp(dragonVelY*0.06,-1.6,1.6);
  const isWaveClearing=(between>0||chapterSettlement.active)&&active&&!paused&&wave<15;
- waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,Math.min(1,dt*1.8));
+ waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,1-Math.exp(-cameraDt*1.8));
 
  const cinematicZoomBonus=waveClearZoomBlend*0.06;
  let targetZoom=freeFlightMode?sandboxZoomLevel:THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
@@ -6891,7 +6891,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  const targetDutchTilt=THREE.MathUtils.clamp(-flightRoll*0.008-(dragonVelX*0.0003),-0.012,0.012);
  if(!subwayView&&!basementCamActive)camera.rotation.z+=targetDutchTilt;
 
- const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,Math.min(1,cameraDt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
+ const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,1-Math.exp(-cameraDt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
  soundEngine.update(dt,camera.position.y,368,altRatio>0.15,{wave,active:active&&!paused,meteorsCount:meteors.filter(m=>!m.grounded).length,bossActive:bossSpawned&&!bossDefeated,schoolHp:hp,dragonVelY,isBoosting,elapsed});
  if(active&&!paused&&elapsed-lastIntenseRoarElapsed>12.0){
@@ -7717,7 +7717,7 @@ window.__DD_QA={snap,
    meteor.vel.set(0,-10,0);
    updateMeteorRadar(.2);
    const marked={visible:impactMarker.visible,position:impactMarker.position.toArray(),
-    eta:selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings)?.eta};
+    eta:selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel)?.eta};
    return {marked,target:meteor.target.toArray(),startingScore};
   }),
   stageRallyRecovery:(buy)=>run('stageRallyRecovery',()=>{
