@@ -4727,6 +4727,7 @@ function beginChapterSettlement(){
 }
 function updateChapterSettlement(dt){
  if(!chapterSettlement.active)return false;
+ if(chapterSettlement.phase==='departure'&&chapterSettlement.timer<=4.2)setChapterFade(false);
  if(chapterSettlement.phase==='cleanup'&&!chapterSettlement.firesCleared&&chapterSettlement.timer<8.4){clearFires();chapterSettlement.firesCleared=true;}
  chapterSettlement.timer-=dt;
  if(chapterSettlement.timer>0)return true;
