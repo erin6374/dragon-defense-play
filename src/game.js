@@ -68,7 +68,7 @@ import {fitSchoolFromFacade,SCHOOL_SOURCE,SCHOOL_TARGET,classifyArchitecturalMes
 import {assessRowhouseSource} from './rendering/rowhouse-source-validation.js';
 import {createDestructibleSchool} from './rendering/destructible-school.js';
 import {createSchoolComponentIndex,sourceComponentMaterial} from './simulation/school-source-impact.js';
-import {createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
+import {collectCraterResources,releaseCraterResources,createHeavedAsphaltRim,createVolumetricImpactBowl,createPulsatingThermalFissures,createFeatheredRadialSootDecal} from './rendering/procedural-crater.js';
 
 import {createVisualMaterials,enhanceDragon,enhanceCar,enhanceHelicopter,createCinematicWeather} from './rendering/cinematic-assets.js';
 const mobileVisual=window.matchMedia('(pointer:coarse)').matches;
@@ -2378,23 +2378,13 @@ function updateSkyBursts(dt){
  }
 }
 function disposeCrater(c){
- if(!c)return;
- if(c.mesh){scene.remove(c.mesh);c.mesh.geometry?.dispose();c.mesh.material?.dispose();}
- if(c.inner){scene.remove(c.inner);c.inner.geometry?.dispose();c.inner.material?.dispose();}
- if(c.ember&&!c.thermalGroup){scene.remove(c.ember);c.ember.geometry?.dispose();c.ember.material?.dispose();}
- if(c.rimMesh){scene.remove(c.rimMesh);c.rimMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
- if(c.bowlMesh){scene.remove(c.bowlMesh);c.bowlMesh.traverse?.(o=>{o.geometry?.dispose();o.material?.dispose();});}
- if(c.sootDecal){scene.remove(c.sootDecal);c.sootDecal.geometry?.dispose();c.sootDecal.material?.dispose();}
- if(c.thermalGroup){scene.remove(c.thermalGroup);c.thermalGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}
- if(c.subwayGroup){
-  for(const light of c.subwayGroup.userData.lights||[])explosionLightPool.release(light);
-  scene.remove(c.subwayGroup);
-  c.subwayGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
- }
- if(c.geyserGroup){
-  scene.remove(c.geyserGroup);
-  c.geyserGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
- }
+ if(!c||c.disposed)return;
+ c.disposed=true;
+ const roots=[c.mesh,c.inner,c.ember&&!c.thermalGroup?c.ember:null,c.rimMesh,c.bowlMesh,c.sootDecal,c.thermalGroup,c.subwayGroup,c.geyserGroup].filter(Boolean);
+ if(c.subwayGroup)for(const light of new Set(c.subwayGroup.userData.lights||[]))explosionLightPool.release(light);
+ const resources=collectCraterResources(roots);
+ for(const root of new Set(roots))scene.remove(root);
+ releaseCraterResources(resources);
 }
 const _craterV1=new THREE.Vector3(),_craterV2=new THREE.Vector3(),_craterV3=new THREE.Vector3();
 function addCrater(x,z,radius=3,opts={}){
@@ -2428,7 +2418,7 @@ function addCrater(x,z,radius=3,opts={}){
   rimMesh=createHeavedAsphaltRim(radius,true);
   rimMesh.position.set(x,0,z);
   scene.add(rimMesh);
-  sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1));
+  sootDecal=createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1),true);
   sootDecal.position.set(x,0.03,z);
   scene.add(sootDecal);
 
@@ -2747,7 +2737,9 @@ function addCrater(x,z,radius=3,opts={}){
   beaconGroup.position.set(W*0.35,-H+platH+0.09,platZ+0.5);
   subwayGroup.add(beaconGroup);
 
+  const subwayBeforeBatch=collectCraterResources([subwayGroup]);
   batchOpaqueRelief(subwayGroup,{preserveNamed:true});
+  releaseCraterResources(subwayBeforeBatch,collectCraterResources([subwayGroup]));
   scene.add(subwayGroup);
   cinematicFX.sparks(new THREE.Vector3(x,-H+0.5,z),28,1.8);
   sound('spark',{x});
