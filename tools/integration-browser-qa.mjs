@@ -118,10 +118,11 @@ try{
    await page.keyboard.down(key);
    try{
     for(let batch=0;batch<60&&dir*(trace.at(-1).x-target)<-.5;batch++){
-     const v=await page.evaluate(()=>{
-      const q=window.__DD_QA;q.advanceSimulation(120);
+     if(requireHardware)await page.waitForTimeout(2000);
+     const v=await page.evaluate(accelerate=>{
+      const q=window.__DD_QA;if(accelerate)q.advanceSimulation(120);
       const s=q.snap();return {x:s.dragon.x,elapsed:s.elapsed,active:s.active,paused:s.paused,free:s.campaign.freeFlightMode};
-     });
+     },!requireHardware);
      assert(v.active&&!v.paused&&v.free,'Continuous sandbox flight interrupted at '+v.x);
      const previous=trace.at(-1);
      assert(Number.isFinite(v.x)&&dir*(v.x-previous.x)>-2,'Wrong direction or unexpected position reset: '+JSON.stringify(v));
@@ -138,7 +139,7 @@ try{
    journeys.push(result);
    console.log('FLIGHT_TRAVERSE '+JSON.stringify({label,target,start:result.start,end:result.end,samples:trace.length}));
   }
-  return {journeys,method:'real keyboard events with accelerated production fixed steps; not real-time FPS or a full campaign'};
+  return {journeys,method:requireHardware?'real keyboard events and ordinary real-time animation frames, no accelerated simulation or teleport during traverse':'real keyboard events with accelerated production fixed steps; not real-time FPS or a full campaign'};
  });
  await check('Single parcel hit does not damage neighbors',async()=>{
   const result=await page.evaluate(async()=>{
