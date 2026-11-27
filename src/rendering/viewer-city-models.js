@@ -54,10 +54,18 @@ export function createViewerCityModels(scene,city) {
   const renderCuller=createParcelRenderCuller(THREE,entries);
   const byId=new Map(entries.map(e=>[e.def.id,e]));
   const findEntry=id=>byId.get(id)||entries.find(e=>e.def.address===id);
-  function clearImpactMask(e){e.impactMask?.dispose();e.impactMask=null;}
+  function clearImpactMask(e,{preserveHistory=false}={}){e.impactMask?.dispose();e.impactMask=null;if(!preserveHistory)e.impactHistory=[];}
   function stampImpact(e,point,radius,strength){
     if(!e.impactMask)e.impactMask=createParcelDamageMask(THREE,e.model,e.worldBounds);
-    if(e.impactMask.stamp(point,radius,strength))city.exposeInterior?.(e.targetBuilding,point,radius);
+    if(e.impactMask.stamp(point,radius,strength)){
+      (e.impactHistory??=[]).push({point:{x:point.x,y:point.y,z:point.z},radius,strength});
+      city.exposeInterior?.(e.targetBuilding,point,radius);
+    }
+  }
+  function rebindImpactMask(e){
+    if(e.damage>=.97||!e.impactHistory?.length)return;
+    e.impactMask=createParcelDamageMask(THREE,e.model,e.worldBounds);
+    for(const strike of e.impactHistory)e.impactMask.stamp(strike.point,strike.radius,strike.strength);
   }
   function apply(entry,damage) {
     // Repair restores the original materials and removes only this parcel's mask.
@@ -97,7 +105,7 @@ export function createViewerCityModels(scene,city) {
     return 1;
   }
   return {
-    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,clearImpactMask,renderCuller,
+    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,clearImpactMask,rebindImpactMask,renderCuller,
     collapseBuilding(id){
       const e=findEntry(id);
       if(!e)return null;
