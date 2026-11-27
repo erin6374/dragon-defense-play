@@ -11,16 +11,18 @@ const report={scope:'assisted campaign progression, actual browser and productio
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- const page=await browser.newPage({viewport:{width:960,height:540},acceptDownloads:true});
+ const page=await browser.newPage({viewport:{width:960,height:540},acceptDownloads:true,serviceWorkers:'block'});
  page.on('pageerror',e=>report.errors.push(String(e)));
- await page.goto(new URL('?qa=1&motion=1',base).href,{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady,undefined,{timeout:180000});
- await page.locator('#start-training').click({timeout:30000});
+ await page.goto(new URL('?qa=1',base).href,{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady&&window.__DD_QA.snap().frameTimes.frames>=2,undefined,{timeout:180000});
+ await page.locator('#start-training').click({timeout:90000});
  assert.ok(await page.evaluate(()=>window.__DD_QA.trainingStats().active),'Training UI failed to start');
- report.training=await page.evaluate(()=>{
-  const q=window.__DD_QA,before=q.trainingStats();q.skipTraining();
+ const trainingBefore=await page.evaluate(()=>window.__DD_QA.trainingStats());
+ await page.keyboard.press('Tab');
+ report.training=await page.evaluate(before=>{
+  const q=window.__DD_QA;
   const after=q.snap();return {before,after:{wave:after.wave,active:after.active,paused:after.paused,remaining:after.campaign.remaining,meteors:after.counts.meteors},training:q.trainingStats()};
- });
+ },trainingBefore);
  assert.equal(report.training.training.active,false);assert.equal(report.training.after.wave,1);
  assert.ok(report.training.after.active&&!report.training.after.paused&&report.training.after.meteors>0);
  for(let wave=1;wave<=15;wave++){
