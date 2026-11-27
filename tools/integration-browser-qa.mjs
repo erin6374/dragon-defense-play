@@ -8,7 +8,7 @@ import {execFileSync} from 'node:child_process';
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const out=resolve(root,'integration-qa-results',new Date().toISOString().replace(/[:.]/g,'-'));
 await mkdir(out,{recursive:true});
-const report={started:new Date().toISOString(),commit:null,checks:[],errors:[],warnings:[],benchmark:null};
+const report={started:new Date().toISOString(),commit:null,checks:[],errors:[],warnings:[],benchmark:null,releaseCertified:false};
 try{report.commit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();}catch{}
 const save=()=>writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));
 const watchdog=setTimeout(()=>{report.errors.push('Overall QA timeout: browser or renderer stopped responding.');report.passed=false;report.finished=new Date().toISOString();save().finally(()=>process.exit(2));},240000);
@@ -46,12 +46,12 @@ try{
  report.url=url;
  page=await browser.newPage({viewport:{width:1280,height:800}});
  page.on('pageerror',e=>{if(report.errors.length<100)report.errors.push(String(e));});
- page.on('console',msg=>{if(msg.type()==='error'&&report.warnings.length<100)report.warnings.push(msg.text());});
- page.on('response',r=>{if(r.status()>=400&&report.warnings.length<100)report.warnings.push(r.status()+' '+r.url());});
+ page.on('console',msg=>{const t=msg.text();if(/shader error|shader compilation|program not valid|GL_INVALID_OPERATION|WebGL context lost/i.test(t)){if(report.errors.length<100)report.errors.push(t);}else if(msg.type()==='error'&&report.warnings.length<100)report.warnings.push(t);});
+ page.on('response',r=>{if(r.status()<400)return;const url=r.url(),msg=r.status()+' '+url;const critical=/\.(?:m?js|fbx|glb|gltf|wasm)(?:\?|$)|\/broad-street\/mapped-data\.json(?:\?|$)/i.test(url);const list=critical?report.errors:report.warnings;if(list.length<100)list.push(msg);});
  await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
  await page.waitForFunction(()=>window.__DD_QA&&window.__DD_BOOT_OK,{},{timeout:90000});
  await page.bringToFront();
- await page.waitForFunction(()=>window.__DD_QA.snap().renderVisibility.actualSchoolOverlayReady,{},{timeout:60000});
+ await page.waitForFunction(()=>window.__DD_QA.snap().renderVisibility.actualSchoolOverlayReady,{},{timeout:90000,polling:500});
  report.build=await page.evaluate(()=>window.__DD_BUILD_INFO);
  report.renderer=await page.evaluate(()=>{const gl=window.__DD_RENDERER.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
  await save();
@@ -62,8 +62,12 @@ try{
   assert(v.slots.length===122,'Expected 122 imported building slots, got '+v.slots.length);
   assert(new Set(v.slots.map(s=>s.id)).size===122,'Duplicate building slots');
   assert(v.slots.every(s=>s.status==='loaded'),'Missing building model');
+  assert(v.slots.every(s=>s.worldBounds&&Object.values(s.worldBounds).every(Number.isFinite)),'Invalid imported bounds');
+  const audit=v.snapshot.sourceSchool.interiorAudit;
+  assert(audit?.triangleCountPreserved&&audit.componentIndex?.components>0,'Source school interior inventory or triangle conservation failed');
+  assert(audit.batchedSurfaces?.interior?.triangles>0,'Original FBX interior still missing');
   await page.screenshot({path:resolve(out,'01-architecture.png')});
-  return {count:v.slots.length,build:v.snapshot.build,school:v.snapshot.renderVisibility.schoolModelCalibration};
+  return {count:v.slots.length,build:v.snapshot.build,school:v.snapshot.renderVisibility.schoolModelCalibration,interiorAudit:audit};
  });
  await check('Start sandbox and keyboard movement',async()=>{
   await page.evaluate(()=>{window.startSandboxDirect();window.__DD_SANDBOX.setDragonEnabled(true);window.__DD_SANDBOX.setSfxMuted(true);window.__DD_SANDBOX.setMusicMuted(true);});
@@ -89,9 +93,14 @@ try{
    if(!target)throw Error('No exclusive frontage sample');
    const {b,x,z}=target,before=list.map(x=>x.damage);
    q.verifyMeteorImpact(x,Math.min(5,b.h*.7),z,2.0);
-   return {target:b.id,damaged:list.filter((b,i)=>b.damage>before[i]+.0001).map(b=>b.id)};
+   const model=q.northBroadModels().result?.models?.find(e=>e.id===b.id);
+   const damaged=list.filter((b,i)=>b.damage>before[i]+.0001).map(b=>b.id);
+   q.repairAllBuildings();
+   const repaired=q.northBroadModels().result?.models?.find(e=>e.id===b.id);
+   return {target:b.id,damaged,localizedStrikes:model?.localizedStrikes??0,repairedDamage:repaired?.damage,repairedStrikes:repaired?.localizedStrikes};
   });
   assert(result.damaged.length===1&&result.damaged[0]===result.target,'Incorrect direct-hit ownership: '+JSON.stringify(result));
+  assert(result.localizedStrikes>0&&result.repairedDamage===0&&result.repairedStrikes===0,'Localized mask did not apply or clear: '+JSON.stringify(result));
   return result;
  });
  await check('School health damage is bounded',async()=>{
@@ -130,6 +139,9 @@ try{
   await save();
   assert(report.benchmark.frames>0,'No rendered frames');
   assert(!report.benchmark.samples.some(s=>s.contextLost),'WebGL context lost');
+  assert(report.benchmark.durationSec>=29,'Benchmark shorter than intended');
+  assert(!report.benchmark.samples.some(s=>!Number.isFinite(s.frameMs)||!Number.isFinite(s.simMs)||!Number.isFinite(s.renderMs)),'Invalid frame timings');
+  report.performanceAssessment={hardwareRequired:true,softwareRequested:software,focusedStalls1000:report.benchmark.focusedStalls1000,stalls500:report.benchmark.stalls500,notes:'Sample only; not a full campaign or hardware certification.'};
   await page.screenshot({path:resolve(out,'05-bombardment.png')});
   return {fps:report.benchmark.fps,p95FrameMs:report.benchmark.p95FrameMs,maxFrameMs:report.benchmark.maxFrameMs,stalls500:report.benchmark.stalls500};
  });
@@ -142,9 +154,9 @@ try{
  });
 }catch(e){report.errors.push(String(e));}
 finally{
- clearTimeout(watchdog);report.finished=new Date().toISOString();
+ report.finished=new Date().toISOString();
  report.passed=report.errors.length===0&&report.checks.length===9&&report.checks.every(c=>c.pass);
  await save();console.log('Report: '+resolve(out,'report.json'));
  if(browser)await browser.close().catch(()=>{});
- server.close();process.exitCode=report.passed?0:1;
+ server.close();clearTimeout(watchdog);process.exitCode=report.passed?0:1;
 }
