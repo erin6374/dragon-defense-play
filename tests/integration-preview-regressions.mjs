@@ -1341,4 +1341,29 @@ test('Gas immobilization lasts seven simulated seconds and each plume hits only 
  assert.equal(freezeResponderForGas({root,emergency:false}),false);
  assert.ok(game.includes('if(advanceResponderFreeze(c,dt))continue;'));
 });
+test('HUD updates skip unchanged values while retaining exact display changes',()=>{
+ const a=game.indexOf('function setHudText('),b=game.indexOf('function updateBlockButton(',a);
+ assert.ok(a>=0&&b>a);
+ const {setHudText,setHudProperty}=new Function(game.slice(a,b)+'return {setHudText,setHudProperty};')();
+ let text='100%',disabled=false,width='100%',writes=0;
+ const style={get width(){return width;},set width(v){width=v;writes++;}};
+ const node={style,get textContent(){return text;},set textContent(v){text=v;writes++;},get disabled(){return disabled;},set disabled(v){disabled=v;writes++;}};
+ for(let i=0;i<100;i++){setHudText(node,'100%');setHudProperty(node,'disabled',false);setHudProperty(style,'width','100%');}
+ assert.equal(writes,0);
+ setHudText(node,'95%');setHudProperty(node,'disabled',true);setHudProperty(style,'width','95%');
+ assert.equal(writes,3);assert.equal(node.textContent,'95%');assert.equal(node.disabled,true);assert.equal(style.width,'95%');
+ setHudText(node,'95%');setHudProperty(node,'disabled',true);setHudProperty(style,'width','95%');
+ assert.equal(writes,3);
+});
+test('School fire damage uses persistent structural health instead of a second transient HUD-only charge',()=>{
+ assert.ok(!game.includes('fireHealthAccumulator'));
+ const a=game.indexOf(' if(unsuppressedSchoolFiresCount>0){'),b=game.indexOf('\nfunction clearFires()',a);
+ assert.ok(a>=0&&b>a);
+ const block=game.slice(a,b).trim().replace(/\}\s*$/,'');
+ const apply=new Function('count','dt','initial','let unsuppressedSchoolFiresCount=count,schoolDamage=initial,hp=100,syncs=0,huds=0,ended=0;const syncStructuralDamage=()=>syncs++,updateHud=()=>huds++,gameOver=()=>ended++;'+block+';return {schoolDamage,hp,syncs,huds,ended};');
+ const actual=apply(3,1,.2);
+ assert.ok(Math.abs(actual.schoolDamage-.2036)<1e-12);assert.equal(actual.hp,80);assert.equal(actual.syncs,1);
+ const dead=apply(8,1,.999);assert.equal(dead.schoolDamage,1);assert.equal(dead.hp,0);assert.equal(dead.ended,1);
+ const none=apply(0,1,0);assert.equal(none.schoolDamage,0);assert.equal(none.syncs,0);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
