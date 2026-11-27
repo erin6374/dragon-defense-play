@@ -236,6 +236,16 @@ export function createStreetWaterRunoff(scene) {
         }
       }
     },
+    reset() {
+      currentRunoffVolume=0;targetRunoffVolume=0;flowClock=0;ripplePulse=0;
+      waterFlowRibbonMat.opacity=0;waterFilmMat.opacity=0;
+      waterFlowRibbonMat.normalScale.set(.35,.35);rippleNormalTex.offset.x=0;
+      for(const mesh of gutterMeshes)mesh.visible=false;
+      for(const d of drainObjects){
+        d.flowRate=0;d.vortexMesh.visible=false;d.vortexMat.opacity=0;
+        d.vortexMesh.rotation.z=0;d.vortexMesh.scale.set(1,1,1);
+      }
+    },
     getStats() {
       return {
         activeDrains: drainObjects.length,
