@@ -661,4 +661,103 @@ test('Packaged school model indexing preserves every decoded triangle and never 
  assert.ok(indexedBytes<=originalBytes);
  console.log('School geometry storage: '+originalBytes+' -> '+indexedBytes+' bytes; indexed batches '+indexedBatches);
 });
+test('Optimized school volume matches the original stamp formula across impacts and ring-buffer wrap',()=>{
+ const path='src/rendering/school-source-damage.js';
+ class V{constructor(...v){this.set(...v)}set(x,y,z,w){Object.assign(this,{x,y,z,w});}}
+ class Texture{constructor(data,w,h,d){this.image={data,w,h,d};this.source={};this.updates=0;}set needsUpdate(v){if(v)this.updates++;}}
+ const T={Vector3:V,Vector4:V,Data3DTexture:Texture,MathUtils:{clamp:(n,a,b)=>Math.max(a,Math.min(b,n))}};
+ const {createSchoolSourceDamage}=load(path,{THREE:T},['createSchoolSourceDamage']);
+ const api=createSchoolSourceDamage(),material={name:'school-glass'};
+ api.patch(material);
+ const shader={uniforms:{},vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <clipping_planes_fragment>\n#include <dithering_fragment>'};material.onBeforeCompile(shader);
+ const tex=shader.uniforms.schoolDamageMap.value,baseline=new Uint8Array(72*92*152);
+ function original(x,y,z,radius){
+  const r=radius*1.2,cell=.5,min={x:-18,y:-7,z:-68};
+  const low=(p,o)=>Math.max(0,Math.floor((p-o-r)/cell)),high=(p,o,n)=>Math.min(n-1,Math.ceil((p-o+r)/cell));
+  for(let k=low(z,min.z);k<=high(z,min.z,152);k++)for(let j=low(y,min.y);j<=high(y,min.y,92);j++)for(let i=low(x,min.x);i<=high(x,min.x,72);i++){
+   const dx=min.x+(i+.5)*cell-x,dy=min.y+(j+.5)*cell-y,dz=min.z+(k+.5)*cell-z;
+   const edge=radius*(.92+.13*Math.sin(dx*3.7+dy*2.9+dz*4.1)),t=1-Math.hypot(dx,dy,dz)/edge;
+   if(t<=0)continue;const offset=(k*92+j)*72+i;baseline[offset]=Math.max(baseline[offset],Math.min(255,Math.round(t*420)));
+  }
+ }
+ const inputs=[[0,4,-2,4.5],[0,4,-2,4.5],[2,5,-8,1.8],[-17,0,-67,3],[100,2,2,2],[1,10,-12,.1]];
+ for(let i=0;i<30;i++)inputs.push([Math.sin(i)*12,Math.cos(i)*10+12,-i*2,1+i%4]);
+ for(const args of inputs){original(...args);api.stamp(...args);}
+ assert.equal(api.strikes(),36);assert.ok(tex.image.data.every((v,i)=>v===baseline[i]));
+ assert.equal(api.stats().textureBytes,1006848);assert.ok(api.stats().unchangedStamps>=3);
+ const lo=shader.uniforms.uSchoolImpactBoundsMin.value,hi=shader.uniforms.uSchoolImpactBoundsMax.value;
+ for(const p of api.impacts())for(const k of ['x','y','z']){assert.ok(lo[k]<=p[k]-p.w*1.55);assert.ok(hi[k]>=p[k]+p.w*1.55);}
+ assert.ok(shader.fragmentShader.includes('uSchoolImpactCount>0&&all(greaterThanEqual(damageUv'));
+ api.reset();assert.equal(api.strikes(),0);assert.ok(tex.image.data.every(v=>v===0));
+ const before=tex.updates;api.reset();assert.equal(tex.updates,before);
+ assert.equal(api.stamp(NaN,0,0,1),false);
+});
+test('Optimized parcel volume matches the original localized mask formula',()=>{
+ const {createParcelDamageMask}=load('src/rendering/parcel-damage-mask.js',{},['createParcelDamageMask']);
+ class V{constructor(x,y,z){Object.assign(this,{x,y,z});}}
+ class Texture{constructor(data,w,h,d){this.image={data,w,h,d};}dispose(){}}
+ const original={clone(){return {dispose(){}};}},node={isMesh:true,material:original};
+ const api=createParcelDamageMask({Vector3:V,Data3DTexture:Texture},{traverse(fn){fn(node);}},{minX:-8,maxX:8,minY:0,maxY:20,minZ:-22,maxZ:2});
+ const shader={uniforms:{},vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <clipping_planes_fragment>\n#include <color_fragment>'};node.material.onBeforeCompile(shader);
+ const im=shader.uniforms.uParcelDamageMap.value.image,min=shader.uniforms.uParcelDamageMin.value,size=shader.uniforms.uParcelDamageSize.value;
+ const baseline=new Uint8Array(im.data.length),dims=[im.w,im.h,im.d],cell=[size.x/im.w,size.y/im.h,size.z/im.d];
+ function originalStamp(point,radius,strength){
+  const r=Math.min(4.2,Math.max(.65,radius*.55))*Math.min(1,Math.max(.45,Math.sqrt(Math.max(0,strength))));
+  const center=[point.x,point.y,point.z],origin=[min.x,min.y,min.z];
+  const low=center.map((v,i)=>Math.max(0,Math.floor((v-origin[i]-r*1.2)/cell[i]))),high=center.map((v,i)=>Math.min(dims[i]-1,Math.ceil((v-origin[i]+r*1.2)/cell[i])));
+  let changed=false;
+  for(let z=low[2];z<=high[2];z++)for(let y=low[1];y<=high[1];y++)for(let x=low[0];x<=high[0];x++){
+   const dx=min.x+(x+.5)*cell[0]-point.x,dy=min.y+(y+.5)*cell[1]-point.y,dz=min.z+(z+.5)*cell[2]-point.z;
+   const edge=r*(.92+.12*Math.sin(dx*3.7+dy*2.9+dz*4.1)),t=1-Math.hypot(dx,dy,dz)/edge;
+   if(t<=0)continue;const idx=(z*im.h+y)*im.w+x,value=Math.min(255,Math.round(t*440));
+   if(value>baseline[idx]){baseline[idx]=value;changed=true;}
+  }
+  return changed;
+ }
+ const inputs=[];for(let i=0;i<60;i++)inputs.push([{x:Math.sin(i)*9,y:Math.cos(i)*10+10,z:-i%24},1+i%12,.1+(i%9)*.2]);
+ inputs.push(inputs[0],inputs[0]);for(const args of inputs)assert.equal(api.stamp(...args),originalStamp(...args));
+ assert.ok(im.data.every((v,i)=>v===baseline[i]));assert.ok(api.stats().unchangedStamps>=2);api.dispose();assert.equal(node.material,original);
+});
+test('Structural broad phase preserves exact narrow-phase hits and original component order',()=>{
+ const {createStructuralImpactIndex,distanceToBox}=load('src/simulation/structural-dynamics.js',{},['createStructuralImpactIndex','distanceToBox']);
+ const parts=[];for(let x=0;x<30;x++)for(let y=0;y<10;y++)for(let z=0;z<20;z++)parts.push({id:parts.length,position:{x:x*2,y:y*3,z:z*2},size:{x:1.5,y:2.5,z:1.5}});
+ parts.push({id:parts.length,position:{x:30,y:0,z:20},size:{x:60,y:.5,z:40}});
+ const index=createStructuralImpactIndex(parts);let candidates=0,baseline=0;
+ for(let i=0;i<100;i++){
+  const p={x:Math.sin(i)*30+30,y:i%30,z:Math.cos(i)*20+20},r=1+i%5,found=index.query(p,r);
+  assert.equal(found.filter(q=>distanceToBox(p,q)<=r).map(q=>q.id).join(','),parts.filter(q=>distanceToBox(p,q)<=r).map(q=>q.id).join(','));
+  candidates+=found.length;baseline+=parts.length;
+ }
+ assert.equal(candidates,12718);assert.equal(baseline,600100);
+ assert.equal(index.query({x:0,y:0,z:0},10000),parts);
+ const city=read('src/rendering/structural-city.js');assert.ok(city.includes('impactIndexes.get(b)?.query(origin,radius*.85)??b.parts'));
+});
+test('Structural GPU update ranges survive multiple simulation steps and intact meshes stop rewriting during rubble motion',()=>{
+ const source=read('src/rendering/structural-city.js');
+ const a=source.indexOf('export function markStructuralRange'),b=source.indexOf('export function createStructuralCity',a);
+ const mark=new Function(source.slice(a,b).replace(/^export /gm,'')+'return markStructuralRange;')();
+ const attribute=()=>({updateRanges:[],versions:0,addUpdateRange(start,count){this.updateRanges.push({start,count});},clearUpdateRanges(){this.updateRanges.length=0;},set needsUpdate(v){if(v)this.versions++;}});
+ const attr=attribute();for(let i=0;i<10;i++)mark(attr,i,16);
+ assert.equal(attr.updateRanges.length,1);assert.equal(attr.updateRanges[0].count,160);
+ for(let i=0;i<80;i++)mark(attr,100+i*3,16);
+ for(let i=0;i<80;i++){const lo=(100+i*3)*16;assert.ok(attr.updateRanges.some(r=>r.start<=lo&&r.start+r.count>=lo+16));}
+ assert.ok(attr.updateRanges.length<=32);
+ const makeMesh=()=>({instanceMatrix:attribute(),visible:true,writes:[],setMatrixAt(i,m){this.writes.push([i,m]);}});
+ const mesh=makeMesh(),broken=makeMesh(),zero={zero:true},dummy={position:{copy(){}},rotation:{copy(){}},scale:{copy(){}},updateMatrix(){},matrix:{draw:true}};
+ const start=source.indexOf(' function write(p)'),end=source.indexOf(' function interiorFitsParcel',start);
+ const write=new Function('dummy','zero','markStructuralRange',source.slice(start,end)+'return write;')(dummy,zero,mark);
+ const p={bucket:{mesh,broken},building:{viewerParcel:true,hideIntactGeometry:true,exposedFloors:new Set([0])},type:'slab',floor:0,interiorFits:true,state:'attached',index:4};
+ write(p);p.state='falling';write(p);for(let i=0;i<120;i++)write(p);
+ assert.equal(mesh.writes.length,2);assert.equal(broken.writes.length,122);
+ p.state='settled';write(p);p.state='attached';write(p);
+ assert.equal(mesh.writes.at(-1)[1],dummy.matrix);assert.equal(broken.writes.at(-1)[1],zero);
+ p.building.exposedFloors.clear();write(p);assert.equal(mesh.writes.at(-1)[1],zero);
+ const previous=mesh.writes.length;write(p);assert.equal(mesh.writes.length,previous);
+});
+test('Legacy school 2D canvases are QA-only while production uses the world-space damage volume',()=>{
+ assert.ok(!game.includes('schoolDamageTextures'));
+ assert.ok(game.includes("get('qa')==='1'?{front:document.createElement('canvas'),side:document.createElement('canvas')}:{}"));
+ assert.ok(game.includes('if(schoolDamagePlanes.front){'));
+ assert.ok(game.includes('schoolDamageMask:sourceDamage.stats()'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
