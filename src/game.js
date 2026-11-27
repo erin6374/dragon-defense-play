@@ -437,7 +437,8 @@ const flameMats=[0xffffff,0xfff6e8,0xffe2be].map(color=>new THREE.SpriteMaterial
 const smokeSpriteMat=new THREE.SpriteMaterial({map:smokeSpriteTexture,color:0x626369,transparent:true,opacity:.33,depthWrite:false});
 function ignite(x,y,z){
  if(schoolFire.length>=64)return;
- for(const f of schoolFire){if(f.root.position.distanceToSquared(new THREE.Vector3(x,y,z))<2.25)return;}
+ const point=new THREE.Vector3(x,y,z);
+ for(const f of schoolFire){if(f.root.position.distanceToSquared(point)<2.25)return;}
  const root=new THREE.Group();root.position.set(x,y,z);fireGroup.add(root);
  const initialSize=.35+Math.random()*.25;
  schoolFire.push({root,tongues:[],age:0,suppression:0,initialSize,size:initialSize,spreadTimer:0,burnTimer:0});
@@ -1542,7 +1543,9 @@ function spawnCar(forcedX=null,forcedLaneZ=null,forcedDir=null,forcedType=null){
  }
  return cars.at(-1);
 }
-function recycleCar(car){if(!car||car.recycled)return;car.recycled=true;scene.remove(car.root);if(car.frozen)return;
+function recycleCar(car){if(!car||car.recycled)return;car.recycled=true;scene.remove(car.root);
+ if(car.frozenMaterials){for(const [mesh,original] of car.frozenMaterials){mesh.material.dispose?.();mesh.material=original;}car.frozenMaterials.clear();}
+ car.frozen=false;
  let list=vehiclePool.get(car.poolKey);if(!list){list=[];vehiclePool.set(car.poolKey,list);}if(list.length>=4)return;
  list.push({root:car.root});vehiclePoolStats.recycled++;
 }
@@ -2009,7 +2012,7 @@ function seedChapterTrafficAndCrowd(chapterNum){
   spawnCrowd(x,z);
  }
 }
-function freezeResponder(c){if(c.frozen||(!c.emergency&&!c.trainingCop))return false;c.frozen=true;c.stun=999;c.speed=0;c.root.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.color?.setHex(0x60e642);}});score+=65;return true;}
+function freezeResponder(c){if(c.frozen||(!c.emergency&&!c.trainingCop))return false;c.frozen=true;c.stun=999;c.speed=0;c.frozenMaterials=new Map();c.root.traverse(o=>{if(o.isMesh&&o.material&&!Array.isArray(o.material)){c.frozenMaterials.set(o,o.material);o.material=o.material.clone();o.material.color?.setHex(0x60e642);}});score+=65;return true;}
 function gasAttack(){if(dragonStun>0||!active||paused||gasCooldown>0)return;gasCooldown=1.15;gasPose=.65;
  const rear=dragon.position.clone().add(new THREE.Vector3(-facing*1.2,-.35,0));
  // Large gas plume drifts outward, then descends and settles near street level.
@@ -2252,8 +2255,10 @@ function acquireSkySmoke(x,y,z,scale,colorHex){
 function releaseSkyObject(b){
  scene.remove(b.m);
  b.m.visible=false;
- if(b.smoke)skySmokePool.push(b);
- else skyBurstPool.push(b);
+ const pool=b.smoke?skySmokePool:skyBurstPool;
+ const cap=b.smoke?64:32;
+ if(pool.length<cap)pool.push(b);
+ else b.m.material?.dispose();
 }
 function backgroundImpactEffects(health){
  const damage=1-THREE.MathUtils.clamp(health/100,0,1);
