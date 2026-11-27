@@ -34,7 +34,9 @@ try{
   });
   report.cases.push({enabled,...data});await page.screenshot({path:out+'/'+(enabled?'batched':'baseline')+'.png'});await page.close();
  }
- const [a,b]=report.cases;console.log('SKYLINE_AB_DIAGNOSTIC '+JSON.stringify({baseline:a,batched:b}));assert.ok(a.submissions>0&&b.submissions>0&&b.submissions<a.submissions);
+ const [a,b]=report.cases;console.log('SKYLINE_AB_DIAGNOSTIC '+JSON.stringify({baseline:a,batched:b}));
+ for(let i=0;i<16;i++)assert.ok(Math.abs(a.rootMatrix[i]-b.rootMatrix[i])<.01,'Skyline anchor transform changed');
+ assert.ok(a.submissions>0&&b.submissions>0&&b.submissions<a.submissions);
  assert.equal(a.triangles,b.triangles);assert.equal(a.submittedTriangles,b.submittedTriangles);
  for(const k of ['min','max'])for(let i=0;i<3;i++)assert.ok(Math.abs(a.bounds[k][i]-b.bounds[k][i])<.01,'Skyline world bound changed');
  assert.equal(report.errors.length,0);report.passed=true;console.log('SKYLINE_AB '+JSON.stringify({baseline:a,batched:b,saved:a.submissions-b.submissions}));
