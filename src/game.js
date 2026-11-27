@@ -1333,13 +1333,6 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
 const skylineAirUniforms={opacity:{value:.10},day:{value:1}};
 const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 midday=vec3(.66,.78,.88),sunset=vec3(.94,.68,.52),night=vec3(.13,.20,.30);vec3 daylight=mix(midday,sunset,clamp((1.-abs(day-.45)*3.2),0.,1.));vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
-// Continuous horizon terrain ridge occluding skyscraper bases from intersecting house roofs
-const horizonRidgeGeo=new THREE.PlaneGeometry(1200,28,32,1);
-const horizonRidgeMat=new THREE.MeshStandardMaterial({color:0x8e9ea9,roughness:0.96,depthWrite:false});
-const horizonRidge=new THREE.Mesh(horizonRidgeGeo,horizonRidgeMat);
-horizonRidge.position.set(0,8.2,6);
-horizonRidge.name='skyline-horizon-ridge';
-skyline.add(horizonRidge);
 // Distant facade lights are integrated into building materials.
 // Distant fires remain inexpensive: shared low-poly geometry and materials.
 // The entire game now shares a time-animated, turbulence-driven flame field.
@@ -4875,7 +4868,7 @@ function reset(){clearPendingBarrages();setInspectionCamera('street');northBroad
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';policeBlockadeGroup.visible=false;chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
  if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects){effects.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose()}effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;purpleRamUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;wavePurpleRemaining=1;purpleRamShieldMesh.visible=false;satellitesCleared=false;finaleAscentPrompted=false;lastWingFlapTime=0;lastDiveWhooshTime=0;diveSonicBoomTriggered=false;introZoomProgress=(wave===1?1.0:0.0);waveClearZoomBlend=0.0;orbitalTheater?.reset();foregroundMeteors?.reset();if(wave>1)trainingMissions?.reset();evacuationChapter?.reset();secondaryEscortTimer=0;busterRamCollided=false;for(const p of escapingPilots)scene.remove(p.root);escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters)disposeCrater(c);craters.length=0;neighborhood.syncCraterHoles?.([]);cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(wave===1);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);}
-function gameOver(){if(freeFlightMode)return;if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;sound('dragonMourn',{x:dragon.position.x});if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{openUnifiedSettings();};document.getElementById('again').onclick=reset}
+function gameOver(){if(freeFlightMode||!active)return;if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;sound('dragonMourn',{x:dragon.position.x});if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{openUnifiedSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active)return;paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
 // remove game entities; simulation toggles pause the named subsystem for A/B tests.
@@ -4959,62 +4952,18 @@ let currentHoveredBuildingInfo=null;
 function getBuildingInspectorInfo(b){
  if(!b)return {icon:'🏛️',title:'North Broad Structure',height:'14.0m',health:'100%',healthPercent:100,status:'Structurally Sound'};
  const name=b.name||'';
- const isSchool=b.school||name.includes('school');
+ const isSchool=b===neighborhood.school||b.school===true;
  let icon='🏛️';
- let title='Historic Broad St Parcel · '+(b.x>0?(2221-Math.round(b.x*1.5)):(2221+Math.abs(Math.round(b.x*1.5))))+' N Broad St';
- if(isSchool||Math.abs(b.x)<7){
+ let title=b.sourceRow?.address||name||'North Broad Structure';
+ if(isSchool){
   icon='🏫';
   title='Tech Freire Charter School · 2221 N Broad St';
- }else if(name.includes('church')||name.includes('diamond-corner')||b.x>210){
+ }else if(String(b.id)==='1005656'){
   icon='⛪';
-  title='Berean Presbyterian Church · 2101-07 N Broad St';
- }else if(name.includes('mcdonald')||(b.x>=180&&b.x<=200)){
-  icon='🍔';
-  title="McDonald's & Drive-Thru · 2109 N Broad St";
- }else if(name.includes('cvs')||name.includes('former-cvs')||(b.x>=92&&b.x<=116)){
-  icon='🏥';
-  title='ArchWell Health / Former CVS · 2131 N Broad St';
- }else if(name.includes('newman')||(b.x>=118&&b.x<=130)){
-  icon='🎓';
-  title='Temple Newman Center · 2129 N Broad St';
- }else if(name.includes('apartments')||name.includes('temple-flats')){
-  icon='🏬';
-  title='Temple Flats Student Housing · 2117-19 N Broad St';
- }else if(name.includes('chicken')||name.includes('susquehanna-crown')){
-  icon='🍗';
-  title='Crown Fried Chicken · 2201-03 N Broad St';
- }else if(name.includes('doll-museum')||(b.x<=-80&&b.x>=-92)){
-  icon='🧸';
-  title='Philadelphia Doll Museum · 2253 N Broad St';
- }else if(name.includes('pcs-for-people')){
-  icon='💻';
-  title='PCs for People · 2251 N Broad St';
- }else if(name.includes('blues-babe')){
-  icon='🎶';
-  title='blues babe FOUNDATION · 2233 N Broad St';
- }else if(name.includes('black-united-fund')){
-  icon='🤝';
-  title='Black United Fund Conference Center · 2231 N Broad St';
- }else if(name.includes('united-fund')){
-  icon='🏛️';
-  title='United Fund of Pennsylvania · 2227 N Broad St';
- }else if(name.includes('maximus-cares')){
-  icon='🏡';
-  title='Maximus Cares Brownstone · 2235-37 N Broad St';
- }else if(name.includes('2239')||name.includes('2241')){
-  icon='🏘️';
-  title='Historic Broad St Rowhouse · '+(name.includes('2239')?'2239':'2241')+' N Broad St';
- }else if(name.includes('brownstone')){
-  icon='🏡';
-  title='Historic Broad St Brownstone · '+(b.x<0?'2227':'2219')+' N Broad St';
- }else if(b.stories>=4||b.h>=14){
-  icon='🏢';
-  title='Broad Street Commercial Building · '+Math.round(b.x)+'m';
+  title='Berean Presbyterian Church · 2101–07 N Broad St';
  }
- const heightVal=b.h||(isSchool?16:14);
- const height=heightVal.toFixed(1)+'m';
- const dmg=isSchool?(schoolDamage||0):(b.damage||0);
- const healthPercent=Math.max(0,Math.min(100,Math.round((1-dmg)*100)));
+ const height=(isSchool?schoolBounds.max.y-schoolBounds.min.y:b.h).toFixed(1)+'m';
+ const healthPercent=Math.max(0,Math.min(100,isSchool?hp:Math.round((1-(b.damage||0))*100)));
  const health=healthPercent+'%';
  let status='Structurally Sound';
  if(healthPercent===0){
@@ -6941,6 +6890,7 @@ if(new URLSearchParams(location.search).get('qa')==='1'){
  const qaDragonCamera=new THREE.PerspectiveCamera(42,16/9,.1,250);
  window.__DD_SCENE=scene;window.__DD_RENDERER=renderer;window.__DD_CAMERA=camera;window.__DD_THREE=THREE;
 window.__DD_QA={snap,
+  inspectSchool:()=>getBuildingInspectorInfo(neighborhood.school),
   advanceSimulation:(frames=1)=>{for(let i=0;i<Math.min(120,frames);i++)update(1/60);},
   verifyMeteorImpact:(x,y,z,size)=>{damage(x,z,y,{size,kind:'iron'});return snap();},
   stepFrame:(n=1,dt=0.05)=>{for(let i=0;i<n;i++)renderFrame(null,dt);return true;},

@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.4",
-  "build": "combined-preview.4-rc174-bsv21.1.33",
-  "timestamp": "2026-11-27T05:08:29Z",
+  "version": "5.5.0-integration.4.1",
+  "build": "combined-preview.4.1-rc174-bsv21.1.33",
+  "timestamp": "2026-11-27T05:28:14Z",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
