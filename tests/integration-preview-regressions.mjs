@@ -613,4 +613,52 @@ test('Parcel render culling with actual Three.js perspective and orthographic ca
   assert.equal(culler.stats().culled,2);
  }
 });
+test('School play mesh indexes only identical position and normal tuples without changing any triangle',()=>{
+ const {decodeSchoolBatch}=load('src/rendering/school-play-mesh.js',{},['decodeSchoolBatch']);
+ const A=[0,0,0,0,0,32767],B=[128,0,0,0,0,32767],C=[0,128,0,0,0,32767],D=[0,0,0,0,32767,0];
+ const data=new Int16Array([...A,...B,...C,...A,...C,...B,...D,...B,...C]);
+ const result=decodeSchoolBatch(data),original=decodeSchoolBatch(data,{allowIndex:false});
+ assert.equal(result.vertices,4);assert.equal(result.index.join(','),'0,1,2,0,2,1,3,1,2');
+ assert.ok(result.bytes<original.bytes);
+ for(let i=0;i<original.vertices;i++)for(let k=0;k<3;k++){
+  const j=result.index[i]*3+k;
+  assert.equal(result.positions[j],original.positions[i*3+k]);
+  assert.equal(result.normals[j],original.normals[i*3+k]);
+ }
+ const unique=decodeSchoolBatch(new Int16Array([...A,...B,...C]));
+ assert.equal(unique.index,null);assert.equal(unique.bytes,72);
+ const large=new Int16Array(180000*6);
+ for(let i=0;i<180000;i++){large[i*6]=i%300;large[i*6+1]=Math.floor(i/300)%100;large[i*6+5]=32767;}
+ const compact=decodeSchoolBatch(large);
+ assert.equal(compact.vertices,30000);assert.ok(compact.index instanceof Uint16Array);
+ assert.equal(compact.bytes,1080000);
+ const wide=new Int16Array(210000*6);
+ for(let i=0;i<210000;i++){const id=i%70000;wide[i*6]=id%1000;wide[i*6+1]=Math.floor(id/1000);wide[i*6+5]=32767;}
+ const wideResult=decodeSchoolBatch(wide);
+ assert.equal(wideResult.vertices,70000);assert.ok(wideResult.index instanceof Uint32Array);
+ assert.equal(wideResult.index[69999],69999);assert.equal(wideResult.index[70000],0);
+});
+test('Packaged school model indexing preserves every decoded triangle and never increases batch storage',()=>{
+ const {decodeSchoolBatch}=load('src/rendering/school-play-mesh.js',{},['decodeSchoolBatch']);
+ const payload=gunzipSync(readFileSync(new URL('assets/tech-freire-play-mesh-v1.bin',root)));
+ const header=payload.readUInt32LE(),info=JSON.parse(payload.subarray(4,4+header));
+ let offset=4+header+header%2,originalBytes=0,indexedBytes=0,indexedBatches=0;
+ for(const {count} of info.batches){
+  const data=new Int16Array(count*6);
+  for(let i=0;i<data.length;i++)data[i]=payload.readInt16LE(offset+i*2);
+  offset+=data.byteLength;
+  const result=decodeSchoolBatch(data),baseline=decodeSchoolBatch(data,{allowIndex:false});
+  assert.ok(result.bytes<=baseline.bytes);
+  assert.equal(result.index?.length??result.vertices,count);
+  for(let i=0;i<count;i++)for(let k=0;k<3;k++){
+   const j=(result.index?result.index[i]:i)*3+k;
+   assert.equal(result.positions[j],baseline.positions[i*3+k]);
+   assert.equal(result.normals[j],baseline.normals[i*3+k]);
+  }
+  originalBytes+=baseline.bytes;indexedBytes+=result.bytes;if(result.index)indexedBatches++;
+ }
+ assert.equal(offset,payload.length);
+ assert.ok(indexedBytes<=originalBytes);
+ console.log('School geometry storage: '+originalBytes+' -> '+indexedBytes+' bytes; indexed batches '+indexedBatches);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
