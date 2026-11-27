@@ -102,14 +102,65 @@ try{
    const approach=await snap();
    await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+4,approach.frameTimes.frames);
    const start=await snap();
-   const result=await page.evaluate(()=>window.__DD_QA.spawnMeteorBarrage(8,0,10));
-   assert.ok(result.ok,result.error);
-   await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+12,start.frameTimes.frames,{timeout:90000});
+   // Observe the actual live stress frames (not a frozen approximation).
+   // Cache ancestor labels per object and retain only the highest-call
+   // frame plus a compact frame series. Instrumentation is diagnostic.
+   await page.evaluate(()=>{
+     const r=window.__DD_RENDERER,scene=window.__DD_SCENE;
+     const originalRender=r.render,originalSubmit=r.renderBufferDirect;
+     let groups=null,peak=null;
+     const cache=new WeakMap(),frames=[];
+     function category(o,material){
+       if(cache.has(o))return cache.get(o);
+       let p=o,root=o,named='';
+       while(p&&p!==scene){if(p.name)named=p.name;root=p;p=p.parent;}
+       const name=root.name||named||('unnamed '+o.type+' / '+(material?.type||'unknown'));
+       cache.set(o,name);return name;
+     }
+     r.renderBufferDirect=function(camera,sceneArg,geometry,material,o,group){
+       if(groups){
+         const name=category(o,material),v=groups.get(name)||{submissions:0,instances:0,elements:0};
+         const count=o.isInstancedMesh?o.count:1;
+         v.submissions++;v.instances+=count;
+         v.elements+=(group?.count??geometry?.index?.count??geometry?.attributes?.position?.count??0)*count;
+         groups.set(name,v);
+       }
+       return originalSubmit.apply(this,arguments);
+     };
+     r.render=function(){
+       groups=new Map();
+       try{return originalRender.apply(this,arguments);}
+       finally{
+         const counts={...r.info.render};
+         frames.push({calls:counts.calls,triangles:counts.triangles});
+         if(frames.length>180)frames.shift();
+         if(!peak||counts.calls>peak.render.calls){
+           peak={render:counts,groups:[...groups].map(([name,v])=>({name,...v})).sort((a,b)=>b.submissions-a.submissions)};
+         }
+         groups=null;
+       }
+     };
+     window.__DD_STOP_STRESS_PROFILE=()=>{
+       r.render=originalRender;r.renderBufferDirect=originalSubmit;
+       delete window.__DD_STOP_STRESS_PROFILE;
+       return {peak,frames};
+     };
+   });
+   let stressProfile;
+   try{
+     const result=await page.evaluate(()=>window.__DD_QA.spawnMeteorBarrage(8,0,10));
+     assert.ok(result.ok,result.error);
+     await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+12,start.frameTimes.frames,{timeout:90000});
+   }finally{
+     stressProfile=await page.evaluate(()=>window.__DD_STOP_STRESS_PROFILE());
+   }
+   assert.ok(stressProfile.frames.length>0&&stressProfile.peak?.groups.length>0,'No live rendering submissions captured');
+   console.log('STRESS_PEAK_PROFILE',JSON.stringify({render:stressProfile.peak.render,groups:stressProfile.peak.groups.slice(0,25),frames:stressProfile.frames}));
    const data=await page.evaluate(()=>({snap:window.__DD_QA.snap(),metrics:window.__DD_GAME_METRICS,frameHealth:window.__DD_FRAME_HEALTH.summary()}));
    assert.ok(data.snap.frameTimes.frames>start.frameTimes.frames);
    console.log('STRESS_TELEMETRY',JSON.stringify({metrics:data.metrics,frameHealth:data.frameHealth,counts:data.snap.counts,scene:data.snap.scene}));
    await page.screenshot({path:out+'/stress.png'});
-   return data;
+   return {...data,stressProfile};
  });
 }catch(error){report.fatal=String(error);console.error(error);}
 finally{
