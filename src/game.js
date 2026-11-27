@@ -167,7 +167,7 @@ function startChapterOneCombat(){
  Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,damage:0,frames:0,frameTimeTotal:0,highestWave:1});
  cooldown=0;gasCooldown=0;gasHolding=false;dragonStun=0;invulnerable=0;
  for(const c of gasClouds){scene.remove(c.mesh);c.mesh.material.dispose();}gasClouds.length=0;
- perchDragon(true);
+ perchDragon(true);cameraScrollX=0;cameraFollowY=null;introZoomProgress=0;
  skipChapterIntroCinematic=true;
  paused=false;
  active=true;
@@ -4990,7 +4990,7 @@ function newWave(){waveClearZoomBlend=0.0;const chapterIndex=(wave<=5?1:wave<=10
 function reset(){trainingMissions?.reset();cancelChapterCinematic();clearPendingBarrages();setInspectionCamera('street');northBroadModels?.restore?.();tacticalTrialActive=false;trialCompleted=false;trialTimer=0;rallyShieldQueued=false;schoolReconstruction?.reset();finalSquadron.clear();militaryOccupation.reset();cinematicFX.reset();frameHealth.reset();playtestFrameMs.length=0;peakDrawCalls=0;stallEvents.length=0;for(const a of Object.values(detailedTimings))a.length=0;frameGovernor.reset();adaptiveResolution=1;adaptiveAdjustments=0;applyVisualPreset();nextLaneByDirection.east=0;nextLaneByDirection.west=0;resetParkedCars();settledRubble.length=0;rubbleDirty=false;rubblePool.clear();for(const w of crashedWrecks)scene.remove(w.root);crashedWrecks.length=0;skylineEventTimer=3;distantTimer=3;backgroundDamageTimer=2.5;for(const h of helicopters)retireHelicopter(h);helicopters.length=0;helicopterLightPool.reset();for(const p of crowd)scene.remove(p.g);crowd.length=0;for(const g of gasClouds){scene.remove(g.mesh);if(!g.mesh.isSprite)g.mesh.geometry?.dispose();g.mesh.material.dispose()}gasClouds.length=0;
  while(skyBursts.length)releaseSkyObject(skyBursts.pop());for(const m of distantStreaks)m.sprite.removeFromParent();distantStreaks.length=0;dangerZones.length=0;
  for(const crack of windowDamage){scene.remove(crack);crack.geometry.dispose()}windowDamage.length=0;for(const w of nightWindows){w.broken=false;w.mesh.visible=true;}helicopterTimer=7;crowdTimer=0;dragonLives=3;invulnerable=0;dragonStun=0;iceGroundHits=0;blockCharge=0;blockShield=0;blockScene=0;gasCooldown=0;waterDisable=0;windCooldown=0;gustTime=0;holdStart=0;windActive=false;gustRoadNotified=false;gustMissileNotified=false;windVisual.visible=false;clearWindDebris();updateWindPlanting(1);cinematicFX.setWind(null,null,0);chapterSettlement={active:false,phase:'idle',timer:0,nextWave:null,fromChapter:null};postCutsceneWave=null;skipChapterIntroCinematic=false;setChapterFade(false);iceWarning.style.display='none';policeBlockadeGroup.visible=false;chapterStaging.setChapter(0);for(const b of burningVehicles){if(b.driver)scene.remove(b.driver)}burningVehicles.length=0;facing=1;turnTime=0;recoveryLift=0;dragonGroundImpact=false;gasPose=0;dragon.scale.set(1,1,1);explosionLightPool.reset();explosionLights.length=0;for(const c of cars)recycleCar(c);cars.length=0;carTimer=0;damageHoles.length=0;resetSchoolDamageMasks();schoolDamage=0;schoolFragments.count=0;schoolFragments.instanceMatrix.needsUpdate=true;clearFires();syncDamageHoles();neighborhood.restore();
- if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects)releaseImpactFlash(e);effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=playTrainingMode?1:Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;purpleRamUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;wavePurpleRemaining=1;purpleRamShieldMesh.visible=false;satellitesCleared=false;finaleAscentPrompted=false;lastWingFlapTime=0;lastDiveWhooshTime=0;diveSonicBoomTriggered=false;introZoomProgress=(wave===1?1.0:0.0);waveClearZoomBlend=0.0;orbitalTheater?.reset();foregroundMeteors?.reset();if(wave>1)trainingMissions?.reset();evacuationChapter?.reset();secondaryEscortTimer=0;busterRamCollided=false;for(const p of escapingPilots)scene.remove(p.root);escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters)disposeCrater(c);craters.length=0;neighborhood.syncCraterHoles?.([]);cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(wave===1);cameraScrollX=0;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();if(playTrainingMode){remaining=0;spawnTimer=9999;dragon.position.set(0,16,15);dragonLeavingRoof=true;trainingMissions.start();updateHud();}else{newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);}for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);if(trainingMissions.isActive())setCitySceneVisible(false);}
+ if(architecturalModel){architecturalModel.visible=false;syncStructuralDamage()}if(voxelReady)architecture.restore();for(const e of effectObjects)releaseImpactFlash(e);effectObjects.length=0;impactParticles.length=0;trailParticles.length=0;for(const pool of impactPools)pool.clear();trailSmokePool.clear();trailEmberPool.clear();quality.reset();for(const arr of [meteors,shots,blasts,debris]){while(arr.length)remove(arr,arr.length-1)}if(!architecturalReady)buildSchool();setMode(viewMode);score=0;hp=100;fireHealthAccumulator=0;wave=playTrainingMode?1:Math.min(15,clampWave(document.getElementById('start-wave')?.value));bossSpawned=false;bossDefeated=false;skylineDamage=0;schoolRubblePlaced=false;schoolDamage=0;damageHoles.length=0;syncDamageHoles();syncStructuralDamage();skylineBackdrop.reset();for(const f of skylineFires){skyline.remove(f.fire,...f.puffs);f.fire.material.dispose();for(const p of f.puffs)p.material.dispose();}skylineFires.length=0;Object.assign(sessionStats,{start:Date.now(),shots:0,intercepts:0,militaryInterceptions:0,hunters:0,damage:0,highestWave:wave,deaths:0,powerups:0,frames:0,frameTimeTotal:0,galeConvergences:0,combos:0,lastSecondSaves:0,nearMisses:0,wetShots:0});waveStats.length=0;dragonMeteorTimer=7;interceptionStreak=0;rapidFireUntil=0;schoolShieldUntil=0;blueFireballUntil=0;greenBreathUntil=0;fireStreamUntil=0;megaFireBreathUntil=0;purpleRamUntil=0;waveBlueMeteorsRemaining=2;waveGreenMeteorRemaining=1;waveFireStreamRemaining=1;wavePurpleRemaining=1;purpleRamShieldMesh.visible=false;satellitesCleared=false;finaleAscentPrompted=false;lastWingFlapTime=0;lastDiveWhooshTime=0;diveSonicBoomTriggered=false;introZoomProgress=(wave===1?1.0:0.0);waveClearZoomBlend=0.0;orbitalTheater?.reset();foregroundMeteors?.reset();if(wave>1)trainingMissions?.reset();evacuationChapter?.reset();secondaryEscortTimer=0;busterRamCollided=false;for(const p of escapingPilots)scene.remove(p.root);escapingPilots.length=0;powerGrid?.reset?.();shieldMesh.visible=false;streetStop=0;for(const c of craters)disposeCrater(c);craters.length=0;neighborhood.syncCraterHoles?.([]);cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();updateAtmosphere();displayedPhase=dayPhase(wave);displayedDarkness=dayDarkness(wave);scene.background.copy(skyTarget);updateNight(0);elapsed=0;cooldown=0;between=0;paused=false;active=true;perchDragon(wave===1);cameraScrollX=0;cameraFollowY=null;qaCameraScrollX=null;skyline.position.x=skylineAnchor;celestial.position.x=0;if(actualSchoolOverlay)syncStructuralDamage();document.getElementById('overlay').style.display='none';document.getElementById('campaign-transition').hidden=true;if(cinematicActive)closeChapterTransition();document.getElementById('pause').textContent='Pause';updateHud();if(playTrainingMode){remaining=0;spawnTimer=9999;dragon.position.set(0,16,15);dragonLeavingRoof=true;trainingMissions.start();updateHud();}else{newWave();seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);}for(const [k,on] of Object.entries(performanceLab.states()))applyDiagnosticSystem(k,on);if(trainingMissions.isActive())setCitySceneVisible(false);}
 function gameOver(){if(freeFlightMode||!active)return;if(hp<=0&&schoolDamage<1){schoolDamage=1;syncStructuralDamage();}active=false;sound('dragonMourn',{x:dragon.position.x});if(new URLSearchParams(location.search).get('benchmark')!=='1')exportTelemetry();document.getElementById('overlay').style.display='grid';document.getElementById('panel').innerHTML=`<h1>GAME OVER</h1><p>School defense score: <strong>${score.toLocaleString()}</strong><br>Reached wave ${wave}</p><button id="again">PLAY AGAIN</button><button id="settings-again">SETTINGS</button>`;document.getElementById('settings-again').onclick=()=>{openUnifiedSettings();};document.getElementById('again').onclick=reset}
 function togglePause(){if(!active||cinematicActive)return;paused=!paused;if(paused){input.clear();cancelGasHold();activeMouseButtons=0;holdStart=0;}document.getElementById('pause').textContent=paused?'Resume':'Pause';message(paused?'PAUSED':'RESUMED')}
 // Live, reversible performance-isolation switches. Render-only toggles do not
@@ -6795,7 +6795,7 @@ let floorY=0.05;
 if(inSchool&&(schoolDamage>0.35||d.isImploding)){floorY=-2.2;}
 else if(d.isImploding){const b=neighborhood.targetBuildings?.find(tb=>Math.abs(tb.x-d.mesh.position.x)<tb.w*0.52&&Math.abs(tb.z-d.mesh.position.z)<tb.d*0.52&&(tb.damage>0.35||tb.fireCollapsed));if(b)floorY=-1.8;}
 if(d.mesh.position.y<floorY){d.mesh.position.y=floorY;if(d.v.y<-.4&&d.bounces<3){d.v.y=-d.v.y*.28;d.v.x*=.65;d.v.z*=.65;d.bounces++;}else{d.v.y=0;d.v.x*=Math.max(0,1-dt*5);d.v.z*=Math.max(0,1-dt*5);}}if(d.life<=0){if(d.rubble&&!d.trail){preserveRubble(d);debris.splice(i,1)}else remove(debris,i)}}if(toastTimer>0&&(toastTimer-=dt)<=0)document.getElementById('toast').textContent=''}
-const clock=new THREE.Clock();let lastW=0,lastH=0;let cameraScrollX=0;let qaCameraScrollX=null;let hostMetricTime=0;let hostMetricFrames=0;
+const clock=new THREE.Clock();let lastW=0,lastH=0;let cameraScrollX=0;let cameraFollowY=null;let qaCameraScrollX=null;let hostMetricTime=0;let hostMetricFrames=0;
 let maxRenderFPS=Number(new URLSearchParams(location.search).get('fps')||localStorage.getItem('ddFPSCap')||'45');let nextRenderAt=null;
 // Advance from the scheduled deadline, not the last actual vsync. Otherwise
 // a 45 FPS cap on a 60 Hz screen renders every second tick (30 FPS).
@@ -6845,6 +6845,21 @@ if(schoolQA||new URLSearchParams(location.search).get('benchmark')==='1'){
 const motionQA=schoolQA&&new URLSearchParams(location.search).get('motion')==='1';
 function animate(){if(!motionQA){requestAnimationFrame(animate);renderFrame();}}
 window.renderFrame=renderFrame;
+// Keep the flight camera player-led while showing nearby tutorial objectives.
+function trainingCameraFraming(focus,position){
+ if(!focus?.active)return {x:0,y:0,zoom:1};
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const dx=focus.x-position.x,dy=focus.y-position.y;
+ const distance=Math.hypot(dx,dy);
+ return {x:clamp(dx*.35,-12,12),y:clamp(dy*.35,-6,6),zoom:clamp(1+(focus.zoom-1)*.35-distance*.002,.94,1.12)};
+}
+function dampCameraFollow(previous,target,dt){
+ if(!Number.isFinite(previous))return target;
+ const step=Number.isFinite(dt)?Math.max(0,Math.min(.05,dt)):0;
+ const eased=previous+(target-previous)*(1-Math.exp(-step*8));
+ return Math.max(target-6,Math.min(target+6,eased));
+}
+
 function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
  if(forcedDt===null&&!motionQA){
   const decision=renderDeadline(present,nextRenderAt,maxRenderFPS);nextRenderAt=decision.next;
@@ -6870,9 +6885,12 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  const cameraDt=Number.isFinite(dt)?Math.max(0,Math.min(dt,.05)):0;
  const jitter=shake>0?Math.sin(present*.053)*shake*.5:0;
  shake=Math.max(0,shake-Math.min(dt,.1));
- const follow=skyCameraLift(dragon.position.y);
+ const focus=trainingCameraFraming(trainingMissions?.getCameraFocus(),dragon.position);
+ const desiredFollow=skyCameraLift(dragon.position.y)+focus.y;
+ cameraFollowY=dampCameraFollow(cameraFollowY,desiredFollow,cameraDt);
+ const follow=cameraFollowY;
  const deadZone=35*Math.min(1,camera.aspect/(16/9));
- const targetScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone)+(dragonVelX*0.35);
+ const targetScrollX=dragon.position.x-THREE.MathUtils.clamp(dragon.position.x,-deadZone,deadZone)+(dragonVelX*0.35)+focus.x;
  if(qaCameraScrollX!==null){cameraScrollX=qaCameraScrollX;}else{cameraScrollX=THREE.MathUtils.lerp(cameraScrollX,targetScrollX,1-Math.exp(-cameraDt*5.0));}
  skylineBackdrop.update(elapsed,displayedDarkness,dt);
  skyline.position.x=skylineParallaxX(skylineAnchor,cameraScrollX,.62);
@@ -6893,8 +6911,10 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  const isWaveClearing=(between>0||chapterSettlement.active)&&active&&!paused&&wave<15;
  waveClearZoomBlend=THREE.MathUtils.lerp(waveClearZoomBlend,isWaveClearing?1.0:0.0,1-Math.exp(-cameraDt*1.8));
 
+ if(active&&!paused&&!trainingMissions?.isActive())introZoomProgress=Math.min(1,introZoomProgress+cameraDt/2.4);
  const cinematicZoomBonus=waveClearZoomBlend*0.06;
- let targetZoom=freeFlightMode?sandboxZoomLevel:THREE.MathUtils.clamp((wave===15?.92:1.0)+cinematicZoomBonus,0.96,1.08);
+ const openingEase=wave===1&&!trainingMissions?.isActive()?-.04*(1-introZoomProgress):0;
+ let targetZoom=freeFlightMode?sandboxZoomLevel:trainingMissions?.isActive()?focus.zoom:THREE.MathUtils.clamp((wave===15?.96:1.0)+cinematicZoomBonus+openingEase,0.96,1.08);
 
 
  const subwayView=subwayCamActive?craters.findLast(c=>c.isSubway&&c.life>0&&c.subwayGroup):null;
@@ -6924,7 +6944,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
  const targetDutchTilt=THREE.MathUtils.clamp(-flightRoll*0.008-(dragonVelX*0.0003),-0.012,0.012);
  if(!subwayView&&!basementCamActive)camera.rotation.z+=targetDutchTilt;
 
- const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,1-Math.exp(-cameraDt*(introZoomProgress>0.08||waveClearZoomBlend>0.08?3.5:2.5)));
+ const nextZoom=THREE.MathUtils.lerp(camera.zoom,targetZoom,1-Math.exp(-cameraDt*(introZoomProgress<1||waveClearZoomBlend>0.08?3.5:2.5)));
  if(resized||Math.abs(nextZoom-camera.zoom)>.0001){camera.zoom=nextZoom;camera.updateProjectionMatrix();}
  soundEngine.update(dt,camera.position.y,368,altRatio>0.15,{wave,active:active&&!paused,meteorsCount:meteors.filter(m=>!m.grounded).length,bossActive:bossSpawned&&!bossDefeated,schoolHp:hp,dragonVelY,isBoosting,elapsed});
  if(active&&!paused&&elapsed-lastIntenseRoarElapsed>12.0){
