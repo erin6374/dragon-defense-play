@@ -1198,4 +1198,24 @@ test('Horizontal source alignment preserves storey heights, source horizontal as
  assert.ok(game.includes('alignSchoolSource(central.model,sourceComponents)'));
  assert.equal((game.match(/createSchoolComponentIndex\(alignment.components\)/g)||[]).length,2);
 });
+test('Gas sprite pool reuses unique materials, resets appearance and bounds idle storage',()=>{
+ const start=game.indexOf('const gasSpritePool=[];'),end=game.indexOf('let ambulanceTimer=',start);
+ assert.ok(start>=0&&end>start);
+ const gasClouds=[],smoke=new Three.Texture(),scene=new Three.Scene();
+ const api=new Function('THREE','visualBank','gasClouds',game.slice(start,end)+'\nreturn {acquireGasSprite,releaseGasSprite,clearGasClouds,gasSpritePool,MAX_IDLE_GAS_SPRITES};')(Three,{images:{smoke}},gasClouds);
+ const a=api.acquireGasSprite(0x73cf5d,.42),b=api.acquireGasSprite(0x6ab85b,.45);
+ assert.notEqual(a.material,b.material);assert.equal(a.material.map,smoke);
+ scene.add(a);a.position.set(7,8,9);a.scale.set(8,9,10);a.material.opacity=.13;
+ api.releaseGasSprite(a);assert.equal(a.parent,null);assert.equal(a.visible,false);
+ const next=api.acquireGasSprite(0x78e058,.52);
+ assert.equal(next,a);assert.equal(next.material.color.getHex(),0x78e058);assert.equal(next.material.opacity,.52);
+ assert.deepEqual(next.position.toArray(),[0,0,0]);assert.deepEqual(next.scale.toArray(),[1,1,1]);assert.ok(next.visible);
+ const active=[next,b,...Array.from({length:api.MAX_IDLE_GAS_SPRITES},()=>api.acquireGasSprite(0x123456,.3))];
+ let disposed=0;
+ for(const m of active){scene.add(m);m.material.addEventListener('dispose',()=>disposed++);gasClouds.push({mesh:m});}
+ api.clearGasClouds();
+ assert.equal(gasClouds.length,0);assert.equal(scene.children.length,0);assert.equal(api.gasSpritePool.length,api.MAX_IDLE_GAS_SPRITES);assert.equal(disposed,2);
+ assert.ok(game.includes('releaseGasSprite(c.mesh);gasClouds.splice(i,1)'));
+ assert.equal((game.match(/acquireGasSprite\(0x/g)||[]).length,3);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
