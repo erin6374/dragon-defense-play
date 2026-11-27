@@ -27,7 +27,8 @@ export function batchVehicleVisuals(THREE,root,{exclude=[]}={}){
    const combined=mergeGeometries(entries.map(e=>e.geometry),false);
    if(!combined)throw new Error('Incompatible geometry attributes');
    const baked=new THREE.Mesh(combined,material);
-   baked.name='batched-vehicle-material';baked.frustumCulled=false;
+   baked.name='batched-vehicle-material';
+   combined.computeBoundingSphere();
    baked.castShadow=false;baked.receiveShadow=false;root.add(baked);generated++;
    for(const e of entries){root.remove(e.mesh);saved++;}
   }catch(err){failed+=entries.length;console.warn('Vehicle group bake failed',err);}
