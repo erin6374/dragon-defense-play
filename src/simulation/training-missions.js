@@ -8,7 +8,7 @@
 // - Step 4: Floating Simulated Mock House with rooftop fire suppression
 // - Step 5: Floating Simulated Police Cruiser with non-lethal defensive stasis gas (Harm No Humans)
 // - Step 6: Graduation & immediate seamless warp to Philadelphia Chapter 1
-// Skippable at any time via [TAB] or click button (< 60 seconds total duration).
+// Skippable at any time via [TAB] or click button.
 
 export function createTrainingMissions({
   scene,
@@ -28,6 +28,8 @@ export function createTrainingMissions({
   let transitionTimer = 0;
   let inTransition = false;
   let targetMeteor1 = null;
+  let graduationPending = false;
+  let gasObserved = false;
   let cameraFocus = { x: 0, y: 16, z: 15, zoom: 1.0, active: false };
 
   // Void Environment 3D Assets
@@ -286,6 +288,7 @@ export function createTrainingMissions({
   }
 
   function start() {
+    reset();
     active = true;
     currentStep = 1;
     stepTimer = 0;
@@ -312,8 +315,10 @@ export function createTrainingMissions({
   }
 
   function advanceToStep(step) {
+    if (!active || !Number.isInteger(step) || step < 1 || step > 6) return;
     currentStep = step;
     stepTimer = 0;
+    gasObserved = false;
     inTransition = false;
     transitionTimer = 0;
 
@@ -324,7 +329,7 @@ export function createTrainingMissions({
       sound('bonus');
       updateBannerUI(
         '🥋 ASTRAL VOID SIMULATOR — STEP 1/5: FLIGHT CONTROLS',
-        '<b>DO THIS:</b> Steer Paulo using <b>Arrow Keys / WASD</b> or Mouse. Hold <b>W / UP</b> to climb into the sky and test your wings in the Astral Void!',
+        '<b>DO THIS:</b> Steer Paulo using <b>Arrow Keys / WASD</b> . Hold <b>W / UP</b> to climb into the sky and test your wings in the Astral Void!',
         0
       );
       message('🥋 STEP 1/5: FLIGHT — Steer Paulo with WASD / Arrow Keys across the Astral Void!');
@@ -349,10 +354,10 @@ export function createTrainingMissions({
       sound('bonus');
       updateBannerUI(
         '⚡ ASTRAL VOID SIMULATOR — STEP 3/5: SUPERSONIC METEOR BUSTER',
-        '<b>DO THIS:</b> A fast breakaway chunk is speeding across the void! Hold <b style="background:#7c3aed;padding:2px 6px;border-radius:3px">SHIFT</b> to Supersonic Boost and ram directly through the meteor to shatter it!',
+        '<b>DO THIS:</b> A fast breakaway chunk is speeding across the void! Hold <b style="background:#7c3aed;padding:2px 6px;border-radius:3px">F / RIGHT MOUSE</b> to Supersonic Boost and ram directly through the meteor to shatter it!',
         0
       );
-      message('⚡ STEP 3/5: METEOR BUSTER — Hold SHIFT to boost and ram through the breakaway rock!');
+      message('⚡ STEP 3/5: METEOR BUSTER — Hold F or Right Mouse to boost and ram through the breakaway rock!');
       if (spawnTargetMeteor) {
         targetMeteor1 = spawnTargetMeteor({ x: -36, y: 22, z: 15, size: 3.0, vx: 22.0, vy: -0.8, isBusterTarget: true });
       }
@@ -378,7 +383,7 @@ export function createTrainingMissions({
       sound('bonus');
       updateBannerUI(
         '🛡️ ASTRAL VOID SIMULATOR — STEP 5/5: GUARDIAN CODE — HARM NO HUMANS!',
-        '<b>DO THIS:</b> Panicked police are shooting! Paulo has a sacred oath to <b>HARM NO HUMANS</b>. Fly near the mock cruiser and press <b style="background:#059669;padding:2px 6px;border-radius:3px">F</b> or <b style="background:#059669;padding:2px 6px;border-radius:3px">S / DOWN</b> to drop DEFENSIVE GAS to safely freeze the vehicle!',
+        '<b>DO THIS:</b> Panicked police are shooting! Paulo has a sacred oath to <b>HARM NO HUMANS</b>. Fly near the mock cruiser and press <b style="background:#059669;padding:2px 6px;border-radius:3px">F</b> or <b style="background:#059669;padding:2px 6px;border-radius:3px">RIGHT CLICK</b> to drop DEFENSIVE GAS to safely freeze the vehicle!',
         0
       );
       message('🛡️ STEP 5/5: HARM NO HUMANS — Deploy defensive stasis gas to freeze the police cruiser!');
@@ -390,21 +395,24 @@ export function createTrainingMissions({
       sound('dragonRoar', { variant: 'challenge' });
       updateBannerUI(
         '🏆 SIMULATION MASTERED — DEPLOYING TO PHILADELPHIA!',
-        'All core dragon abilities verified in under 60 seconds! Warping Paulo to North Broad Street for <b>Chapter 1: The Initial Meteor Storm</b>...',
+        'All core dragon abilities verified! Warping Paulo to North Broad Street for <b>Chapter 1: The Initial Meteor Storm</b>...',
         100,
         true
       );
       message('🏆 SIMULATION MASTERED! PREPARE TO DEFEND PHILADELPHIA!');
 
-      setTimeout(() => {
-        completeAndExit();
-      }, 2200);
+      graduationPending = true;
     }
   }
 
   function update(dt, context) {
     if (!active) return;
+    if (!Number.isFinite(dt) || dt < 0) return;
     stepTimer += dt;
+    if (graduationPending) {
+      if (stepTimer >= 2.2) completeAndExit();
+      return;
+    }
 
     const {
       dragonPos,
@@ -453,11 +461,11 @@ export function createTrainingMissions({
       const pct = Math.min(100, (flightDistance / 14) * 100);
       updateBannerUI(
         '🥋 ASTRAL VOID SIMULATOR — STEP 1/5: FLIGHT CONTROLS',
-        `<b>DO THIS:</b> Steer Paulo using <b>WASD / Arrow Keys</b> or Mouse. Test your wings in the Astral Void! (${Math.round(pct)}%)`,
+        `<b>DO THIS:</b> Steer Paulo using <b>WASD / Arrow Keys</b> . Test your wings in the Astral Void! (${Math.round(pct)}%)`,
         pct
       );
 
-      if (flightDistance >= 14 || stepTimer > 4.5) {
+      if (flightDistance >= 14) {
         inTransition = true;
         sound('bonus');
         updateBannerUI(
@@ -489,12 +497,12 @@ export function createTrainingMissions({
       const isHighSpeed = dragonSpeed > 11.0;
       updateBannerUI(
         '⚡ ASTRAL VOID SIMULATOR — STEP 3/5: SUPERSONIC METEOR BUSTER',
-        `Hold <b style="background:#7c3aed;padding:2px 6px;border-radius:3px">SHIFT</b> to Boost (${isHighSpeed ? '<b style="color:#a855f7">SUPERSONIC ACTIVE!</b>' : 'accelerate'}) directly through the breakaway rock!`,
+        `Hold <b style="background:#7c3aed;padding:2px 6px;border-radius:3px">F / RIGHT MOUSE</b> to Boost (${isHighSpeed ? '<b style="color:#a855f7">SUPERSONIC ACTIVE!</b>' : 'accelerate'}) directly through the breakaway rock!`,
         isHighSpeed ? 80 : 35
       );
 
       const alive = meteorsList && meteorsList.includes(targetMeteor1) && !targetMeteor1.grounded;
-      if (hasBusterCollided || (targetMeteor1 && !alive)) {
+      if (hasBusterCollided) {
         inTransition = true;
         sound('bonus');
         sound('dragonRoar', { variant: 'furious' });
@@ -504,6 +512,8 @@ export function createTrainingMissions({
           100,
           true
         );
+      } else if (!alive || targetMeteor1?.mesh?.position.x > 50) {
+        targetMeteor1 = spawnTargetMeteor?.({ x: -36, y: 22, z: 15, size: 3.0, vx: 22.0, vy: -0.8, isBusterTarget: true }) ?? null;
       }
     }
 
@@ -541,11 +551,12 @@ export function createTrainingMissions({
 
       updateBannerUI(
         '🛡️ ASTRAL VOID SIMULATOR — STEP 5/5: GUARDIAN CODE — HARM NO HUMANS!',
-        `Police cruiser below is shooting! Fly overhead (${inGasRange ? '<b style="color:#34d399">IN GAS RANGE!</b>' : 'fly lower'}) and press <b style="background:#059669;padding:2px 6px;border-radius:3px">F</b> or <b style="background:#059669;padding:2px 6px;border-radius:3px">S / DOWN</b> to drop non-lethal gas!`,
+        `Police cruiser below is shooting! Fly overhead (${inGasRange ? '<b style="color:#34d399">IN GAS RANGE!</b>' : 'fly lower'}) and press <b style="background:#059669;padding:2px 6px;border-radius:3px">F</b> or <b style="background:#059669;padding:2px 6px;border-radius:3px">RIGHT CLICK</b> to drop non-lethal gas!`,
         mockCruiserDisabled ? 100 : (inGasRange ? 65 : 25)
       );
 
-      if ((mockCruiserDisabled || (isGasDeployed && inGasRange)) && stepTimer > 0.6) {
+      if (!isGasDeployed) gasObserved = true;
+      if ((mockCruiserDisabled || (gasObserved && isGasDeployed && inGasRange)) && stepTimer > 0.6) {
         mockCruiserDisabled = true;
         if (mockCruiserStasis) {
           mockCruiserStasis.material.opacity = 0.75;
@@ -572,6 +583,8 @@ export function createTrainingMissions({
   }
 
   function completeAndExit() {
+    if (!active) return;
+    graduationPending = false;
     active = false;
     currentStep = 6;
     cameraFocus = { x: 0, y: 16, z: 15, zoom: 1.0, active: false };
@@ -589,6 +602,7 @@ export function createTrainingMissions({
 
   function skip() {
     if (!active) return;
+    graduationPending = false;
     active = false;
     currentStep = 6;
     cameraFocus = { x: 0, y: 16, z: 15, zoom: 1.0, active: false };
@@ -607,11 +621,14 @@ export function createTrainingMissions({
   }
 
   function reset() {
+    const wasActive=active;
     active = false;
+    graduationPending=false;targetMeteor1=null;gasObserved=false;
+    cameraFocus={x:0,y:16,z:15,zoom:1,active:false};
     currentStep = 0;
     hideBanner();
     cleanupVoidStage();
-    if (setCitySceneVisible) {
+    if (wasActive && setCitySceneVisible) {
       setCitySceneVisible(true);
     }
   }
