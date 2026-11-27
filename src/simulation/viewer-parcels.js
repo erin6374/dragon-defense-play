@@ -65,3 +65,23 @@ export function ownsSchoolFootprint(bounds,buildings,x,z){
  if(!Number.isFinite(x)||!Number.isFinite(z)||x<bounds.min.x||x>bounds.max.x||z<bounds.min.z||z>bounds.max.z)return false;
  return !buildings.some(b=>!b.school&&containsParcel(b,x,z));
 }
+
+// Keep the school taller than its surveyed roof for readability, but do
+// not enlarge its footprint into the two adjacent mapped rowhouses.
+export function schoolGameEnvelope(rows){
+ const row=rows.find(r=>r.school);
+ if(!row||!row.polys?.length)throw Error('Mapped school footprint missing');
+ const extent=r=>{
+  const points=r.polys.flat(2);
+  return {minX:Math.min(...points.map(p=>p[0]))+VIEWER_TO_GAME_X,maxX:Math.max(...points.map(p=>p[0]))+VIEWER_TO_GAME_X,
+   minZ:Math.min(...points.map(p=>p[1]))+VIEWER_TO_GAME_Z,maxZ:Math.max(...points.map(p=>p[1]))+VIEWER_TO_GAME_Z};
+ };
+ const box=extent(row);
+ const north=rows.find(r=>String(r.id)==='1007132'),south=rows.find(r=>String(r.id)==='1007133');
+ const minX=Math.max(box.minX,north?extent(north).maxX+.08:box.minX);
+ const maxX=Math.min(box.maxX,south?extent(south).minX-.08:box.maxX);
+ const minZ=box.minZ,maxZ=box.maxZ+.25;
+ const h=Math.max(28,row.h);
+ if(![minX,maxX,minZ,maxZ,h].every(Number.isFinite)||maxX<=minX||maxZ<=minZ)throw Error('Invalid mapped school envelope');
+ return {x:(minX+maxX)/2,z:(minZ+maxZ)/2,w:maxX-minX,d:maxZ-minZ,h,minX,maxX,minZ,maxZ,sourceId:String(row.id)};
+}
