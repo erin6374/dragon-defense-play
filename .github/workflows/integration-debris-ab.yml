@@ -6,6 +6,7 @@ on:
     paths:
       - 'qa/integration-debris-ab.mjs'
       - 'qa/integration-scene-profile.mjs'
+      - 'qa/integration-subway-ab.mjs'
       - '.github/workflows/integration-debris-ab.yml'
   workflow_dispatch:
 permissions:
@@ -32,6 +33,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           node --check qa/integration-debris-ab.mjs
           node --check qa/integration-scene-profile.mjs
+          node --check qa/integration-subway-ab.mjs
       - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
       - name: Compare frozen production scenes
         run: |
@@ -46,6 +48,7 @@ jobs:
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/integration-qa/node_modules/playwright-core/index.mjs"
           node qa/integration-debris-ab.mjs
           node qa/integration-scene-profile.mjs
+          node qa/integration-subway-ab.mjs
       - name: Retain comparison screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +57,7 @@ jobs:
           path: |
             integration-debris-ab-output/
             integration-scene-profile-output/
+            integration-subway-ab-output/
             integration-ab-server.log
           if-no-files-found: warn
           retention-days: 14
