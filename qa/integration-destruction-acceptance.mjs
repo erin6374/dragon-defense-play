@@ -8,6 +8,11 @@ const out='integration-destruction-output';await mkdir(out,{recursive:true});
 const base=new URL(process.argv[2]||'http://127.0.0.1:8765/');
 const report={scope:'assisted meteor spawn, real production collision and penetration at 60Hz; not unassisted play or real-time FPS',hits:[],errors:[]};
 let browser;
+// Read the actual WebGL framebuffer, not a screenshot of overlay DOM.
+async function capture(page,name){
+ const png=await page.evaluate(()=>window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1]);
+ await writeFile(out+'/'+name+'.png',Buffer.from(png,'base64'));
+}
 try{
  browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const page=await browser.newPage({viewport:{width:960,height:540},deviceScaleFactor:1,serviceWorkers:'block'});
@@ -27,6 +32,7 @@ try{
   return {school:{x:school.x,z:school.z,h:school.h,w:school.w,d:school.d},damage:q.getSchoolDamage(),hp:q.snap().hp};
  });
  assert.equal(initial.damage,0);assert.equal(initial.hp,100);report.initial=initial;
+ await capture(page,'school-intact');
  for(const [size,offset,budget] of [[1.35,-3,.05],[3.6,3,.15],[3.6,-3,.15]]){
   const hit=await page.evaluate(({size,offset,budget})=>{
    const q=window.__DD_QA,school=q.getCity().buildings.find(b=>b.school);
@@ -50,14 +56,14 @@ try{
   assert.ok(hit.trace.some(t=>t.damage>hit.before&&t.damage<hit.after-1e-5),'No progressive penetration');
   assert.ok(hit.hp>0,'School collapsed prematurely');
   assert.equal(hit.inspector?.healthPercent,hit.hp,'Stationary inspector did not refresh after damage');
-  await page.screenshot({path:out+'/hit-'+report.hits.length+'.png'});
+  await capture(page,'hit-'+report.hits.length);
  }
  const repaired=await page.evaluate(()=>{const q=window.__DD_QA;q.clearMeteors();q.repairAllBuildings();q.renderFrame(window.__DD_DAMAGE_CAM,0);return {damage:q.getSchoolDamage(),hp:q.snap().hp,strikes:q.snap().sourceSchool.strikes,inspectorHealth:q.getHoveredBuildingInfo()?.healthPercent};});
  assert.deepEqual(repaired,{damage:0,hp:100,strikes:0,inspectorHealth:100});report.repaired=repaired;
- await page.screenshot({path:out+'/repaired.png'});
+ await capture(page,'repaired');
  // Confirm an actual swept collision on an exclusive neighboring parcel,
  // independently of the direct damage-helper tests.
- const parcel=await page.evaluate(async()=>{
+ const selected=await page.evaluate(async()=>{
   const q=window.__DD_QA,T=window.__DD_THREE;
   const {containsParcel}=await import('/src/simulation/viewer-parcels.js');
   const list=q.getCity().buildings.filter(b=>b.viewerParcel&&!b.school);
@@ -73,8 +79,21 @@ try{
   const {b,x,z}=target;
   q.clearMeteors();
   q.inspectBuilding(b.id);
+  const model=q.northBroadModels().result?.models?.find(p=>p.id===b.id);
+  if(!model?.worldBounds)throw Error('No mapped parcel render bounds');
+  const bounds=model.worldBounds,span=Math.max(bounds.maxX-bounds.minX,bounds.maxZ-bounds.minZ,6);
+  const cam=new T.OrthographicCamera(-span*.8,span*.8,span*.45,-span*.45,.1,350);
+  cam.position.set(x,bounds.maxY+35,z);cam.up.set(0,0,-1);cam.lookAt(x,bounds.maxY,z);
+  window.__DD_PARCEL_CAM=cam;
+  q.renderFrame(cam,0);
+  return {id:b.id,x,z,h:b.h,bounds};
+ });
+ await capture(page,'parcel-intact');
+ const parcel=await page.evaluate(({id,x,z,h})=>{
+  const q=window.__DD_QA,list=q.getCity().buildings.filter(b=>b.viewerParcel&&!b.school);
+  const b=list.find(p=>p.id===id);
   const before=list.map(p=>p.damage||0),schoolBefore=q.getSchoolDamage();
-  const spawned=q.spawnTestMeteorAt(x,b.h*.6,z,1.35,'iron');if(!spawned.ok)throw Error(spawned.error);
+  const spawned=q.spawnTestMeteorAt(x,h*.6,z,1.35,'iron');if(!spawned.ok)throw Error(spawned.error);
   const unsolicited=[];
   for(let i=0;i<10;i++){
    q.advanceSimulation(30);
@@ -83,9 +102,9 @@ try{
   }
   const damaged=list.filter((p,i)=>(p.damage||0)>before[i]+.0001).map(p=>({id:p.id,damage:p.damage}));
   const model=q.northBroadModels().result?.models?.find(p=>p.id===b.id);
-  const cam=new T.PerspectiveCamera(52,960/540,.1,650);cam.position.set(x+8,b.h+9,z+30);cam.lookAt(x,b.h*.5,z);q.renderFrame(cam,0);
+  q.renderFrame(window.__DD_PARCEL_CAM,0);
   return {target:b.id,point:{x,z},damaged,localizedStrikes:model?.localizedStrikes??0,schoolBefore,schoolAfter:q.getSchoolDamage(),inspector:q.getHoveredBuildingInfo(),unsolicited};
- });
+ },selected);
  report.parcel=parcel;console.log('REAL_PARCEL_HIT '+JSON.stringify(parcel));
  assert.equal(parcel.unsolicited.length,0,'Unexpected campaign meteors in Director Sandbox');
  assert.equal(parcel.damaged.length,1,'Impact damaged unrelated parcels');
@@ -93,9 +112,10 @@ try{
  assert.ok(parcel.localizedStrikes>0);
  assert.equal(parcel.inspector?.healthPercent,90,'Parcel inspector health did not update');
  assert.equal(parcel.schoolBefore,parcel.schoolAfter);
- await page.screenshot({path:out+'/parcel-impact.png'});
- const parcelRepaired=await page.evaluate(id=>{const q=window.__DD_QA;q.clearMeteors();q.repairAllBuildings();const model=q.northBroadModels().result?.models?.find(p=>p.id===id);return {damage:model?.damage,strikes:model?.localizedStrikes};},parcel.target);
+ await capture(page,'parcel-impact');
+ const parcelRepaired=await page.evaluate(id=>{const q=window.__DD_QA;q.clearMeteors();q.repairAllBuildings();q.renderFrame(window.__DD_PARCEL_CAM,0);const model=q.northBroadModels().result?.models?.find(p=>p.id===id);return {damage:model?.damage,strikes:model?.localizedStrikes};},parcel.target);
  assert.deepEqual(parcelRepaired,{damage:0,strikes:0});report.parcelRepaired=parcelRepaired;
+ await capture(page,'parcel-repaired');
  assert.equal(report.errors.length,0);report.passed=true;
 }catch(e){report.passed=false;report.fatal=String(e);console.error(e);}
 finally{if(browser)await browser.close();await writeFile(out+'/report.json',JSON.stringify(report,null,2));}
