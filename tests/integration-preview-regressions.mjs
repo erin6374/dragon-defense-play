@@ -760,4 +760,68 @@ test('Legacy school 2D canvases are QA-only while production uses the world-spac
  assert.ok(game.includes('if(schoolDamagePlanes.front){'));
  assert.ok(game.includes('schoolDamageMask:sourceDamage.stats()'));
 });
+test('Dense opaque structural slots preserve matrix and color identity during compaction and reuse',()=>{
+ const source=read('src/rendering/structural-city.js');
+ const a=source.indexOf('export function markStructuralRange'),b=source.indexOf('export function createStructuralCity',a);
+ const {createDenseStructuralSlots}=new Function(source.slice(a,b).replace(/^export /gm,'')+'return {createDenseStructuralSlots};')();
+ const attribute=n=>({array:new Float32Array(n),updateRanges:[],addUpdateRange(start,count){this.updateRanges.push({start,count});},clearUpdateRanges(){this.updateRanges=[];}});
+ const mesh={instanceMatrix:attribute(1600*16),instanceColor:attribute(1600*3),setMatrixAt(i,m){this.instanceMatrix.array.set(m,i*16);},setColorAt(i,c){this.instanceColor.array.set(c,i*3);}};
+ const pool=createDenseStructuralSlots(mesh,1600,[1,1,1]),parts=Array.from({length:1600},(_,i)=>({i})),matrix=i=>Array(16).fill(i+1);
+ assert.equal(mesh.count,0);assert.equal(mesh.visible,false);
+ for(let i=0;i<1600;i++)pool.put(parts[i],matrix(i),[i/1600,0,1]);
+ assert.equal(mesh.count,1600);
+ for(let i=0;i<1500;i++)pool.remove(parts[i]);
+ assert.equal(mesh.count,100);
+ for(let slot=0;slot<100;slot++){
+  const id=mesh.instanceMatrix.array[slot*16]-1;
+  assert.ok(id>=1500&&Math.abs(mesh.instanceColor.array[slot*3]-id/1600)<1e-6);
+ }
+ pool.put(parts[1599],matrix(2000));pool.recolor(parts[1599],[.5,.5,.5]);assert.equal(mesh.count,100);
+ for(let i=1500;i<1600;i++)pool.remove(parts[i]);
+ assert.equal(mesh.count,0);assert.equal(mesh.visible,false);
+ pool.put(parts[7],matrix(7),[.1,.2,.3]);assert.equal(mesh.count,1);assert.equal(mesh.instanceMatrix.array[0],8);
+ assert.ok(source.includes('if(!bucket.material.transparent){bucket.intactSlots='));
+});
+test('Dense structural slots transition correctly between intact, hidden, falling and repaired states',()=>{
+ const source=read('src/rendering/structural-city.js');
+ const a=source.indexOf('export function markStructuralRange'),b=source.indexOf('export function createStructuralCity',a);
+ const {createDenseStructuralSlots}=new Function(source.slice(a,b).replace(/^export /gm,'')+'return {createDenseStructuralSlots};')();
+ const mesh=()=>({instanceMatrix:{array:new Float32Array(32)},instanceColor:{array:new Float32Array(6)},setMatrixAt(i,m){this.instanceMatrix.array.set(m,i*16);},setColorAt(i,c){this.instanceColor.array.set(c,i*3);}});
+ const intact=mesh(),broken=mesh(),white=[1,1,1],zero=Array(16).fill(0),dummy={position:{copy(){}},rotation:{copy(){}},scale:{copy(){}},updateMatrix(){},matrix:Array(16).fill(1)};
+ const bucket={mesh:intact,broken,intactSlots:createDenseStructuralSlots(intact,2,white),brokenSlots:createDenseStructuralSlots(broken,2,white)};
+ const start=source.indexOf(' function write(p)'),end=source.indexOf(' function interiorFitsParcel',start);
+ const {write,colorPart}=new Function('dummy','zero','white','markStructuralRange',source.slice(start,end)+'return {write,colorPart};')(dummy,zero,white,()=>{});
+ const building={viewerParcel:true,hideIntactGeometry:true,exposedFloors:new Set()},p={bucket,building,type:'slab',floor:0,interiorFits:true,state:'attached'};
+ write(p);assert.equal(intact.count,0);assert.equal(broken.count,0);
+ building.exposedFloors.add(0);write(p);assert.equal(intact.count,1);
+ colorPart(p,[.4,.5,.6]);assert.ok(Math.abs(intact.instanceColor.array[0]-.4)<1e-6);
+ p.state='falling';write(p);assert.equal(intact.count,0);assert.equal(broken.count,1);
+ p.state='settled';write(p);assert.equal(broken.count,1);
+ p.state='attached';building.exposedFloors.clear();colorPart(p,white);write(p);
+ assert.equal(intact.count,0);assert.equal(broken.count,0);
+ building.exposedFloors.add(0);write(p);assert.equal(intact.count,1);assert.equal(intact.instanceColor.array[0],1);
+});
+test('Debris render slots preserve logical ring reuse and reset without drawing unused capacity',()=>{
+ const source=read('src/rendering/structural-city.js');
+ const a=source.indexOf('export function createDebrisRenderSlots'),b=source.indexOf('export function createStructuralCity',a);
+ const create=new Function(source.slice(a,b).replace(/^export /gm,'')+'return createDebrisRenderSlots;')();
+ const slots=create(1600);for(let i=0;i<800;i++)assert.equal(slots.slotFor(i*2),i);
+ assert.equal(slots.count(),800);assert.equal(slots.slotFor(100),50);assert.equal(slots.count(),800);
+ slots.reset();assert.equal(slots.count(),0);assert.equal(slots.slotFor(1599),0);
+ assert.ok(source.includes('chipMeshes[p.kind].setMatrixAt(p.drawSlot,dummy.matrix)'));
+ assert.ok(source.includes('contact.count=Math.min(512,contactCursor)'));
+ assert.ok(source.includes('dustMesh.count=count'));
+});
+test('Per-floor slab candidate ordering is equivalent to the full-building lookup',()=>{
+ const source=read('src/rendering/structural-city.js');
+ assert.ok(source.includes('(b.slabsByFloor?.[f]??b.slabs).find'));
+ assert.ok(source.includes('(b.slabsByFloor?.[p.floor]??b.slabs).some'));
+ assert.ok(source.includes('supportedFloors(b.columns??b.parts,b.stories)'));
+ const slabs=Array.from({length:200},(_,i)=>({floor:i%10,state:i%7===0?'removed':'attached',position:{x:i%5,z:i%9},size:{x:3,z:3}})),by=Array.from({length:10},()=>[]);
+ for(const p of slabs)by[p.floor].push(p);
+ for(let f=0;f<10;f++)for(let x=0;x<5;x++)for(let z=0;z<9;z++){
+  const matches=s=>s.floor===f&&s.state==='attached'&&Math.abs(s.position.x-x)<s.size.x*.5&&Math.abs(s.position.z-z)<s.size.z*.5;
+  assert.equal(slabs.find(matches),by[f].find(matches));
+ }
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
