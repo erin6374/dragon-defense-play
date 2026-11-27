@@ -187,6 +187,38 @@ try{
   const v=await page.evaluate(()=>{const q=window.__DD_QA;return ['fireTruck','police','ambulance','bus'].map((type,i)=>{const c=q.spawnCar(-70+i*15,10,1,type);return {type,roles:['fireTruck','police','ambulance','bus'].filter(k=>c[k])};});});
   assert(v.every(c=>c.roles.length===1&&c.roles[0]===c.type),'Wrong dispatched role: '+JSON.stringify(v));return v;
  });
+ await check('Real gas attack temporarily immobilizes and releases police responder',async()=>{
+  await page.evaluate(()=>{
+   const q=window.__DD_QA;q.repairAllBuildings();q.clearMeteors();q.move(0,2.2);
+   const car=q.spawnCar(-3,13.5,1,'police');
+   if(!car?.police||car.frozen)throw Error('Unable to stage fresh police responder');
+   window.__DD_TEST_GAS_RESPONDER=car;
+  });
+  await page.keyboard.press('KeyF');
+  const result=await page.evaluate(()=>{
+   const q=window.__DD_QA,c=window.__DD_TEST_GAS_RESPONDER;
+   let contactSteps=0;
+   while(!c.frozen&&contactSteps++<90)q.advanceSimulation(1);
+   if(!c.frozen)throw Error('Gas plume did not immobilize police');
+   const initial={stun:c.stun,x:c.root.position.x,z:c.root.position.z};
+   const still=[];
+   let steps=0;
+   while(c.frozen&&steps<480){
+    q.advanceSimulation(1);steps++;
+    if(c.frozen)still.push(Math.hypot(c.root.position.x-initial.x,c.root.position.z-initial.z));
+   }
+   const recovered={frozen:!!c.frozen,stun:c.stun,ownedMaterials:c.frozenMaterials?.size||0,steps};
+   q.advanceSimulation(120);
+   const after={frozen:!!c.frozen,stun:c.stun,active:q.getCars().includes(c)};
+   delete window.__DD_TEST_GAS_RESPONDER;
+   return {initial,contactSteps,maxFrozenMovement:Math.max(0,...still),recovered,after};
+  });
+  assert(result.initial.stun>=6.5&&result.initial.stun<=7.000001,'Unexpected gas duration: '+JSON.stringify(result));
+  assert(Math.abs(result.recovered.steps/60-result.initial.stun)<=.04,'Recovery not synchronized to simulated seconds');
+  assert(result.maxFrozenMovement<.001&&!result.recovered.frozen&&result.recovered.ownedMaterials===0,'Frozen movement or material cleanup failure');
+  assert(!result.after.frozen,'Same lingering plume immobilized responder again');
+  console.log('GAS_RESPONDER '+JSON.stringify(result));return result;
+ });
  await check('30-second sustained bombardment performance sample',async()=>{
   await page.evaluate(()=>{const q=window.__DD_QA;q.repairAllBuildings();q.setTrafficEnabled(true);q.setPedestriansEnabled(true);window.__DD_BENCHMARK.start('integration-bombardment');});
   for(let i=0;i<6;i++){
@@ -213,7 +245,7 @@ try{
 }catch(e){report.errors.push(String(e));}
 finally{
  report.finished=new Date().toISOString();
- report.passed=report.errors.length===0&&report.checks.length===10&&report.checks.every(c=>c.pass);
+ report.passed=report.errors.length===0&&report.checks.length===11&&report.checks.every(c=>c.pass);
  console.log('QA_SUMMARY '+JSON.stringify({commit:report.commit,build:report.build,renderer:report.renderer,passed:report.passed,checks:report.checks.map(c=>({name:c.name,pass:c.pass,error:c.error})),errors:report.errors}));
  await save();console.log('Report: '+resolve(out,'report.json'));
  if(browser)await browser.close().catch(()=>{});
