@@ -30,6 +30,30 @@ const car={root:{position:{x:0,z:10}},laneZ:10,dir:1,length:4,speed:7,desiredSpe
 test('Detour stays in direction of travel',()=>{assert.equal(lane.adjacentLane(10,1),13.5);assert.equal(lane.adjacentLane(23,-1),19);assert.equal(lane.adjacentLane(10,1,true),null);});
 test('Two hazards prevent unsafe lane change',()=>assert.equal(lane.choosePassingLane(car,[car],[{x:12,z:10,radius:1,life:1},{x:18,z:13.5,radius:1,life:1}]),null));
 const game=read('src/game.js');
+
+test('Campaign and Sandbox flight reach both ends of imported Broad Street',()=>{
+ const roadXs=district.roads.flatMap(([,points])=>points.map(([x])=>x+parcels.VIEWER_TO_GAME_X));
+ const inspectionBounds={
+  minX:Math.min(...roadXs,...list.map(b=>b.x-b.w/2))-6-105,
+  maxX:Math.max(...roadXs,...list.map(b=>b.x+b.w/2))+24
+ };
+ const start=game.indexOf('function clampDragonX('),end=game.indexOf('function perchDragon(',start);
+ assert.ok(start>=0&&end>start);
+ const source=game.slice(start,end);
+ const southEnd=grid.BROAD_EXTENTS[1]+parcels.VIEWER_TO_GAME_X;
+ const northEnd=grid.BROAD_EXTENTS[0]+parcels.VIEWER_TO_GAME_X;
+ for(const freeFlightMode of [false,true]){
+  const flight=new Function('neighborhood','THREE','freeFlightMode',source+'\nreturn {clampDragonX,isDragonAtBoardEdge};')({inspectionBounds},Three,freeFlightMode);
+  assert.equal(flight.clampDragonX(southEnd),southEnd);
+  assert.equal(flight.clampDragonX(northEnd),northEnd);
+  assert.equal(flight.clampDragonX(Infinity),inspectionBounds.maxX);
+  assert.equal(flight.clampDragonX(-Infinity),inspectionBounds.minX);
+  assert.equal(flight.isDragonAtBoardEdge(380),false);
+  assert.equal(flight.isDragonAtBoardEdge(inspectionBounds.maxX),true);
+  assert.equal(flight.isDragonAtBoardEdge(inspectionBounds.minX),true);
+ }
+});
+
 const budgetStart=game.indexOf('function schoolMeteorBudget'),budgetEnd=game.indexOf('function carveSchool',budgetStart);
 assert.ok(budgetStart>=0&&budgetEnd>budgetStart);
 const damage=new Function(game.slice(budgetStart,budgetEnd)+'\nreturn {schoolMeteorBudget,penetrationDamageStep}')();
