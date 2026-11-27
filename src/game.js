@@ -2790,6 +2790,16 @@ function addCrater(x,z,radius=3,opts={}){
   subwayGroup.add(beaconGroup);
 
   const subwayBeforeBatch=collectCraterResources([subwayGroup]);
+  // Rigid components share materials, but the earlier direct-child relief
+  // bake never visited the train and turnstile hierarchies. Preserve their
+  // transforms, named parent groups, emissive materials and derailment state.
+  if(QUERY_PARAMS.get('subwayBatch')!=='0'){
+   const options={minGroupSize:2,batchName:'batched-subway-rigid-material'};
+   batchVehicleVisuals(THREE,carGroup,options);
+   for(const turnGroup of platformGroup.children){
+    if(turnGroup.name==='station-turnstile')batchVehicleVisuals(THREE,turnGroup,options);
+   }
+  }
   batchOpaqueRelief(subwayGroup,{preserveNamed:true});
   releaseCraterResources(subwayBeforeBatch,collectCraterResources([subwayGroup]));
   const names=['subway-flooded-water','subway-flood-water-pool','subway-waterfall-north','subway-waterfall-south','subway-beacon-dome','subway-third-rail-arc-light'];
