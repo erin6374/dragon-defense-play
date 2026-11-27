@@ -89,6 +89,46 @@ try{
   assert(Math.abs(after.x-before.x)>.1,'Dragon did not move');
   return {before,after};
  });
+ await check('Continuous keyboard flight from school to south end, then north end',async()=>{
+  // Use actual key events and production 60 Hz simulation. Accelerate the
+  // simulation on software WebGL, not the dragon's movement or map limits.
+  // No position setter or teleport is used during either traverse.
+  const ends=await page.evaluate(async()=>{
+   const {BROAD_EXTENTS}=await import('/broad-street/broad-street-grid-data.mjs');
+   const {VIEWER_TO_GAME_X}=await import('/src/simulation/viewer-parcels.js');
+   return BROAD_EXTENTS.map(x=>x+VIEWER_TO_GAME_X);
+  });
+  const start=await page.evaluate(()=>window.__DD_QA.snap());
+  assert(start.campaign.freeFlightMode&&start.active&&!start.paused,'Expected active sandbox');
+  const journeys=[];
+  for(const [label,key,target,dir] of [['south','KeyD',ends[1],1],['north','KeyA',ends[0],-1]]){
+   const before=await page.evaluate(()=>window.__DD_QA.snap());
+   const trace=[{x:before.dragon.x,elapsed:before.elapsed}];
+   await page.keyboard.down(key);
+   try{
+    for(let batch=0;batch<60&&dir*(trace.at(-1).x-target)<-.5;batch++){
+     const v=await page.evaluate(()=>{
+      const q=window.__DD_QA;q.advanceSimulation(120);
+      const s=q.snap();return {x:s.dragon.x,elapsed:s.elapsed,active:s.active,paused:s.paused,free:s.campaign.freeFlightMode};
+     });
+     assert(v.active&&!v.paused&&v.free,'Continuous sandbox flight interrupted at '+v.x);
+     const previous=trace.at(-1);
+     assert(Number.isFinite(v.x)&&dir*(v.x-previous.x)>-2,'Wrong direction or unexpected position reset: '+JSON.stringify(v));
+     assert(Math.abs(v.x-previous.x)<=22*Math.max(0,v.elapsed-previous.elapsed)+2,'Movement exceeded unboosted flight speed');
+     trace.push({x:v.x,elapsed:v.elapsed});
+    }
+   }finally{await page.keyboard.up(key);}
+   const after=await page.evaluate(()=>window.__DD_QA.snap());
+   assert(dir*(after.dragon.x-target)>=-.5,'Full '+label+' traverse stopped at '+after.dragon.x+' before '+target);
+   assert(dir*(after.dragon.x-before.dragon.x)>100,'Traversal distance too short');
+   await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+3,after.frameTimes.frames,{timeout:90000});
+   await page.screenshot({path:resolve(out,'flight-'+label+'.png')});
+   const result={label,target,start:before.dragon.x,end:after.dragon.x,trace};
+   journeys.push(result);
+   console.log('FLIGHT_TRAVERSE '+JSON.stringify({label,target,start:result.start,end:result.end,samples:trace.length}));
+  }
+  return {journeys,method:'real keyboard events with accelerated production fixed steps; not real-time FPS or a full campaign'};
+ });
  await check('Single parcel hit does not damage neighbors',async()=>{
   const result=await page.evaluate(async()=>{
    const {containsParcel}=await import('/src/simulation/viewer-parcels.js');
@@ -166,7 +206,7 @@ try{
 }catch(e){report.errors.push(String(e));}
 finally{
  report.finished=new Date().toISOString();
- report.passed=report.errors.length===0&&report.checks.length===9&&report.checks.every(c=>c.pass);
+ report.passed=report.errors.length===0&&report.checks.length===10&&report.checks.every(c=>c.pass);
  console.log('QA_SUMMARY '+JSON.stringify({commit:report.commit,build:report.build,renderer:report.renderer,passed:report.passed,checks:report.checks.map(c=>({name:c.name,pass:c.pass,error:c.error})),errors:report.errors}));
  await save();console.log('Report: '+resolve(out,'report.json'));
  if(browser)await browser.close().catch(()=>{});
