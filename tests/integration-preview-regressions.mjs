@@ -1317,4 +1317,26 @@ test('Architectural relief clone preserves indexed triangles and exact source at
  const largeIndexed=cloneIndexedRelief(large);assert.ok(largeIndexed.index.array instanceof Uint32Array);assert.equal(largeIndexed.index.array[65537],65537);
  assert.ok(read('src/rendering/viewer-building-fit.js').includes('const geo=cloneIndexedRelief(object.geometry);'));
 });
+test('Gas immobilization lasts seven simulated seconds and each plume hits only once',()=>{
+ const {freezeResponderForGas,advanceResponderFreeze,releaseResponderFreeze,applyGasPlumeToResponder}=load('src/simulation/responder-freeze.js',{},['freezeResponderForGas','advanceResponderFreeze','releaseResponderFreeze','applyGasPlumeToResponder']);
+ const root=new Three.Group(),original=new Three.MeshStandardMaterial({color:0x8899aa}),mesh=new Three.Mesh(new Three.BoxGeometry(),original);
+ const beacon=new Three.Mesh(new Three.BoxGeometry(),original);root.add(mesh,beacon);
+ const car={root,beacon,emergency:true,speed:10,stun:0};const affectedResponders=new WeakSet();
+ const a={affectedResponders},b={affectedResponders};
+ let originalDisposals=0;original.addEventListener('dispose',()=>originalDisposals++);
+ assert.ok(applyGasPlumeToResponder(a,car,freezeResponderForGas));assert.equal(car.stun,7);assert.equal(car.speed,0);
+ assert.equal(beacon.material,original);assert.notEqual(mesh.material,original);
+ let temporaryDisposals=0;mesh.material.addEventListener('dispose',()=>temporaryDisposals++);
+ assert.equal(applyGasPlumeToResponder(b,car,freezeResponderForGas),false);
+ for(let i=0;i<419;i++)assert.equal(advanceResponderFreeze(car,1/60),true);
+ assert.equal(advanceResponderFreeze(car,1/60),false);
+ assert.equal(car.frozen,false);assert.equal(car.stun,0);assert.equal(mesh.material,original);
+ assert.equal(temporaryDisposals,1);assert.equal(originalDisposals,0);
+ assert.equal(applyGasPlumeToResponder(b,car,freezeResponderForGas),false);
+ assert.equal(applyGasPlumeToResponder({},car,freezeResponderForGas),true);
+ const replacement=new Three.MeshStandardMaterial();mesh.material=replacement;
+ releaseResponderFreeze(car);assert.equal(mesh.material,replacement);assert.equal(originalDisposals,0);
+ assert.equal(freezeResponderForGas({root,emergency:false}),false);
+ assert.ok(game.includes('if(advanceResponderFreeze(c,dt))continue;'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
