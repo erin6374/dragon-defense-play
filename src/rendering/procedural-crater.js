@@ -83,6 +83,28 @@ const _cylinderGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.2, 6);
 const _asphaltChunkMat = new THREE.MeshStandardMaterial({ color: 0x1c1a18, roughness: 0.96, metalness: 0.04 });
 const _rebarSteelMat = new THREE.MeshStandardMaterial({ color: 0x5a4d42, roughness: 0.65, metalness: 0.82 });
 
+// Crater rims borrow these four module-lifetime resources. Everything else
+// in the crater's geometry/material graph is local to that crater.
+export function collectCraterResources(roots) {
+  const resources = new Set();
+  const borrowed = new Set([_boxGeo, _cylinderGeo, _asphaltChunkMat, _rebarSteelMat]);
+  const visit = (node) => {
+    if (!node) return;
+    for (const resource of [node.geometry, ...(Array.isArray(node.material) ? node.material : [node.material])]) {
+      if (resource && !borrowed.has(resource)) resources.add(resource);
+    }
+  };
+  for (const root of roots) {
+    if (!root) continue;
+    if (typeof root.traverse === 'function') root.traverse(visit);
+    else visit(root);
+  }
+  return resources;
+}
+export function releaseCraterResources(resources, retained = new Set()) {
+  for (const resource of resources) if (!retained.has(resource)) resource.dispose?.();
+}
+
 /**
  * Creates 3D realistic fractured asphalt rim with inward-drooping broken slabs,
  * protruding rebar rods, and radial tensile pavement fracture cracks.
