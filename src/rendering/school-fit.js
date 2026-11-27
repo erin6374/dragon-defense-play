@@ -15,3 +15,19 @@ export function schoolFitDimensions(raw,target={width:20.4,height:27.2,depth:15.
   fitPolicy:'five-story target height is authoritative; X and Z fitted separately; no min-ratio shrink'
  };
 }
+
+// Keep source floor heights and horizontal aspect ratio. Fit the complete
+// measured visible mesh (including projections) inside the mapped envelope.
+export function fitSchoolHorizontalEnvelope(raw,target){
+ const width=raw.max.x-raw.min.x,depth=raw.max.z-raw.min.z;
+ const w=target.max.x-target.min.x,d=target.max.z-target.min.z;
+ if(![width,depth,w,d,raw.min.x,raw.max.x,raw.min.z,raw.max.z,target.min.x,target.max.x,target.min.z,target.max.z].every(Number.isFinite)||Math.min(width,depth,w,d)<=0)throw Error('Invalid school model envelope');
+ const scale=Math.min(1,w/width,d/depth);
+ const x=(target.min.x+target.max.x)/2-(raw.min.x+raw.max.x)/2*scale;
+ const z=target.max.z-raw.max.z*scale;
+ return {scale,x,z};
+}
+export function transformSchoolComponentBounds(records,fit){
+ const transform=p=>({x:p.x*fit.scale+fit.x,y:p.y,z:p.z*fit.scale+fit.z});
+ return records.map(r=>({...r,min:transform(r.min),max:transform(r.max)}));
+}
