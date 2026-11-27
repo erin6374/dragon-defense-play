@@ -75,13 +75,19 @@ try{
   q.inspectBuilding(b.id);
   const before=list.map(p=>p.damage||0),schoolBefore=q.getSchoolDamage();
   const spawned=q.spawnTestMeteorAt(x,b.h*.6,z,1.35,'iron');if(!spawned.ok)throw Error(spawned.error);
-  for(let i=0;i<10;i++)q.advanceSimulation(30);
+  const unsolicited=[];
+  for(let i=0;i<10;i++){
+   q.advanceSimulation(30);
+   const s=q.snap();
+   unsolicited.push(...s.meteors.filter(m=>!m.testMeteor&&!m.fragment));
+  }
   const damaged=list.filter((p,i)=>(p.damage||0)>before[i]+.0001).map(p=>({id:p.id,damage:p.damage}));
   const model=q.northBroadModels().result?.models?.find(p=>p.id===b.id);
   const cam=new T.PerspectiveCamera(52,960/540,.1,650);cam.position.set(x+8,b.h+9,z+30);cam.lookAt(x,b.h*.5,z);q.renderFrame(cam,0);
-  return {target:b.id,point:{x,z},damaged,localizedStrikes:model?.localizedStrikes??0,schoolBefore,schoolAfter:q.getSchoolDamage(),inspector:q.getHoveredBuildingInfo()};
+  return {target:b.id,point:{x,z},damaged,localizedStrikes:model?.localizedStrikes??0,schoolBefore,schoolAfter:q.getSchoolDamage(),inspector:q.getHoveredBuildingInfo(),unsolicited};
  });
  report.parcel=parcel;console.log('REAL_PARCEL_HIT '+JSON.stringify(parcel));
+ assert.equal(parcel.unsolicited.length,0,'Unexpected campaign meteors in Director Sandbox');
  assert.equal(parcel.damaged.length,1,'Impact damaged unrelated parcels');
  assert.equal(parcel.damaged[0].id,parcel.target);
  assert.ok(parcel.localizedStrikes>0);
