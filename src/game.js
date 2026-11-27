@@ -78,7 +78,10 @@ window.__DD_PERF=performanceLab; // public diagnostic switches, no private accou
 const frameGovernor=new AdaptiveFramebuffer();
 let adaptiveResolution=1,adaptiveAdjustments=0;
 function evaluateRenderPressure(dt,activeNow){
- if(frameGovernor.sample(dt,activeNow)){
+ // Compensate for intentionally capped cadence, but keep long-stall detection intact.
+ const intentionalDelay=maxRenderFPS>0?Math.max(0,1/maxRenderFPS-1/60):0;
+ const pressureDt=dt>.25?dt:Math.max(.001,dt-intentionalDelay);
+ if(frameGovernor.sample(pressureDt,activeNow)){
   adaptiveResolution=frameGovernor.scale;
   adaptiveAdjustments=frameGovernor.adjustments;
   applyVisualPreset();
@@ -86,7 +89,9 @@ function evaluateRenderPressure(dt,activeNow){
 }
 function applyVisualPreset(){
  if(typeof renderer==='undefined')return;
- renderer.setPixelRatio(renderPixelRatio(innerWidth,innerHeight,window.devicePixelRatio||1,visualPreset,adaptiveResolution));
+ const ratio=renderPixelRatio(innerWidth,innerHeight,window.devicePixelRatio||1,visualPreset,adaptiveResolution);
+ // Three.js setPixelRatio calls setSize even for an unchanged ratio.
+ if(Math.abs(renderer.getPixelRatio()-ratio)>1e-6)renderer.setPixelRatio(ratio);
  renderer.shadowMap.enabled=visualPreset==='cinematic'&&performanceLab.isEnabled('shadows');
  renderer.toneMappingExposure=visualPreset==='cinematic'?1.18:visualPreset==='balanced'?1.12:1.06;
 }
@@ -6718,7 +6723,17 @@ if(inSchool&&(schoolDamage>0.35||d.isImploding)){floorY=-2.2;}
 else if(d.isImploding){const b=neighborhood.targetBuildings?.find(tb=>Math.abs(tb.x-d.mesh.position.x)<tb.w*0.52&&Math.abs(tb.z-d.mesh.position.z)<tb.d*0.52&&(tb.damage>0.35||tb.fireCollapsed));if(b)floorY=-1.8;}
 if(d.mesh.position.y<floorY){d.mesh.position.y=floorY;if(d.v.y<-.4&&d.bounces<3){d.v.y=-d.v.y*.28;d.v.x*=.65;d.v.z*=.65;d.bounces++;}else{d.v.y=0;d.v.x*=Math.max(0,1-dt*5);d.v.z*=Math.max(0,1-dt*5);}}if(d.life<=0){if(d.rubble&&!d.trail){preserveRubble(d);debris.splice(i,1)}else remove(debris,i)}}if(toastTimer>0&&(toastTimer-=dt)<=0)document.getElementById('toast').textContent=''}
 const clock=new THREE.Clock();let lastW=0,lastH=0;let cameraScrollX=0;let qaCameraScrollX=null;let hostMetricTime=0;let hostMetricFrames=0;
-let maxRenderFPS=Number(new URLSearchParams(location.search).get('fps')||localStorage.getItem('ddFPSCap')||'45');let previousRenderAt=-99999;
+let maxRenderFPS=Number(new URLSearchParams(location.search).get('fps')||localStorage.getItem('ddFPSCap')||'45');let nextRenderAt=null;
+// Advance from the scheduled deadline, not the last actual vsync. Otherwise
+// a 45 FPS cap on a 60 Hz screen renders every second tick (30 FPS).
+// Never replay missed deadlines after a long stall or focus interruption.
+function renderDeadline(now,deadline,cap){
+ if(!Number.isFinite(cap)||cap<=0)return {render:true,next:null};
+ const interval=1000/cap;
+ if(deadline===null||now-deadline>=interval)return {render:true,next:now+interval};
+ if(now<deadline-1)return {render:false,next:deadline};
+ return {render:true,next:deadline+interval};
+}
 const detailedTimings={sim:[],render:[]};
 function percentiles(arr){if(!arr.length)return {p50:0,p95:0,p99:0,max:0};const v=[...arr].sort((a,b)=>a-b);return {p50:+v[Math.floor(v.length*.5)].toFixed(1),p95:+v[Math.floor(v.length*.95)].toFixed(1),p99:+v[Math.floor(v.length*.99)].toFixed(1),max:+v[v.length-1].toFixed(1)};}
 function recordCpuTimings(sim,render){for(const [key,n] of [['sim',sim],['render',render]]){const a=detailedTimings[key];a.push(Math.min(20000,n));if(a.length>1500)a.shift();}}
@@ -6758,8 +6773,11 @@ const motionQA=schoolQA&&new URLSearchParams(location.search).get('motion')==='1
 function animate(){if(!motionQA){requestAnimationFrame(animate);renderFrame();}}
 window.renderFrame=renderFrame;
 function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;diagnosticFrames.lastTickUTC=Date.now();const present=performance.now();
- if(forcedDt===null&&!motionQA&&maxRenderFPS>0&&present-previousRenderAt<1000/maxRenderFPS-1.0)return;
- previousRenderAt=present;const dt=forcedDt!==null?forcedDt:(motionQA?3/60:clock.getDelta());
+ if(forcedDt===null&&!motionQA){
+  const decision=renderDeadline(present,nextRenderAt,maxRenderFPS);nextRenderAt=decision.next;
+  if(!decision.render)return;
+ }
+ const dt=forcedDt!==null?forcedDt:(motionQA?3/60:clock.getDelta());
  if(!motionQA){
   if(dt>.25&&active&&!paused)quality.sample(Math.min(dt,.2));
   quality.sample(dt);evaluateRenderPressure(dt,active&&!paused&&!document.hidden&&document.hasFocus());
@@ -7761,7 +7779,7 @@ window.__DD_QA={snap,
 
 // Independent Performance Lab: use while the game is active; no restart required.
 (function initPerformanceLabUI(){
- const fpsLimit=document.getElementById('dd-fps-limit');if(fpsLimit){fpsLimit.value=String(maxRenderFPS);fpsLimit.addEventListener('change',()=>{maxRenderFPS=Number(fpsLimit.value);localStorage.setItem('ddFPSCap',String(maxRenderFPS));});}
+ const fpsLimit=document.getElementById('dd-fps-limit');if(fpsLimit){fpsLimit.value=String(maxRenderFPS);fpsLimit.addEventListener('change',()=>{maxRenderFPS=Number(fpsLimit.value);nextRenderAt=null;localStorage.setItem('ddFPSCap',String(maxRenderFPS));});}
  const open=document.getElementById('performance-lab-btn'),panel=document.getElementById('performance-lab-panel');
  if(!open||!panel)return;
  if(!DEVLAB_MODE){open.hidden=true;panel.hidden=true;}
@@ -8021,7 +8039,7 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
    maxRendererBlockMs:diagnosticFrames.maxRendererBlockMs,lastRendererBlockUTC:diagnosticFrames.lastRendererBlockUTC,
    resourceAudit:gpuResourceAudit?.snapshot()||null}),
   reseed:(n=20261102)=>{window.__DD_BENCH_RESEED?.(n);return n},
-  setCap:(n=0)=>{maxRenderFPS=Math.max(0,Math.min(240,Number(n)||0));previousRenderAt=-99999;return {fpsCap:maxRenderFPS,vsyncStillApplies:true}},
+  setCap:(n=0)=>{maxRenderFPS=Math.max(0,Math.min(240,Number(n)||0));nextRenderAt=null;return {fpsCap:maxRenderFPS,vsyncStillApplies:true}},
   state:()=>({fpsCap:maxRenderFPS,preset:visualPreset,pixelRatio:renderer.getPixelRatio(),shadowMap:renderer.shadowMap.enabled,enabled:performanceLab.states(),recording:Boolean(window.__DD_BENCHMARK._recorder)}),
   async videoStart(name){
    if(this._recorder)throw Error('Recording already active');
