@@ -70,13 +70,44 @@ try{
    await check(mode+' south boundary via keyboard',()=>approach(mode,ends[1],'KeyD',1));
    await check(mode+' north boundary via keyboard',()=>approach(mode,ends[0],'KeyA',-1));
  }
+ await check('school damage accumulates in 5 and 15 percent increments and resets',async()=>{
+   const result=await page.evaluate(()=>{
+     const qa=window.__DD_QA;
+     qa.repairAllBuildings();
+     const school=qa.getCity().buildings.find(b=>b.school);
+     qa.move(school.x,30);
+     const before=qa.snap();
+     const first=qa.verifyMeteorImpact(school.x-3,school.h*.75,school.z,1.35);
+     const second=qa.verifyMeteorImpact(school.x+3,school.h*.35,school.z,4);
+     return {before,first,second,school:{x:school.x,z:school.z,w:school.w,d:school.d,h:school.h}};
+   });
+   assert.equal(result.before.schoolDamage,0);
+   assert.equal(result.first.schoolDamage,.05);
+   assert.equal(result.second.schoolDamage,.2);
+   assert.equal(result.first.hp,95);
+   assert.equal(result.second.hp,80);
+   assert.ok(result.second.sourceSchool.strikes>result.first.sourceSchool.strikes);
+   await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+2,result.second.frameTimes.frames);
+   await page.screenshot({path:out+'/school-progressive-damage.png'});
+   const repaired=await page.evaluate(()=>{window.__DD_QA.repairAllBuildings();return window.__DD_QA.snap();});
+   assert.equal(repaired.schoolDamage,0);
+   assert.equal(repaired.sourceSchool.strikes,0);
+   console.log('SCHOOL_DAMAGE',JSON.stringify({before:result.before.schoolDamage,first:result.first.schoolDamage,second:result.second.schoolDamage,repaired:repaired.schoolDamage}));
+   return {...result,repaired};
+ });
  await check('render telemetry and frame progress under sandbox stress',async()=>{
+   // Keep the barrage in the visible neighborhood rather than offscreen at
+   // the northern boundary from the preceding flight test.
+   await page.evaluate(()=>window.__DD_QA.move(0,24));
+   const approach=await snap();
+   await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+4,approach.frameTimes.frames);
    const start=await snap();
    const result=await page.evaluate(()=>window.__DD_QA.spawnMeteorBarrage(8,0,10));
    assert.ok(result.ok,result.error);
    await page.waitForFunction(n=>window.__DD_QA.snap().frameTimes.frames>=n+12,start.frameTimes.frames,{timeout:90000});
    const data=await page.evaluate(()=>({snap:window.__DD_QA.snap(),metrics:window.__DD_GAME_METRICS,frameHealth:window.__DD_FRAME_HEALTH.summary()}));
    assert.ok(data.snap.frameTimes.frames>start.frameTimes.frames);
+   console.log('STRESS_TELEMETRY',JSON.stringify({metrics:data.metrics,frameHealth:data.frameHealth,counts:data.snap.counts,scene:data.snap.scene}));
    await page.screenshot({path:out+'/stress.png'});
    return data;
  });
