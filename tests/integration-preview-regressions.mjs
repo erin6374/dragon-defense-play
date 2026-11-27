@@ -388,8 +388,9 @@ test('Runoff restoration clears current and queued water and hides drain effects
 });
 test('Frozen vehicle recycling restores original materials and bounds idle smoke pools',()=>{
  const a=game.indexOf('function freezeResponder('),b=game.indexOf('function gasAttack(',a),c=game.indexOf('function recycleCar('),d=game.indexOf('const burningVehicles=',c),e=game.indexOf('function releaseSkyObject('),f=game.indexOf('function backgroundImpactEffects(',e);
- let disposed=0;const mat={clone(){return {color:{setHex(){}},dispose(){disposed++;}};}},mesh={isMesh:true,material:mat},car={emergency:true,root:{traverse(fn){fn(mesh);}},poolKey:'fire'};
- const api=new Function('scene','let score=0;const vehiclePool=new Map(),vehiclePoolStats={recycled:0},skySmokePool=[],skyBurstPool=[];'+game.slice(a,b)+game.slice(c,d)+game.slice(e,f)+'return {freezeResponder,recycleCar,releaseSkyObject,vehiclePool,skySmokePool,skyBurstPool};')({remove(){}});
+ let disposed=0;const mat={clone(){return {color:{setHex(){}},dispose(){disposed++;}};}},mesh={isMesh:true,material:mat},car={emergency:true,root:{userData:{},traverse(fn){fn(mesh);}},poolKey:'fire'};
+ const freeze=load('src/simulation/responder-freeze.js',{},['freezeResponderForGas','releaseResponderFreeze']);
+ const api=new Function('scene','freezeResponderForGas','releaseResponderFreeze','let score=0;const vehiclePool=new Map(),vehiclePoolStats={recycled:0},skySmokePool=[],skyBurstPool=[];'+game.slice(a,b)+game.slice(c,d)+game.slice(e,f)+'return {freezeResponder,recycleCar,releaseSkyObject,vehiclePool,skySmokePool,skyBurstPool};')({remove(){}},freeze.freezeResponderForGas,freeze.releaseResponderFreeze);
  assert.ok(api.freezeResponder(car));assert.ok(mesh.material!==mat);
  api.recycleCar(car);assert.equal(mesh.material,mat);assert.equal(disposed,1);assert.equal(api.vehiclePool.get('fire').length,1);
  api.recycleCar(car);assert.equal(disposed,1);
