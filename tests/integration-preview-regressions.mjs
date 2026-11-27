@@ -1309,7 +1309,10 @@ test('Architectural relief clone preserves indexed triangles and exact source at
  const missingNormals=original.clone();missingNormals.deleteAttribute('normal');
  const fallback=cloneIndexedRelief(missingNormals);assert.equal(fallback.attributes.position.count,36);assert.equal(fallback.index.count,36);
  fallback.computeVertexNormals();const expected=missingNormals.toNonIndexed();expected.computeVertexNormals();
- assert.deepEqual([...fallback.attributes.normal.array],[...expected.attributes.normal.array]);
+ // Indexed and non-indexed cross products can produce different signed zero.
+ // Numeric equality preserves exact nonzero normal values without rejecting +/-0.
+ assert.equal(fallback.attributes.normal.array.length,expected.attributes.normal.array.length);
+ assert.ok(fallback.attributes.normal.array.every((v,i)=>v===expected.attributes.normal.array[i]));
  const large=new Three.BufferGeometry();large.setAttribute('position',new Three.BufferAttribute(new Float32Array(65538*3),3));
  const largeIndexed=cloneIndexedRelief(large);assert.ok(largeIndexed.index.array instanceof Uint32Array);assert.equal(largeIndexed.index.array[65537],65537);
  assert.ok(read('src/rendering/viewer-building-fit.js').includes('const geo=cloneIndexedRelief(object.geometry);'));
