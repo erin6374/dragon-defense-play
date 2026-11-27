@@ -5016,14 +5016,29 @@ function getBuildingInspectorInfo(b){
  return {icon,title,height,health,healthPercent,status};
 }
 
+function clearSandboxDamageResidue(){
+ // Do not remove campaign projectiles when a QA repair is invoked in defense.
+ if(freeFlightMode){while(meteors.length)remove(meteors,meteors.length-1);}
+ while(debris.length)remove(debris,debris.length-1);
+ settledRubble.length=0;rubbleDirty=false;rubblePool.clear();
+ for(const w of crashedWrecks)scene.remove(w.root);
+ crashedWrecks.length=0;
+ for(const p of escapingPilots)scene.remove(p.root);
+ escapingPilots.length=0;
+ // Vehicle fire timers must agree with the cleared burning-vehicle list.
+ for(const b of burningVehicles){
+  if(b.driver)scene.remove(b.driver);
+  if(b.car){b.car.burning=0;b.car.serviceStop=false;}
+ }
+ burningVehicles.length=0;
+}
 function repairAllBuildings(){
  clearPendingBarrages();
+ clearSandboxDamageResidue();
  setInspectionCamera('street');
  for(const crack of windowDamage){scene.remove(crack);crack.geometry?.dispose();}
  windowDamage.length=0;
  for(const w of nightWindows){w.broken=false;if(w.mesh)w.mesh.visible=true;}
- for(const b of burningVehicles){if(b.driver)scene.remove(b.driver);}
- burningVehicles.length=0;
  damageHoles.length=0;
  resetSchoolDamageMasks();
  schoolDamage=0;
@@ -5292,6 +5307,7 @@ function extinguishAllFires(){
  clearFires();
  for(const b of burningVehicles){
   if(b.driver)scene.remove(b.driver);
+  if(b.car){b.car.burning=0;b.car.serviceStop=false;}
  }
  burningVehicles.length=0;
  message('🧯 ALL ACTIVE FIRES EXTINGUISHED');
