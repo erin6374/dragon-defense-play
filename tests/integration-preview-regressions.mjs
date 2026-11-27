@@ -1267,4 +1267,14 @@ test('School structural instance uploads cover only the active matrix prefix',()
  assert.equal(a.version,version+1);
  assert.ok(read('src/rendering/destructible-school.js').includes('batches.forEach((mesh,i)=>commitSchoolInstanceRange(mesh,counts[i]))'));
 });
+test('Loose planar glass shards use a single double-sided pass without changing windows',()=>{
+ const start=game.indexOf('const looseGlassShardMaterial='),end=game.indexOf('const impactPools=',start);
+ assert.ok(start>=0&&end>start);
+ const original=new Three.MeshPhysicalMaterial({color:0x5e8ca0,transparent:true,opacity:.82,depthWrite:false,side:Three.DoubleSide,clearcoat:1});
+ const shard=new Function('mats',game.slice(start,end)+'\nreturn looseGlassShardMaterial;')({glass:original});
+ assert.notEqual(shard,original);assert.equal(shard.forceSinglePass,true);assert.equal(original.forceSinglePass,false);
+ for(const k of ['side','transparent','opacity','depthWrite','clearcoat','roughness','metalness'])assert.equal(shard[k],original[k]);
+ assert.equal(shard.color.getHex(),original.color.getHex());
+ assert.ok(game.includes('new THREE.Mesh(isGlass?glassShardGeometry:cube,isGlass?looseGlassShardMaterial:(mats[type]||mats.stone))'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
