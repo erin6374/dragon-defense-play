@@ -45,10 +45,12 @@ export function createViewerCityModels(scene,city) {
     return {id:e.def.id,damage:e.damage};
   }
   function impact(point,radius,strength){
+    if(!point||![point.x,point.y,point.z].every(Number.isFinite))return 0;
     const e=entries.find(e=>e.targetBuilding.damage<.97&&containsParcel(e.targetBuilding,point.x,point.z));
     return e?impactBuilding(e.def.id,point,radius,strength):0;
   }
-  function impactBuilding(id,point,radius,strength){
+  function impactBuilding(id,point,radius=5,strength=1){
+    if(!point||![point.x,point.y,point.z,radius,strength].every(Number.isFinite)||radius<=0||strength<=0)return 0;
     const e=findEntry(id);
     // A penetrating meteor retains its original parcel owner. Never redirect
     // damage to an adjacent footprint, even if geometry overlaps.
