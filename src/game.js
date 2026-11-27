@@ -1394,11 +1394,12 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  skyline.position.set(0,-18,-1020);skyline.scale.set(4.35,2.80,1.15);
  const skylineFires=[];let skylineDamage=0;
  const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke,batchAmbient:new URLSearchParams(location.search).get('ambientSkylineBatch')!=='0'});
- // Derive skyline alignment from actual vertices, not inflated merged AABBs.
- const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group,true).getCenter(new THREE.Vector3()).x;
+ // Keep the original unbatched centering identical for both render paths.
+ const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
  skylineBackdrop.group.position.x-=landmarkCenter/skyline.scale.x;
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
  skyline.position.x=skylineAnchor;
+ skylineBackdrop.finalizeAmbientBatch();
 const skylineAirUniforms={opacity:{value:.10},day:{value:1}};
 const skylineAir=new THREE.Mesh(new THREE.PlaneGeometry(960,200),new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,uniforms:skylineAirUniforms,vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec2 vUv;uniform float opacity;uniform float day;void main(){vec3 midday=vec3(.66,.78,.88),sunset=vec3(.94,.68,.52),night=vec3(.13,.20,.30);vec3 daylight=mix(midday,sunset,clamp((1.-abs(day-.45)*3.2),0.,1.));vec3 col=mix(night,daylight,day);float a=opacity*pow(max(0.,1.-vUv.y),1.5)*smoothstep(.0,.08,vUv.y);gl_FragColor=vec4(col,a);}' }));
 skylineAir.position.set(0,56,12);skylineAir.name='atmospheric-depth-veil';skyline.add(skylineAir);
