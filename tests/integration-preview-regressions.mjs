@@ -439,4 +439,29 @@ test('Road vehicle pool has per-variant and global retention limits',()=>{
  for(let i=0;i<60;i++)api.recycleCar({root:{},poolKey:'other'+i});
  assert.equal([...api.vehiclePool.values()].reduce((n,p)=>n+p.length,0),48);assert.equal(disposed,17);
 });
+test('Frame pacing preserves requested average cadence at common refresh rates and recovers after stalls',()=>{
+ const a=game.indexOf('function renderDeadline('),b=game.indexOf('const detailedTimings=',a);
+ assert.ok(a>=0&&b>a);
+ const pace=new Function(game.slice(a,b)+'return renderDeadline;')();
+ for(const hz of [60,120,144])for(const cap of [30,45,60,0]){
+  let deadline=null,frames=0;
+  for(let i=0;i<hz*10;i++){const v=pace(i*1000/hz,deadline,cap);deadline=v.next;if(v.render)frames++;}
+  assert.ok(Math.abs(frames-10*(cap?Math.min(cap,hz):hz))<=2,`refresh ${hz}, cap ${cap}: ${frames}`);
+ }
+ const late=pace(5000,100,45);assert.ok(late.render&&late.next>5000);assert.equal(pace(5001,late.next,45).render,false);
+});
+test('Adaptive resolution ignores intentional cap delay but still responds to sustained overload',()=>{
+ const a=game.indexOf('function evaluateRenderPressure('),b=game.indexOf('function applyVisualPreset(',a);
+ assert.ok(a>=0&&b>a);
+ const {AdaptiveFramebuffer}=load('src/rendering/frame-governor.js',{},['AdaptiveFramebuffer']);
+ for(const cap of [30,45,60]){
+  const governor=new AdaptiveFramebuffer();
+  let applied=0;
+  const evaluate=new Function('frameGovernor','maxRenderFPS','applyVisualPreset','let adaptiveResolution=1,adaptiveAdjustments=0;'+game.slice(a,b)+'return evaluateRenderPressure;')(governor,cap,()=>applied++);
+  for(let i=0;i<150;i++)evaluate(1/cap,true);
+  assert.equal(governor.scale,1);assert.equal(applied,0);
+  for(let i=0;i<100;i++)evaluate(.08,true);
+  assert.ok(governor.scale<1);assert.ok(applied>0);
+ }
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
