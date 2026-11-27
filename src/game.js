@@ -1393,7 +1393,7 @@ const skyline=new THREE.Group();skyline.name='Philadelphia skyline';staticGroup.
  // but entirely behind the expanded North Philadelphia rowhouse horizon.
  skyline.position.set(0,-18,-1020);skyline.scale.set(4.35,2.80,1.15);
  const skylineFires=[];let skylineDamage=0;
- const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke});
+ const skylineBackdrop=createPhiladelphiaSkyline(skyline,{flameTexture:visualBank.images.flame,smokeAtlas:visualBank.images.smoke,batchAmbient:new URLSearchParams(location.search).get('ambientSkylineBatch')!=='0'});
  const landmarkCenter=new THREE.Box3().setFromObject(skylineBackdrop.group).getCenter(new THREE.Vector3()).x;
  skylineBackdrop.group.position.x-=landmarkCenter/skyline.scale.x;
  const skylineAnchor=skylineCameraRayX({cameraX:streetView.x,cameraZ:streetView.z,targetX:0,targetZ:streetView.targetZ,skylineZ:skyline.position.z});
