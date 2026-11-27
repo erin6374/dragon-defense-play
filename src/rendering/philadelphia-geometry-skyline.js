@@ -204,7 +204,11 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
   g.add(poly.front,poly.sides);ambientGroups.push(g);
  }
- const ambientBatch=batchAmbient?batchAmbientSkyline(group,ambientGroups):{input:0,output:0,saved:0};
+ let ambientBatch={input:0,output:0,saved:0},ambientBatchDone=false;
+ function finalizeAmbientBatch(){
+  if(!ambientBatchDone){ambientBatchDone=true;if(batchAmbient)ambientBatch=batchAmbientSkyline(group,ambientGroups);}
+  return ambientBatch;
+ }
  const defs=[
   // Positions are artistically scaled for the view from North Broad, not a surveyed panorama.
   {id:'city-hall',x:66,w:11,h:70,roof:'cityhall',style:'civic',depth:3.2},
@@ -651,7 +655,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
   return {active:sites.length>0,position:s?s.origin.clone():t.smokeOrigin.clone(),
    parentStable:combustion.group.parent===group,width:s?.width??0,height:s?.height??0,clock:combustion.stats().clock};
  }
- return {group,towers,setTime,setDamage,strikeNearest,targetPoint,reset,update,fireState,getStats:()=>({
+ return {group,towers,finalizeAmbientBatch,setTime,setDamage,strikeNearest,targetPoint,reset,update,fireState,getStats:()=>({
   landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],
   distantHelicopters:distantHelis.length,beacons:beacons.length,combustion:combustion.stats(),
   activeBurnSites:combustion.stats().active,ambientBatch,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
