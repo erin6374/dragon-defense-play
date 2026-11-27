@@ -1,0 +1,44 @@
+name: Integration preview regressions
+on:
+  push:
+    branches:
+      - integration/combined-preview
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integration-regressions-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regressions:
+    if: github.ref == 'refs/heads/integration/combined-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm exact source revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git rev-parse HEAD
+      - name: Run complete integration regression suite
+        shell: bash
+        run: |
+          set -o pipefail
+          node tests/integration-preview-regressions.mjs 2>&1 | tee integration-regressions.log
+      - name: Retain regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-regressions-${{ github.sha }}
+          path: integration-regressions.log
+          if-no-files-found: warn
+          retention-days: 14
