@@ -8,6 +8,20 @@ const masonry = new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.Doub
 
 // Bake opaque relief into one mesh per parcel. Keep signs, transparent
 // glazing, and textured materials as authored. All pieces retain source coordinates.
+// Preserve exact source vertex attributes and triangle order. Non-indexed
+// inputs receive identity indices so mixed geometry can be merged without
+// expanding every indexed mesh. No approximate welding or simplification.
+export function cloneIndexedRelief(source){
+  const geometry=source.clone();
+  if(!geometry.index){
+    const n=geometry.attributes.position.count;
+    const index=n>65535?new Uint32Array(n):new Uint16Array(n);
+    for(let i=0;i<n;i++)index[i]=i;
+    geometry.setIndex(new THREE.BufferAttribute(index,1));
+  }
+  return geometry;
+}
+
 export function batchOpaqueRelief(group,{preserveNamed=false}={}) {
   group.updateMatrixWorld(true);
   const geometries=[];
@@ -21,7 +35,7 @@ export function batchOpaqueRelief(group,{preserveNamed=false}={}) {
     for(let i=0;i<count;i++){
       transform.multiplyMatrices(inverse,object.matrixWorld);
       if(object.isInstancedMesh){object.getMatrixAt(i,matrix);transform.multiply(matrix);}
-      const geo=object.geometry.index?object.geometry.toNonIndexed():object.geometry.clone();
+      const geo=cloneIndexedRelief(object.geometry);
       for(const key of Object.keys(geo.attributes))if(key!=='position'&&key!=='normal')geo.deleteAttribute(key);
       if(!geo.attributes.normal)geo.computeVertexNormals();
       geo.applyMatrix4(transform);
