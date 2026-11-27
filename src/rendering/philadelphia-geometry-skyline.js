@@ -3,6 +3,7 @@
 // One mesh per architectural face plus shared low-detail roof ornament; diffuse and
 // emissive maps are baked once so lighting changes don't allocate geometry/textures.
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {attachFacadeFireDamage} from './facade-fire-damage.js';
 import {createBuildingCombustion} from './building-combustion.js';
 
@@ -89,7 +90,52 @@ function profile(w,h,roof){
 }
 function addLine(parent,x1,y1,x2,y2,mat,r=.065,z=1.2){const a=new THREE.Vector3(x1,y1,z),b=new THREE.Vector3(x2,y2,z),v=b.clone().sub(a);
  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,v.length(),5),mat);mesh.position.copy(a).addScaledVector(v,.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());parent.add(mesh);return mesh;}
-export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture=null,smokeAtlas=null}={}){
+// The undamageable ambient skyline uses two shared materials. Spatially
+// consolidate only these static meshes, retaining landmark damage groups,
+// UVs, normals, facade lighting and local parallax.
+export function batchAmbientSkyline(group,ambientGroups,cellSize=100){
+ const cells=new Map(),transform=new THREE.Matrix4();
+ group.updateWorldMatrix(true,true);
+ const inverse=new THREE.Matrix4().copy(group.matrixWorld).invert();
+ for(const parent of ambientGroups){
+  const cell=Math.floor(parent.position.x/cellSize);
+  if(!cells.has(cell))cells.set(cell,[]);
+  cells.get(cell).push(parent);
+ }
+ let input=0,output=0;
+ for(const [cell,parents] of cells){
+  if(parents.length<2)continue;
+  const materials=new Map(),created=[];
+  try{
+   for(const parent of parents)for(const mesh of parent.children){
+    if(!mesh.isMesh||Array.isArray(mesh.material)||mesh.material.transparent)throw Error('Unexpected ambient skyline component');
+    const geo=mesh.geometry.clone();
+    geo.applyMatrix4(transform.multiplyMatrices(inverse,mesh.matrixWorld));
+    if(!materials.has(mesh.material))materials.set(mesh.material,[]);
+    materials.get(mesh.material).push(geo);
+   }
+   for(const [material,geometries] of materials){
+    const geometry=mergeGeometries(geometries);
+    if(!geometry)throw Error('Incompatible ambient skyline geometry');
+    geometry.computeBoundingSphere();
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.name='ambient-skyline-cell-'+cell;
+    created.push(mesh);
+   }
+   for(const mesh of created)group.add(mesh);
+   for(const parent of parents){
+    input+=parent.children.length;parent.removeFromParent();
+    for(const mesh of parent.children)mesh.geometry.dispose();
+   }
+   output+=created.length;
+  }catch(e){
+   for(const mesh of created){mesh.removeFromParent();mesh.geometry.dispose();}
+   console.warn('Ambient skyline batch skipped',e);
+  }finally{for(const geometries of materials.values())for(const geo of geometries)geo.dispose();}
+ }
+ return {input,output,saved:input-output};
+}
+export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture=null,smokeAtlas=null,batchAmbient=true}={}){
  const group=new THREE.Group();group.name='PHILADELPHIA-ORIGINAL-3D-SKYLINE';parent.add(group);
  const towers=[],beacons=[],distantHelis=[],clockMat=new THREE.MeshBasicMaterial({color:0xd8c6a3});
  // A shared atlas and one dormant sprite per landmark. Impact effects never
@@ -148,14 +194,16 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const farTex=makeFacade(9291,'office');
  const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.95,metalness:.01,side:THREE.DoubleSide});
  const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.95,metalness:.01,side:THREE.DoubleSide});
+ const ambientGroups=[];
  for(let i=0;i<ambientBuildings.length;i++){
   const [x,h,w]=ambientBuildings[i];
   // Sharper perspective plane: outer buildings recede in depth rather than forming a flat wall
   const zDepth=-9-Math.max(0,Math.abs(x-15)-60)*.08-(i%3)*2.4;
   const g=new THREE.Group();g.position.set(x,0,zDepth);group.add(g);
   const roof=i%5===0?'setback':i%7===0?'gabled':'flat';const poly=polygonMesh(profile(w,h,roof),2.5,farMat,farSide);
-  g.add(poly.front,poly.sides);
+  g.add(poly.front,poly.sides);ambientGroups.push(g);
  }
+ const ambientBatch=batchAmbient?batchAmbientSkyline(group,ambientGroups):{input:0,output:0,saved:0};
  const defs=[
   // Positions are artistically scaled for the view from North Broad, not a surveyed panorama.
   {id:'city-hall',x:66,w:11,h:70,roof:'cityhall',style:'civic',depth:3.2},
@@ -605,5 +653,5 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  return {group,towers,setTime,setDamage,strikeNearest,targetPoint,reset,update,fireState,getStats:()=>({
   landmarks:towers.length,heroLandmarks:['city-hall','comcast-technology','comcast-center','one-liberty-place','two-liberty-place'],
   distantHelicopters:distantHelis.length,beacons:beacons.length,combustion:combustion.stats(),
-  activeBurnSites:combustion.stats().active,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
+  activeBurnSites:combustion.stats().active,ambientBatch,geometryMeshes:group.children.length+2*towers.length,photographicCutouts:0})};
 }
