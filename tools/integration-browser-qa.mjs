@@ -40,6 +40,9 @@ try{
  catch{playwright=await import('playwright');}}
  const headless=process.argv.includes('--headless');
  const software=process.argv.includes('--software');
+ const requireHardware=process.argv.includes('--require-hardware');
+ if(requireHardware&&(software||headless))throw Error('--require-hardware requires a visible browser without --software');
+ report.hardwareRequested=requireHardware;
  const executablePath=process.env.DD_QA_CHROMIUM;
  const launch={headless,executablePath,args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[]};
  const channel=process.env.QA_BROWSER_CHANNEL||'msedge';
@@ -49,7 +52,7 @@ try{
  await new Promise((yes,no)=>{server.once('error',no);server.listen(0,'127.0.0.1',yes);});
  const url='http://127.0.0.1:'+server.address().port+'/?qa=1&benchmark=1';
  report.url=url;
- page=await browser.newPage({viewport:{width:software?640:1280,height:software?360:800}});
+ page=await browser.newPage({viewport:{width:software?640:1280,height:software?360:800},serviceWorkers:'block'});
  page.on('pageerror',e=>{if(report.errors.length<100)report.errors.push(String(e));});
  page.on('console',msg=>{const t=msg.text();if(/shader error|shader compilation|program not valid|GL_INVALID_OPERATION|WebGL context lost/i.test(t)){if(report.errors.length<100)report.errors.push(t);}else if(msg.type()==='error'&&report.warnings.length<100)report.warnings.push(t);});
  page.on('response',r=>{if(r.status()<400)return;const url=r.url(),msg=r.status()+' '+url;const critical=/\.(?:m?js|fbx|glb|gltf|wasm|bin)(?:\?|$)|\/broad-street\/mapped-data\.json(?:\?|$)/i.test(url);const list=critical?report.errors:report.warnings;if(list.length<100)list.push(msg);});
@@ -58,7 +61,8 @@ try{
  await page.bringToFront();
  await page.waitForFunction(()=>window.__DD_QA.snap().renderVisibility.actualSchoolOverlayReady,{},{timeout:90000,polling:500});
  report.build=await page.evaluate(()=>window.__DD_BUILD_INFO);
- report.renderer=await page.evaluate(()=>{const gl=window.__DD_RENDERER.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
+ report.renderer=await page.evaluate(()=>{const gl=window.__DD_RENDERER.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return {unmasked:!!ext,renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
+ if(requireHardware)assert(report.renderer.unmasked&&!/swiftshader|llvmpipe|lavapipe|software|microsoft basic render|softpipe|warp/i.test(report.renderer.renderer+' '+report.renderer.vendor),'Hardware gate requires a verifiable non-software WebGL renderer');
  await save();
  await check('Boot, FBX-derived school play mesh, and all 122 mapped buildings',async()=>{
   const v=await page.evaluate(()=>({snapshot:window.__DD_QA.snap(),slots:window.__DD_QA.getBuildingSlots()}));
@@ -232,6 +236,17 @@ try{
   assert(report.benchmark.durationSec>=29,'Benchmark shorter than intended');
   assert(!report.benchmark.samples.some(s=>!Number.isFinite(s.frameMs)||!Number.isFinite(s.simMs)||!Number.isFinite(s.renderMs)),'Invalid frame timings');
   report.performanceAssessment={hardwareRequired:true,softwareRequested:software,focusedStalls1000:report.benchmark.focusedStalls1000,stalls500:report.benchmark.stalls500,notes:'Sample only; not a full campaign or hardware certification.'};
+  if(requireHardware){
+   const b=report.benchmark;
+   const focused=b.samples.filter(s=>s.focused&&s.previouslyFocused&&s.visibility==='visible');
+   const focusRatio=focused.length/Math.max(1,b.samples.length);
+   const gate={provisional:true,minimumFPS:30,maximumP95FrameMs:50,maximumFocusedStalls1000:0,minimumFocusRatio:.98,focusRatio,settings:b.testSettings,pass:false};
+   gate.pass=b.fps>=gate.minimumFPS&&Number.isFinite(b.p95FrameMs)&&b.p95FrameMs<=gate.maximumP95FrameMs&&b.focusedStalls1000===0&&focusRatio>=gate.minimumFocusRatio&&!b.droppedSamples;
+   report.hardwarePerformanceGate=gate;
+   console.log('HARDWARE_GATE '+JSON.stringify({renderer:report.renderer,fps:b.fps,p95FrameMs:b.p95FrameMs,focusedStalls1000:b.focusedStalls1000,...gate}));
+   await save();
+   assert(gate.pass,'Provisional hardware performance gate failed; inspect report.json');
+  }
   await page.screenshot({path:resolve(out,'05-bombardment.png')});
   return {fps:report.benchmark.fps,p95FrameMs:report.benchmark.p95FrameMs,maxFrameMs:report.benchmark.maxFrameMs,stalls500:report.benchmark.stalls500,maxDrawCalls:report.benchmark.maxDrawCalls,meanSimulationMs:report.benchmark.meanSimulationMs,meanRenderMs:report.benchmark.meanRenderMs,focusedStalls1000:report.benchmark.focusedStalls1000};
  });
