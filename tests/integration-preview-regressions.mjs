@@ -1383,4 +1383,27 @@ test('Primary HUD skips unchanged DOM writes while reflecting training and healt
  run.set(85,true);run.updateHud();assert.equal(nodes.wave.textContent,'TRAIN');assert.equal(nodes.hp.textContent,'100%');assert.equal(nodes.healthbar.style.width,'100%');
  const after=writes;run.updateHud();assert.equal(writes,after);
 });
+test('Subway repeated material batching retains singleton meshes and named rigid groups',()=>{
+ const {batchVehicleVisuals}=load('src/rendering/vehicle-batch.js',{mergeGeometries:(geos)=>{
+  const merged=new Three.BufferGeometry();
+  for(const key of ['position','normal','uv']){
+   const n=geos[0].attributes[key].itemSize;
+   const values=geos.flatMap(g=>Array.from(g.attributes[key].array));
+   merged.setAttribute(key,new Three.Float32BufferAttribute(values,n));
+  }
+  return merged;
+ }},['batchVehicleVisuals']);
+ const train=new Three.Group();train.name='septa-b4-subway-car';train.rotation.z=-.34;train.userData.derailed=true;
+ const mat=new Three.MeshStandardMaterial(),other=new Three.MeshStandardMaterial();
+ const repeated=[new Three.Mesh(new Three.BoxGeometry(),mat),new Three.Mesh(new Three.BoxGeometry(),mat)];
+ repeated[1].position.x=3;
+ const singleton=new Three.Mesh(new Three.BoxGeometry(),other);
+ train.add(...repeated,singleton);
+ const result=batchVehicleVisuals(Three,train,{minGroupSize:2,batchName:'batched-subway-rigid-material'});
+ assert.equal(result.drawCallsSaved,1);assert.equal(result.batches,1);assert.equal(train.children.length,2);assert.equal(singleton.parent,train);
+ const baked=train.getObjectByName('batched-subway-rigid-material');assert.equal(baked.material,mat);assert.equal(baked.geometry.attributes.position.count,72);
+ assert.equal(train.rotation.z,-.34);assert.equal(train.userData.derailed,true);
+ assert.ok(game.includes("QUERY_PARAMS.get('subwayBatch')!=='0'"));
+ assert.ok(game.includes('batchVehicleVisuals(THREE,carGroup,options)'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
