@@ -824,4 +824,71 @@ test('Per-floor slab candidate ordering is equivalent to the full-building looku
   assert.equal(slabs.find(matches),by[f].find(matches));
  }
 });
+test('Cached meteor screen projections preserve swept-circle impact selection, including new fragments and movement',()=>{
+ const {createDefenseProjectionCache,projectedMeteorHit}=load('src/simulation/defense-zone.js',{},['createDefenseProjectionCache','projectedMeteorHit']);
+ const cache=createDefenseProjectionCache(),camera={x:4,y:8,z:60};cache.begin(camera);
+ const meteors=Array.from({length:80},(_,i)=>({size:1+i%4,mesh:{position:{x:i*3-120,y:8+i%20,z:-i%35}}}));
+ function baseline(a,b,m){
+  const dx=b.x-a.x,dy=b.y-a.y,d=dx*dx+dy*dy,ox=a.x-m.x,oy=a.y-m.y,c=ox*ox+oy*oy-m.radius*m.radius;
+  if(c<=0)return 0;if(d<1e-10)return Infinity;
+  const hb=ox*dx+oy*dy,disc=hb*hb-d*c;if(disc<0)return Infinity;
+  const t=(-hb-Math.sqrt(disc))/d;return t>=0&&t<=1?t:Infinity;
+ }
+ for(let i=0;i<200;i++){
+  const a={x:Math.sin(i)*110,y:Math.cos(i)*50},b={x:a.x+Math.sin(i*3)*20,y:a.y+Math.cos(i*3)*10};
+  let first=-1,oldFirst=-1,t=Infinity,oldT=Infinity;
+  for(const [index,m] of meteors.entries()){
+   const p=cache.get(m),hit=projectedMeteorHit(a,b,p),old=baseline(a,b,p);assert.equal(hit,old);
+   if(hit<t){first=index;t=hit;}if(old<oldT){oldFirst=index;oldT=old;}
+  }
+  assert.equal(first,oldFirst);
+ }
+ assert.equal(cache.stats().projections,80);assert.equal(cache.stats().hits,15920);
+ const m=meteors[0];m.mesh.position.x++;assert.equal(cache.get(m).wx,m.mesh.position.x);
+ m.size=7;assert.equal(cache.get(m).size,7);
+ const fragment={size:1,mesh:{position:{x:0,y:3,z:0}}};assert.equal(cache.get(fragment).x,0);
+ cache.begin({x:10,y:10,z:90});assert.equal(cache.stats().projections,0);cache.get(m);assert.equal(cache.stats().projections,1);
+ assert.equal(projectedMeteorHit({x:0,y:0},{x:0,y:0},{x:0,y:0,radius:1}),0);
+ assert.equal(projectedMeteorHit({x:0,y:0},{x:0,y:0},{x:3,y:0,radius:1}),Infinity);
+ assert.ok(game.includes('projectedMeteorHit(defensePrevious,defenseCurrent,defenseProjectionCache.get(m))'));
+});
+test('Traffic neighbor filtering preserves speed, passing, crater detours and original order',()=>{
+ const {trafficTarget,trafficNeighborCandidates,maximumTrafficLength}=load('src/simulation/traffic-dynamics.js',roads,['trafficTarget','trafficNeighborCandidates','maximumTrafficLength']);
+ let checked=0,candidateCount=0,baselineCount=0;
+ for(let i=0;i<30;i++){
+  const cars=Array.from({length:80},(_,n)=>({root:{position:{x:(n-40)*8+Math.sin(i+n)*3,z:[10,13.5,19,23][n%4]}},dir:n%4<2?1:-1,laneZ:[10,13.5,19,23][n%4],length:3+n%8,speed:2+(n+i)%16,desiredSpeed:18,driverPhase:n,emergency:n%13===0}));
+  const max=maximumTrafficLength(cars),craters=i%2?[{x:12,z:10,radius:2,life:10}]:[];
+  const pedestrians=[{down:0,crossing:true,g:{position:{x:16,z:10}}}];
+  for(const car of cars){
+   const near=trafficNeighborCandidates(car,cars,max);candidateCount+=near.length;baselineCount+=cars.length;checked++;
+   assert.equal(near.map(c=>cars.indexOf(c)).join(','),near.map(c=>cars.indexOf(c)).sort((a,b)=>a-b).join(','));
+   assert.equal(trafficTarget(car,cars,pedestrians,true,false,i),trafficTarget(car,near,pedestrians,true,false,i));
+   for(const opts of [{},{allowWithoutLeader:true}])assert.equal(lane.choosePassingLane(car,cars,craters,opts),lane.choosePassingLane(car,near,craters,opts));
+  }
+ }
+ assert.equal(checked,2400);assert.equal(candidateCount,20614);assert.equal(baselineCount,192000);
+ assert.ok(game.includes('trafficTarget(c,neighbors,crowd,'));
+ assert.ok(game.includes('choosePassingLane(c,neighbors,craters'));
+});
+test('Crowd renderer avoids unchanged color writes and offscreen limb traversal',()=>{
+ const {createCrowdRenderer}=load('src/rendering/crowd-renderer.js',{},['createCrowdRenderer']);
+ const attr=n=>({count:n,updateRanges:[],array:new Float32Array(n*3),clearUpdateRanges(){this.updateRanges=[];},addUpdateRange(start,count){this.updateRanges.push({start,count});}});
+ class Matrix{multiplyMatrices(){return this;}getMaxScaleOnAxis(){return 1;}}
+ class V{set(x,y,z){Object.assign(this,{x,y,z});return this;}applyMatrix4(m){this.x=m.x??0;return this;}copy(v){Object.assign(this,v);return this;}}
+ class Batch{constructor(g,m,n){this.instanceMatrix=attr(n);this.instanceMatrix.setUsage=()=>{};this.instanceColor=null;this.capacity=n;}setMatrixAt(){}setColorAt(i,c){if(!this.instanceColor)this.instanceColor=attr(this.capacity);this.instanceColor.array.set([c.r,c.g,c.b],i*3);}}
+ const T={MeshStandardMaterial:class{},Frustum:class{setFromProjectionMatrix(){}intersectsSphere(s){return Math.abs(s.center.x)<20;}},Matrix4:Matrix,Sphere:class{constructor(){this.center=new V();}},Vector3:V,InstancedMesh:Batch};
+ const scene={add(){},remove(){}},renderer=createCrowdRenderer(T,scene),geometry={};
+ function person(x){
+  const part={isMesh:true,geometry,material:{color:{r:.2,g:.4,b:.6}},matrixWorld:new Matrix(),updates:0,updateWorldMatrix(){this.updates++;}};
+  const g={visible:true,children:[part],matrixWorld:Object.assign(new Matrix(),{x}),traverse(fn){fn(this);fn(part);},updateWorldMatrix(){}};
+  renderer.register(g);return {g,part};
+ }
+ const a=person(0),b=person(100),camera={updateWorldMatrix(){},projectionMatrix:{},matrixWorldInverse:{}};
+ renderer.update([a,b],camera,true);
+ assert.equal(renderer.stats().visiblePeople,1);assert.equal(renderer.stats().culledPeople,1);assert.equal(renderer.stats().colorWrites,1);assert.equal(b.part.updates,0);
+ renderer.update([a,b],camera,true);assert.equal(renderer.stats().colorWrites,0);assert.equal(a.part.updates,2);
+ a.part.material.color.r=.7;renderer.update([a,b],camera,true);assert.equal(renderer.stats().colorWrites,1);
+ b.g.matrixWorld.x=0;renderer.update([a,b],camera,true);assert.equal(renderer.stats().submittedParts,2);assert.equal(renderer.stats().colorWrites,1);assert.equal(b.part.updates,1);
+ renderer.update([a,b],camera,false);assert.equal(renderer.stats().submittedParts,0);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
