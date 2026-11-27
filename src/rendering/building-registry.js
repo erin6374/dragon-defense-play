@@ -182,12 +182,13 @@ export class BuildingAssetRegistry {
     const wrapper=new THREE.Group();
     wrapper.name=`MODEL-SWAPPED-${slot.id}`;wrapper.add(newMesh);
     wrapper.updateMatrixWorld(true);
-    const fit=parcelFitTransform(new THREE.Box3().setFromObject(wrapper),slot,opts);
+    let fit;
+    try{fit=parcelFitTransform(new THREE.Box3().setFromObject(wrapper),slot,opts);}catch(error){wrapper.remove(newMesh);throw error;}
     wrapper.scale.setScalar(fit.scale);wrapper.position.set(fit.x,fit.y,fit.z);
     wrapper.updateMatrixWorld(true);
     const postBox=new THREE.Box3().setFromObject(wrapper);
     const bounds={minX:postBox.min.x,maxX:postBox.max.x,minY:postBox.min.y,maxY:postBox.max.y,minZ:postBox.min.z,maxZ:postBox.max.z};
-    if(!Object.values(bounds).every(Number.isFinite))throw Error('Replacement bounds invalid after fitting');
+    if(!Object.values(bounds).every(Number.isFinite)){wrapper.remove(newMesh);throw Error('Replacement bounds invalid after fitting');}
     const oldModel=entry.model;
     newMesh=wrapper;
 
@@ -228,7 +229,8 @@ export class BuildingAssetRegistry {
         node.receiveShadow = true;
 
         if (opts.enhanceGlass&&!opts.preserveMaterials) {
-          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          const materials = Array.isArray(node.material) ? node.material.slice() : [node.material];
+          if(Array.isArray(node.material))node.material=materials;
           for (let i = 0; i < materials.length; i++) {
             const mat = materials[i];
             if (!mat) continue;
@@ -260,7 +262,7 @@ export class BuildingAssetRegistry {
 
     // Commit only after validation; invalid models leave the old asset intact.
     if(oldModel){
-      this.northBroadModels.clearImpactMask?.(entry);
+      this.northBroadModels.clearImpactMask?.(entry,{preserveHistory:true});
       root.remove(oldModel);
       this._disposeHierarchy(oldModel,newMesh);
     }
@@ -270,6 +272,7 @@ export class BuildingAssetRegistry {
     entry.sections = [];
     entry.loaded = true;
     entry.loadError = null;
+    this.northBroadModels.rebindImpactMask?.(entry);
 
     // Sync damage visuals
     if (entry.damage > 0) {
