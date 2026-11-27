@@ -1366,4 +1366,21 @@ test('School fire damage uses persistent structural health instead of a second t
  const dead=apply(8,1,.999);assert.equal(dead.schoolDamage,1);assert.equal(dead.hp,0);assert.equal(dead.ended,1);
  const none=apply(0,1,0);assert.equal(none.schoolDamage,0);assert.equal(none.syncs,0);
 });
+test('Primary HUD skips unchanged DOM writes while reflecting training and health transitions',()=>{
+ const a=game.indexOf('function setHudText('),b=game.indexOf('function updateBlockButton(',a);
+ const c=game.indexOf('function updateHud(){'),d=game.indexOf('\nlet toastTimer',c);
+ assert.ok(a>=0&&b>a&&c>=0&&d>c);
+ let writes=0,gauges=0;
+ const tracked=()=>new Proxy({}, {set(o,k,v){writes++;o[k]=v;return true;}});
+ const nodes=Object.fromEntries(['score','wave','campaign-chapter-label','hp','healthbar','lives','school-wire'].map(id=>[id,Object.assign(tracked(),{style:tracked()})]));
+ const document={getElementById:id=>nodes[id]};
+ const run=new Function('document','updateNeighborhoodGauge',game.slice(a,b)+game.slice(c,d)+
+ 'let score=0,wave=1,hp=100,dragonLives=3,freeFlightMode=false,training=false;const trainingMissions={isActive:()=>training},CAMPAIGN_CHAPTERS=[{title:"Defense"}],currentChapter=()=>CAMPAIGN_CHAPTERS[0];return {updateHud,set:(h,t)=>{hp=h;training=t;}};')(document,()=>gauges++);
+ run.updateHud();const initial=writes;
+ for(let i=0;i<100;i++)run.updateHud();
+ assert.equal(writes,initial);assert.equal(gauges,101);
+ run.set(85,false);run.updateHud();assert.equal(writes,initial+3);assert.equal(nodes.hp.textContent,'85%');assert.equal(nodes.healthbar.style.width,'85%');
+ run.set(85,true);run.updateHud();assert.equal(nodes.wave.textContent,'TRAIN');assert.equal(nodes.hp.textContent,'100%');assert.equal(nodes.healthbar.style.width,'100%');
+ const after=writes;run.updateHud();assert.equal(writes,after);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
