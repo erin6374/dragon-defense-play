@@ -1111,11 +1111,14 @@ dragon.scale.setScalar(1.20);
 // Legacy mouth socket follows the original visual snout's world transform.
 const legacyMouthAnchor=new THREE.Object3D();legacyMouthAnchor.position.set(2.98,.94,0);dragon.add(legacyMouthAnchor);
 let dragonLeavingRoof=false,flightPitch=0,dragonVelX=0,dragonVelY=0,flightRoll=0,flightYaw=0,diveEnergy=0,restBlend=1.0,isBoosting=false,lastIntenseRoarElapsed=0,rearUpBlend=0.0,introZoomProgress=1.0,waveClearZoomBlend=0.0;
-const DRAGON_BOUND_X=380;
+// Both campaign and Sandbox must reach the entire imported street grid.
 function clampDragonX(x){
- const bounds=neighborhood.inspectionBounds;
- return freeFlightMode?THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX):
-  THREE.MathUtils.clamp(x,-DRAGON_BOUND_X,DRAGON_BOUND_X);
+ const {minX,maxX}=neighborhood.inspectionBounds;
+ return THREE.MathUtils.clamp(x,minX,maxX);
+}
+function isDragonAtBoardEdge(x){
+ const {minX,maxX}=neighborhood.inspectionBounds;
+ return x<=minX+22||x>=maxX-22;
 }
 function perchDragon(rest=false){
  dragonLeavingRoof=false;
@@ -5931,9 +5934,7 @@ dragon.scale.y=THREE.MathUtils.lerp(dragon.scale.y,BASE_DRAGON_SCALE,Math.min(1,
 dragon.scale.z=BASE_DRAGON_SCALE;
 const targetRoll=-dragonVelX*0.022-move*0.16;
 flightRoll=THREE.MathUtils.lerp(flightRoll,targetRoll,Math.min(1,dt*8.5));
-const atBoardEdge=freeFlightMode
- ?dragon.position.x<=neighborhood.inspectionBounds.minX+22||dragon.position.x>=neighborhood.inspectionBounds.maxX-22
- :Math.abs(dragon.position.x)>=DRAGON_BOUND_X-22;
+const atBoardEdge=isDragonAtBoardEdge(dragon.position.x);
 const isStaticFlight=dragonLeavingRoof&&Math.abs(move)<0.1&&Math.abs(rise)<0.1&&Math.abs(dragonVelX)<1.2&&Math.abs(dragonVelY)<1.2;
 const shouldRearUp=atBoardEdge||isStaticFlight||!dragonLeavingRoof;
 rearUpBlend=THREE.MathUtils.lerp(rearUpBlend,shouldRearUp?1.0:0.0,Math.min(1,dt*5.0));
