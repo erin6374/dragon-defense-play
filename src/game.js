@@ -131,7 +131,7 @@ const cinematicLighting=createCinematicLighting(renderer,scene,'cinematic');
 const cinematicFX=createCinematicEffects(THREE,scene,camera,visualBank);
 window.__DD_CINEMATIC_FX=cinematicFX;
 const finalSquadron=createFinalSquadron(scene);
-const powerGrid=createPowerGrid(THREE,scene);
+const powerGrid=createPowerGrid(THREE,scene,{batchSparks:new URLSearchParams(location.search).get('powerSparkBatch')!=='0'});
 const buildingElectricalShorts=createBuildingElectricalShorts(THREE,scene);
 const ironMeteorMaterial=new THREE.MeshStandardMaterial({
  color:0x474c52,
@@ -7132,6 +7132,7 @@ window.__DD_QA={snap,
   renderFrame:(cam,dt)=>renderFrame(cam,dt),
   isFreeFlight:()=>freeFlightMode,
   schoolReconstruction:()=>schoolReconstruction?.stats()||null,
+  powerGridSparkProbe:()=>run('powerGridSparkProbe',()=>{powerGrid.reset();const pole=powerGrid.poles.find(p=>p.hasTransformer);powerGrid.sparkTransformer(pole);return {position:pole.transformerPos.toArray(),...powerGrid.sparkRenderStats()};}),
   getSchoolPieces:()=>schoolReconstruction?.getPieces?.()||[],setSchoolDamage:(val)=>{schoolDamage=val;syncStructuralDamage?.();},damageSchool:(val)=>{schoolDamage=Math.min(1.0,schoolDamage+val);syncStructuralDamage?.();},punchSchoolBorehole:(x=0,y=14.5,z=-15,r=3.5,iron=true,massive=false)=>schoolReconstruction?.punchBorehole?.({x,y,z,radius:r,isHeavyIron:iron,isMassive:massive})||0,addCraterAt:(x,z,r=4.5,opts={})=>addCrater(x,z,r,opts),hasStationMezzanine:()=>craters.some(c=>c.subwayGroup?.getObjectByName('subway-station-mezzanine')),hasTurnstiles:()=>craters.some(c=>c.subwayGroup?.getObjectByName('station-turnstile')),hasFallenSeptaSign:()=>craters.some(c=>c.subwayGroup?.getObjectByName('fallen-septa-station-sign')),getEvadingCarsCount:()=>cars.filter(c=>c.evadingCrater).length,hasRadioDispatchTriggered:()=>(elapsed-lastRadioDispatchTime)<30.0,spawnFurnitureBurst:(x=0,y=12,z=22,count=6)=>spawnFurnitureBurst(x,y,z,count),getSchoolFurnitureCount:()=>(schoolReconstruction?.getPieces?.()||[]).filter(p=>p.isFurniture).length,getImplosionPiecesCount:()=>(schoolReconstruction?.getPieces?.()||[]).filter(p=>p.isImploded).length,hasSubwaySteamGeyser:()=>craters.some(c=>c.isSubway&&c.subwayGroup),
   getCars:()=>cars,
  toggleFreeFlight:(on)=>run('toggleFreeFlight',()=>{toggleFreeFlight(on);return {freeFlightMode,snapshot:snap()};}),
