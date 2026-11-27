@@ -22,6 +22,17 @@ export const MATERIAL_PROPERTIES = [
   { name: 'roof_industrial', density: 2.1, rigidity: 3.2, yieldStrength: 2.2, restitution: -0.14, drag: 0.55, grav: 17.0 }
 ];
 
+// Only the active prefix is drawn. Avoid re-uploading all 3,400 allocated
+// transforms for each of eight materials on every partial-collapse tick.
+export function commitSchoolInstanceRange(mesh,count){
+ mesh.count=count;
+ const attribute=mesh.instanceMatrix;
+ attribute.clearUpdateRanges();
+ if(count===0)return;
+ attribute.addUpdateRange(0,count*16);
+ attribute.needsUpdate=true;
+}
+
 export function createDestructibleSchool(THREE,scene,bounds){
  const min=bounds.min,max=bounds.max,centerX=(min.x+max.x)/2;
  const depth=max.z-min.z,height=max.y-min.y,width=max.x-min.x;
@@ -650,9 +661,7 @@ export function createDestructibleSchool(THREE,scene,bounds){
    matrix.compose(position,quat,scale);
    batches[kind].setMatrixAt(index,matrix);
   }
-  batches.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;
-   // Frustum culling is disabled; recomputing a bounds sphere here is wasteful.
-   });
+  batches.forEach((mesh,i)=>commitSchoolInstanceRange(mesh,counts[i]));
  }
  function syncDestruction(ratio){
   currentRatio=ratio;
