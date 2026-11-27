@@ -3,6 +3,37 @@ import { makeViewerBuilding } from './viewer-building-fit.js';
 import { containsParcel,touchesParcel } from '../simulation/viewer-parcels.js';
 import { createParcelDamageMask } from './parcel-damage-mask.js';
 
+// Cull entire static parcel hierarchies only for a synchronous render pass.
+ // Never change simulation visibility, damage, collision or other cameras.
+ // Shadow casters and custom/swapped models stay on the standard render path.
+export function createParcelRenderCuller(T,entries) {
+ const frustum=new T.Frustum(),projection=new T.Matrix4(),hidden=[];
+ const stats={eligible:0,culled:0,skippedObjects:0,enabled:false};
+ function render(camera,draw,{enabled=true,shadows=false}={}){
+  stats.eligible=stats.culled=stats.skippedObjects=0;
+  stats.enabled=!!(enabled&&!shadows&&camera);
+  if(!stats.enabled)return draw();
+  camera.updateWorldMatrix(true,false);
+  projection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+  frustum.setFromProjectionMatrix(projection);
+  try{
+   for(const entry of entries){
+    const model=entry.model,info=entry.renderCull;
+    if(!model?.visible||!info||info.model!==model||!info.bounds)continue;
+    stats.eligible++;
+    if(frustum.intersectsBox(info.bounds))continue;
+    hidden.push(model);model.visible=false;
+    stats.culled++;stats.skippedObjects+=info.objects;
+   }
+   return draw();
+  }finally{
+   for(const model of hidden)model.visible=true;
+   hidden.length=0;
+  }
+ }
+ return {render,stats:()=>({...stats})};
+}
+
 export function createViewerCityModels(scene,city) {
   const root=new THREE.Group();
   root.name='Broad Street Viewer buildings';
@@ -12,10 +43,15 @@ export function createViewerCityModels(scene,city) {
     const def={id:b.id,name:b.name,address:b.name,gameBuilding:b.name,frontWidth:b.w,
       position:[b.x,0,b.front],isChurch:b.id==='1005656'};
     root.add(model);
-    return {def,targetBuilding,model,loaded:true,damage:0,
+    let objects=0,staticOnly=true;
+    model.traverse(node=>{objects++;if(node.isLight||node.isSkinnedMesh||node.morphTargetInfluences?.length||node.isLOD)staticOnly=false;});
+    // A small safety margin absorbs floating-point and bounds-edge variation.
+    const renderCull=staticOnly?{model,bounds:bounds.clone().expandByScalar(.5),objects}:null;
+    return {def,targetBuilding,model,renderCull,loaded:true,damage:0,
       anchor:new THREE.Vector3(b.x,0,b.z),architectureSource:'Broad Street Viewer',
       worldBounds:{minX:bounds.min.x,maxX:bounds.max.x,minY:bounds.min.y,maxY:bounds.max.y,minZ:bounds.min.z,maxZ:bounds.max.z}};
   });
+  const renderCuller=createParcelRenderCuller(THREE,entries);
   const byId=new Map(entries.map(e=>[e.def.id,e]));
   const findEntry=id=>byId.get(id)||entries.find(e=>e.def.address===id);
   function clearImpactMask(e){e.impactMask?.dispose();e.impactMask=null;}
@@ -61,7 +97,7 @@ export function createViewerCityModels(scene,city) {
     return 1;
   }
   return {
-    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,clearImpactMask,
+    root,entries,findEntry,update,impact,impactBuilding,damageBuilding,clearImpactMask,renderCuller,
     collapseBuilding(id){
       const e=findEntry(id);
       if(!e)return null;
