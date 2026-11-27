@@ -13,23 +13,32 @@ From the repository or extracted snapshot, double-click
 server. Start **Defend Philadelphia** or **Director Sandbox**. Exiting Sandbox
 now starts a clean defense session; it does not preserve a prior campaign.
 
-## Run Windows browser QA
+## Run the Windows hardware test
 
-1. Check out the `integration/combined-preview` branch, or extract its current
-   snapshot in a new directory.
-2. Install Node.js 20 or newer if needed. Microsoft Edge is the preferred
-   browser for the visible GPU test.
-3. Double-click `RUN-INTEGRATION-QA.cmd`. On first use, approve the local
-   Playwright installation. The utility uses a private loopback server and
-   opens a separate browser window. Keep it in the foreground.
-4. Return the newest directory in `integration-qa-results`, especially
-   `report.json` and screenshots. The report includes the exact Git commit
-   when Git is available, build ID, renderer, nine functional checks and
-   a 30-second sustained bombardment measurement. Critical asset failures and shader errors fail the report; the report is explicitly not a release certification.
-5. If Edge is unavailable, install Playwright Chromium using
-   `npx --prefix tools/.integration-qa-runtime playwright install chromium`.
-   The runner can also be invoked with `--headless --software` for software
-   smoke testing, but that is not native GPU performance verification.
+1. Use the current complete `integration/combined-preview` checkout. Do not
+   use the earlier Preview 9 copy or an incomplete archive missing Git LFS assets.
+2. Install Node.js 22 LTS if needed; the launcher requires at least Node.js 20.
+   Microsoft Edge must be installed and hardware acceleration enabled.
+3. Double-click **RUN-HARDWARE-TEST.cmd** in the game folder. Confirm start.
+   On the first run, approve the local Playwright dependency installation if prompted.
+4. Keep the automated Edge window in the foreground. Do not play, switch tabs,
+   minimize, record the screen, or run other demanding applications.
+5. When the console finishes, press a key as prompted. The results folder opens.
+   Send the newest timestamped folder's `report.json`, even if the test fails.
+   Screenshots are useful if the report identifies visual issues.
+
+The test serves the current checkout on its own private loopback port.
+It exercises eleven functional browser checks and a sustained bombardment
+sample. The report includes Git commit (when available), runtime build ID,
+unmasked renderer, raw frame samples, settings, and provisional hardware
+performance gate. Failure is diagnostic, not a reason to repeat until it passes.
+Software WebGL, hidden or headless sessions are not eligible for hardware
+acceptance. The launcher has a 15-minute watchdog; hardware certification
+still requires independent review and matched baseline comparison.
+
+Advanced: `RUN-INTEGRATION-QA.cmd --require-hardware` runs the same gate.
+For ordinary diagnostic testing, `RUN-INTEGRATION-QA.cmd` retains its existing
+behavior. `--headless --software` is only for software smoke testing.
 
 ## Development changes
 
