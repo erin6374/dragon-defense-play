@@ -517,4 +517,31 @@ test('All current projectile producers borrow assets or use meshless markers',()
  assert.ok(game.includes('if(!s.hostile)remove(shots,i);'));
  assert.ok(game.includes('for(const e of effectObjects){effects.remove(e.mesh);}effectObjects.length=0;'));
 });
+test('Crater retirement preserves borrowed rim assets and releases owned resources exactly once',()=>{
+ const source=read('src/rendering/procedural-crater.js');
+ const a=source.indexOf('export function collectCraterResources'),b=source.indexOf('/**',a);
+ const mk=()=>({n:0,dispose(){this.n++;}});
+ const borrowed=Array.from({length:4},mk);
+ const api=new Function('_boxGeo','_cylinderGeo','_asphaltChunkMat','_rebarSteelMat',source.slice(a,b).replace(/^export /gm,'')+'return {collectCraterResources,releaseCraterResources};')(...borrowed);
+ const owned=mk(),mat=mk(),retained=mk(),light={};
+ const rim={traverse(fn){fn({geometry:borrowed[0],material:borrowed[2]});fn({geometry:owned,material:[mat,retained]});}};
+ const subway={userData:{lights:[light,light]},traverse(fn){fn({geometry:owned,material:mat});}};
+ const resources=api.collectCraterResources([rim,subway,rim]);
+ assert.equal(resources.size,3);
+ api.releaseCraterResources(resources,new Set([retained]));
+ assert.equal(owned.n,1);assert.equal(mat.n,1);assert.equal(retained.n,0);
+ owned.n=mat.n=0;
+ const start=game.indexOf('function disposeCrater(c)'),end=game.indexOf('const _craterV1',start);
+ let removed=0,released=0;
+ const dispose=new Function('scene','explosionLightPool','collectCraterResources','releaseCraterResources',game.slice(start,end)+'return disposeCrater;')({remove(){removed++;}},{release(){released++;}},api.collectCraterResources,api.releaseCraterResources);
+ const crater={rimMesh:rim,subwayGroup:subway};dispose(crater);dispose(crater);
+ assert.equal(removed,2);assert.equal(released,1);assert.equal(owned.n,1);assert.equal(mat.n,1);assert.equal(retained.n,1);assert.ok(borrowed.every(r=>r.n===0));
+});
+test('Subway batching reclaims discarded resources and uses the subway scorch aperture',()=>{
+ const before=game.indexOf('const subwayBeforeBatch=collectCraterResources([subwayGroup])');
+ const batch=game.indexOf('batchOpaqueRelief(subwayGroup,{preserveNamed:true})',before);
+ const after=game.indexOf('releaseCraterResources(subwayBeforeBatch,collectCraterResources([subwayGroup]))',batch);
+ assert.ok(before>=0&&batch>before&&after>batch);
+ assert.ok(game.includes('createFeatheredRadialSootDecal(radius*(isTitanicOrExtinction?1.45:1.1),true)'));
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
