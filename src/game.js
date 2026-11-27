@@ -498,7 +498,7 @@ function updateFires(dt){
 
   // Identify building beneath or around fire
   const bldg=neighborhood.activeAt(f.root.position.x,f.root.position.z);
-  const onSchoolStructure=Math.abs(f.root.position.x)<=13.5&&f.root.position.z>=-58.4&&f.root.position.z<=0.4&&f.root.position.y>=1.2;
+  const onSchoolStructure=f.root.position.y>=1.2&&ownsSchoolFootprint(schoolBounds,neighborhood.targetBuildings,f.root.position.x,f.root.position.z);
 
   // Electrical short sparking on damaged building framework
   if(bldg&&bldg.damage>0.10&&Math.random()<dt*2.2){
