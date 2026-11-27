@@ -33,17 +33,28 @@ try{
   const result=await page.evaluate(()=>{
    const q=window.__DD_QA;
    // Resolve the escort objective explicitly rather than bypassing the wave.
-   const escort=q.evacuationStats();
+   const escort=q.evacuationStats(),escortTrace=[];
    if(escort.active){
+    // The inter-run fires phase lasts six simulated seconds. A single
+    // advanceSimulation(120) advances only two seconds, not six.
+    // Never award another escape until a new transport is actually loaded.
     for(let i=0;i<escort.TOTAL_RUNS+1&&q.evacuationStats().active;i++){
+     const before=q.evacuationStats();
+     if(!['loading','escort'].includes(before.phase))throw Error('Unexpected transport phase '+JSON.stringify(before));
      q.triggerChopperEscape();
-     if(q.evacuationStats().active)q.advanceSimulation(120);
+     for(let j=0;j<4&&q.evacuationStats().phase==='fires';j++){
+      q.extinguishAllFires();q.clearMeteors();q.advanceSimulation(120);
+     }
+     const after=q.evacuationStats();escortTrace.push({before,after});
+     if(after.active&&after.currentRun!==before.currentRun+1)throw Error('Transport did not advance '+JSON.stringify(escortTrace));
     }
+    if(q.evacuationStats().active)throw Error('Escort still active '+JSON.stringify(escortTrace));
    }
    q.clearMeteors();
    q.advanceProgress(3);
-   const s=q.snap();return {wave:s.wave,paused:s.paused,transition:s.chapterTransition,escort:q.evacuationStats()};
+   const s=q.snap();return {wave:s.wave,paused:s.paused,transition:s.chapterTransition,escort:q.evacuationStats(),escortTrace};
   });
+  if(result.escortTrace.length){report.escorts??=[];report.escorts.push({wave,trace:result.escortTrace});console.log('CAMPAIGN_ESCORT '+JSON.stringify(result.escortTrace));}
   if([2,5,10,14].includes(wave)){
    assert.ok(result.transition.active&&result.transition.phase==='calm','Missing settlement after '+wave);
    const stages=await page.evaluate(()=>{
