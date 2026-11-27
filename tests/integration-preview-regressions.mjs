@@ -515,7 +515,7 @@ test('All current projectile producers borrow assets or use meshless markers',()
  assert.ok(game.includes('new THREE.Mesh(groundShotGeometry,mats.fire)'));
  assert.ok(game.includes('const waterDummy=new THREE.Object3D()'));
  assert.ok(game.includes('if(!s.hostile)remove(shots,i);'));
- assert.ok(game.includes('for(const e of effectObjects){effects.remove(e.mesh);}effectObjects.length=0;'));
+ assert.ok(game.includes('for(const e of effectObjects)releaseImpactFlash(e);effectObjects.length=0;'));
 });
 test('Crater retirement preserves borrowed rim assets and releases owned resources exactly once',()=>{
  const source=read('src/rendering/procedural-crater.js');
@@ -890,5 +890,46 @@ test('Crowd renderer avoids unchanged color writes and offscreen limb traversal'
  a.part.material.color.r=.7;renderer.update([a,b],camera,true);assert.equal(renderer.stats().colorWrites,1);
  b.g.matrixWorld.x=0;renderer.update([a,b],camera,true);assert.equal(renderer.stats().submittedParts,2);assert.equal(renderer.stats().colorWrites,1);assert.equal(b.part.updates,1);
  renderer.update([a,b],camera,false);assert.equal(renderer.stats().submittedParts,0);
+});
+test('Cinematic descriptors preserve scratch values, bound capacity and reset between simulation steps',()=>{
+ const {createEffectDescriptors}=load('src/rendering/cinematic-effects.js',{},['createEffectDescriptors']);
+ const d=createEffectDescriptors(2),pos={x:1,y:2,z:3},col={r:.2,g:.4,b:.6};
+ assert.ok(d.add(pos,4,5,.7,.8,col));
+ pos.x=99;col.r=9;assert.equal(d.values[0],1);assert.equal(d.values[7],.2);
+ assert.equal(d.add(pos,4,5,0,0,col),false);
+ assert.ok(d.add(pos,2,3,1,0,null));assert.equal(d.add(pos,2,3,1,0,null),false);
+ assert.equal(d.count(),2);d.clear();assert.equal(d.count(),0);
+ assert.ok(d.add(pos,1,1,1,0,null));assert.equal(d.values[0],99);
+ const source=read('src/rendering/cinematic-effects.js');
+ assert.ok(source.includes('if(this.n>0&&(this.dirty||cameraChanged))'));
+ assert.ok(source.includes('dummy.quaternion.copy(renderCamera.quaternion)'));
+ assert.ok(source.includes('puffHead=ringHead=dustHead=sparkHead=waterHead=0'));
+ assert.ok(source.includes('flame.n>=flame.capacity&&smoke.n>=smoke.capacity'));
+ assert.ok(game.includes('cinematicFX.flush(captureCamera||camera)'));
+});
+test('Impact flash pooling preserves separate opacity and shared geometry, and reuses expired meshes',()=>{
+ const a=game.indexOf('function acquireImpactFlash(surface)'),b=game.indexOf('const sharedTrailGeometry',a);
+ let allocations=0;
+ const material=()=>({opacity:0,clone(){return material();}});
+ const ringGeo={},planeGeo={},ringMat=material(),flashMat=material();
+ const THREE={Mesh:class{constructor(geometry,material){allocations++;Object.assign(this,{geometry,material,rotation:{set(){}},scale:{setScalar(){}}});}}};
+ const rings=[],flashes=[],effects={add(){},remove(){}};
+ const api=new Function('THREE','freeShockRings','freeShockFlashes','_sharedShockRingGeo','_sharedShockPlaneGeo','_sharedShockRingMat','_sharedShockFlashMat','effects',game.slice(a,b)+'return {acquireImpactFlash,releaseImpactFlash};')(THREE,rings,flashes,ringGeo,planeGeo,ringMat,flashMat,effects);
+ const first=api.acquireImpactFlash(true),second=api.acquireImpactFlash(true);
+ first.material.opacity=.1;assert.equal(second.material.opacity,.34);
+ assert.equal(first.geometry,second.geometry);assert.ok(first.material!==second.material);
+ api.releaseImpactFlash({mesh:first,ring:true});const reused=api.acquireImpactFlash(true);
+ assert.equal(reused,first);assert.equal(reused.material.opacity,.34);assert.equal(allocations,2);
+ const air=api.acquireImpactFlash(false);assert.equal(air.geometry,planeGeo);assert.equal(air.material.opacity,.8);
+ api.releaseImpactFlash({mesh:air,ring:false});assert.equal(api.acquireImpactFlash(false),air);
+ assert.ok(game.includes('for(const e of effectObjects)releaseImpactFlash(e);effectObjects.length=0;'));
+});
+test('Sky shader retains moon and star formulas but gates zero-contribution noise work',()=>{
+ const source=read('src/rendering/cinematic-environment.js');
+ assert.ok(source.includes('if(night>0.)'));
+ assert.ok(source.includes('if(disc>0.)'));
+ assert.ok(source.includes('noise(moonUV*580.)*.14+noise(moonUV*230.)*.12'));
+ assert.ok(source.includes('if(chance>=.991)'));
+ assert.ok(source.includes('if(chance>=.994&&starDistance<.18)'));
 });
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
