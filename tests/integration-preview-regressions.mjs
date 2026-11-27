@@ -284,4 +284,25 @@ test('Source-school health gauge does not fabricate partial debris',()=>{
  const fn=new Function('collapse','THREE','let currentRatio=0,schoolCracksGroup=null,overlayMode=true;'+proxy.slice(start,end)+'return syncDestruction;')(()=>collapses++,{});
  fn(.15);fn(.9);assert.equal(collapses,0);fn(1);assert.equal(collapses,1);
 });
+test('Full collapse releases interior furnishings once while preserving foundations',()=>{
+ const structural=read('src/rendering/structural-city.js');
+ const start=structural.indexOf(' function forceDamage('),end=structural.indexOf(' function update(',start);
+ class V{constructor(x,y,z){Object.assign(this,{x,y,z});}distanceTo(p){return Math.hypot(this.x-p.x,this.y-p.y,this.z-p.z);}}
+ let calls=0;const force=new Function('THREE','detach',structural.slice(start,end)+'return forceDamage;')({Vector3:V},p=>{p.state='falling';calls++;});
+ const part=type=>({type,state:'attached',position:new V(0,0,0),original:{position:new V(0,0,0)}});
+ const structuralParts=[part('wall'),part('slab'),part('column')],extra=[part('furniture'),part('partition'),part('window'),part('foundation')];
+ const b={school:false,x:0,z:0,w:10,h:10,d:10,damage:0,pressure:0,structuralParts,parts:[...structuralParts,...extra]};
+ force(b,.5);assert.equal(calls,1);assert.ok(extra.every(p=>p.state==='attached'));
+ force(b,1);assert.equal(calls,6);assert.equal(extra[3].state,'attached');
+ force(b,1);assert.equal(calls,6);
+ assert.ok(structural.includes('b.fullCollapseReconciled=false;b.fallenFloors?.clear()'));
+});
+test('Runoff restoration clears current and queued water and hides drain effects',()=>{
+ const s=read('src/rendering/street-water-runoff.js'),a=s.indexOf('    reset() {'),b=s.indexOf('    getStats()',a);
+ assert.ok(a>=0&&b>a);
+ const v={set(...v){this.values=v;}},ribbon={opacity:.5,normalScale:{...v}},film={opacity:.5},tex={offset:{x:5}},gutters=[{visible:true}],drains=[{flowRate:.7,vortexMesh:{visible:true,rotation:{z:5},scale:{...v}},vortexMat:{opacity:.8}}];
+ const api=new Function('waterFlowRibbonMat','waterFilmMat','rippleNormalTex','gutterMeshes','drainObjects','let currentRunoffVolume=1,targetRunoffVolume=1,flowClock=3,ripplePulse=2;return {'+s.slice(a,b)+'state:()=>[currentRunoffVolume,targetRunoffVolume,flowClock,ripplePulse]};')(ribbon,film,tex,gutters,drains);
+ api.reset();assert.ok(api.state().every(x=>x===0));assert.equal(ribbon.opacity,0);assert.equal(film.opacity,0);assert.equal(gutters[0].visible,false);assert.equal(drains[0].vortexMesh.visible,false);assert.equal(drains[0].vortexMat.opacity,0);assert.equal(tex.offset.x,0);
+ assert.equal(game.split('cinematicFX.syncSubwayCraters?.([]);streetWaterRunoff.reset();').length-1,3);
+});
 console.log(count+' integration regression groups passed. Browser/GPU validation is separate.');
