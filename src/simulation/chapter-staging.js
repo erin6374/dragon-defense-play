@@ -6,8 +6,8 @@ export function createChapterStaging(scene){
  const white=mat(0xe2e4e1),dark=mat(0x19222b,.4,.6),armor=mat(0x58654f),skin=mat(0x94725c),gold=mat(0xf6cc78),red=mat(0x9c3244),orange=mat(0xdd6818,.2,.6),yellow=mat(0xe5af22,.15,.55),safety=mat(0xffaa2e,.1,.5),cone=mat(0xff7a2e),black=mat(0x121518,.2,.9),chrome=mat(0xccd4db,.8,.25),glass=mat(0x3a536b,.3,.2),amber=new THREE.MeshBasicMaterial({color:0xffaa00});
  const cube=new THREE.BoxGeometry(1,1,1),sphere=new THREE.SphereGeometry(.5,7,5),cyl=new THREE.CylinderGeometry(.5,.5,1,8);
  let chapter=0,mode='chapter',settlementChapter=0,leaveTarget=0,leaveTimer=0;
- const movers=[];let settlementClock=0;const cleanupPiles=[];
- function clear(){group.clear();movers.length=0;cleanupPiles.length=0;settlementClock=0;}
+ const movers=[];let settlementClock=0;const cleanupPiles=[];const ownedTransientResources=new Set();
+ function clear(){group.clear();for(const resource of ownedTransientResources)resource.dispose();ownedTransientResources.clear();movers.length=0;cleanupPiles.length=0;settlementClock=0;}
  function box(parent,x,y,z,w,h,d,m){const mesh=new THREE.Mesh(cube,m);mesh.position.set(x,y,z);mesh.scale.set(w,h,d);parent.add(mesh);return mesh;}
  function cylinder(parent,x,y,z,r,h,m){const mesh=new THREE.Mesh(cyl,m);mesh.position.set(x,y,z);mesh.scale.set(r*2,h,r*2);parent.add(mesh);return mesh;}
  function person(x,z,uniform=false,sign=false,worker=false){const g=new THREE.Group();g.position.set(x,0,z);group.add(g);movers.push({g,kind:'person'});
@@ -58,6 +58,7 @@ export function createChapterStaging(scene){
   box(basket,0,.08,0,1.2,.15,1.2,dark);
   // Work spark / welding glint at tip
   const sparkGlint=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0}));
+  ownedTransientResources.add(sparkGlint.geometry);ownedTransientResources.add(sparkGlint.material);
   sparkGlint.position.set(4.8,.7,0);extPivot.add(sparkGlint);
 
   const mover={g,kind:'constructionCrane',beacon,outriggers,turret,boomPivot,extPivot,sparkGlint,facing,targetBuilding,working:false,workPhase:0};
@@ -508,5 +509,5 @@ export function createChapterStaging(scene){
    }
   }
  }
- return {setChapter,setSettlement,deployRoundCleanup,beginNextRound,beginNextChapter,update,group,get mode(){return mode;}};
+ return {setChapter,setSettlement,deployRoundCleanup,beginNextRound,beginNextChapter,update,group,get mode(){return mode;},get chapter(){return chapter;}};
 }
