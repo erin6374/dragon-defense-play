@@ -194,6 +194,7 @@ export function createPhiladelphiaSkyline(parent,{detail='standard',flameTexture
  const farTex=makeFacade(9291,'office');
  const farMat=new THREE.MeshStandardMaterial({map:farTex.map,emissiveMap:farTex.emissive,emissive:0xffd8a1,emissiveIntensity:0,color:0x91a6b5,roughness:.95,metalness:.01,side:THREE.DoubleSide});
  const farSide=new THREE.MeshStandardMaterial({color:0x607789,roughness:.95,metalness:.01,side:THREE.DoubleSide});
+ farMat.name='ambient-skyline-facade';farSide.name='ambient-skyline-side';
  const ambientGroups=[];
  for(let i=0;i<ambientBuildings.length;i++){
   const [x,h,w]=ambientBuildings[i];
