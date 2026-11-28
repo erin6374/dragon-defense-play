@@ -973,7 +973,33 @@ test('Cinematic completion consumes a pending transition once and invalidates ea
  assert.equal(api.close(3),false);assert.equal(api.close(),false);assert.equal(repairs,1);assert.equal(resets,1);assert.equal(starts,1);
  api.cancel();assert.equal(api.state().cinematicActive,false);
  assert.ok(game.includes('generation===cinematicGeneration)player.classList.add'));
- assert.ok(game.includes("e.source===document.getElementById('cinematic-frame').contentWindow"));
+ const handlerStart=game.indexOf("window.addEventListener('message',e=>{if(!cinematicActive");
+ const handlerEnd=game.indexOf('\n',handlerStart);
+ assert.ok(handlerStart>=0&&handlerEnd>handlerStart,'Missing cinematic message listener');
+ const fixture=`
+ let cinematicActive=true,cinematicTimeout=17,closed=0,cleared=[];
+ const frame={},origin='http://localhost:8765';
+ let listener;
+ const document={getElementById:()=>({contentWindow:frame})};
+ const location={origin},window={addEventListener(type,fn){if(type==='message')listener=fn;}};
+ const clearTimeout=id=>cleared.push(id);
+ const closeChapterTransition=()=>{closed++;cinematicActive=false;};
+ `+game.slice(handlerStart,handlerEnd)+`
+ return {send(type,validOrigin=true,validFrame=true){listener({origin:validOrigin?origin:'https://example.invalid',source:validFrame?frame:{},data:{type}});},state:()=>({closed,cleared:[...cleared],timer:cinematicTimeout}),deactivate(){cinematicActive=false}};
+ `;
+ const make=()=>new Function(fixture)();
+ const trusted=make();
+ for(const type of ['dragon-cinematic-ready','dragon-cinematic-complete','dragon-cinematic-skip']){
+  trusted.send(type,false,true);trusted.send(type,true,false);
+ }
+ trusted.send('unrelated');assert.deepEqual(trusted.state(),{closed:0,cleared:[],timer:17});
+ trusted.send('dragon-cinematic-ready');trusted.send('dragon-cinematic-ready');
+ assert.deepEqual(trusted.state(),{closed:0,cleared:[17],timer:null});
+ trusted.send('dragon-cinematic-complete');trusted.send('dragon-cinematic-complete');trusted.send('dragon-cinematic-skip');
+ assert.equal(trusted.state().closed,1);
+ const skipped=make();skipped.send('dragon-cinematic-skip');assert.equal(skipped.state().closed,1);
+ const inactive=make();inactive.deactivate();inactive.send('dragon-cinematic-ready');inactive.send('dragon-cinematic-complete');
+ assert.deepEqual(inactive.state(),{closed:0,cleared:[],timer:17});
  assert.ok(game.includes('function reset(){trainingMissions?.reset();cancelChapterCinematic();'));
  assert.ok(game.includes('function togglePause(){if(!active||cinematicActive)return;'));
 });
