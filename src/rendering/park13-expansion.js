@@ -1,4 +1,5 @@
 // Park-to-13th integration pilot: pinned Viewer geometry, independent of damageable parcels.
+import {buildPark13Breach} from './park13-breach.js';
 import {renderPark13Record} from '../../broad-street/park13-integration/park13-background.mjs';
 import {VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../simulation/viewer-parcels.js';
 export const SOURCE_COMMIT='8c101b70d6771ac50a0a9f7dc70af6696ff94f9e';
@@ -86,7 +87,7 @@ export function createPark13Expansion(T,data){
     const geo=new T.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geo.rotateX(-Math.PI/2);geo.translate(0,base,0);
     const pos=geo.attributes.position.array,normal=geo.attributes.normal.array;
     if(!pos.length||!pos.every(Number.isFinite)||!normal.every(Number.isFinite))throw Error('Invalid volume '+record.id);
-    if(!volumes.has(c))volumes.set(c,[]);volumes.get(c).push({pos,normal,owner});volumeCount++;triangles+=pos.length/9;geo.dispose();
+    if(!volumes.has(c))volumes.set(c,[]);volumes.get(c).push({pos,normal,owner,color:c});volumeCount++;triangles+=pos.length/9;geo.dispose();
    },
    box(x,y,z,w,h,d,c,angle=0){
     if(![x,y,z,w,h,d,angle].every(Number.isFinite)||Math.min(w,h,d)<=0)throw Error('Invalid detail '+record.id);
@@ -98,7 +99,7 @@ export function createPark13Expansion(T,data){
  for(const [c,items] of volumes){
   const n=items.reduce((s,i)=>s+i.pos.length,0),pos=new Float32Array(n),normal=new Float32Array(n);let at=0;
   for(const item of items){pos.set(item.pos,at);normal.set(item.normal,at);item.offset=at;at+=item.pos.length;}
-  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);for(const item of items)item.owner.volumes.push({attribute:geo.attributes.position,normal:geo.attributes.normal,offset:item.offset,original:item.pos,originalNormal:item.normal});
+  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);for(const item of items)item.owner.volumes.push({attribute:geo.attributes.position,normal:geo.attributes.normal,offset:item.offset,original:item.pos,originalNormal:item.normal,color:item.color});
   const mesh=new T.Mesh(geo,mat(c));mesh.name='Park13 mass '+c;architecture.add(mesh);
  }
  for(const [c,items] of details){
@@ -119,15 +120,34 @@ export function createPark13Expansion(T,data){
  }
  // Parcel-local upper-storey failure and impact dents; update only the
  // owned vertex/instance ranges. No new draw objects or per-frame rebuild.
- const changed=new Set(),matrix=new T.Matrix4();
+ const changed=new Set(),matrix=new T.Matrix4(),breaches=new Map();
+ // A single additional draw only while damaged shells exist. The shared mesh
+ // is rebuilt on impact/repair, never on the animation tick.
+ const breachMaterial=new T.MeshStandardMaterial({vertexColors:true,roughness:.95,side:T.DoubleSide});
+ const breachMesh=new T.Mesh(new T.BufferGeometry(),breachMaterial);breachMesh.name='Park13 exposed structure';breachMesh.visible=false;root.add(breachMesh);
+ function syncBreaches(){
+  const size=[...breaches.values()].reduce((sum,b)=>sum+b.positions.length,0),p=new Float32Array(size),c=new Float32Array(size);let offset=0;
+  for(const b of breaches.values()){p.set(b.positions,offset);c.set(b.colors,offset);offset+=b.positions.length;}
+  const old=breachMesh.geometry;
+  const g=new T.BufferGeometry();if(size){g.setAttribute('position',new T.BufferAttribute(p,3));g.setAttribute('color',new T.BufferAttribute(c,3));g.computeVertexNormals();g.computeBoundingSphere();}
+  breachMesh.geometry=g;breachMesh.visible=size>0;old.dispose();
+ }
  function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;
   if(d===0)o.impacts.length=0;
   o.damage=d;const h=d===1?.025:1-.75*d;o.collision.damage=d;o.collision.h=o.record.height*h;
   const height=o.record.height;
   const deform=(y,x,z)=>park13DamageHeight(y,x,z,height,d,o.impacts);
+  const breach=buildPark13Breach(T,o,deform),hadBreach=breaches.has(id);
+  if(breach)breaches.set(id,breach);else breaches.delete(id);
   for(const v of o.volumes){
    const a=v.attribute.array,n=v.normal.array,off=v.offset;
    if(d===0){a.set(v.original,off);n.set(v.originalNormal,off);}
+   else if(breach){
+    // Degenerate original faces at a vertex belonging to this parcel.
+    // Do not move hidden geometry into a neighbor or enlarge batch bounds.
+    for(let i=0;i<v.original.length;i+=3){a[off+i]=v.original[0];a[off+i+1]=0;a[off+i+2]=v.original[2];}
+    n.set(v.originalNormal,off);
+   }
    else{
     for(let i=0;i<v.original.length;i+=3){
      const x=v.original[i],z=v.original[i+2];a[off+i]=x;a[off+i+1]=deform(v.original[i+1],x,z);a[off+i+2]=z;
@@ -162,6 +182,7 @@ export function createPark13Expansion(T,data){
    }
    v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;
   }
+  if(breach||hadBreach)syncBreaches();
   if(d)changed.add(id);else changed.delete(id);return true;
  }
  function restore(){for(const id of [...changed])setDamage(id,0);}
@@ -176,5 +197,5 @@ export function createPark13Expansion(T,data){
   return setDamage(id,o.damage+budget);
  }
  root.updateMatrixWorld(true);
- return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
 }
