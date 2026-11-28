@@ -6925,7 +6925,7 @@ if(schoolQA||new URLSearchParams(location.search).get('benchmark')==='1'){
  });
 }
 const motionQA=schoolQA&&new URLSearchParams(location.search).get('motion')==='1';
-function animate(){if(!motionQA){requestAnimationFrame(animate);renderFrame();}}
+function animate(){if(!motionQA){requestAnimationFrame(animate);if(cinematicActive){clock.getDelta();nextRenderAt=null;return;}renderFrame();}}
 window.renderFrame=renderFrame;
 // Keep the flight camera player-led while showing nearby tutorial objectives.
 function trainingCameraFraming(focus,position){

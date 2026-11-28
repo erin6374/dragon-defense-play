@@ -1003,6 +1003,45 @@ test('Cinematic completion consumes a pending transition once and invalidates ea
  assert.ok(game.includes('function reset(){trainingMissions?.reset();cancelChapterCinematic();'));
  assert.ok(game.includes('function togglePause(){if(!active||cinematicActive)return;'));
 });
+test('Comic playback counts real visible elapsed time even when rendering stalls',()=>{
+ const c1=read('campaign/chapter1.html'),c34=read('campaign/chapters3-4.html');
+ const section=(src,a,b)=>{const start=src.indexOf(a),end=src.indexOf(b,start);assert.ok(start>=0&&end>start);return src.slice(start,end);};
+ const first=new Function(`
+ let last=0,index=5,playing=true,elapsed=0,finished=0,shown=0;
+ const duration=8000,slides=Array(6),fill={style:{}},document={hidden:false};
+ const finishEmbedded=()=>{finished++;return true},show=()=>shown++,requestAnimationFrame=()=>{};
+ `+section(c1,'function frame(now){','document.addEventListener(\'visibilitychange\'')+`
+ return {step:frame,pause(v){playing=!v},hide(v){document.hidden=v},state:()=>({elapsed,finished,shown})};
+ `)();
+ first.step(2000);assert.equal(first.state().elapsed,2000);
+ first.pause(true);first.step(6000);assert.equal(first.state().elapsed,2000);
+ first.pause(false);first.hide(true);first.step(9000);assert.equal(first.state().elapsed,2000);
+ first.hide(false);first.step(15000);assert.equal(first.state().finished,1);assert.equal(first.state().shown,0);
+ const final=new Function(`
+ let last=0,index=7,playing=true,awaiting=false,elapsed=0,finished=0;
+ const lengths=Array(9).fill(14),progress={style:{}},document={hidden:false};
+ const $=()=>progress,next=()=>{finished++;playing=false},requestAnimationFrame=()=>{};
+ `+section(c34,'function tick(t){',"$('prev').onclick")+`
+ return {step:tick,choice(v){awaiting=v},state:()=>({elapsed,finished})};
+ `)();
+ final.step(5000);assert.equal(final.state().elapsed,5);
+ final.choice(true);final.step(15000);assert.equal(final.state().elapsed,5);
+ final.choice(false);final.step(24000);assert.equal(final.state().finished,1);
+ assert.ok(c1.includes("last=performance.now();fill.style.width='0%'"));
+ assert.ok(c34.includes("elapsed=0;last=performance.now();awaiting=false"));
+ assert.ok(c34.includes("if(awaiting)return;last=performance.now();playing=!playing"));
+});
+test('Fully covering cinematics suspend normal WebGL renders and drain the gameplay clock',()=>{
+ const start=game.indexOf('function animate(){'),end=game.indexOf('\n',start);
+ const api=new Function(`
+ let motionQA=false,cinematicActive=true,nextRenderAt=42,queued=0,rendered=0,drained=0;
+ const requestAnimationFrame=()=>queued++,renderFrame=()=>rendered++,clock={getDelta(){drained++;}};
+ `+game.slice(start,end)+`
+ return {animate,close(){cinematicActive=false},state:()=>({nextRenderAt,queued,rendered,drained})};
+ `)();
+ api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:1,rendered:0,drained:1});
+ api.close();api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:2,rendered:1,drained:1});
+});
 test('Meteor warnings use intact parcel ownership and exclude invalid or test objects',()=>{
  const {selectMeteorWarning}=load('src/simulation/meteor-warning.js',{},['selectMeteorWarning']);
  const school={x:0,z:-29,w:27,d:58.8,school:true},m={target:{x:0,y:20,z:-10},mesh:{position:{y:60}},vel:{y:-10}};

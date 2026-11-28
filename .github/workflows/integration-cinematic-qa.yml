@@ -4,6 +4,7 @@ on:
     branches:
       - integration/combined-preview
     paths:
+      - 'campaign/*.html'
       - 'qa/integration-cinematic-acceptance.mjs'
       - '.github/workflows/integration-cinematic-qa.yml'
   workflow_dispatch:
