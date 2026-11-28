@@ -7,6 +7,7 @@ import {buildPark13Breach,createPark13BreachTracer} from '../src/rendering/park1
 import {createPark13Fragments} from '../src/rendering/park13-fragments.js';
 import {traceMeteorCollision} from '../src/simulation/meteor-collision.js';
 import {intersectionArea,AREA_TOLERANCE} from '../broad-street/park13-integration/park13-polygon-overlap.mjs';
+import {selectPark13NativeTargets} from '../qa/park13-native-targets.mjs';
 const root=new URL('../broad-street/park13-integration/',import.meta.url);
 const read=async name=>JSON.parse(await readFile(new URL(name,root),'utf8'));
 const data=preparePark13Expansion(...await Promise.all(['park13-GIS-precise-20261127.json','park13-southern-20261127.json','park13-public-realm-20261127.json','park13-southern-realm-full-20261127.json','park13-diamond-seam-20261127.json','park13-campus-links-20261127.json'].map(read)));
@@ -36,6 +37,12 @@ for(const {items} of data.surfaces)for(const item of items){
 console.log('PARK13_SURFACE_AUDIT '+JSON.stringify({surfaceChecks,conflicts}));
 assert.equal(conflicts.length,0,'Imported pavement overlaps active building footprints');
 const layer=createPark13Expansion(T,data),s=layer.stats();
+const nativeTargets=selectPark13NativeTargets(data.records.slice(0,163),data.records.slice(163));
+assert.equal(nativeTargets.length,12);assert.equal(new Set(nativeTargets.map(t=>t.id)).size,12);
+assert.ok(nativeTargets.some(t=>t.id==='park13-1003184'));assert.ok(nativeTargets.some(t=>t.id==='park13-1007541'));
+for(const target of nativeTargets)assert.equal(layer.targetAt(target.x,target.z)?.id,target.id,'Native schedule target ownership '+target.id);
+console.log('PARK13_NATIVE_TARGETS '+JSON.stringify({targets:nativeTargets.length,southern:2,ownership:true,range:[nativeTargets[0].x,nativeTargets.at(-1).x]}));
+
 assert.equal(s.buildings,165);assert.equal(s.components,2893);assert.equal(s.triangles,44260);assert.equal(s.architectureDrawObjects,80);assert.equal(s.damageable,false);
 assert.equal(s.surfaceDrawObjects,3);assert.deepEqual(s.realmCounts,{roads:343,sidewalks:686,pedestrianPaths:51,campusSurfaces:78});assert.ok(!data.records.some(r=>r.bin==='1048635'));
 const box=new T.Box3().setFromObject(layer.root);assert.ok([...box.min.toArray(),...box.max.toArray()].every(Number.isFinite));
