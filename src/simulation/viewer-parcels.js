@@ -9,10 +9,32 @@ export async function loadViewerGrid() {
   return response.json();
 }
 
+// The 2207 Broad Street front mass is already rendered as a labeled
+// provisional extension of a rear-only GIS polygon. Give that visible mass
+// matching gameplay ownership, without modifying the surveyed source row.
+// Conservatively stop at the adjoining surveyed rear parcel to the south;
+// leave its original geometry and ownership untouched.
+function provisionalFrontage(row,rows){
+  if(String(row.id)!=='1007130'||!row.provisionalFrontage||
+     !Number.isFinite(row.provisionalStreetFront)||row.provisionalStreetFront<=row.front)return null;
+  const adjacent=rows.find(r=>String(r.id)==='1007129');
+  if(!adjacent?.polys?.length)return null;
+  const points=row.polys.flat(2);
+  const minX=Math.min(...points.map(p=>p[0]));
+  const maxX=Math.min(Math.max(...points.map(p=>p[0])),Math.min(...adjacent.polys.flat(2).map(p=>p[0])));
+  // The rear survey ring has a slightly angled street-facing edge.
+  const startZ=row.front-.05,endZ=row.provisionalStreetFront;
+  if(maxX<=minX||endZ<=startZ)return null;
+  return [[[minX,startZ],[maxX,startZ],[maxX,endZ],[minX,endZ],[minX,startZ]]];
+}
+
 export function viewerParcels(rows) {
-  const parcels = rows.filter(row => !row.school && row.polys?.length).map(row => ({
-    id: String(row.id), name: row.address, sourceRow: row, h: row.h, polys: row.polys
-  }));
+  const parcels = rows.filter(row => !row.school && row.polys?.length).map(row => {
+    const provisional=provisionalFrontage(row,rows);
+    return {id:String(row.id),name:row.address,sourceRow:row,h:row.h,
+      polys:provisional?[...row.polys,provisional]:row.polys,
+      provisionalCollisionFrontage:!!provisional};
+  });
   for (const [index, [polys, h, name]] of buildings.entries()) {
     parcels.push({ id: `district-${index}`, name, record: index, h, polys, background: true });
   }
