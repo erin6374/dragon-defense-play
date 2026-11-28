@@ -110,6 +110,31 @@ courtyard.damage=1;
 const bypass=trace({x:-5,y:10,z:5},{x:18,y:2,z:5});
 assert.equal(bypass.building.id,'adjacent');assert.ok(Math.abs(bypass.point.x-10)<1e-4);
 console.log('PARK13_COLLISION_EDGE_CASES '+JSON.stringify({sideEntry:true,courtyardOpening:true,innerWall:true,nearestOwner:true,collapsedBypass:true,allParcelHeightRepair:testedTargets}));
+
+// Independent residential shell fixture: hit roof center and side wall,
+// verify actual triangle removal and exposed floors, then exact restoration.
+const fixtureRecord=(id,x)=>({id,replaceable:true,provisionalOnly:false,address:id,height:10,polys:[[ring(x,0,x+5,12)]]});
+const fixture=createPark13Expansion(T,{records:[fixtureRecord('park13-fixture-a',0),fixtureRecord('park13-fixture-b',8)],surfaces:[],held:[],source:'fixture',realmCounts:{}});
+const ax=VIEWER_TO_GAME_X+2.5,az=VIEWER_TO_GAME_Z+6;
+const snapFixture=()=>fixture.root.children[0].children.map(m=>Array.from(m.isInstancedMesh?m.instanceMatrix.array:m.geometry.attributes.position.array));
+const pristine=snapFixture(),initialDraws=fixture.stats().architectureDrawObjects;
+assert.equal(fixture.stats().breachDrawObjects,0);
+assert.ok(fixture.strikeTarget('park13-fixture-a',1,{x:ax,y:10,z:az}));
+const breach=fixture.stats();assert.equal(breach.breached,1);assert.equal(breach.breachDrawObjects,1);
+assert.ok(breach.removedTriangles>0);assert.ok(breach.interiorTriangles>0);assert.ok(breach.breachTriangles>0);
+assert.equal(breach.architectureDrawObjects,initialDraws);assert.equal(fixture.damageOf('park13-fixture-b'),0);
+const shell=fixture.root.children.find(m=>m.name==='Park13 exposed structure');
+assert.ok(shell.visible);assert.ok(shell.geometry.attributes.position.array.every(Number.isFinite));
+fixture.root.updateMatrixWorld(true);
+const ray=new T.Raycaster(new T.Vector3(ax,20,az),new T.Vector3(0,-1,0));
+const openHits=ray.intersectObject(shell,false);
+assert.ok(openHits.length>0,'Expected interior floor under roof breach');
+assert.ok(openHits[0].point.y<fixture.targetAt(ax,az).y-.4,'Roof opening should expose a lower deck');
+assert.ok(fixture.strikeTarget('park13-fixture-b',1,{x:VIEWER_TO_GAME_X+8,y:5,z:az}));
+assert.equal(fixture.stats().breached,2);assert.equal(fixture.stats().breachDrawObjects,1);
+fixture.restore();assert.equal(fixture.stats().breached,0);assert.equal(fixture.stats().breachDrawObjects,0);
+assert.deepEqual(snapFixture(),pristine);
+console.log('PARK13_BREACH_FIXTURE '+JSON.stringify({roofOpening:true,sideOpening:true,interiorDecks:true,sharedDamageDraw:true,restored:true}));
 const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,100,20);
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);
