@@ -10,7 +10,7 @@ try{
  for(const enabled of [false,true]){
   const page=await browser.newPage({viewport:{width:1280,height:720},serviceWorkers:'block'});
   page.on('pageerror',e=>report.errors.push(String(e)));
-  await page.goto('http://127.0.0.1:8765/?qa=1&motion=1&park13='+(enabled?1:0),{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8765/?qa=1&motion=1&benchmark=1&park13='+(enabled?1:0),{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady,undefined,{timeout:180000});
   const state=await page.evaluate(()=>{
    const q=window.__DD_QA;return {expansion:q.park13ExpansionStats(),context:q.distantNeighborhoodStats(),parcels:q.northBroadModels().result.loadedCount,school:q.snap().renderVisibility.actualSchoolOverlayReady};
@@ -81,7 +81,11 @@ try{
     const before=q.park13TargetAt(hit.x,hit.z);
     const healthBefore=q.neighborhoodHealth();
     const targetY=Math.max(.7,before.y-15);
-    q.spawnTestMeteorAt(hit.x,targetY,hit.z,4,'iron');
+    // Exercise the benchmark's lightweight drop/probe API in the actual
+    // browser without claiming real-time/native timing in motion mode.
+    const benchmark=window.__DD_BENCHMARK;
+    const drop=benchmark.park13Drop(hit.x,hit.z,4);
+    if(drop.spawned<1||benchmark.park13Probe().testMeteors<1)throw Error('Benchmark drop/probe failed');
     const spawned=q.meteorsList().length;
     let frames=0,after=before;
     while(frames<60&&after?.damage===0){
@@ -94,7 +98,7 @@ try{
     q.spawnTestMeteorAt(hit.x,targetY,hit.z,4,'iron');
     q.spawnMeteorBarrage(4,hit.x,hit.z);
     q.repairAllBuildings();
-    return {before,after,spawned,frames,damaged,healthBefore,healthAfter,
+    return {before,after,spawned,frames,damaged,healthBefore,healthAfter,benchmarkDrop:drop,
      repaired:q.park13TargetAt(hit.x,hit.z),remaining:q.meteorsList().length};
    },d.hit);
    const live=state.liveMeteor;
