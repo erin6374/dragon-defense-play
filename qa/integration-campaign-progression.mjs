@@ -86,10 +86,14 @@ try{
  await page.locator('#again').click();
  const restarted=await page.evaluate(()=>window.__DD_QA.snap());
  assert.equal(restarted.wave,1);assert.equal(restarted.hp,100);assert.equal(restarted.dragon.lives,3);assert.ok(restarted.active&&!restarted.paused);
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady&&window.__DD_QA.snap().frameTimes.frames>=2,undefined,{timeout:180000});
  await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(15);if(!r.ok)throw Error(r.error);q.destroyAllSatellites();q.advanceProgress(2.3);});
  await page.locator('#ending-wait').click({timeout:30000});
  assert.match(await page.locator('#panel h2').innerText(),/ESCAPE ENDING/);
  await page.screenshot({path:out+'/ending-escape.png'});
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady&&window.__DD_QA.snap().frameTimes.frames>=2,undefined,{timeout:180000});
  await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(1);if(!r.ok)throw Error(r.error);q.hitSchool(100);});
  assert.match(await page.locator('#panel h1').innerText(),/GAME OVER/);
  const defeated=await page.evaluate(()=>window.__DD_QA.snap());assert.equal(defeated.active,false);assert.equal(defeated.hp,0);
