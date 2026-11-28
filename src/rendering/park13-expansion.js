@@ -1,6 +1,6 @@
 // Park-to-13th integration pilot: pinned Viewer geometry, independent of damageable parcels.
 import {createPark13Fragments} from './park13-fragments.js';
-import {buildPark13Breach} from './park13-breach.js';
+import {buildPark13Breach,createPark13BreachTracer} from './park13-breach.js';
 import {renderPark13Record} from '../../broad-street/park13-integration/park13-background.mjs';
 import {VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../simulation/viewer-parcels.js';
 export const SOURCE_COMMIT='8c101b70d6771ac50a0a9f7dc70af6696ff94f9e';
@@ -140,7 +140,12 @@ export function createPark13Expansion(T,data){
   const height=o.record.height;
   const deform=(y,x,z)=>park13DamageHeight(y,x,z,height,d,o.impacts);
   const breach=buildPark13Breach(T,o,deform),hadBreach=breaches.has(id);
-  if(breach)breaches.set(id,breach);else breaches.delete(id);
+  if(breach){
+   breaches.set(id,breach);
+   o.collision.traceBreach=createPark13BreachTracer(breach.positions,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z);
+  }else{
+   breaches.delete(id);delete o.collision.traceBreach;
+  }
   for(const v of o.volumes){
    const a=v.attribute.array,n=v.normal.array,off=v.offset;
    if(d===0){a.set(v.original,off);n.set(v.originalNormal,off);}
