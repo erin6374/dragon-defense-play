@@ -21,3 +21,14 @@ Review north, central, south, campus, street seams and damage/repair on the exac
 ## Packaging
 
 After source, browser, native and visual checks pass, prepare the candidate archive from the exact tested tree, include version and source provenance, calculate SHA-256, test one-click Windows launcher on a clean extraction and verify rollback to the baseline configuration. Record source, passed, archive, sha256, launcherSmoke, version (5.5.0-integration.11), rollbackVerified in package.json. Retain the archive and its actual hash; this JSON is an evidence manifest, not a cryptographic signature. Do not send a download or enable Park13 by default before release gate success. No package has been produced by this checkpoint.
+
+
+## Automated native runner (Checkpoint 20)
+
+On the RTX 3060 Windows PC, check out the frozen candidate SHA and ensure all tracked files match it. Install Node 22, Git, Edge or Chrome and Playwright (or set PLAYWRIGHT_MODULE to the absolute local Playwright index.mjs path). Run from the repository:
+
+```powershell
+node qa/park13-native-browser.mjs <exact-candidate-sha> park13-integration-output
+```
+
+The runner starts its own loopback static server, checks Git SHA before and after, verifies unmasked RTX 3060 renderer, Balanced preset and 45 FPS cap, uses visible normal animation frames, traverses both inspection bounds with actual keyboard events, then drops the same twelve GIS-selected meteors in each configuration over a matched bombardment sequence. Keep its window foreground; do not interact with it or minimize it. It records raw benchmark frame samples, traversal trace and matched targets alongside native.json. Failed focus, context loss, missing samples or settings mismatch invalidate acceptance. It has not yet been executed on native hardware; tests of its summarizer are synthetic. The exact candidate must also have matching source/browser reports before release.
