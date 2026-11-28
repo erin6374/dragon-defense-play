@@ -33,7 +33,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
           node qa/check-build-info.mjs
           node tests/integration-preview-regressions.mjs
-          node tests/park13-integration-audit.mjs
+          node tests/park13-release-gate.mjs
+          mkdir -p park13-integration-output
+          set -o pipefail
+          node tests/park13-integration-audit.mjs | tee park13-integration-output/source-audit.log
+          node qa/park13-source-evidence.mjs "$QA_SOURCE_SHA" park13-integration-output/source-audit.log
       - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
       - name: Compare actual browser expansion and baseline
         shell: bash
