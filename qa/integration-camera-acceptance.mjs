@@ -58,7 +58,11 @@ try{
   const v=await state();assert.equal(v.training.active,false);assert.equal(v.wave,1);assert.ok(v.active&&!v.paused);
   assert.equal(await page.locator('#dd-training-banner').isVisible(),false);
   assert.ok(v.camera.position.every(Number.isFinite));
-  await page.screenshot({path:out+'/02-campaign-restored.png'});return v;
+  // Capture the actual restored WebGL framebuffer in the same render call.
+  // SwiftShader's compositor screenshot can time out after returning to the dense city.
+  const png=await page.evaluate(()=>{window.__DD_QA.renderFrame(null,0);return window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1];});
+  assert.ok(png&&png.length>1000,'Missing restored campaign framebuffer');
+  await writeFile(out+'/02-campaign-restored.png',Buffer.from(png,'base64'));return {...v,framebuffer:true};
  });
 }catch(e){report.errors.push(String(e));}
 finally{
