@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - integration/preview-11-park13
+  pull_request:
+    branches:
+      - integration/combined-preview
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,12 +14,15 @@ concurrency:
   cancel-in-progress: false
 jobs:
   pilot:
+    if: github.event_name != 'pull_request' || github.head_ref == 'integration/preview-11-park13'
+    env:
+      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.QA_SOURCE_SHA }}
           lfs: true
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -24,7 +30,7 @@ jobs:
           node-version: '22'
       - name: Verify exact source and architecture
         run: |
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
           node qa/check-build-info.mjs
           node tests/integration-preview-regressions.mjs
           node tests/park13-integration-audit.mjs
@@ -45,7 +51,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: park13-integration-${{ github.sha }}
+          name: park13-integration-${{ env.QA_SOURCE_SHA }}
           path: |
             park13-integration-output/
             park13-server.log
