@@ -1017,6 +1017,39 @@ test('Meteor warnings use intact parcel ownership and exclude invalid or test ob
  assert.equal(selectMeteorWarning([street],school,[]).label,'STREET');
  assert.ok(game.includes('selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel)'));
 });
+test('Normal campaign radar shows impact warnings and distinct pickup/hunter symbols without rally effects',()=>{
+ const a=game.indexOf('const radarPowerColors='),b=game.indexOf('let bossSpawned',a);
+ assert.ok(a>=0&&b>a);
+ const fixture=`
+ const calls=[];let radarTick=0,freeFlightMode=false,training=false,warned=0,selected=0;
+ const trainingMissions={isActive:()=>training},impactMarker=null,rallyLoop=false,between=0,waveStats=[];
+ const dragon={position:{x:0,y:10}},neighborhood={school:{},targetBuildings:[]},containsParcel=()=>false;
+ const THREE={MathUtils:{clamp:(v,a,b)=>Math.min(b,Math.max(a,v))}};
+ const radarCtx=new Proxy({},{get(target,k){if(k in target)return target[k];return (...args)=>calls.push([k,...args]);},set(target,k,v){target[k]=v;calls.push([k,v]);return true;}});
+ const meteors=[{size:2,mesh:{position:{x:1,y:20}}},{size:3,isPowerup:'blue_fireball',mesh:{position:{x:2,y:25}}},{size:2,dragonHunter:true,mesh:{position:{x:-2,y:26}}}];
+ const selectMeteorWarning=()=>{selected++;return {label:'SCHOOL',eta:2.2,meteor:meteors[0]}};
+ const warnCrowd=()=>warned++;
+ `+game.slice(a,b)+`
+ return {run(mode){freeFlightMode=mode==='sandbox';training=mode==='training';calls.length=0;updateMeteorRadar(.2);return {calls:[...calls],warned,selected};}};
+ `;
+ const api=new Function(fixture)();
+ const normal=api.run('normal');
+ assert.ok(normal.calls.some(x=>x[0]==='fillText'&&x[1]==='SCHOOL IMPACT'));
+ assert.ok(normal.calls.some(x=>x[0]==='fillText'&&x[1]==='3s'));
+ assert.ok(normal.calls.some(x=>x[0]==='fillStyle'&&x[1]==='#60a5fa'));
+ assert.ok(normal.calls.some(x=>x[0]==='fillStyle'&&x[1]==='#ff5252'));
+ assert.equal(normal.calls.filter(x=>x[0]==='closePath').length,2);
+ assert.equal(normal.warned,0);
+ for(const mode of ['sandbox','training']){const r=api.run(mode);assert.ok(r.calls.some(x=>x[0]==='fillText'&&x[1]==='INCOMING RADAR'));assert.equal(r.selected,1);}
+});
+test('Distant bolide palette stays cool in normal and escalated skyline variants',()=>{
+ const src=read('src/rendering/distant-meteors.js');
+ assert.ok(src.includes('rgba(215,230,246,.85)'));
+ assert.ok(!src.includes('rgba(255,80,12,.50)'));
+ assert.ok(game.includes('distantVisual.material.color.setHex(0xb8d0e8)'));
+ assert.ok(game.includes('flamingDistantMeteorMaterial.color.setHex(0xe0edff)'));
+ assert.ok(game.includes('const allowFlaming=health<=75'));
+});
 test('Camera zoom uses a bounded exponential interpolation and staging avoids redundant rebuilds',()=>{
  assert.ok(game.includes('Number.isFinite(dt)?Math.max(0,Math.min(dt,.05)):0'));
  assert.ok(game.includes('1-Math.exp(-cameraDt*1.8)'));

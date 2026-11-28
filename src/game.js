@@ -2214,9 +2214,11 @@ const distantStreaks=[];let distantTimer=3;
 let backgroundDamageTimer=2.5;
 // One soft, desaturated atmospheric sprite per meteor. No black geometric scribbles.
 const distantVisual=createDistantMeteorVisual(THREE);
-distantVisual.material.color.setHex(0xffffff);
+distantVisual.material.color.setHex(0xb8d0e8);
 const flamingDistantMeteorMaterial=distantVisual.material.clone();
-flamingDistantMeteorMaterial.color.setHex(0xffbb77);
+// The hotter background variant remains cool-toned and recognizably non-interceptable.
+flamingDistantMeteorMaterial.color.setHex(0xe0edff);
+flamingDistantMeteorMaterial.opacity=.95;
 function neighborhoodHealth(){
  const buildings=neighborhood.targetBuildings;
  return Math.round((1-buildings.reduce((sum,b)=>sum+b.damage,0)/Math.max(1,buildings.length))*100);
@@ -3484,11 +3486,12 @@ function drawRallyRecap(c,recap){
  c.fillText('School: '+(recap.schoolLost?'−'+recap.schoolLost+' pts':'held'),10,76);
  c.fillText('Block: '+(recap.blockLost?'−'+recap.blockLost+' pts':'held'),10,103);
 }
+const radarPowerColors=Object.freeze({purple_ram:'#c084fc',blue_fireball:'#60a5fa',green_breath:'#34d399',fire_stream:'#ffd2a0',mega_fire_breath:'#fff3c0'});
 function updateMeteorRadar(dt){
  radarTick-=dt;
  if(radarTick>0)return;
  radarTick=.1;
- const warning=impactMarker?selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel):null;
+ const warning=!freeFlightMode&&!trainingMissions?.isActive()?selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel):null;
  if(impactMarker){
   impactMarker.visible=Boolean(warning);
   if(warning){
@@ -3515,21 +3518,27 @@ function updateMeteorRadar(dt){
  c.fillStyle='#4ff5b3';c.fillRect(77,65,6,6);
  for(const meteor of meteors){
   if(meteor.grounded)continue;
-  const isHighThreat=(meteor.size>=3.0||meteor.boss||meteor.isPowerup);
+  const isHighThreat=(meteor.size>=3.0||meteor.boss||meteor.isPowerup||meteor.dragonHunter);
+  const dotColor=meteor.isPowerup?(radarPowerColors[meteor.isPowerup]||'#e9d5ff'):meteor.dragonHunter?'#ff5252':meteor.burning?'#ff7a32':'#ffcf56';
   const x=80+THREE.MathUtils.clamp((meteor.mesh.position.x-dragon.position.x)*.75,-51,51);
   const y=68-THREE.MathUtils.clamp((meteor.mesh.position.y-dragon.position.y)*.75,-51,51);
   if(meteor.mesh.position.y>dragon.position.y+45&&isHighThreat){
-   c.fillStyle=meteor.isPowerup==='purple_ram'?'#c084fc':(meteor.burning?'#ff4d32':'#ffd152');
+   c.fillStyle=dotColor;
    c.beginPath();c.moveTo(x-4,17);c.lineTo(x+4,17);c.lineTo(x,22);c.closePath();c.fill();
   }
-  c.fillStyle=meteor.isPowerup==='purple_ram'?'#c084fc':(meteor.burning?'#ff7a32':'#ffcf56');
+  c.fillStyle=dotColor;
   const dotRadius=meteor.boss?4.5:(meteor.size>=3.0?3.4:2.2);
-  c.beginPath();c.arc(x,y,dotRadius,0,Math.PI*2);c.fill();
+  c.beginPath();
+  if(meteor.isPowerup){const r=dotRadius+1;c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();}
+  else if(meteor.dragonHunter){const r=dotRadius+1;c.moveTo(x,y+r);c.lineTo(x-r,y-r);c.lineTo(x+r,y-r);c.closePath();}
+  else c.arc(x,y,dotRadius,0,Math.PI*2);
+  c.fill();
   if(warning?.meteor===meteor){
    c.strokeStyle='#fff2ce';
    c.beginPath();c.arc(x,y,dotRadius+3.5,0,Math.PI*2);c.stroke();
   }
  }
+ c.fillStyle='#c1d9e6';c.font='9px sans-serif';c.fillText('◆ POWERUP   ▼ HUNTER',16,128);
 }
 let bossSpawned=false,bossDefeated=false;let dragonMeteorTimer=8;const input=createInputState();
 const difficulty=()=>({easy:.40,normal:1.0,hard:2.2}[document.getElementById('difficulty')?.value]||1);
