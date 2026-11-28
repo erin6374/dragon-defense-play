@@ -7845,6 +7845,37 @@ window.__DD_QA={snap,
    updateWaveProgress(.2,true);
    return {held,earned,afterExcluded,capped,countdown,beforeAdvance,afterAdvance:wave};
   }),
+  stageThreatReadability:()=>run('stageThreatReadability',()=>{
+   if(!active||wave<=4||freeFlightMode||trainingMissions?.isActive()||rallyLoop)throw Error('Requires ordinary campaign wave 5 or later');
+   while(meteors.length)remove(meteors,meteors.length-1);
+   for(const entry of distantStreaks)entry.sprite.removeFromParent();
+   distantStreaks.length=0;
+   dragon.position.set(0,22,15);dragonVelX=dragonVelY=0;dragonLeavingRoof=true;
+   const ordinary=spawnMeteor(()=>.8,{kind:'molten',size:3.6});
+   const pickup=spawnMeteor(()=>.8,{kind:'blue_plasma',size:2.8});
+   if(!ordinary||!pickup)throw Error('Missing foreground meteors');
+   // Stage a real production pickup visual with its normal gameplay classification.
+   pickup.isPowerup='blue_fireball';
+   spawnDragonMeteor();const hunter=meteors.at(-1);
+   if(!hunter.dragonHunter)throw Error('Missing hunter meteor');
+   ordinary.target.set(0,13,schoolBounds.max.z-.4);
+   ordinary.mesh.position.copy(ordinary.target).add(new THREE.Vector3(0,28,0));ordinary.vel.set(0,-10,0);
+   pickup.target.set(32,1,20);pickup.mesh.position.set(28,33,15);pickup.vel.set(0,-4,0);
+   hunter.mesh.position.set(-28,34,15);hunter.vel.set(8,-4,0);
+   distantTimer=0;updateDistantMeteors(0);
+   const distant=distantStreaks.at(-1);
+   if(!distant||distant.landing)throw Error('Missing background sprite');
+   // Place the actual skyline sprite for a controlled same-frame comparison.
+   distant.sprite.position.set(3,34,15);
+   const warning=selectMeteorWarning(meteors,neighborhood.school,neighborhood.targetBuildings,containsParcel);
+   radarTick=0;updateMeteorRadar(.2);
+   const describe=m=>({kind:m.kind??'hunter',pickup:m.isPowerup??null,hunter:!!m.dragonHunter,solid:!!m.mesh.isMesh,corona:!!m.mesh.getObjectByName('threat-corona'),position:m.mesh.position.toArray()});
+   const material=m=>({color:m.color.getHexString(),opacity:m.opacity});
+   const texture=distantVisual.texture.image,ctx=texture.getContext('2d');
+   return {wave,warning:warning?{label:warning.label,eta:warning.eta}:null,foreground:meteors.map(describe),
+    distant:{sprite:!!distant.sprite.isSprite,parentIsSkyline:distant.sprite.parent===skyline,inCombatList:meteors.some(m=>m.mesh===distant.sprite),color:material(distant.sprite.material),normal:material(distantVisual.material),escalated:material(flamingDistantMeteorMaterial),corePixel:Array.from(ctx.getImageData(64,282,1,1).data)},
+    radar:radarCanvas.toDataURL('image/png')};
+  }),
   stageRallyImpactWarning:()=>run('stageRallyImpactWarning',()=>{
    if(!impactMarker)throw Error('Rally preview is required');
    const startingScore=score;
