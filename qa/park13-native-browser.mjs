@@ -9,6 +9,7 @@ import {resolve,extname,sep} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {summarizeNativeCase} from './park13-native-metrics.mjs';
 import {evaluatePark13Release} from './park13-release-gate.mjs';
+import {selectPark13NativeTargets} from './park13-native-targets.mjs';
 
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const [expected,output='park13-integration-output']=process.argv.slice(2);
@@ -46,16 +47,8 @@ try{
  const base='http://127.0.0.1:'+server.address().port;
  // Matched bombardment targets are derived once from pinned GIS geometry,
  // not from the enabled page, so both configurations receive the same drops.
- const records=JSON.parse(await readFile(resolve(root,'broad-street/park13-integration/park13-GIS-precise-20261127.json'),'utf8')).records;
- const inside=(r,x,z)=>{let hit=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const [a,b]=r[i],[c,d]=r[j];if((b>z)!==(d>z)&&x<(c-a)*(z-b)/(d-b)+a)hit=!hit;}return hit;};
- const candidates=[];
- for(const r of records){
-  const ps=r.polys.flat(2),xs=ps.map(p=>p[0]),zs=ps.map(p=>p[1]);
-  const x=(Math.min(...xs)+Math.max(...xs))/2,z=(Math.min(...zs)+Math.max(...zs))/2;
-  if(r.height<22&&r.polys.some(p=>inside(p[0],x,z)&&!p.slice(1).some(h=>inside(h,x,z))))candidates.push({id:r.id,x:x+255.88,z:z+22.06});
- }
- candidates.sort((a,b)=>a.x-b.x);check(candidates.length>=12,'Insufficient matched bombardment targets');
- const targets=Array.from({length:12},(_,i)=>candidates[Math.floor(i*(candidates.length-1)/11)]);
+ const manifests=await Promise.all(['park13-GIS-precise-20261127.json','park13-southern-20261127.json'].map(async name=>JSON.parse(await readFile(resolve(root,'broad-street/park13-integration',name),'utf8'))));
+ const targets=selectPark13NativeTargets(...manifests.map(m=>m.records));
  report.bombardmentTargets=targets;
  for(const expansion of [false,true]){
   const page=activePage=await browser.newPage({viewport:report.viewport,deviceScaleFactor:1,serviceWorkers:'block'});
