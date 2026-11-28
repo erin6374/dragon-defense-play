@@ -157,7 +157,8 @@ export function createPark13Expansion(T,data){
      const dist=Math.hypot(x-p.x,(y-p.y)*.85,z-p.z)/p.radius;
      local+=p.budget*Math.max(0,1-dist);
     }
-    if(d>=1||local>=.045){for(const i of [0,1,2,4,5,6,8,9,10])e[i]=0;}
+    // Use a near-zero, non-singular matrix; Three.js instance normals divide by squared axis scale.
+    if(d>=1||local>=.045){for(const i of [0,1,2,4,5,6,8,9,10])e[i]*=.0001;}
    }
    v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;
   }
