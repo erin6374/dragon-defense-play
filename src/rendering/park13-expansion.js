@@ -99,7 +99,7 @@ export function createPark13Expansion(T,data){
  const changed=new Set(),matrix=new T.Matrix4(),scale=new T.Matrix4();
  function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;o.damage=d;const h=d===1?.025:1-.75*d;
   for(const v of o.volumes){const a=v.attribute.array;for(let i=0;i<v.original.length;i+=3){a[v.offset+i]=v.original[i];a[v.offset+i+1]=v.original[i+1]*h;a[v.offset+i+2]=v.original[i+2];}v.attribute.addUpdateRange(v.offset,v.original.length);v.attribute.needsUpdate=true;}
-  scale.makeScale(1,h,1);for(const v of o.details){matrix.multiplyMatrices(scale,v.original);v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;}
+  scale.makeScale(1,h,1);for(const v of o.details){if(d===0)matrix.copy(v.original);else matrix.multiplyMatrices(scale,v.original);v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;}
   if(d)changed.add(id);else changed.delete(id);return true;
  }
  function restore(){for(const id of [...changed])setDamage(id,0);}
