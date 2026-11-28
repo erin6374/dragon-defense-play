@@ -8,6 +8,7 @@ on:
       - '.github/workflows/integration-package-qa.yml'
       - 'build-info.json'
       - 'src/core/build-info.js'
+      - 'index.html'
   workflow_dispatch:
 permissions:
   contents: read

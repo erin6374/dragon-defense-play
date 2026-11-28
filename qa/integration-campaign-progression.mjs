@@ -9,6 +9,18 @@ const out='integration-campaign-output';
 await mkdir(out,{recursive:true});
 const base=new URL(process.argv[2]||'http://127.0.0.1:8765/');
 const report={commit:process.env.GITHUB_SHA||null,scope:'assisted campaign progression, actual browser and production wave/settlement functions; not unassisted gameplay',waves:[],boundaries:[],errors:[]};
+async function assertResultLayer(page){
+ const result=await page.evaluate(()=>{
+  const layer=id=>Number.parseInt(getComputedStyle(document.getElementById(id)).zIndex,10)||0;
+  const overlay=layer('overlay');
+  const hud=['toast','dd-inspector-card','dd-sandbox-toolbar','incoming-radar','wind-meter','developer-lab-link','meteor-zone-key'].map(id=>({id,z:layer(id)}));
+  const settings=layer('dd-unified-settings'),cinematic=layer('cinematic-player');
+  return {overlay,hud,settings,cinematic};
+ });
+ assert.ok(result.hud.every(x=>x.z<result.overlay),'Result panel obscured by HUD: '+JSON.stringify(result));
+ assert.ok(result.overlay<result.settings&&result.overlay<result.cinematic,'Result overlay must remain below settings and cinematic layers');
+ return result;
+}
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -79,7 +91,9 @@ try{
   return {before:{wave:before.wave,bosses:before.counts.bossMeteors},after:{active:after.active,wave:after.wave},heading:document.querySelector('#panel h1')?.textContent};
  });
  assert.ok(finale.before.bosses>0,'Finale bosses were not spawned');assert.equal(finale.after.active,false);assert.match(finale.heading,/PHILADELPHIA SAVED/);
+ report.resultLayers={choice:await assertResultLayer(page)};
  await page.locator('#ending-block').click();assert.match(await page.locator('#panel h2').innerText(),/ACCOUNTABILITY VICTORY/);
+ report.resultLayers.accountability=await assertResultLayer(page);
  await page.screenshot({path:out+'/ending.png'});
  // Exercise the second ending and both restart paths independently of the
  // assisted full campaign. The victory setup is explicitly assisted.
@@ -91,12 +105,14 @@ try{
  await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(15);if(!r.ok)throw Error(r.error);q.destroyAllSatellites();q.advanceProgress(2.3);});
  await page.locator('#ending-wait').click({timeout:30000});
  assert.match(await page.locator('#panel h2').innerText(),/ESCAPE ENDING/);
+ report.resultLayers.escape=await assertResultLayer(page);
  await page.screenshot({path:out+'/ending-escape.png'});
  await page.reload({waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__DD_QA?.snap().renderVisibility.actualSchoolOverlayReady&&window.__DD_QA.snap().frameTimes.frames>=2,undefined,{timeout:180000});
  await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(1);if(!r.ok)throw Error(r.error);q.hitSchool(100);});
  assert.match(await page.locator('#panel h1').innerText(),/GAME OVER/);
  const defeated=await page.evaluate(()=>window.__DD_QA.snap());assert.equal(defeated.active,false);assert.equal(defeated.hp,0);
+ report.resultLayers.defeat=await assertResultLayer(page);
  await page.screenshot({path:out+'/defeat.png'});
  await page.locator('#again').click();
  const recovered=await page.evaluate(()=>window.__DD_QA.snap());
