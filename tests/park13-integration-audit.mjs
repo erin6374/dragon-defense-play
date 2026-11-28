@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import * as T from '../vendor/three/build/three.module.js';
 import {preparePark13Expansion,createPark13Expansion,clipContextRect,contextIntersectsExpansion,park13DamageHeight} from '../src/rendering/park13-expansion.js';
 import {viewerParcels,schoolGameEnvelope,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../src/simulation/viewer-parcels.js';
+import {createPark13BreachTracer} from '../src/rendering/park13-breach.js';
 import {createPark13Fragments} from '../src/rendering/park13-fragments.js';
 import {traceMeteorCollision} from '../src/simulation/meteor-collision.js';
 import {intersectionArea,AREA_TOLERANCE} from '../broad-street/park13-integration/park13-polygon-overlap.mjs';
@@ -134,11 +135,28 @@ const ray=new T.Raycaster(new T.Vector3(ax,20,az),new T.Vector3(0,-1,0));
 const openHits=ray.intersectObject(shell,false);
 assert.ok(openHits.length>0,'Expected interior floor under roof breach');
 assert.ok(openHits[0].point.y<fixture.targetAt(ax,az).y-.4,'Roof opening should expose a lower deck');
+const startOpen={x:ax,y:20,z:az},endOpen={x:ax,y:0,z:az};
+const throughRoof=traceMeteorCollision(startOpen,endOpen,[],null,false,fixture.collisionParcels);
+assert.equal(throughRoof.kind,'expansion');assert.equal(throughRoof.building.id,'park13-fixture-a');
+assert.ok(Math.abs(throughRoof.point.y-openHits[0].point.y)<1e-4,'Collision must agree with rendered breach surface');
 assert.ok(fixture.strikeTarget('park13-fixture-b',1,{x:VIEWER_TO_GAME_X+8,y:5,z:az}));
 assert.equal(fixture.stats().breached,2);assert.equal(fixture.stats().breachDrawObjects,1);
 fixture.restore();assert.equal(fixture.stats().fragments.active,0);assert.equal(fixture.stats().fragments.drawObjects,0);
 assert.equal(fixture.stats().breached,0);assert.equal(fixture.stats().breachDrawObjects,0);
 assert.deepEqual(snapFixture(),pristine);
+assert.ok(fixture.collisionParcels.every(b=>!b.traceBreach));
+const repairedRoof=traceMeteorCollision(startOpen,endOpen,[],null,false,fixture.collisionParcels);
+assert.equal(repairedRoof.building.id,'park13-fixture-a');assert.equal(repairedRoof.point.y,10);
+// Two disjoint triangles form a roof with a gap; a lower deck catches
+// the through-gap trajectory. Offset tests catch world/local confusion.
+const triangle=(x,y,z)=>[x,y,z,x+2,y,z,x,y,z+2];
+const tracer=createPark13BreachTracer([...triangle(0,8,0),...triangle(4,8,0),...triangle(2,3,0)],100,-50);
+const segment=(x,z)=>[{x:x+100,y:10,z:z-50},{x:x+100,y:0,z:z-50}];
+assert.ok(Math.abs(tracer(...segment(.5,.5))-.2)<1e-7);
+assert.ok(Math.abs(tracer(...segment(2.5,.5))-.7)<1e-7);
+assert.equal(tracer(...segment(3.9,1.9)),null);
+assert.equal(tracer(...segment(2.5,.5),.5),null);
+assert.equal(tracer(...segment(100,100)),null);
 console.log('PARK13_BREACH_FIXTURE '+JSON.stringify({roofOpening:true,sideOpening:true,interiorDecks:true,sharedDamageDraw:true,restored:true}));
 
 // Isolated pool test uses real Three.js matrices and a small capacity to
