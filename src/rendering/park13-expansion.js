@@ -48,6 +48,24 @@ export function clipContextRect(zones,x,z,w,d){
  }
  return pieces.map(p=>({x:(p.minX+p.maxX)/2,z:(p.minZ+p.maxZ)/2,w:p.maxX-p.minX,d:p.maxZ-p.minZ}));
 }
+// Preserve intact lower storeys and concentrate deformation at the upper
+// structure. Collision retains the conservative, flat effective roof cap.
+export function park13DamageHeight(y,x,z,height,damage,impacts=[]){
+ if(damage===0)return y;
+ if(damage>=1)return y*.025;
+ const cap=height*(1-.75*damage),hinge=Math.max(0,cap-height*.28);
+ const upper=Math.max(0,Math.min(1,(y-hinge)/Math.max(.001,height-hinge)));
+ const base=y<=hinge?y:hinge+(y-hinge)*(cap-hinge)/Math.max(.001,height-hinge);
+ let dent=0;
+ for(const p of impacts){
+  const horizontal=Math.hypot(x-p.x,z-p.z)/p.radius;
+  if(horizontal>=1)continue;
+  const proximity=(1-horizontal)**2;
+  const vertical=Math.max(0,1-Math.abs(y-p.y)/Math.max(2.5,height*.55));
+  dent+=height*.24*p.budget*proximity*vertical*upper;
+ }
+ return Math.max(0,base-Math.min(dent,Math.max(0,base-hinge)*.8));
+}
 export function createPark13Expansion(T,data){
  const root=new T.Group();root.name='Park-to-13th GIS expansion candidate';root.position.set(VIEWER_TO_GAME_X,0,VIEWER_TO_GAME_Z);
  const architecture=new T.Group();architecture.name='Pinned source architecture';root.add(architecture);
@@ -61,7 +79,7 @@ export function createPark13Expansion(T,data){
   const p=polys.flat(2),xs=p.map(v=>v[0]),zs=p.map(v=>v[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
   const collision={id:record.id,name:record.address,polys,x:(minX+maxX)/2,z:(minZ+maxZ)/2,w:maxX-minX,d:maxZ-minZ,h:record.height,damage:0,expansion:true};
   collisionParcels.push(collision);
-  const owner={id:record.id,record,collision,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
+  const owner={id:record.id,record,collision,damage:0,volumes:[],details:[],impacts:[]};owners.set(record.id,owner);
   const stats=renderPark13Record(record,{
    block(poly,h,c,base=0){
     const shape=shapePath(poly[0],T.Shape);shape.holes=poly.slice(1).map(r=>shapePath(r,T.Path));
@@ -80,7 +98,7 @@ export function createPark13Expansion(T,data){
  for(const [c,items] of volumes){
   const n=items.reduce((s,i)=>s+i.pos.length,0),pos=new Float32Array(n),normal=new Float32Array(n);let at=0;
   for(const item of items){pos.set(item.pos,at);normal.set(item.normal,at);item.offset=at;at+=item.pos.length;}
-  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();geo.attributes.position.setUsage(T.DynamicDrawUsage);for(const item of items)item.owner.volumes.push({attribute:geo.attributes.position,offset:item.offset,original:item.pos});
+  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);for(const item of items)item.owner.volumes.push({attribute:geo.attributes.position,normal:geo.attributes.normal,offset:item.offset,original:item.pos,originalNormal:item.normal});
   const mesh=new T.Mesh(geo,mat(c));mesh.name='Park13 mass '+c;architecture.add(mesh);
  }
  for(const [c,items] of details){
@@ -99,17 +117,63 @@ export function createPark13Expansion(T,data){
   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.computeVertexNormals();geo.computeBoundingSphere();
   publicRealm.add(new T.Mesh(geo,new T.MeshStandardMaterial({color,roughness:1,side:T.DoubleSide})));
  }
- // Parcel-local deformation preserves material batches and never mutates neighbors.
- const changed=new Set(),matrix=new T.Matrix4(),scale=new T.Matrix4();
- function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;o.damage=d;const h=d===1?.025:1-.75*d;o.collision.damage=d;o.collision.h=o.record.height*h;
-  for(const v of o.volumes){const a=v.attribute.array;for(let i=0;i<v.original.length;i+=3){a[v.offset+i]=v.original[i];a[v.offset+i+1]=v.original[i+1]*h;a[v.offset+i+2]=v.original[i+2];}v.attribute.addUpdateRange(v.offset,v.original.length);v.attribute.needsUpdate=true;}
-  scale.makeScale(1,h,1);for(const v of o.details){if(d===0)matrix.copy(v.original);else matrix.multiplyMatrices(scale,v.original);v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;}
+ // Parcel-local upper-storey failure and impact dents; update only the
+ // owned vertex/instance ranges. No new draw objects or per-frame rebuild.
+ const changed=new Set(),matrix=new T.Matrix4();
+ function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;
+  if(d===0)o.impacts.length=0;
+  o.damage=d;const h=d===1?.025:1-.75*d;o.collision.damage=d;o.collision.h=o.record.height*h;
+  const height=o.record.height;
+  const deform=(y,x,z)=>park13DamageHeight(y,x,z,height,d,o.impacts);
+  for(const v of o.volumes){
+   const a=v.attribute.array,n=v.normal.array,off=v.offset;
+   if(d===0){a.set(v.original,off);n.set(v.originalNormal,off);}
+   else{
+    for(let i=0;i<v.original.length;i+=3){
+     const x=v.original[i],z=v.original[i+2];a[off+i]=x;a[off+i+1]=deform(v.original[i+1],x,z);a[off+i+2]=z;
+    }
+    // ExtrudeGeometry is non-indexed; recalculate only affected face normals.
+    for(let i=off;i<off+v.original.length;i+=9){
+     const ux=a[i+3]-a[i],uy=a[i+4]-a[i+1],uz=a[i+5]-a[i+2],vx=a[i+6]-a[i],vy=a[i+7]-a[i+1],vz=a[i+8]-a[i+2];
+     const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,len=Math.hypot(nx,ny,nz);
+     if(len<1e-9){n.set(v.originalNormal.subarray(i-off,i-off+9),i);continue;}
+     for(let j=0;j<9;j+=3){n[i+j]=nx/len;n[i+j+1]=ny/len;n[i+j+2]=nz/len;}
+    }
+   }
+   v.attribute.addUpdateRange(off,v.original.length);v.attribute.needsUpdate=true;v.normal.addUpdateRange(off,v.original.length);v.normal.needsUpdate=true;
+  }
+  for(const v of o.details){
+   matrix.copy(v.original);
+   if(d!==0){
+    const e=matrix.elements,x=e[12],y=e[13],z=e[14],half=Math.abs(e[5])/2;
+    const low=deform(y-half,x,z),high=deform(y+half,x,z);
+    const factor=Math.max(.001,(high-low)/Math.max(.001,2*half));e[5]*=factor;e[13]=(low+high)/2;
+    // Remove small façade pieces near accumulated impact centers. Keep
+    // large cladding panels and roof patches until their structural collapse.
+    const span=Math.max(Math.hypot(e[0],e[2]),Math.hypot(e[8],e[10]),half*2);
+    let local=0;
+    for(const p of o.impacts){
+     if(span>p.radius*1.5)continue;
+     const dist=Math.hypot(x-p.x,(y-p.y)*.85,z-p.z)/p.radius;
+     local+=p.budget*Math.max(0,1-dist);
+    }
+    if(d>=1||local>=.045){for(const i of [0,1,2,4,5,6,8,9,10])e[i]=0;}
+   }
+   v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;
+  }
   if(d)changed.add(id);else changed.delete(id);return true;
  }
  function restore(){for(const id of [...changed])setDamage(id,0);}
  function inside(r,x,z){let hit=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const [a,b]=r[i],[c,e]=r[j];if((b>z)!==(e>z)&&x<(c-a)*(z-b)/(e-b)+a)hit=!hit;}return hit;}
- function targetAt(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;const lx=x-VIEWER_TO_GAME_X,lz=z-VIEWER_TO_GAME_Z;for(const o of owners.values()){if(o.damage>=1)continue;const r=o.record;if(r.polys.some(p=>inside(p[0],lx,lz)&&!p.slice(1).some(h=>inside(h,lx,lz))))return {id:o.id,x,z,y:r.height*(1-.75*o.damage),damage:o.damage};}return null;}
- function strikeTarget(id,strength){const o=owners.get(id);if(!o||!Number.isFinite(strength)||strength<=0||o.damage>=1)return false;return setDamage(id,o.damage+Math.min(.15,strength*.15));}
+ function targetAt(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;const lx=x-VIEWER_TO_GAME_X,lz=z-VIEWER_TO_GAME_Z;for(const o of owners.values()){if(o.damage>=1)continue;const r=o.record;if(r.polys.some(p=>inside(p[0],lx,lz)&&!p.slice(1).some(h=>inside(h,lx,lz))))return {id:o.id,x,z,y:o.collision.h,damage:o.damage};}return null;}
+ function strikeTarget(id,strength,point=null){const o=owners.get(id);if(!o||!Number.isFinite(strength)||strength<=0||o.damage>=1)return false;
+  const budget=Math.min(1-o.damage,.15,strength*.15);
+  if(point&&[point.x,point.y,point.z].every(Number.isFinite)){
+   o.impacts.push({x:point.x-VIEWER_TO_GAME_X,y:Math.max(0,Math.min(o.record.height,point.y)),z:point.z-VIEWER_TO_GAME_Z,radius:Math.max(2.5,Math.min(9,Math.max(o.collision.w,o.collision.d)*.32)),budget});
+   if(o.impacts.length>32)o.impacts.shift();
+  }
+  return setDamage(id,o.damage+budget);
+ }
  root.updateMatrixWorld(true);
- return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
 }
