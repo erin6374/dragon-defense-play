@@ -93,6 +93,26 @@ try{
   assert.ok(byType.residential?.some(r=>r.stories>1&&r.upperSlabs>0));
   return {counts:Object.fromEntries(Object.entries(byType).map(([k,v])=>[k,v.length])),halls:halls.map(({id,name,profile,stories,counts})=>({id,name,profile,stories,counts})),noFittingInterior:rows.filter(r=>!r.interiorFitting).map(r=>({id:r.id,name:r.name}))};
  });
+ await check('Provisional 2207 frontage owns visible roof contacts without claiming adjacent parcels',async()=>{
+  const result=await page.evaluate(async()=>{
+   const q=window.__DD_QA,{containsParcel,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z}=await import('/src/simulation/viewer-parcels.js');
+   const list=q.getCity().buildings.filter(b=>b.viewerParcel);
+   const b=list.find(b=>b.id==='1007130');
+   const x=b.sourceRow.x+VIEWER_TO_GAME_X,z=-25+VIEWER_TO_GAME_Z;
+   const owners=list.filter(p=>containsParcel(p,x,z)).map(p=>p.id);
+   q.clearMeteors();q.repairAllBuildings();q.inspectBuilding(b.id);
+   q.spawnTestMeteorAt(x,b.h*.6,z,1.35,'iron');
+   for(let i=0;i<10;i++)q.advanceSimulation(30);
+   q.renderFrame(null,0);
+   const damaged=list.filter(p=>p.damage>.001).map(p=>({id:p.id,damage:p.damage}));
+   const model=q.northBroadModels().result.models.find(p=>p.id===b.id);
+   return {target:b.id,provisional:b.provisionalCollisionFrontage,owners,damaged,localizedStrikes:model.localizedStrikes,schoolDamage:q.getSchoolDamage()};
+  });
+  console.log('PROVISIONAL_FRONTAGE '+JSON.stringify(result));
+  assert.ok(result.provisional);assert.deepEqual(result.owners,[result.target]);assert.equal(result.damaged.length,1);assert.equal(result.damaged[0].id,result.target);assert.ok(result.localizedStrikes>0);assert.equal(result.schoolDamage,0);
+  await page.evaluate(()=>window.__DD_QA.repairAllBuildings());
+  return result;
+ });
  const s=inventory.school;
  await capture('school-front',{...s,y:s.h*.47});
  await capture('school-rear',{...s,y:s.h*.47,mode:'rear'});
@@ -102,7 +122,7 @@ try{
  for(const kind of ['assembly','residential','residence-hall']){const r=inventory.rows.find(r=>r.profile.kind===kind);if(r&&!picks.includes(r))picks.push(r);}
  for(const r of picks)await capture('parcel-'+r.id,{...r,y:r.h*.45});
  report.reviewViews=picks.map(r=>({id:r.id,name:r.name,profile:r.profile}));
- report.passed=!!provenance&&report.checks.length===4&&report.checks.every(c=>c.pass)&&!report.errors.length;
+ report.passed=!!provenance&&report.checks.length===5&&report.checks.every(c=>c.pass)&&!report.errors.length;
  console.log('ARCHITECTURE_SUMMARY '+JSON.stringify({checks:report.checks.map(c=>({name:c.name,pass:c.pass,error:c.error})),reviews:report.reviewViews,passed:report.passed}));
 }catch(e){report.passed=false;report.fatal=String(e);console.error(e);}
 finally{if(browser)await browser.close();await writeFile(out+'/report.json',JSON.stringify(report,null,2));}
