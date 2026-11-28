@@ -375,8 +375,10 @@ function seeded(seed){let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904
 // 2200 block of N Broad Street. X is north (+), Z is west/front (+).
 // Street alignment and nearby building dimensions are not survey-verified.
 import {buildNeighborhood} from './neighborhood.js';
+import {loadPark13Expansion} from './rendering/park13-expansion.js';
 const viewerGrid=await loadViewerGrid();
-const neighborhood=buildNeighborhood({scene,staticGroup,block,material,visualBank,grid:viewerGrid});
+const park13Data=new URLSearchParams(location.search).get('park13')==='1'?await loadPark13Expansion():null;
+const neighborhood=buildNeighborhood({scene,staticGroup,block,material,visualBank,grid:viewerGrid,park13Data});
 // The school is drawn by the FBX ONLY when available. No second window/card facade.
 const northBroadModels=createViewerCityModels(scene,neighborhood.city);
 const parcelRenderCullEnabled=new URLSearchParams(location.search).get('parcelCull')!=='0';
@@ -7326,6 +7328,7 @@ window.__DD_QA={snap,
   }),
   inspectionBounds:()=>({...neighborhood.inspectionBounds}),
   distantNeighborhoodStats:()=>neighborhood.longRange.stats(),
+  park13ExpansionStats:()=>neighborhood.park13?.stats()??null,
   strikeDistantNeighborhood:(x,z,strength)=>neighborhood.longRange.strike(x,z,strength),
   distantBuildingState:id=>neighborhood.longRange.buildingState(id),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{
