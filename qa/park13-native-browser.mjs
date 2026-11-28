@@ -102,9 +102,11 @@ try{
   await page.waitForTimeout(6000);
   const bombardment=await page.evaluate(()=>({raw:window.__DD_BENCHMARK.stop(),expansion:window.__DD_QA.park13ExpansionStats(),probe:window.__DD_BENCHMARK.probe()}));
   const endProbe=await readState();
-  const completed=drops.length===targets.length&&(!expansion||bombardment.expansion?.damaged>=targets.length)&&endProbe.testMeteors===0&&!endProbe.contextLost&&endProbe.contextEvents===0;
+  const damageResults=expansion?await page.evaluate(targets=>targets.map(t=>({id:t.id,actual:window.__DD_QA.park13TargetAt(t.x,t.z)})),targets):[];
+  const ownershipOK=!expansion||damageResults.every(r=>r.actual?.id===r.id&&r.actual.damage>0);
+  const completed=drops.length===targets.length&&ownershipOK&&endProbe.testMeteors===0&&!endProbe.contextLost&&endProbe.contextEvents===0;
   report.cases.push(summarizeNativeCase('bombardment',expansion,bombardment.raw,completed));
-  await writeFile(resolve(out,(expansion?'on':'off')+'-native-bombardment.json'),JSON.stringify({source:expected,targets,drops,endProbe,...bombardment},null,2));
+  await writeFile(resolve(out,(expansion?'on':'off')+'-native-bombardment.json'),JSON.stringify({source:expected,targets,drops,endProbe,damageResults,...bombardment},null,2));
   check(!errors.length,'Browser errors: '+errors.join('; '));await save();await page.close();activePage=null;
  }
  check(git(['rev-parse','HEAD'])===expected&&!git(['status','--porcelain','--untracked-files=no']),'Source changed during native run');
