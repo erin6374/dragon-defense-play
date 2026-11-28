@@ -4745,9 +4745,8 @@ function playChapterCinematic(chapter){
  frame.src=chapter.cinematic+'?embedded=1';
  requestAnimationFrame(()=>{if(cinematicActive&&generation===cinematicGeneration)player.classList.add('visible');});
  document.getElementById('cinematic-skip')?.focus?.({preventScroll:true});
- // Slides run eight seconds each. Final combined chapter gets a longer maximum.
- const duration=chapter.start>=11?76000:chapter.start===6?49000:49000;
- cinematicTimeout=setTimeout(()=>closeChapterTransition(generation),duration);
+ // Only guard startup. A ready comic owns its playback time (including pause and choices).
+ cinematicTimeout=setTimeout(()=>closeChapterTransition(generation),60000);
 }
 function showChapterTransition(){
  if(new URLSearchParams(location.search).get('benchmark')==='1'||new URLSearchParams(location.search).get('devlab')==='1')return;
@@ -4755,7 +4754,7 @@ function showChapterTransition(){
  playChapterCinematic(chapter);
 }
 document.getElementById('cinematic-skip')?.addEventListener('click',closeChapterTransition);
-window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===document.getElementById('cinematic-frame').contentWindow&&e.data?.type==='dragon-cinematic-complete'&&cinematicActive)closeChapterTransition();});
+window.addEventListener('message',e=>{if(!cinematicActive||e.origin!==location.origin||e.source!==document.getElementById('cinematic-frame').contentWindow)return;const type=e.data?.type;if(type==='dragon-cinematic-ready'){if(cinematicTimeout!==null){clearTimeout(cinematicTimeout);cinematicTimeout=null;}}else if(type==='dragon-cinematic-complete'||type==='dragon-cinematic-skip')closeChapterTransition();});
 document.addEventListener('keydown',e=>{if(cinematicActive&&e.key==='Escape'){e.preventDefault();closeChapterTransition();}});
 document.getElementById('campaign-continue')?.addEventListener('click',closeChapterTransition);
 function resetChapterTrafficAndCrowd(immediate=false){for(const h of helicopters)retireHelicopter(h);helicopters.length=0;helicopterLightPool.reset();if(immediate){for(const c of cars)recycleCar(c);cars.length=0;}else{for(const c of cars){c.exiting=true;c.speed=Math.max(c.speed,22);}}for(const p of crowd)scene.remove(p.g);crowd.length=0;carTimer=.2;crowdTimer=1.0;helicopterTimer=7;seedChapterTrafficAndCrowd(wave<=5?1:wave<=10?2:wave<=14?3:4);}
@@ -7602,7 +7601,7 @@ window.__DD_QA={snap,
    return {contacts,settlement:{before,after,phase},rearBoundary:DEFENSE_REAR_Z};
   }),
   setWave:(n)=>run('setWave',()=>{wave=clampWave(n);updateAtmosphere();updateHud();return snap()}),
-  beginSettlement:()=>run('beginSettlement',()=>{wave=5;remaining=0;beginChapterSettlement();return snap()}),
+  beginSettlement:(at=5)=>run('beginSettlement',()=>{if(!isChapterEnd(at))throw Error('QA settlement requires a chapter-end wave');wave=at;remaining=0;beginChapterSettlement();return snap()}),
   steeringPose:(x=0)=>run('steeringPose',()=>{const c=cars[0];if(!c)return {noCars:true};c.steerAngle=x;animateVehicleSteering(c,.2);return {steerVisual:c.steerVisual,frontWheelCount:c.root.userData.frontSteer?.length||0};}),
   laneSafety:()=>run('laneSafety',()=>({cars:cars.slice(0,10).map(c=>({x:+c.root.position.x.toFixed(2),z:+c.root.position.z.toFixed(2),laneZ:c.laneZ,passing:choosePassingLane(c,cars,craters),steer:c.steerVisual||0})),streetGlowCount:streetGlows.length})),
   advanceSettlement:(seconds=4)=>run('advanceSettlement',()=>{for(let t=0;t<seconds;t+=1/30){chapterStaging.update(1/30,elapsed);updateChapterSettlement(1/30);}return snap()}),
