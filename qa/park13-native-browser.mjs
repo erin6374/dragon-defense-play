@@ -78,15 +78,17 @@ try{
   check(expansion?setup.expansion?.buildings===165:setup.expansion===null,'Opt-in setting incorrect');
   await page.waitForFunction(()=>{const s=window.__DD_QA.snap();return s.active&&!s.paused&&s.campaign.freeFlightMode&&s.campaign.dragonEnabled;},undefined,{timeout:90000});
   await page.waitForTimeout(10000);
-  const readState=()=>page.evaluate(()=>{const s=window.__DD_QA.snap();return {x:s.dragon.x,y:s.dragon.y,elapsed:s.elapsed,frames:s.frameTimes.frames,active:s.active,paused:s.paused,free:s.campaign.freeFlightMode,focused:document.hasFocus()&&!document.hidden};});
+  const readState=()=>page.evaluate(()=>window.__DD_BENCHMARK.park13Probe());
   const trace=[];
   await page.evaluate(()=>window.__DD_BENCHMARK.start('traverse'));
   for(const [key,target,dir] of [['KeyD',setup.bounds.maxX-1,1],['KeyA',setup.bounds.minX+1,-1]]){
    const before=await readState();let v=before;trace.push({key,target,...v});
    await page.keyboard.down(key);
    try{for(let i=0;i<150&&dir*(v.x-target)<-.5;i++){
-    await page.waitForTimeout(1000);v=await readState();trace.push({key,target,...v});
-    check(v.active&&!v.paused&&v.free&&v.focused,'Traversal interrupted or unfocused');
+    const prior=v;await page.waitForTimeout(1000);v=await readState();trace.push({key,target,...v});
+    check(v.active&&!v.paused&&v.free&&v.dragonEnabled&&v.focused&&!v.contextLost&&v.contextEvents===0,'Traversal interrupted, unfocused or context lost');
+    check(v.frames>prior.frames&&v.elapsed>prior.elapsed,'Traversal animation stopped');
+    check(dir*(v.x-prior.x)>=-2&&Math.abs(v.x-prior.x)<=22*(v.elapsed-prior.elapsed)+2,'Unexpected traversal position discontinuity');
    }}finally{await page.keyboard.up(key);}
    check(dir*(v.x-target)>=-.5,'Traversal failed to reach '+target+' at '+v.x);
   }
@@ -96,16 +98,20 @@ try{
   await writeFile(resolve(out,(expansion?'on':'off')+'-native-traverse.json'),JSON.stringify({source:expected,trace,raw:traversal},null,2));await save();
   await page.evaluate(()=>{const q=window.__DD_QA;q.repairAllBuildings();q.toggleDragon(false);window.__DD_BENCHMARK.reseed(20261128);});
   await page.waitForTimeout(10000);
-  await page.evaluate(()=>window.__DD_BENCHMARK.start('bombardment'));
+  const drops=[];await page.evaluate(()=>window.__DD_BENCHMARK.start('bombardment'));
   for(const target of targets){
-   await page.evaluate(t=>{const q=window.__DD_QA;q.move(t.x,45);q.spawnTestMeteorAt(t.x,.7,t.z,4,'iron');},target);
-   await page.waitForTimeout(2000);
+   const drop=await page.evaluate(t=>window.__DD_BENCHMARK.park13Drop(t.x,t.z,4),target);
+   check(Math.abs(drop.x-target.x)<.01&&drop.spawned>0,'Bombardment target out of reach or drop failed');
+   await page.waitForTimeout(2000);const probe=await readState();
+   check(probe.active&&!probe.paused&&probe.free&&probe.focused&&!probe.contextLost&&probe.contextEvents===0,'Bombardment interrupted or unfocused');
+   drops.push({target,drop,probe});
   }
   await page.waitForTimeout(6000);
   const bombardment=await page.evaluate(()=>({raw:window.__DD_BENCHMARK.stop(),expansion:window.__DD_QA.park13ExpansionStats(),probe:window.__DD_BENCHMARK.probe()}));
-  const completed=(!expansion||bombardment.expansion?.damaged>0)&&!bombardment.probe.contextLost;
+  const endProbe=await readState();
+  const completed=drops.length===targets.length&&(!expansion||bombardment.expansion?.damaged>=targets.length)&&endProbe.testMeteors===0&&!endProbe.contextLost&&endProbe.contextEvents===0;
   report.cases.push(summarizeNativeCase('bombardment',expansion,bombardment.raw,completed));
-  await writeFile(resolve(out,(expansion?'on':'off')+'-native-bombardment.json'),JSON.stringify({source:expected,targets,...bombardment},null,2));
+  await writeFile(resolve(out,(expansion?'on':'off')+'-native-bombardment.json'),JSON.stringify({source:expected,targets,drops,endProbe,...bombardment},null,2));
   check(!errors.length,'Browser errors: '+errors.join('; '));await save();await page.close();activePage=null;
  }
  check(git(['rev-parse','HEAD'])===expected&&!git(['status','--porcelain','--untracked-files=no']),'Source changed during native run');
