@@ -47,6 +47,9 @@ assert.equal(layer.setDamage(id,1),true);assert.equal(layer.stats().damaged,1);
 const collapsed=arrays();assert.ok(collapsed.some((a,i)=>a.some((v,j)=>v!==partial[i][j])));
 layer.restore();assert.equal(layer.stats().damaged,0);assert.deepEqual(arrays(),original);
 assert.equal(layer.stats().architectureDrawObjects,80);
+assert.equal(layer.targetAt(NaN,0),null);assert.equal(layer.targetAt(1e6,1e6),null);
+let found=null;for(const r of expanded){const ring=r.polys[0][0];const xs=ring.map(p=>p[0]),zs=ring.map(p=>p[1]);for(let i=1;i<10&&!found;i++)for(let j=1;j<10&&!found;j++){const x=Math.min(...xs)+(Math.max(...xs)-Math.min(...xs))*i/10,z=Math.min(...zs)+(Math.max(...zs)-Math.min(...zs))*j/10;const hit=layer.targetAt(x,z);if(hit?.id===r.id)found=hit;}if(found)break;}
+assert.ok(found);assert.equal(layer.strikeTarget(found.id,1),true);assert.equal(layer.damageOf(found.id),.15);assert.ok(layer.targetAt(found.x,found.z).y<found.y);assert.equal(layer.strikeTarget(found.id,-1),false);layer.restore();assert.deepEqual(arrays(),original);
 const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,100,20);
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);

@@ -2256,15 +2256,17 @@ function escalateBackgroundNeighborhood(dt,random=Math.random){
   const near=backs.length&&random()<0.75?backs[Math.floor(random()*backs.length)]:null;
   const visible=true;
   const sampleZ=near?near.z:(-35-random()*120);
-  const far=near?null:district.targetAt(cameraScrollX+(random()-.5)*140,sampleZ);
-  if(!near&&!far)continue;
-  const point=near?new THREE.Vector3(near.x,near.h*.65,near.z):
+  const sampleX=near?near.x:cameraScrollX+(random()-.5)*140;
+  const expansion=near?null:neighborhood.park13?.targetAt(sampleX,sampleZ);
+  const far=near||expansion?null:district.targetAt(sampleX,sampleZ);
+  if(!near&&!far&&!expansion)continue;
+  const point=near?new THREE.Vector3(near.x,near.h*.65,near.z):expansion?new THREE.Vector3(expansion.x,expansion.y,expansion.z):
    district.root.localToWorld(new THREE.Vector3(far.x,far.y,far.z));
   const sprite=new THREE.Sprite(distantVisual.material);
   sprite.position.copy(point).add(new THREE.Vector3(-25,95,0));
   sprite.scale.set(3.2,14,1);
   scene.add(sprite);
-  distantStreaks.push({sprite,life:1.4,landing:{point,near,far,strength:0.45+blockDamage*0.55}});
+  distantStreaks.push({sprite,life:1.4,landing:{point,near,far,expansion,strength:0.45+blockDamage*0.55}});
  }
 }
 
@@ -2305,7 +2307,7 @@ function updateDistantMeteors(dt){
  }
  for(let i=distantStreaks.length-1;i>=0;i--){const s=distantStreaks[i];s.life-=dt;
   if(s.landing){
-   const {point,near,far,strength}=s.landing;
+   const {point,near,far,expansion,strength}=s.landing;
    const remaining=Math.max(0,s.life)/1.8;
    s.sprite.position.copy(point);
    s.sprite.position.x-=20*remaining;s.sprite.position.y+=70*remaining;
@@ -2313,7 +2315,8 @@ function updateDistantMeteors(dt){
     if(near){
      northBroadModels.impactBuilding(near.id,point,5.5,strength);
      updateHud();
-    }else neighborhood.longRange.strikeTarget(far.id,strength);
+    }else if(expansion)neighborhood.park13?.strikeTarget(expansion.id,strength);
+    else neighborhood.longRange.strikeTarget(far.id,strength);
     const spectacle=backgroundImpactEffects(neighborhoodHealth());
     if(Math.random()<spectacle.fireChance)cinematicSkyExplosion(point.x,point.y,point.z,spectacle);
    }

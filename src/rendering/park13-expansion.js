@@ -57,7 +57,7 @@ export function createPark13Expansion(T,data){
  let volumeCount=0,detailCount=0,triangles=0;
  const inventory=[],owners=new Map();
  for(const record of data.records){
-  const owner={id:record.id,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
+  const owner={id:record.id,record,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
   const stats=renderPark13Record(record,{
    block(poly,h,c,base=0){
     const shape=shapePath(poly[0],T.Shape);shape.holes=poly.slice(1).map(r=>shapePath(r,T.Path));
@@ -103,6 +103,9 @@ export function createPark13Expansion(T,data){
   if(d)changed.add(id);else changed.delete(id);return true;
  }
  function restore(){for(const id of [...changed])setDamage(id,0);}
+ function inside(r,x,z){let hit=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const [a,b]=r[i],[c,e]=r[j];if((b>z)!==(e>z)&&x<(c-a)*(z-b)/(e-b)+a)hit=!hit;}return hit;}
+ function targetAt(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;const lx=x-VIEWER_TO_GAME_X,lz=z-VIEWER_TO_GAME_Z;for(const o of owners.values()){if(o.damage>=1)continue;const r=o.record;if(r.polys.some(p=>inside(p[0],lx,lz)&&!p.slice(1).some(h=>inside(h,lx,lz))))return {id:o.id,x,z,y:r.height*(1-.75*o.damage),damage:o.damage};}return null;}
+ function strikeTarget(id,strength){const o=owners.get(id);if(!o||!Number.isFinite(strength)||strength<=0||o.damage>=1)return false;return setDamage(id,o.damage+Math.min(.15,strength*.15));}
  root.updateMatrixWorld(true);
- return {root,inventory,setDamage,restore,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
+ return {root,inventory,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
 }

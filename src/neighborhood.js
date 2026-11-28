@@ -105,7 +105,7 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
   },
   levelAll(){for(const b of buildings)city.forceDamage(b,1);},
   update(dt){city.update(dt);longRange.update(dt);},
-  restore(){city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
+  restore(){city.restore();longRange.restore();park13?.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
   setAtmosphere(phase,darkness){city.setAtmosphere(darkness);},
   setDistantHealth:longRange.setHealth,
   setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;longRange.setVisible(on);if(park13)park13.root.visible=on;},
