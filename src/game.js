@@ -6985,7 +6985,7 @@ function renderFrame(captureCamera=null,forcedDt=null){diagnosticFrames.ticks++;
   quality.sample(dt);evaluateRenderPressure(dt,active&&!paused&&!document.hidden&&document.hasFocus());
  }
  hostMetricTime+=dt;hostMetricFrames++;
- sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const effectiveDt=dt*(freeFlightMode?sandboxTimeScale:1.0);const step=fixedStep.advance(effectiveDt,update);refreshRubble();const simMs=performance.now()-simStart;
+ sessionStats.frames++;sessionStats.frameTimeTotal+=dt;const simStart=performance.now();const effectiveDt=dt*(freeFlightMode?sandboxTimeScale:1.0);const step=neighborhood.park13?neighborhood.park13.batchDamage(()=>fixedStep.advance(effectiveDt,update)):fixedStep.advance(effectiveDt,update);refreshRubble();const simMs=performance.now()-simStart;
  const w=innerWidth,h=innerHeight;
  const resized=w!==lastW||h!==lastH;
  if(resized){
