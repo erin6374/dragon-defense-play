@@ -127,15 +127,44 @@ export function createPark13Expansion(T,data){
  const breachMaterial=new T.MeshStandardMaterial({vertexColors:true,roughness:.95,side:T.DoubleSide});
  const breachMesh=new T.Mesh(new T.BufferGeometry(),breachMaterial);breachMesh.name='Park13 exposed structure';breachMesh.visible=false;root.add(breachMesh);
  const fragments=createPark13Fragments(T);root.add(fragments.mesh);
- let breachBatchDepth=0,breachDirty=false,breachRebuilds=0;
+ let breachBatchDepth=0,breachDirty=false,breachRebuilds=0,breachCapacity=0,breachAllocations=0,breachNormalTriangles=0;
+ // Cache flat normals from the exact float32 positions used for collision
+ // and rendering. Unchanged parcels never recompute their normals.
+ function prepareBreach(b){
+  b.positions=Float32Array.from(b.positions);b.colors=Float32Array.from(b.colors);
+  const p=b.positions,n=new Float32Array(p.length);
+  for(let i=0;i<p.length;i+=9){
+   const ux=p[i+3]-p[i],uy=p[i+4]-p[i+1],uz=p[i+5]-p[i+2],vx=p[i+6]-p[i],vy=p[i+7]-p[i+1],vz=p[i+8]-p[i+2];
+   const x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx,len=Math.hypot(x,y,z)||1;
+   for(let j=0;j<9;j+=3){n[i+j]=x/len;n[i+j+1]=y/len;n[i+j+2]=z/len;}
+  }
+  b.normals=n;breachNormalTriangles+=p.length/9;
+ }
  function syncBreaches(){
   if(breachBatchDepth){breachDirty=true;return;}
   breachDirty=false;breachRebuilds++;
-  const size=[...breaches.values()].reduce((sum,b)=>sum+b.positions.length,0),p=new Float32Array(size),c=new Float32Array(size);let offset=0;
-  for(const b of breaches.values()){p.set(b.positions,offset);c.set(b.colors,offset);offset+=b.positions.length;}
-  const old=breachMesh.geometry;
-  const g=new T.BufferGeometry();if(size){g.setAttribute('position',new T.BufferAttribute(p,3));g.setAttribute('color',new T.BufferAttribute(c,3));g.computeVertexNormals();g.computeBoundingSphere();}
-  breachMesh.geometry=g;breachMesh.visible=size>0;old.dispose();
+  const size=[...breaches.values()].reduce((sum,b)=>sum+b.positions.length,0);
+  // Grow geometrically; reuse GPU buffers until a high-water mark is
+  // exceeded. drawRange excludes unused capacity, including after repair.
+  if(size>breachCapacity){
+   let capacity=Math.max(9216,breachCapacity);
+   while(capacity<size)capacity*=2;
+   const old=breachMesh.geometry,g=new T.BufferGeometry();
+   for(const name of ['position','normal','color'])g.setAttribute(name,new T.BufferAttribute(new Float32Array(capacity),3).setUsage(T.DynamicDrawUsage));
+   breachMesh.geometry=g;breachCapacity=capacity;breachAllocations++;old.dispose();
+  }
+  const g=breachMesh.geometry;g.setDrawRange(0,size/3);breachMesh.visible=size>0;
+  if(!size)return;
+  const p=g.attributes.position,n=g.attributes.normal,c=g.attributes.color;
+  let offset=0;const bounds=new T.Box3(),point=new T.Vector3();
+  for(const b of breaches.values()){
+   p.array.set(b.positions,offset);n.array.set(b.normals,offset);c.array.set(b.colors,offset);offset+=b.positions.length;
+   for(let i=0;i<b.positions.length;i+=3)bounds.expandByPoint(point.fromArray(b.positions,i));
+  }
+  for(const attribute of [p,n,c]){attribute.clearUpdateRanges();attribute.addUpdateRange(0,size);attribute.needsUpdate=true;}
+  // BufferGeometry.computeBoundingSphere would include unused capacity.
+  // Explicit active bounds keep raycasting and frustum culling correct.
+  g.boundingBox=bounds;g.boundingSphere=bounds.getBoundingSphere(new T.Sphere());
  }
  function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;
   if(d===0)o.impacts.length=0;
@@ -144,7 +173,7 @@ export function createPark13Expansion(T,data){
   const deform=(y,x,z)=>park13DamageHeight(y,x,z,height,d,o.impacts);
   const breach=buildPark13Breach(T,o,deform),hadBreach=breaches.has(id);
   if(breach){
-   breaches.set(id,breach);
+   prepareBreach(breach);breaches.set(id,breach);
    o.collision.traceBreach=createPark13BreachTracer(breach.positions,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z);
   }else{
    breaches.delete(id);delete o.collision.traceBreach;
@@ -217,5 +246,5 @@ export function createPark13Expansion(T,data){
   return applied;
  }
  root.updateMatrixWorld(true);
- return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,batchDamage,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachRebuilds,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),clippedDetails:[...breaches.values()].reduce((sum,b)=>sum+b.clippedDetails.size,0),reliefRemovedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.reliefRemoved,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,batchDamage,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachRebuilds,breachAllocations,breachCapacityVertices:breachCapacity/3,breachNormalTriangles,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),clippedDetails:[...breaches.values()].reduce((sum,b)=>sum+b.clippedDetails.size,0),reliefRemovedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.reliefRemoved,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
 }
