@@ -41,6 +41,42 @@ try{
    assert.ok(d.first.after>0&&d.first.after<=.15);assert.ok(d.second.after>d.first.after&&d.second.after-d.first.after<=.1500001);
    assert.equal(d.first.healthBefore,d.first.healthAfter);assert.equal(d.first.hpBefore,d.first.hpAfter);assert.equal(d.second.healthBefore,d.second.healthAfter);
    assert.equal(d.damaged.damaged,1);assert.equal(d.repaired.damaged,0);assert.equal(d.roof.y,d.hit.y);
+   // Exercise a real spawned meteor through the fixed-step game loop, not
+   // just the QA helper that calls the collision and damage routines directly.
+   state.liveMeteor=await page.evaluate(hit=>{
+    const q=window.__DD_QA;
+    q.toggleDragon(false);
+    q.repairAllBuildings();
+    const before=q.park13TargetAt(hit.x,hit.z);
+    const healthBefore=q.neighborhoodHealth();
+    const targetY=Math.max(.7,before.y-15);
+    q.spawnTestMeteorAt(hit.x,targetY,hit.z,4,'iron');
+    const spawned=q.meteorsList().length;
+    let frames=0,after=before;
+    while(frames<60&&after?.damage===0){
+     q.stepFrame(1,.05);frames++;
+     after=q.park13TargetAt(hit.x,hit.z);
+    }
+    const damaged=q.park13ExpansionStats();
+    const healthAfter=q.neighborhoodHealth();
+    // Repair must cancel both a live projectile and delayed sandbox barrages.
+    q.spawnTestMeteorAt(hit.x,targetY,hit.z,4,'iron');
+    q.spawnMeteorBarrage(4,hit.x,hit.z);
+    q.repairAllBuildings();
+    return {before,after,spawned,frames,damaged,healthBefore,healthAfter,
+     repaired:q.park13TargetAt(hit.x,hit.z),remaining:q.meteorsList().length};
+   },d.hit);
+   const live=state.liveMeteor;
+   assert.ok(live.spawned>0);assert.ok(live.frames>0&&live.frames<=60);
+   assert.equal(live.after?.id,live.before.id);assert.ok(live.after.damage>0&&live.after.damage<=.1500001);
+   assert.equal(live.damaged.damaged,1);assert.equal(live.healthBefore,live.healthAfter);
+   assert.equal(live.repaired.damage,0);assert.equal(live.repaired.y,live.before.y);assert.equal(live.remaining,0);
+   await page.waitForTimeout(900);
+   state.afterRepairDelay=await page.evaluate(()=>{
+    const q=window.__DD_QA;q.stepFrame(2,.05);
+    return {meteors:q.meteorsList().length,damaged:q.park13ExpansionStats().damaged};
+   });
+   assert.deepEqual(state.afterRepairDelay,{meteors:0,damaged:0});
   }
   report.runs.push({enabled,...state});await page.close();
  }
