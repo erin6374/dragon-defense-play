@@ -149,6 +149,29 @@ assert.deepEqual(snapFixture(),pristine);
 assert.ok(fixture.collisionParcels.every(b=>!b.traceBreach));
 const repairedRoof=traceMeteorCollision(startOpen,endOpen,[],null,false,fixture.collisionParcels);
 assert.equal(repairedRoof.building.id,'park13-fixture-a');assert.equal(repairedRoof.point.y,10);
+// Same-frame impact publication: collision changes immediately, even
+// before the shared render mesh is flushed at the outer transaction.
+const beforeBatch=fixture.stats().breachRebuilds;
+fixture.batchDamage(()=>{
+ assert.ok(fixture.strikeTarget('park13-fixture-a',1,{x:ax,y:10,z:az}));
+ assert.equal(fixture.stats().breachRebuilds,beforeBatch);
+ assert.ok(fixture.collisionParcels[0].traceBreach);
+ const next=traceMeteorCollision(startOpen,endOpen,[],null,false,fixture.collisionParcels);
+ assert.ok(next.point.y<9);
+ fixture.batchDamage(()=>{
+  assert.ok(fixture.strikeTarget('park13-fixture-b',1,{x:VIEWER_TO_GAME_X+8,y:5,z:az}));
+ });
+ assert.equal(fixture.stats().breachRebuilds,beforeBatch);
+});
+assert.equal(fixture.stats().breachRebuilds,beforeBatch+1);
+assert.equal(fixture.stats().breached,2);
+fixture.restore();assert.deepEqual(snapFixture(),pristine);
+const beforeError=fixture.stats().breachRebuilds;
+let caught=false;
+try{fixture.batchDamage(()=>{fixture.strikeTarget('park13-fixture-a',1,{x:ax,y:10,z:az});throw Error('fixture');});}catch(e){caught=e.message==='fixture';}
+assert.ok(caught);assert.equal(fixture.stats().breachRebuilds,beforeError+1);
+fixture.restore();assert.deepEqual(snapFixture(),pristine);
+console.log('PARK13_DAMAGE_BATCH '+JSON.stringify({sameFrameRebuilds:1,nested:true,immediateCollision:true,exceptionFlush:true}));
 // Two disjoint triangles form a roof with a gap; a lower deck catches
 // the through-gap trajectory. Offset tests catch world/local confusion.
 const triangle=(x,y,z)=>[x,y,z,x+2,y,z,x,y,z+2];
