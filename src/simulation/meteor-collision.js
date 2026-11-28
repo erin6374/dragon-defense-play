@@ -37,7 +37,13 @@ export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActi
   }
  }
  for(const b of active)prism(b,'building',(x,z)=>containsParcel(b,x,z));
- for(const b of expansion)if(b.damage<1)prism(b,'expansion',(x,z)=>containsParcel(b,x,z));
+ for(const b of expansion)if(b.damage<1){
+  if(b.traceBreach){
+   // An open roof or wall is no longer a solid collision prism.
+   const t=b.traceBreach(start,end,best?.t??1);
+   if(t!==null)offer(t,'expansion',b);
+  }else prism(b,'expansion',(x,z)=>containsParcel(b,x,z));
+ }
  if(schoolActive){
   const {min,max}=schoolBounds;
   const b={x:(min.x+max.x)/2,z:(min.z+max.z)/2,w:max.x-min.x,d:max.z-min.z,h:max.y};
