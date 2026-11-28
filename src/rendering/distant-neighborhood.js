@@ -1022,6 +1022,10 @@ export function createDistantNeighborhood({root,flameTexture,context}){
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),
    falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
-   crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
+   // Historical diagnostic uses Broad frontage centerlines; rear roads
+   // actually follow the mapped rear endpoint axis. Keep both visible.
+   crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length,
+   proceduralCrossStreetCenters:[...cross],
+   proceduralCrossStreetOverlaps:buildingDefs.filter(b=>cross.some(x=>Math.abs(b.x-x)<b.w/2+7-1e-6)).length}}
  };
 }
