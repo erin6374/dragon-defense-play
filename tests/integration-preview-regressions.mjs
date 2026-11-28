@@ -76,6 +76,25 @@ test('Every mapped building owns its vertical roof collision',()=>{
   assert.ok(Math.abs(hit.point.y-b.h)<1e-6);
  }
 });
+test('2207 provisional frontage is collision-owned without overwriting surveyed rear polygon or adjacent owners',()=>{
+ const rows=JSON.parse(read('broad-street/mapped-data.json')).rows,original=JSON.stringify(rows);
+ const candidates=parcels.viewerParcels(rows),b=candidates.find(p=>p.id==='1007130');
+ assert.equal(JSON.stringify(rows),original);
+ assert.ok(b.provisionalCollisionFrontage);
+ assert.equal(b.polys.length,b.sourceRow.polys.length+1);
+ const x=b.sourceRow.x+parcels.VIEWER_TO_GAME_X;
+ for(const zSource of [-55,-42,-25]){
+  const z=zSource+parcels.VIEWER_TO_GAME_Z;
+  assert.ok(parcels.containsParcel(b,x,z));
+  assert.ok(!candidates.some(p=>p!==b&&parcels.containsParcel(p,x,z)));
+  const hit=collision.traceMeteorCollision({x,y:b.h+30,z},{x,y:0,z},candidates,school);
+  assert.equal(hit?.building?.id,b.id);
+  assert.ok(Math.abs(hit.point.y-b.h)<1e-6);
+ }
+ const rearNeighbor=candidates.find(p=>p.id==='1007129'),nearEdge={x:-207.35+parcels.VIEWER_TO_GAME_X,z:-54+parcels.VIEWER_TO_GAME_Z};
+ assert.ok(parcels.containsParcel(rearNeighbor,nearEdge.x,nearEdge.z));
+ assert.ok(!parcels.containsParcel(b,nearEdge.x,nearEdge.z));
+});
 test('Fast diagonal meteor hits facade even with endpoint beyond building',()=>{
  const b={id:'test',x:14,z:-10,w:5,d:12,h:8,damage:0};
  const hit=collision.traceMeteorCollision({x:5,y:7,z:-10},{x:25,y:3,z:-10},[b],school,false);
