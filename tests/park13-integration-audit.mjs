@@ -36,6 +36,17 @@ const layer=createPark13Expansion(T,data),s=layer.stats();
 assert.equal(s.buildings,165);assert.equal(s.components,2893);assert.equal(s.triangles,44260);assert.equal(s.architectureDrawObjects,80);assert.equal(s.damageable,false);
 assert.equal(s.surfaceDrawObjects,3);assert.deepEqual(s.realmCounts,{roads:343,sidewalks:686,pedestrianPaths:51,campusSurfaces:78});assert.ok(!data.records.some(r=>r.bin==='1048635'));
 const box=new T.Box3().setFromObject(layer.root);assert.ok([...box.min.toArray(),...box.max.toArray()].every(Number.isFinite));
+// Exact geometry round trip and isolation: damage only the chosen parcel.
+const meshes=layer.root.children[0].children;
+const arrays=()=>meshes.map(m=>Array.from(m.isInstancedMesh?m.instanceMatrix.array:m.geometry.attributes.position.array));
+const original=arrays(),id=data.records[0].id,other=data.records[1].id;
+assert.equal(layer.setDamage('unknown',.5),false);assert.equal(layer.setDamage(id,NaN),false);
+assert.equal(layer.setDamage(id,.15),true);assert.equal(layer.damageOf(id),.15);assert.equal(layer.damageOf(other),0);
+const partial=arrays();assert.ok(partial.some((a,i)=>a.some((v,j)=>v!==original[i][j])));
+assert.equal(layer.setDamage(id,1),true);assert.equal(layer.stats().damaged,1);
+const collapsed=arrays();assert.ok(collapsed.some((a,i)=>a.some((v,j)=>v!==partial[i][j])));
+layer.restore();assert.equal(layer.stats().damaged,0);assert.deepEqual(arrays(),original);
+assert.equal(layer.stats().architectureDrawObjects,80);
 const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,100,20);
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);
