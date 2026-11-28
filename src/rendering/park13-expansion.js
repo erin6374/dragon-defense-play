@@ -104,7 +104,7 @@ export function createPark13Expansion(T,data){
   const mesh=new T.Mesh(geo,mat(c));mesh.name='Park13 mass '+c;architecture.add(mesh);
  }
  for(const [c,items] of details){
-  const mesh=new T.InstancedMesh(cube,mat(c),items.length);items.forEach((item,i)=>{mesh.setMatrixAt(i,item.matrix);item.owner.details.push({mesh,index:i,original:item.matrix});});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();mesh.name='Park13 details '+c;architecture.add(mesh);
+  const mesh=new T.InstancedMesh(cube,mat(c),items.length);items.forEach((item,i)=>{mesh.setMatrixAt(i,item.matrix);item.owner.details.push({mesh,index:i,original:item.matrix,color:c});});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();mesh.name='Park13 details '+c;architecture.add(mesh);
  }
  const publicRealm=new T.Group();publicRealm.name='Park13 provisional road widths';root.add(publicRealm);
  for(const {items,color,y} of data.surfaces){
@@ -175,8 +175,9 @@ export function createPark13Expansion(T,data){
     const e=matrix.elements,x=e[12],y=e[13],z=e[14],half=Math.abs(e[5])/2;
     const low=deform(y-half,x,z),high=deform(y+half,x,z);
     const factor=Math.max(.001,(high-low)/Math.max(.001,2*half));e[5]*=factor;e[13]=(low+high)/2;
-    // Remove small façade pieces near accumulated impact centers. Keep
-    // large cladding panels and roof patches until their structural collapse.
+    // When a breach exists, its replacement mesh contains the clipped
+    // portions of intersecting facade boxes. Only hide those originals.
+    // Otherwise retain the small-detail damage fallback.
     const span=Math.max(Math.hypot(e[0],e[2]),Math.hypot(e[8],e[10]),half*2);
     let local=0;
     for(const p of o.impacts){
@@ -185,7 +186,7 @@ export function createPark13Expansion(T,data){
      local+=p.budget*Math.max(0,1-dist);
     }
     // Use a near-zero, non-singular matrix; Three.js instance normals divide by squared axis scale.
-    if(d>=1||local>=.045){for(const i of [0,1,2,4,5,6,8,9,10])e[i]*=.0001;}
+    if(d>=1||(breach?breach.clippedDetails.has(v):local>=.045)){for(const i of [0,1,2,4,5,6,8,9,10])e[i]*=.0001;}
    }
    v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;
   }
@@ -206,5 +207,5 @@ export function createPark13Expansion(T,data){
   return applied;
  }
  root.updateMatrixWorld(true);
- return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),clippedDetails:[...breaches.values()].reduce((sum,b)=>sum+b.clippedDetails.size,0),reliefRemovedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.reliefRemoved,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
 }
