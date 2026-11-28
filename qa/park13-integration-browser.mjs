@@ -16,12 +16,35 @@ try{
    const q=window.__DD_QA;return {expansion:q.park13ExpansionStats(),context:q.distantNeighborhoodStats(),parcels:q.northBroadModels().result.loadedCount,school:q.snap().renderVisibility.actualSchoolOverlayReady};
   });
   assert.equal(state.parcels,122);assert.ok(state.school);
+  assert.ok(state.context.proceduralCrossStreetCenters.length>0);assert.equal(state.context.proceduralCrossStreetOverlaps,0);
   if(enabled){assert.equal(state.expansion.buildings,165);assert.equal(state.expansion.components,2893);assert.equal(state.expansion.triangles,44260);assert.equal(state.expansion.architectureDrawObjects,80);assert.deepEqual(state.expansion.realmCounts,{roads:343,sidewalks:686,pedestrianPaths:51,campusSurfaces:78});assert.ok(state.context.excludedByExpansion>0);}
   else{assert.equal(state.expansion,null);assert.equal(state.context.excludedByExpansion,0);}
   const positions=[[-185,42],[110,55],[360,70]];
   for(const [i,[x,y]] of positions.entries()){
    const png=await page.evaluate(({x,y,i})=>{const q=window.__DD_QA;if(i===0){q.start(1);q.toggleFreeFlight(true);}q.move(x,y);q.stepFrame(4,.05);q.renderFrame(null,0);return window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1];},{x,y,i});
    assert.ok(png.length>1000);await writeFile(out+'/'+(enabled?'expansion':'baseline')+'-'+i+'.png',Buffer.from(png,'base64'));
+  }
+  // Paired, deliberately aimed views of actual scene geometry. These
+  // supplement the player-camera captures and are not visual approvals.
+  const views=[
+   ['north',-350,-115,145],['central',0,-115,145],
+   ['south',345,-120,150],['campus',515,-135,125],
+   ['street-seams',264,-169,75]
+  ];
+  state.visualViews=[];
+  for(const [name,x,z,distance] of views){
+   const capture=await page.evaluate(async({x,z,distance})=>{
+    const {PerspectiveCamera}=await import('/vendor/three/build/three.module.js');
+    const q=window.__DD_QA,cam=new PerspectiveCamera(50,innerWidth/innerHeight,.1,2500);
+    cam.position.set(x-distance*.40,distance*.75,z+distance*.7);
+    cam.lookAt(x,3,z);cam.updateMatrixWorld(true);
+    q.renderFrame(cam,0);
+    return {png:window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1],camera:cam.position.toArray(),target:[x,3,z]};
+   },{x,z,distance});
+   assert.ok(capture.png.length>1000);
+   const file=(enabled?'expansion':'baseline')+'-view-'+name+'.png';
+   await writeFile(out+'/'+file,Buffer.from(capture.png,'base64'));
+   state.visualViews.push({name,file,camera:capture.camera,target:capture.target});
   }
   if(enabled){
    state.damage=await page.evaluate(()=>{
@@ -86,6 +109,36 @@ try{
     return {meteors:q.meteorsList().length,damaged:q.park13ExpansionStats().damaged,fragments:q.park13ExpansionStats().fragments.active};
    });
    assert.deepEqual(state.afterRepairDelay,{meteors:0,damaged:0,fragments:0});
+   // Capture the same parcel intact, breached and repaired with a close
+   // inspection camera. Use a residential-scale source target for floors.
+   state.damageViews=await page.evaluate(async()=>{
+    const q=window.__DD_QA;
+    const {PerspectiveCamera}=await import('/vendor/three/build/three.module.js');
+    const records=await fetch('/broad-street/park13-integration/park13-GIS-precise-20261127.json').then(r=>r.json());
+    let hit=null;
+    for(const record of records.records){
+     const points=record.polys.flat(2),xs=points.map(p=>p[0]),zs=points.map(p=>p[1]),w=Math.max(...xs)-Math.min(...xs),d=Math.max(...zs)-Math.min(...zs);
+     if(w<3||w>8||d<7||d>20||record.height<6||record.height>13)continue;
+     const x=(Math.max(...xs)+Math.min(...xs))/2+255.88,z=(Math.max(...zs)+Math.min(...zs))/2+22.06;
+     const target=q.park13TargetAt(x,z);if(target?.id===record.id){hit=target;break;}
+    }
+    if(!hit)throw Error('No residential inspection target');
+    const cam=new PerspectiveCamera(45,innerWidth/innerHeight,.1,2500);
+    cam.position.set(hit.x+15,hit.y+16,hit.z+23);cam.lookAt(hit.x,hit.y*.5,hit.z);cam.updateMatrixWorld(true);
+    const capture=()=>{q.renderFrame(cam,0);return window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1];};
+    q.repairAllBuildings();
+    const intact=capture();
+    const start={x:hit.x,y:hit.y+30,z:hit.z},end={x:hit.x,y:0,z:hit.z};
+    const impact=q.park13TraceImpact(start,end,4).result;
+    const damaged=capture(),stats=q.park13ExpansionStats();
+    q.repairAllBuildings();const repaired=capture();
+    return {hit,impact,stats,frames:{intact,damaged,repaired},restored:q.park13ExpansionStats()};
+   });
+   const dv=state.damageViews;
+   assert.equal(dv.impact.id,dv.hit.id);assert.ok(dv.stats.breached>0&&dv.stats.interiorTriangles>0);
+   assert.equal(dv.restored.breached,0);assert.equal(dv.restored.fragments.active,0);
+   for(const [name,png] of Object.entries(dv.frames)){assert.ok(png.length>1000);await writeFile(out+'/expansion-damage-'+name+'.png',Buffer.from(png,'base64'));}
+   dv.files=Object.keys(dv.frames).map(name=>'expansion-damage-'+name+'.png');delete dv.frames;
   }
   report.runs.push({enabled,...state});await page.close();
  }
