@@ -8041,6 +8041,14 @@ window.__DD_QA={snap,
    schoolDestructionStats:()=>({schoolDamage,hp,schoolFragmentsCount:schoolFragments.count}),
    setDragonFullSpeed:(vx=22,vy=0)=>{dragonVelX=vx;dragonVelY=vy;dragonLeavingRoof=true;},
    trainingStats:()=>trainingMissions.getStats(),
+   // Read-only target telemetry for browser input acceptance. No state mutation.
+   trainingInputEvidence:()=>{
+    const rect=renderer.domElement.getBoundingClientRect();
+    camera.updateMatrixWorld(true);
+    return {training:trainingMissions.getStats(),dragon:dragon.position.toArray(),speed:Math.hypot(dragonVelX,dragonVelY),busterRamCollided,shots:sessionStats.shots,
+     targets:meteors.filter(m=>m.isTrainingTarget).map(m=>{const p=m.mesh.position.clone().project(camera);return {position:m.mesh.position.toArray(),buster:!!m.isBusterTarget,hp:m.hp,screen:[rect.left+(p.x+1)*rect.width/2,rect.top+(1-p.y)*rect.height/2]};})};
+   },
+
    skipTraining:()=>trainingMissions.skip(),
    advanceTrainingStep:(step)=>trainingMissions.advanceToStep(step),
    destroyTrainingTarget:()=>run('destroyTrainingTarget',()=>{const t=meteors.find(m=>m.isTrainingTarget);if(t){const ix=meteors.indexOf(t);if(ix>=0){scene.remove(t.mesh);meteors.splice(ix,1);}}return trainingMissions.getStats();}),
