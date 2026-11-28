@@ -32,3 +32,10 @@ node qa/park13-native-browser.mjs <exact-candidate-sha> park13-integration-outpu
 ```
 
 The runner starts its own loopback static server, checks Git SHA before and after, verifies unmasked RTX 3060 renderer, Balanced preset and 45 FPS cap, uses visible normal animation frames, traverses both inspection bounds with actual keyboard events, then drops the same twelve GIS-selected meteors in each configuration over a matched bombardment sequence. Keep its window foreground; do not interact with it or minimize it. It records raw benchmark frame samples, traversal trace and matched targets alongside native.json. Failed focus, context loss, missing samples or settings mismatch invalidate acceptance. It has not yet been executed on native hardware; tests of its summarizer are synthetic. The exact candidate must also have matching source/browser reports before release.
+
+
+## Windows one-click QA (Checkpoint 21)
+
+Use `Run-Park13-Native-QA.cmd` in the clean checked-out repository, or pass the intended candidate SHA as its first argument to require an exact match. It never checks out or changes the branch. If PLAYWRIGHT_MODULE is unset and the temporary pinned Playwright Core runtime is absent, the launcher asks before installing it outside the repository. The launcher starts the native benchmark and preserves its exit code and report location. Keep the browser foreground.
+
+The target schedule now includes ten geographically spaced pilot parcels and both southern imported parcels. The paired bombardment tests must report damage at all twelve intended parcel IDs in expansion mode, not merely a nonzero aggregate count. Traversal and bombardment use lightweight benchmark probes instead of repeated scene snapshots during measurements. No native results yet; launcher has not been executed on Windows. Use a frozen revision and matching browser/source evidence before marking any gate accepted.
