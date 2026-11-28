@@ -55,31 +55,32 @@ export function createPark13Expansion(T,data){
  const mat=c=>{if(!material.has(c))material.set(c,new T.MeshStandardMaterial({color:c,roughness:.95}));return material.get(c);};
  const shapePath=(r,C)=>{const p=new C();r.forEach(([x,z],i)=>i?p.lineTo(x,-z):p.moveTo(x,-z));p.closePath();return p;};
  let volumeCount=0,detailCount=0,triangles=0;
- const inventory=[];
+ const inventory=[],owners=new Map();
  for(const record of data.records){
+  const owner={id:record.id,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
   const stats=renderPark13Record(record,{
    block(poly,h,c,base=0){
     const shape=shapePath(poly[0],T.Shape);shape.holes=poly.slice(1).map(r=>shapePath(r,T.Path));
     const geo=new T.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});geo.rotateX(-Math.PI/2);geo.translate(0,base,0);
     const pos=geo.attributes.position.array,normal=geo.attributes.normal.array;
     if(!pos.length||!pos.every(Number.isFinite)||!normal.every(Number.isFinite))throw Error('Invalid volume '+record.id);
-    if(!volumes.has(c))volumes.set(c,[]);volumes.get(c).push({pos,normal});volumeCount++;triangles+=pos.length/9;geo.dispose();
+    if(!volumes.has(c))volumes.set(c,[]);volumes.get(c).push({pos,normal,owner});volumeCount++;triangles+=pos.length/9;geo.dispose();
    },
    box(x,y,z,w,h,d,c,angle=0){
     if(![x,y,z,w,h,d,angle].every(Number.isFinite)||Math.min(w,h,d)<=0)throw Error('Invalid detail '+record.id);
     dummy.position.set(x,y,z);dummy.rotation.set(0,angle,0);dummy.scale.set(w,h,d);dummy.updateMatrix();
-    if(!details.has(c))details.set(c,[]);details.get(c).push(dummy.matrix.clone());detailCount++;triangles+=12;
+    if(!details.has(c))details.set(c,[]);details.get(c).push({matrix:dummy.matrix.clone(),owner});detailCount++;triangles+=12;
    }
   });inventory.push(stats);
  }
  for(const [c,items] of volumes){
   const n=items.reduce((s,i)=>s+i.pos.length,0),pos=new Float32Array(n),normal=new Float32Array(n);let at=0;
-  for(const item of items){pos.set(item.pos,at);normal.set(item.normal,at);at+=item.pos.length;}
-  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();
+  for(const item of items){pos.set(item.pos,at);normal.set(item.normal,at);item.offset=at;at+=item.pos.length;}
+  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('normal',new T.BufferAttribute(normal,3));geo.computeBoundingSphere();geo.attributes.position.setUsage(T.DynamicDrawUsage);for(const item of items)item.owner.volumes.push({attribute:geo.attributes.position,offset:item.offset,original:item.pos});
   const mesh=new T.Mesh(geo,mat(c));mesh.name='Park13 mass '+c;architecture.add(mesh);
  }
  for(const [c,items] of details){
-  const mesh=new T.InstancedMesh(cube,mat(c),items.length);items.forEach((m,i)=>mesh.setMatrixAt(i,m));mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();mesh.name='Park13 details '+c;architecture.add(mesh);
+  const mesh=new T.InstancedMesh(cube,mat(c),items.length);items.forEach((item,i)=>{mesh.setMatrixAt(i,item.matrix);item.owner.details.push({mesh,index:i,original:item.matrix});});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();mesh.name='Park13 details '+c;architecture.add(mesh);
  }
  const publicRealm=new T.Group();publicRealm.name='Park13 provisional road widths';root.add(publicRealm);
  for(const {items,color,y} of data.surfaces){
@@ -94,6 +95,14 @@ export function createPark13Expansion(T,data){
   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.computeVertexNormals();geo.computeBoundingSphere();
   publicRealm.add(new T.Mesh(geo,new T.MeshStandardMaterial({color,roughness:1,side:T.DoubleSide})));
  }
+ // Parcel-local deformation preserves material batches and never mutates neighbors.
+ const changed=new Set(),matrix=new T.Matrix4(),scale=new T.Matrix4();
+ function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;o.damage=d;const h=d===1?.025:1-.75*d;
+  for(const v of o.volumes){const a=v.attribute.array;for(let i=0;i<v.original.length;i+=3){a[v.offset+i]=v.original[i];a[v.offset+i+1]=v.original[i+1]*h;a[v.offset+i+2]=v.original[i+2];}v.attribute.addUpdateRange(v.offset,v.original.length);v.attribute.needsUpdate=true;}
+  scale.makeScale(1,h,1);for(const v of o.details){matrix.multiplyMatrices(scale,v.original);v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;}
+  if(d)changed.add(id);else changed.delete(id);return true;
+ }
+ function restore(){for(const id of [...changed])setDamage(id,0);}
  root.updateMatrixWorld(true);
- return {root,inventory,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,visible:root.visible})};
+ return {root,inventory,setDamage,restore,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
 }
