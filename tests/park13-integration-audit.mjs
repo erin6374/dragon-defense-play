@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import * as T from '../vendor/three/build/three.module.js';
 import {preparePark13Expansion,createPark13Expansion,clipContextRect,contextIntersectsExpansion,park13DamageHeight} from '../src/rendering/park13-expansion.js';
 import {viewerParcels,schoolGameEnvelope,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../src/simulation/viewer-parcels.js';
-import {createPark13BreachTracer} from '../src/rendering/park13-breach.js';
+import {buildPark13Breach,createPark13BreachTracer} from '../src/rendering/park13-breach.js';
 import {createPark13Fragments} from '../src/rendering/park13-fragments.js';
 import {traceMeteorCollision} from '../src/simulation/meteor-collision.js';
 import {intersectionArea,AREA_TOLERANCE} from '../broad-street/park13-integration/park13-polygon-overlap.mjs';
@@ -181,3 +181,20 @@ const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,10
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);
 console.log('PARK13_SOURCE_AUDIT '+JSON.stringify({checks,baseline:baseline.length,stats:s,bounds:{min:box.min.toArray(),max:box.max.toArray()}}));
+
+
+// Broad roof cladding that spans an impact must be cut, not merely moved
+// or left covering an opening. Preserve the unaffected end and distant box.
+const reliefBox=(x,y,z,w,h,d)=>({original:{elements:[w,0,0,0,0,h,0,0,0,0,d,0,x,y,z,1]},color:0x999999});
+const spanning=reliefBox(5,10.1,5,8,.2,3),distant=reliefBox(10,10.1,10,1,.2,1);
+const reliefOwner={record:{height:10},collision:{w:12,d:12},damage:.15,impacts:[{x:5,y:10,z:5,radius:4,budget:.15}],
+ volumes:[{color:0x996633,original:new Float32Array([0,10,0,12,10,0,12,10,12,0,10,0,12,10,12,0,10,12])}],details:[spanning,distant]};
+const relief=buildPark13Breach(T,reliefOwner,y=>y);
+assert.ok(relief.removed>0&&relief.reliefRemoved>0);
+assert.ok(relief.clippedDetails.has(spanning));assert.ok(!relief.clippedDetails.has(distant));
+const reliefTrace=createPark13BreachTracer(relief.positions);
+const reliefRay=(x,z)=>reliefTrace({x,y:20,z},{x,y:0,z});
+assert.equal(reliefRay(5,5),null);assert.ok(Math.abs(reliefRay(1,1)-.5)<1e-7);
+assert.ok(reliefRay(8.5,5)<.5);
+assert.ok(relief.positions.every(Number.isFinite));assert.equal(relief.positions.length,relief.colors.length);
+console.log('PARK13_RELIEF_BREACH '+JSON.stringify({openingClear:true,unaffectedPanelPreserved:true,removed:relief.removed,reliefRemoved:relief.reliefRemoved}));
