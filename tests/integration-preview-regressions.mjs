@@ -1042,6 +1042,21 @@ test('Fully covering cinematics suspend normal WebGL renders and drain the gamep
  api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:1,rendered:0,drained:1});
  api.close();api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:2,rendered:1,drained:1});
 });
+test('Crowd warnings do not injure pedestrians and remote street coordinates survive cleanup',()=>{
+ const a=game.indexOf('function warnCrowd('),b=game.indexOf('// Distant atmospheric streaks',a);
+ const api=new Function('BROAD_X',`
+ const dangerZones=[],crowd=[{g:{position:{x:0,z:0}},down:0,vy:0,dx:1}];
+ `+game.slice(a,b)+`
+ return {warnCrowd,crowdOutsideBroadStreet,dangerZones,crowd};`)(roads.BROAD_X);
+ api.warnCrowd(0,0,20);assert.equal(api.crowd[0].down,0);assert.equal(api.crowd[0].vy,0);
+ api.dangerZones[0].ttl=1;api.warnCrowd(.1,0,20);assert.equal(api.dangerZones.length,1);assert.equal(api.dangerZones[0].ttl,4);
+ for(let i=1;i<=20;i++)api.warnCrowd(i*10,0,20);assert.equal(api.dangerZones.length,12);
+ assert.equal(api.crowdOutsideBroadStreet(roads.BROAD_X[0]+10),false);
+ assert.equal(api.crowdOutsideBroadStreet(roads.BROAD_X[1]-10),false);
+ assert.equal(api.crowdOutsideBroadStreet(roads.BROAD_X[0]-6),true);
+ assert.equal(api.crowdOutsideBroadStreet(roads.BROAD_X[1]+6),true);
+ assert.ok(game.includes('p.life<=0||crowdOutsideBroadStreet(p.g.position.x)'));
+});
 test('Helicopter heading follows reversed travel, preserves hover and bounds turning',()=>{
  const a=game.indexOf('function helicopterTravelHeading('),b=game.indexOf('function updateWorld(dt)',a);
  assert.ok(a>=0&&b>a);

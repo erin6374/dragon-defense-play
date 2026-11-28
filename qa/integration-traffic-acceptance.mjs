@@ -38,9 +38,12 @@ try{
   assert.ok(r.released.every(c=>!c.frozen&&c.stun===0));return r;
  });
  await check('Pedestrians on opposite sides flee the danger zone',async()=>{
-  const r=await stage('pedestrians',4);assert.ok(r.after[0].x<r.before[0].x);assert.ok(r.after[1].x>r.before[1].x);
-  for(const p of r.after.slice(0,2)){assert.ok(p.panic>0);assert.ok(p.walkSpeed>=6.2);}
-  assert.ok([4,29].includes(r.after[0].z)&&[4,29].includes(r.after[1].z));return r;
+  const r=await stage('pedestrians',4);console.log('PEDESTRIAN_TRACE '+JSON.stringify(r));
+  assert.ok(Math.abs(r.hazardX)>95,'Expected remote mapped crosswalk');
+  assert.ok(r.afterWarning.every(p=>p.down===0&&p.retained),'Warning caused injury or removal');
+  assert.ok(r.after[0].x<r.before[0].x);assert.ok(r.after[1].x>r.before[1].x);
+  for(const p of r.after){assert.ok(p.panic>0);assert.ok(p.walkSpeed>=6.2);assert.equal(p.down,0);assert.equal(p.retained,true);}
+  assert.equal(r.after[0].z,4);assert.equal(r.after[1].z,29);assert.ok(r.after[2].z<r.before[2].z,'Crossing pedestrian must retreat to nearest sidewalk');return r;
  });
  await check('Patrol helicopter turns toward reversed travel instead of flying backward',async()=>{
   const r=await stage('helicopter',7);assert.equal(r.crashing,false);assert.ok(r.after[0]<r.before[0]-2);assert.ok(r.velX<0);assert.ok(r.noseX<-.75,'Nose not facing reversed travel');return r;

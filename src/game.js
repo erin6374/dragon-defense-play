@@ -10,7 +10,7 @@ import {DEFENSE_REAR_Z,projectDefensePoint,createDefenseProjectionCache,projecte
 import {chooseMeteorTarget} from './simulation/meteor-target.js';
 import {fireballMeteorDamage,meteorSplitPlan,openingMeteorWave,getWave1SpawnConfig,MAX_PLAYABLE_METEORS} from './simulation/fireball-balance.js';
 import {selectMeteorWarning} from './simulation/meteor-warning.js';
-import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTER,isBroadRoad} from './simulation/road-corridors.js';
+import {occupiesCrossStreet,CROSS_STREET_X,CROSS_STREETS,BROAD_LANES,BROAD_CENTER,BROAD_X,isBroadRoad} from './simulation/road-corridors.js';
 import {loadViewerGrid,containsParcel,ownsSchoolFootprint} from './simulation/viewer-parcels.js';
 import {traceMeteorCollision} from './simulation/meteor-collision.js';
 import {buildRoadVehicle,setRoadVehicleNight,buildHelicopter,buildPerson,animatePerson,captureVehicleResources,releaseVehicleResources} from './rendering/realistic-vehicles.js';
@@ -2206,9 +2206,13 @@ const militaryOccupation=createMilitaryOccupation({scene,dragon,getWave:()=>wave
  getCollateralStructures:()=>[neighborhood.school,...neighborhood.targetBuildings],
  onCollateral:impact=>damage(impact.x,impact.z,impact.y,{size:impact.type==='structure'?1.45:1.2,kind:'flaming'})});
 const dangerZones=[];
-function warnCrowd(x,z,r=13){dangerZones.push({x,z,r,ttl:4});if(dangerZones.length>12)dangerZones.shift();
- for(const p of crowd){const d=Math.hypot(p.g.position.x-x,p.g.position.z-z);if(d<r&&p.down<=0){p.down=3+Math.random()*4;p.vy=d<r*.5?4+Math.random()*5:0;p.dx=p.g.position.x<x?-1:1;}}
+// A warning triggers evacuation, not injury. Physical knockdowns belong to panicCrowdAt.
+function warnCrowd(x,z,r=13){
+ const existing=dangerZones.find(d=>Math.hypot(d.x-x,d.z-z)<.5&&Math.abs(d.r-r)<.5);
+ if(existing){existing.ttl=4;return;}
+ dangerZones.push({x,z,r,ttl:4});if(dangerZones.length>12)dangerZones.shift();
 }
+function crowdOutsideBroadStreet(x){return x<BROAD_X[0]-5||x>BROAD_X[1]+5;}
 // Distant atmospheric streaks, behind the local meteor collision plane.
 const distantStreaks=[];let distantTimer=3;
 let backgroundDamageTimer=2.5;
@@ -3298,7 +3302,7 @@ function updateWorld(dt){
   }
  }
  if(performanceLab.isEnabled('pedestrians')&&pedestriansActive)crowdTimer-=dt;if(performanceLab.isEnabled('pedestrians')&&pedestriansActive&&crowdTimer<=0){spawnCrowd();crowdTimer=wave<=5?1.8:(wave<=10?2.4:3.0);}
- for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>Math.abs(p.g.position.x-d.x)<d.r&&Math.abs(p.g.position.z-d.z)<d.r);
+ for(let i=crowd.length-1;performanceLab.isEnabled('pedestrians')&&i>=0;i--){const p=crowd[i];const previousX=p.g.position.x,previousZ=p.g.position.z;p.life-=dt;const threat=dangerZones.find(d=>(p.g.position.x-d.x)**2+(p.g.position.z-d.z)**2<d.r*d.r);
   const nearCrater=craters.find(c=>Math.hypot(p.g.position.x-c.x,p.g.position.z-c.z)<c.radius+2.2);
   const isPanicked=(p.panic>0)||!!threat||!!nearCrater;
   if(p.panic>0)p.panic-=dt;
@@ -3326,7 +3330,7 @@ function updateWorld(dt){
    animatePerson(p.g,p.walkCycle,distance>.0001,isPanicked);
    p.g.rotation.z=THREE.MathUtils.lerp(p.g.rotation.z,isPanicked?Math.sin(elapsed*22)*.20:0,Math.min(1,dt*8));
   }
-  if(p.life<=0||Math.abs(p.g.position.x)>95){scene.remove(p.g);crowd.splice(i,1)} }
+  if(p.life<=0||crowdOutsideBroadStreet(p.g.position.x)){scene.remove(p.g);crowd.splice(i,1)} }
  for(let i=gasClouds.length-1;i>=0;i--){const c=gasClouds[i];c.life-=dt;c.age+=dt;
   c.v.y-=dt*9.5;c.v.x*=Math.max(0,1-dt*.2);c.mesh.position.addScaledVector(c.v,dt);
   if(c.mesh.position.y<.9){c.mesh.position.y=.9;c.v.y=0;c.v.x*=Math.max(0,1-dt*2);}
@@ -7539,12 +7543,15 @@ window.__DD_QA={snap,
     return {initialClouds,hit,held,released:[police,fire,bus].map(carState)};
    }
    if(scenario==='pedestrians'){
+    // Deliberately use a remote mapped crosswalk beyond the legacy +/-95 boundary.
     const roadX=CROSS_STREET_X[0];
-    spawnCrowd(roadX+22,4);spawnCrowd(roadX+42,29);spawnCrowd(roadX,13);
+    spawnCrowd(roadX-10,4);spawnCrowd(roadX+10,29);spawnCrowd(roadX,13);
     const [a,b,c]=crowd;a.crossing=b.crossing=false;c.crossing=true;c.dz=1;
-    const before=crowd.map(p=>({x:p.g.position.x,z:p.g.position.z}));
-    warnCrowd(roadX+32,16,25);tick(60,updateWorld);
-    return {before,after:[a,b,c].map(p=>({x:p.g.position.x,z:p.g.position.z,panic:p.panic,walkSpeed:p.walkSpeed})),hazardX:roadX+32};
+    const snapshot=p=>({x:p.g.position.x,z:p.g.position.z,panic:p.panic,walkSpeed:p.walkSpeed,down:p.down,retained:crowd.includes(p)});
+    const before=crowd.map(snapshot);
+    warnCrowd(roadX,16,25);const afterWarning=crowd.map(snapshot);tick(60,updateWorld);
+    const after=[a,b,c].map(snapshot);
+    return {before,afterWarning,after,hazardX:roadX,broadBounds:[...BROAD_X]};
    }
    if(scenario==='helicopter'){
     spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('No helicopter');
