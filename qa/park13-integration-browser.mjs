@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 const {chromium}=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
 const out='park13-integration-output';await mkdir(out,{recursive:true});
-const report={source:process.env.GITHUB_SHA,errors:[],runs:[]};
+const report={source:process.env.QA_SOURCE_SHA||process.env.GITHUB_SHA,backend:'SwiftShader',errors:[],runs:[]};
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
