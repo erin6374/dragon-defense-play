@@ -2990,6 +2990,14 @@ function updateCraters(dt){
  }
  syncThermalCraterLights(thermalCraterLights,craters,dragon.position);
 }
+// The modeled nose points along local +X. Follow actual translation, not spawn direction.
+function helicopterTravelHeading(heading,dx,dz,dt){
+ if(!(dt>0)||Math.hypot(dx,dz)/dt<.75)return heading;
+ const target=Math.atan2(-dz,dx);
+ const turn=Math.atan2(Math.sin(target-heading),Math.cos(target-heading));
+ const limit=dt*2.2;
+ return heading+Math.max(-limit,Math.min(limit,turn));
+}
 function updateWorld(dt){
  if(trainingMissions?.isActive()){gasCooldown=Math.max(0,gasCooldown-dt);invulnerable=Math.max(0,invulnerable-dt);dragon.visible=dragonEnabled;return;}
  if(chapterSettlement.active)militaryOccupation.suppress(1);
@@ -3002,7 +3010,7 @@ function updateWorld(dt){
  if(!dragonGroundImpact&&dragon.position.y<1.65){dragonGroundImpact=true;shake=Math.max(shake,.35);emitImpact(dragon.position.x,.7,dragon.position.z,20,.3);sound('impact');}
 }else dragon.rotation.z=THREE.MathUtils.lerp(dragon.rotation.z,0,Math.min(1,dt*5));waterDisable=Math.max(0,waterDisable-dt);gasCooldown=Math.max(0,gasCooldown-dt);dragon.visible=dragonEnabled&&(dragonStun>0||invulnerable<=0||Math.floor(elapsed*11)%2===0);
  updateBurningVehicles(dt);if(performanceLab.isEnabled('helicopters'))helicopterTimer-=dt;if(performanceLab.isEnabled('helicopters')&&helicopterTimer<=0){spawnHelicopter();helicopterTimer=6+Math.random()*7;}
- for(let i=helicopters.length-1;performanceLab.isEnabled('helicopters')&&i>=0;i--){const h=helicopters[i];h.life-=dt;h.rotor.rotation.y+=dt*28;h.tail.rotation.z+=dt*22;let searchlightSynced=false;if(!h.crashing){
+ for(let i=helicopters.length-1;performanceLab.isEnabled('helicopters')&&i>=0;i--){const h=helicopters[i];h.life-=dt;h.rotor.rotation.y+=dt*28;h.tail.rotation.z+=dt*22;let searchlightSynced=false;const travelStartX=h.root.position.x,travelStartZ=h.root.position.z;if(!h.crashing){
    // Cockpit forward visibility is deliberately limited: ~64-degree field of view.
    const forward=heliForwardScratch.set(Math.cos(h.heading),0,-Math.sin(h.heading));let nearest=null,nearestT=Infinity;
    for(const meteor of meteors){if(meteor.grounded||!meteor.mesh)continue;const delta=meteor.mesh.position.clone().sub(h.root.position);const dist=delta.length();if(dist>24||dist<.001||forward.dot(delta.clone().normalize())<.85)continue;
@@ -3010,7 +3018,7 @@ function updateWorld(dt){
     if(closing>=0&&closing<3.5&&delta.clone().addScaledVector(relative,closing).length()<5&&closing<nearestT){nearest=meteor;nearestT=closing;}}
    h.evasion=Math.max(0,h.evasion-dt);if(nearest&&h.evasion<.1){h.evasion=1.2;h.dodgeSide=(nearest.mesh.position.x>h.root.position.x?-1:1);}
    if(h.evasion>0){h.root.position.x+=h.dodgeSide*dt*h.speed*1.4;h.root.position.y+=dt*3.8;}
-   const wantedHeading=h.evasion>0?(h.dodgeSide>0?0:Math.PI):h.dir>0?0:Math.PI;
+   const wantedHeading=h.evasion>0?(h.dodgeSide>0?0:Math.PI):h.heading;
    const turn=Math.atan2(Math.sin(wantedHeading-h.heading),Math.cos(wantedHeading-h.heading));h.heading+=THREE.MathUtils.clamp(turn,-dt*2.2,dt*2.2);
    h.root.rotation.order='YXZ';
    h.root.rotation.y=h.heading;const desiredBank=THREE.MathUtils.clamp(-turn*.19+(h.evasion>0?h.dodgeSide*.34:0),-.25,.25);
@@ -3152,7 +3160,10 @@ function updateWorld(dt){
     }
     // Authentic aerodynamic pitch/roll with upright rotor stabilization (order 'YXZ'):
     // Nose is along +X, wings along Z. Pitch is around Z, roll is around X!
-    const forwardPitch=THREE.MathUtils.clamp(-h.vel.x*0.016,-0.16,0.16);
+    const travelX=h.root.position.x-travelStartX,travelZ=h.root.position.z-travelStartZ;
+    if(h.evasion<=0)h.heading=helicopterTravelHeading(h.heading,travelX,travelZ,dt);
+    const forwardSpeed=dt>0?(travelX*Math.cos(h.heading)-travelZ*Math.sin(h.heading))/dt:0;
+    const forwardPitch=THREE.MathUtils.clamp(-forwardSpeed*0.016,-0.16,0.16);
     h.pitch=THREE.MathUtils.lerp(h.pitch||0,forwardPitch,Math.min(1,dt*3.5));
     const bankAngle=THREE.MathUtils.clamp(-h.vel.x*0.015+(h.dodgeSide?h.dodgeSide*0.16:0),-0.20,0.20);
     h.roll=THREE.MathUtils.lerp(h.roll||0,bankAngle,Math.min(1,dt*2.8));
@@ -7493,6 +7504,55 @@ window.__DD_QA={snap,
     updateWindPlanting(1);
     cinematicFX.setWind(gustOrigin,gustDirection,windActive?Math.min(1,gustTime/.55):0);
    }
+  }),
+  stageTrafficAcceptance:(scenario)=>run('stageTrafficAcceptance',()=>{
+   if(!active||paused||freeFlightMode||trainingMissions?.isActive())throw Error('Requires normal active campaign');
+   for(const c of cars)recycleCar(c);cars.length=0;for(const p of crowd)scene.remove(p.g);crowd.length=0;
+   for(const h of helicopters)retireHelicopter(h);helicopters.length=0;
+   carTimer=crowdTimer=helicopterTimer=dragonMeteorTimer=999;
+   while(meteors.length)remove(meteors,meteors.length-1);
+   dragon.position.set(0,40,15);
+   const tick=(n,fn)=>{for(let i=0;i<n;i++){elapsed+=1/60;fn(1/60);}};
+   const carState=c=>({x:c.root.position.x,z:c.root.position.z,lane:c.laneZ,dir:c.dir,speed:c.speed,frozen:!!c.frozen,stun:c.stun,evading:!!c.evadingCrater});
+   if(scenario==='lanes'){
+    const roadX=CROSS_STREET_X.slice().sort((a,b)=>a-b);let center=0,best=0;
+    for(let i=1;i<roadX.length;i++){const gap=roadX[i]-roadX[i-1];if(gap>best){best=gap;center=(roadX[i]+roadX[i-1])/2;}}
+    spawnCar(center-16,BROAD_LANES[0],1,'bus');spawnCar(center+16,BROAD_LANES[3],-1,'bus');
+    for(const c of cars){c.turnAt=null;c.laneChangeAt=null;c.desiredSpeed=8;c.speed=8;}
+    const before=cars.map(carState);
+    addCrater(center,BROAD_LANES[0],2.5);
+    addCrater(center,BROAD_LANES[1],2.5);
+    const traces=[];tick(240,dt=>{updateCars(dt);if(Math.round(elapsed*60)%15===0)traces.push(cars.map(carState));});
+    return {before,after:cars.map(carState),traces,center,lanes:[...BROAD_LANES]};
+   }
+   if(scenario==='gas'){
+    spawnCar(-3,BROAD_LANES[1],1,'police');spawnCar(-3,BROAD_LANES[2],-1,'fireTruck');spawnCar(12,BROAD_LANES[0],1,'bus');
+    const [police,fire,bus]=cars;for(const c of cars){c.turnAt=null;c.laneChangeAt=null;c.speed=0;c.desiredSpeed=0;}
+    dragon.position.set(0,2.5,16);facing=1;gasCooldown=0;gasAttack();
+    const initialClouds=gasClouds.length;
+    tick(24,updateWorld);
+    const hit=[police,fire,bus].map(carState);
+    const hitPositions=[police,fire].map(c=>c.root.position.clone());
+    tick(180,updateCars);
+    const held=[police,fire].map((c,i)=>({state:carState(c),distance:c.root.position.distanceTo(hitPositions[i])}));
+    tick(270,updateCars);
+    return {initialClouds,hit,held,released:[police,fire,bus].map(carState)};
+   }
+   if(scenario==='pedestrians'){
+    const roadX=CROSS_STREET_X[0];
+    spawnCrowd(roadX+22,4);spawnCrowd(roadX+42,29);spawnCrowd(roadX,13);
+    const [a,b,c]=crowd;a.crossing=b.crossing=false;c.crossing=true;c.dz=1;
+    const before=crowd.map(p=>({x:p.g.position.x,z:p.g.position.z}));
+    warnCrowd(roadX+32,16,25);tick(60,updateWorld);
+    return {before,after:[a,b,c].map(p=>({x:p.g.position.x,z:p.g.position.z,panic:p.panic,walkSpeed:p.walkSpeed})),hazardX:roadX+32};
+   }
+   if(scenario==='helicopter'){
+    spawnHelicopter(1);const h=helicopters.at(-1);if(!h)throw Error('No helicopter');
+    h.role='police';h.dir=1;h.heading=0;h.root.position.set(45,26,19);h.vel.set(0,0,0);h.loiterTime=30;
+    const before=h.root.position.toArray();tick(180,updateWorld);
+    const after=h.root.position.toArray();return {before,after,heading:h.heading,noseX:Math.cos(h.heading),velX:h.vel.x,crashing:h.crashing};
+   }
+   throw Error('Unknown traffic scenario');
   }),
   stageTrafficLighting:()=>run('stageTrafficLighting',()=>{
    for(let i=0;i<8&&!cars.some(c=>c.root.userData.headlightBeam);i++)spawnCar();

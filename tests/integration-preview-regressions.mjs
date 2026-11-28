@@ -1042,6 +1042,23 @@ test('Fully covering cinematics suspend normal WebGL renders and drain the gamep
  api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:1,rendered:0,drained:1});
  api.close();api.animate();assert.deepEqual(api.state(),{nextRenderAt:null,queued:2,rendered:1,drained:1});
 });
+test('Helicopter heading follows reversed travel, preserves hover and bounds turning',()=>{
+ const a=game.indexOf('function helicopterTravelHeading('),b=game.indexOf('function updateWorld(dt)',a);
+ assert.ok(a>=0&&b>a);
+ const {helicopterTravelHeading:heading}=new Function(game.slice(a,b)+'return {helicopterTravelHeading};')();
+ let yaw=0;
+ for(let i=0;i<180;i++)yaw=heading(yaw,-.12,0,1/60);
+ assert.ok(Math.cos(yaw)<-.99);
+ assert.equal(heading(yaw,0,0,1/60),yaw);
+ assert.equal(heading(yaw,.001,0,1/60),yaw);
+ assert.ok(Math.abs(heading(0,-1,0,.05))<=.11+1e-10);
+ for(let i=0;i<180;i++)yaw=heading(yaw,.12,0,1/60);
+ assert.ok(Math.cos(yaw)>.99);
+ for(let i=0;i<180;i++)yaw=heading(yaw,0,.12,1/60);
+ assert.ok(Math.sin(yaw)<-.99);
+ assert.ok(game.includes('if(h.evasion<=0)h.heading=helicopterTravelHeading'));
+ assert.ok(game.includes('travelX*Math.cos(h.heading)-travelZ*Math.sin(h.heading)'));
+});
 test('Meteor warnings use intact parcel ownership and exclude invalid or test objects',()=>{
  const {selectMeteorWarning}=load('src/simulation/meteor-warning.js',{},['selectMeteorWarning']);
  const school={x:0,z:-29,w:27,d:58.8,school:true},m={target:{x:0,y:20,z:-10},mesh:{position:{y:60}},vel:{y:-10}};
