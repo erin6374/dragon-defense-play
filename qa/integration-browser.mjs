@@ -61,6 +61,23 @@ try{
    await page.screenshot({path:out+'/school-startup.png'});
    return result;
  });
+ await check('Startup controls remain reachable above HUD in short viewports',async()=>{
+   const sizes=[{width:1024,height:576},{width:844,height:390}],results=[];
+   try{
+    for(const size of sizes){
+     await page.setViewportSize(size);
+     for(const id of ['start-training','start','start-sandbox-direct']){
+      const button=page.locator('#'+id);await button.scrollIntoViewIfNeeded();
+      const v=await button.evaluate(el=>{
+       const r=el.getBoundingClientRect(),p=document.getElementById('panel'),b=p.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+       return {id:el.id,reachable:el===hit||el.contains(hit),panelTop:b.top,panelBottom:b.bottom,height:innerHeight,scrollHeight:p.scrollHeight,clientHeight:p.clientHeight};
+      });
+      assert.ok(v.reachable&&v.panelTop>=-1&&v.panelBottom<=v.height+1,JSON.stringify(v));results.push({...size,...v});
+     }
+    }
+   }finally{await page.setViewportSize({width:1024,height:576});await page.locator('#panel').evaluate(p=>p.scrollTop=0);}
+   return results;
+ });
  const ends=await page.evaluate(async()=>{
    const {BROAD_EXTENTS}=await import('./broad-street/broad-street-grid-data.mjs');
    const {VIEWER_TO_GAME_X}=await import('./src/simulation/viewer-parcels.js');
