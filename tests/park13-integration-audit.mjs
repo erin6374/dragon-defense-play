@@ -141,7 +141,9 @@ assert.equal(throughRoof.kind,'expansion');assert.equal(throughRoof.building.id,
 assert.ok(Math.abs(throughRoof.point.y-openHits[0].point.y)<1e-4,'Collision must agree with rendered breach surface');
 assert.ok(fixture.strikeTarget('park13-fixture-b',1,{x:VIEWER_TO_GAME_X+8,y:5,z:az}));
 assert.equal(fixture.stats().breached,2);assert.equal(fixture.stats().breachDrawObjects,1);
-fixture.restore();assert.equal(fixture.stats().fragments.active,0);assert.equal(fixture.stats().fragments.drawObjects,0);
+const rebuildsBeforeRepair=fixture.stats().breachRebuilds;
+fixture.restore();assert.equal(fixture.stats().breachRebuilds,rebuildsBeforeRepair+1);
+assert.equal(fixture.stats().fragments.active,0);assert.equal(fixture.stats().fragments.drawObjects,0);
 assert.equal(fixture.stats().breached,0);assert.equal(fixture.stats().breachDrawObjects,0);
 assert.deepEqual(snapFixture(),pristine);
 assert.ok(fixture.collisionParcels.every(b=>!b.traceBreach));
