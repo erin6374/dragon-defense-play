@@ -57,3 +57,43 @@ export function buildPark13Breach(T,owner,deform){
  }
  return {positions,colors,removed,interiorTriangles};
 }
+
+
+// Segment intersection against the same damaged shell and floor triangles
+// used by the renderer. Two-sided surfaces; nearest contact wins. Cache the
+// tight bounds and Float32 vertices once per impact, not on each game tick.
+export function createPark13BreachTracer(positions,offsetX=0,offsetZ=0){
+ const a=Float32Array.from(positions);
+ const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+ for(let i=0;i<a.length;i++){const j=i%3;lo[j]=Math.min(lo[j],a[i]);hi[j]=Math.max(hi[j],a[i]);}
+ return function trace(start,end,maxT=1){
+  if(!a.length)return null;
+  const ox=start.x-offsetX,oy=start.y,oz=start.z-offsetZ;
+  const dx=end.x-start.x,dy=end.y-start.y,dz=end.z-start.z;
+  const limit=Math.min(1,maxT);
+  // Axis slab rejection limits triangle tests to actually crossed parcels.
+  let near=0,far=limit;
+  const origin=[ox,oy,oz],delta=[dx,dy,dz];
+  for(let j=0;j<3;j++){
+   if(Math.abs(delta[j])<1e-10){if(origin[j]<lo[j]-1e-5||origin[j]>hi[j]+1e-5)return null;continue;}
+   const t0=(lo[j]-origin[j]-1e-5)/delta[j],t1=(hi[j]-origin[j]+1e-5)/delta[j];
+   near=Math.max(near,Math.min(t0,t1));far=Math.min(far,Math.max(t0,t1));
+   if(near>far)return null;
+  }
+  let best=limit,found=false;
+  for(let i=0;i<a.length;i+=9){
+   const e1x=a[i+3]-a[i],e1y=a[i+4]-a[i+1],e1z=a[i+5]-a[i+2];
+   const e2x=a[i+6]-a[i],e2y=a[i+7]-a[i+1],e2z=a[i+8]-a[i+2];
+   const px=dy*e2z-dz*e2y,py=dz*e2x-dx*e2z,pz=dx*e2y-dy*e2x;
+   const det=e1x*px+e1y*py+e1z*pz;if(Math.abs(det)<1e-10)continue;
+   const inv=1/det,tx=ox-a[i],ty=oy-a[i+1],tz=oz-a[i+2];
+   const u=(tx*px+ty*py+tz*pz)*inv;if(u< -1e-7||u>1+1e-7)continue;
+   const qx=ty*e1z-tz*e1y,qy=tz*e1x-tx*e1z,qz=tx*e1y-ty*e1x;
+   const v=(dx*qx+dy*qy+dz*qz)*inv;if(v< -1e-7||u+v>1+1e-7)continue;
+   const t=(e2x*qx+e2y*qy+e2z*qz)*inv;
+   if(t< -1e-7||t>best||oy+dy*t<.7)continue;
+   best=Math.max(0,t);found=true;
+  }
+  return found?best:null;
+ };
+}
