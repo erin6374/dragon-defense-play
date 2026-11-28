@@ -55,9 +55,13 @@ export function createPark13Expansion(T,data){
  const mat=c=>{if(!material.has(c))material.set(c,new T.MeshStandardMaterial({color:c,roughness:.95}));return material.get(c);};
  const shapePath=(r,C)=>{const p=new C();r.forEach(([x,z],i)=>i?p.lineTo(x,-z):p.moveTo(x,-z));p.closePath();return p;};
  let volumeCount=0,detailCount=0,triangles=0;
- const inventory=[],owners=new Map();
+ const inventory=[],owners=new Map(),collisionParcels=[];
  for(const record of data.records){
-  const owner={id:record.id,record,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
+  const polys=record.polys.map(poly=>poly.map(ring=>ring.map(([x,z])=>[x+VIEWER_TO_GAME_X,z+VIEWER_TO_GAME_Z])));
+  const p=polys.flat(2),xs=p.map(v=>v[0]),zs=p.map(v=>v[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
+  const collision={id:record.id,name:record.address,polys,x:(minX+maxX)/2,z:(minZ+maxZ)/2,w:maxX-minX,d:maxZ-minZ,h:record.height,damage:0,expansion:true};
+  collisionParcels.push(collision);
+  const owner={id:record.id,record,collision,damage:0,volumes:[],details:[]};owners.set(record.id,owner);
   const stats=renderPark13Record(record,{
    block(poly,h,c,base=0){
     const shape=shapePath(poly[0],T.Shape);shape.holes=poly.slice(1).map(r=>shapePath(r,T.Path));
@@ -97,7 +101,7 @@ export function createPark13Expansion(T,data){
  }
  // Parcel-local deformation preserves material batches and never mutates neighbors.
  const changed=new Set(),matrix=new T.Matrix4(),scale=new T.Matrix4();
- function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;o.damage=d;const h=d===1?.025:1-.75*d;
+ function setDamage(id,value){const o=owners.get(id);if(!o||!Number.isFinite(value))return false;const d=Math.max(0,Math.min(1,value));if(d===o.damage)return true;o.damage=d;const h=d===1?.025:1-.75*d;o.collision.damage=d;o.collision.h=o.record.height*h;
   for(const v of o.volumes){const a=v.attribute.array;for(let i=0;i<v.original.length;i+=3){a[v.offset+i]=v.original[i];a[v.offset+i+1]=v.original[i+1]*h;a[v.offset+i+2]=v.original[i+2];}v.attribute.addUpdateRange(v.offset,v.original.length);v.attribute.needsUpdate=true;}
   scale.makeScale(1,h,1);for(const v of o.details){if(d===0)matrix.copy(v.original);else matrix.multiplyMatrices(scale,v.original);v.mesh.setMatrixAt(v.index,matrix);v.mesh.instanceMatrix.addUpdateRange(v.index*16,16);v.mesh.instanceMatrix.needsUpdate=true;}
   if(d)changed.add(id);else changed.delete(id);return true;
@@ -107,5 +111,5 @@ export function createPark13Expansion(T,data){
  function targetAt(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;const lx=x-VIEWER_TO_GAME_X,lz=z-VIEWER_TO_GAME_Z;for(const o of owners.values()){if(o.damage>=1)continue;const r=o.record;if(r.polys.some(p=>inside(p[0],lx,lz)&&!p.slice(1).some(h=>inside(h,lx,lz))))return {id:o.id,x,z,y:r.height*(1-.75*o.damage),damage:o.damage};}return null;}
  function strikeTarget(id,strength){const o=owners.get(id);if(!o||!Number.isFinite(strength)||strength<=0||o.damage>=1)return false;return setDamage(id,o.damage+Math.min(.15,strength*.15));}
  root.updateMatrixWorld(true);
- return {root,inventory,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,damaged:changed.size,visible:root.visible})};
 }

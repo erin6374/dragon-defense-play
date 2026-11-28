@@ -23,6 +23,25 @@ try{
    const png=await page.evaluate(({x,y,i})=>{const q=window.__DD_QA;if(i===0){q.start(1);q.toggleFreeFlight(true);}q.move(x,y);q.stepFrame(4,.05);q.renderFrame(null,0);return window.__DD_RENDERER.domElement.toDataURL('image/png').split(',')[1];},{x,y,i});
    assert.ok(png.length>1000);await writeFile(out+'/'+(enabled?'expansion':'baseline')+'-'+i+'.png',Buffer.from(png,'base64'));
   }
+  if(enabled){
+   state.damage=await page.evaluate(()=>{
+    const q=window.__DD_QA;
+    let hit=null;
+    for(let x=-425;x<620&&!hit;x+=2)for(let z=-160;z<-103&&!hit;z+=2)hit=q.park13TargetAt(x,z);
+    if(!hit)throw Error('No expansion target');
+    const start={x:hit.x,y:hit.y+40,z:hit.z},end={x:hit.x,y:0,z:hit.z};
+    const first=q.park13TraceImpact(start,end,4).result;
+    const second=q.park13TraceImpact(start,end,4).result;
+    const damaged=q.park13ExpansionStats();
+    q.repairAllBuildings();
+    const repaired=q.park13ExpansionStats(),roof=q.park13TargetAt(hit.x,hit.z);
+    return {hit,first,second,damaged,repaired,roof};
+   });
+   const d=state.damage;assert.equal(d.first.kind,'expansion');assert.equal(d.first.id,d.hit.id);
+   assert.ok(d.first.after>0&&d.first.after<=.15);assert.ok(d.second.after>d.first.after&&d.second.after-d.first.after<=.1500001);
+   assert.equal(d.first.healthBefore,d.first.healthAfter);assert.equal(d.first.hpBefore,d.first.hpAfter);assert.equal(d.second.healthBefore,d.second.healthAfter);
+   assert.equal(d.damaged.damaged,1);assert.equal(d.repaired.damaged,0);assert.equal(d.roof.y,d.hit.y);
+  }
   report.runs.push({enabled,...state});await page.close();
  }
  assert.ok(report.runs[1].context.buildings<report.runs[0].context.buildings);

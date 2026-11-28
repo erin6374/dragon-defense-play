@@ -4590,7 +4590,7 @@ function spawnHelicopterCrashDebris(pos,variant=0){
 // Opening-wave rocks hit the first standing roof or ground plane they cross.
 // Sweep the fall so fast or small fragments cannot tunnel through a roof.
 function traceOpeningMeteorImpact(m,start){
- const hit=traceMeteorCollision(start,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1);
+ const hit=traceMeteorCollision(start,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1,neighborhood.park13?.collisionParcels);
  if(!hit)return false;
  m.target.set(hit.point.x,hit.point.y,hit.point.z);
  m.impactOwner=hit;
@@ -4602,6 +4602,18 @@ function damage(x,z,y=7,meteor=null){
   return;
  }
  const profile=meteor?structuralImpactProfile(meteor):impactProfile(1.8);
+ // Expansion impacts own their parcel but do not change the original campaign
+ // block-health denominator or enter the foreground building crunch path.
+ const expansion=neighborhood.park13;
+ const expansionOwner=meteor?.impactOwner? (meteor.impactOwner.kind==='expansion'?meteor.impactOwner.building:null):expansion?.targetAt(x,z);
+ if(expansionOwner){
+  const budget=schoolMeteorBudget(meteor?.size??1.8);
+  if(expansion.strikeTarget(expansionOwner.id,budget/.15)){
+   cinematicFX.dustBurst(new THREE.Vector3(x,y,z),Math.min(2.5,profile.strength),{brick:true,count:12});
+   emitImpact(x,y,z,40,profile.strength);sound('impact',{x});
+  }
+  return;
+ }
  warnCrowd(x,z,18);crackWindows(x,y,z,profile.radius);
  const diffMode=document.getElementById('difficulty')?.value||'normal';
  const diffDmg=diffMode==='hard'?3.2:diffMode==='easy'?.42:1.0;
@@ -6790,9 +6802,9 @@ if(m.grounded){
   // The same continuous collision test handles opening and later waves.
   // A large time step cannot skip a roof or pass through a side facade.
   const collision=!m.opening&&!m.dragonHunter&&m.vel?.y<-.1?
-   traceMeteorCollision(meteorStart,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1):null;
+   traceMeteorCollision(meteorStart,m.mesh.position,neighborhood.targetBuildings,schoolBounds,schoolDamage<1,neighborhood.park13?.collisionParcels):null;
   const sweepHit=collision?new THREE.Vector3(collision.point.x,collision.point.y,collision.point.z):null;
-  const hitBuilding=collision?.building??null;
+  const hitBuilding=collision?.kind==='building'?collision.building:null;
   const hitSchool=collision?.kind==='school';
   if(collision)m.impactOwner=collision;
 
@@ -7332,6 +7344,14 @@ window.__DD_QA={snap,
   inspectionBounds:()=>({...neighborhood.inspectionBounds}),
   distantNeighborhoodStats:()=>neighborhood.longRange.stats(),
   park13ExpansionStats:()=>neighborhood.park13?.stats()??null,
+  park13TargetAt:(x,z)=>neighborhood.park13?.targetAt(x,z)??null,
+  park13TraceImpact:(start,end,size=4)=>run('park13TraceImpact',()=>{
+   const hit=traceMeteorCollision(start,end,neighborhood.targetBuildings,schoolBounds,schoolDamage<1,neighborhood.park13?.collisionParcels);
+   if(hit?.kind!=='expansion')return {kind:hit?.kind??null};
+   const b=hit.building,before=b.damage,healthBefore=neighborhoodHealth(),hpBefore=hp;
+   damage(hit.point.x,hit.point.z,hit.point.y,{size,kind:'iron',impactOwner:hit});
+   return {kind:hit.kind,id:b.id,before,after:b.damage,roof:b.h,healthBefore,healthAfter:neighborhoodHealth(),hpBefore,hpAfter:hp};
+  }),
   strikeDistantNeighborhood:(x,z,strength)=>neighborhood.longRange.strike(x,z,strength),
   distantBuildingState:id=>neighborhood.longRange.buildingState(id),
   sampleDistantHelicopters:()=>run('sampleDistantHelicopters',()=>{

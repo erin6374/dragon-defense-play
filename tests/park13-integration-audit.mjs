@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import * as T from '../vendor/three/build/three.module.js';
 import {preparePark13Expansion,createPark13Expansion,clipContextRect,contextIntersectsExpansion} from '../src/rendering/park13-expansion.js';
 import {viewerParcels,schoolGameEnvelope,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../src/simulation/viewer-parcels.js';
+import {traceMeteorCollision} from '../src/simulation/meteor-collision.js';
 import {intersectionArea,AREA_TOLERANCE} from '../broad-street/park13-integration/park13-polygon-overlap.mjs';
 const root=new URL('../broad-street/park13-integration/',import.meta.url);
 const read=async name=>JSON.parse(await readFile(new URL(name,root),'utf8'));
@@ -64,6 +65,8 @@ for(const r of expanded){
   if(hit)break;
  }
  assert.ok(hit,'No interior target for '+r.id);
+ const sweep=traceMeteorCollision({x:hit.x,y:hit.y+40,z:hit.z},{x:hit.x,y:0,z:hit.z},baseline,null,false,layer.collisionParcels);
+ assert.equal(sweep.kind,'expansion');assert.equal(sweep.building.id,r.id);assert.ok(Math.abs(sweep.point.y-hit.y)<1e-6);
  assert.ok(layer.strikeTarget(r.id,1));assert.equal(layer.damageOf(r.id),.15);
  assert.equal(layer.stats().damaged,1);
  for(const other of expanded)if(other.id!==r.id)assert.equal(layer.damageOf(other.id),0);
