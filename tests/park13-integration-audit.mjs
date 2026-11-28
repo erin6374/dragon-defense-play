@@ -71,10 +71,38 @@ for(const r of expanded){
  assert.equal(layer.stats().damaged,1);
  for(const other of expanded)if(other.id!==r.id)assert.equal(layer.damageOf(other.id),0);
  assert.ok(layer.targetAt(hit.x,hit.z).y<hit.y);
- layer.restore();assert.equal(layer.damageOf(r.id),0);testedTargets++;
+ const reduced=traceMeteorCollision({x:hit.x,y:hit.y+40,z:hit.z},{x:hit.x,y:0,z:hit.z},baseline,null,false,layer.collisionParcels);
+ assert.equal(reduced.kind,'expansion');assert.equal(reduced.building.id,r.id);
+ assert.ok(Math.abs(reduced.point.y-layer.targetAt(hit.x,hit.z).y)<1e-6);
+ assert.equal(layer.setDamage(r.id,1),true);
+ assert.equal(layer.targetAt(hit.x,hit.z),null);
+ const collapsedHit=traceMeteorCollision({x:hit.x,y:hit.y+40,z:hit.z},{x:hit.x,y:0,z:hit.z},baseline,null,false,layer.collisionParcels);
+ assert.equal(collapsedHit.kind,'ground','Collapsed parcel must no longer block a meteor: '+r.id);
+ assert.equal(layer.strikeTarget(r.id,1),false);
+ layer.restore();assert.equal(layer.damageOf(r.id),0);
+ const repaired=traceMeteorCollision({x:hit.x,y:hit.y+40,z:hit.z},{x:hit.x,y:0,z:hit.z},baseline,null,false,layer.collisionParcels);
+ assert.equal(repaired.building.id,r.id);assert.ok(Math.abs(repaired.point.y-hit.y)<1e-6);testedTargets++;
 }
 assert.equal(testedTargets,165);assert.deepEqual(arrays(),original);
 console.log('PARK13_ALL_TARGETS '+JSON.stringify({testedTargets,restored:true}));
+// Synthetic courtyard and adjacent parcel exercise horizontal edge entry,
+// ordering independent of inventory order, and transparent footprint holes.
+const ring=(x0,z0,x1,z1)=>[[x0,z0],[x1,z0],[x1,z1],[x0,z1],[x0,z0]];
+const courtyard={id:'courtyard',x:5,z:5,w:10,d:10,h:12,damage:0,polys:[[ring(0,0,10,10),ring(3,3,7,7)]]};
+const adjacent={id:'adjacent',x:15,z:5,w:10,d:10,h:12,damage:0,polys:[[ring(10,0,20,10)]]};
+const trace=(start,end,parcels=[adjacent,courtyard])=>traceMeteorCollision(start,end,[],null,false,parcels);
+const side=trace({x:-5,y:10,z:5},{x:18,y:2,z:5});
+assert.equal(side.kind,'expansion');assert.equal(side.building.id,'courtyard');assert.ok(Math.abs(side.point.x)<1e-4);
+const throughHole=trace({x:5,y:25,z:5},{x:5,y:0,z:5});
+assert.equal(throughHole.kind,'ground');
+const innerWall=trace({x:5,y:10,z:5},{x:9,y:2,z:5});
+assert.equal(innerWall.building.id,'courtyard');assert.ok(Math.abs(innerWall.point.x-7)<1e-4);
+const reverse=trace({x:25,y:10,z:5},{x:-5,y:2,z:5},[courtyard,adjacent]);
+assert.equal(reverse.building.id,'adjacent');assert.ok(Math.abs(reverse.point.x-20)<1e-4);
+courtyard.damage=1;
+const bypass=trace({x:-5,y:10,z:5},{x:18,y:2,z:5});
+assert.equal(bypass.building.id,'adjacent');assert.ok(Math.abs(bypass.point.x-10)<1e-4);
+console.log('PARK13_COLLISION_EDGE_CASES '+JSON.stringify({sideEntry:true,courtyardOpening:true,innerWall:true,nearestOwner:true,collapsedBypass:true,allParcelHeightRepair:testedTargets}));
 const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,100,20);
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);
