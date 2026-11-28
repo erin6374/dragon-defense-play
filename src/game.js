@@ -2315,7 +2315,7 @@ function updateDistantMeteors(dt){
     if(near){
      northBroadModels.impactBuilding(near.id,point,5.5,strength);
      updateHud();
-    }else if(expansion)neighborhood.park13?.strikeTarget(expansion.id,strength);
+    }else if(expansion)neighborhood.park13?.strikeTarget(expansion.id,strength,point);
     else neighborhood.longRange.strikeTarget(far.id,strength);
     const spectacle=backgroundImpactEffects(neighborhoodHealth());
     if(Math.random()<spectacle.fireChance)cinematicSkyExplosion(point.x,point.y,point.z,spectacle);
@@ -4608,7 +4608,7 @@ function damage(x,z,y=7,meteor=null){
  const expansionOwner=meteor?.impactOwner? (meteor.impactOwner.kind==='expansion'?meteor.impactOwner.building:null):expansion?.targetAt(x,z);
  if(expansionOwner){
   const budget=schoolMeteorBudget(meteor?.size??1.8);
-  if(expansion.strikeTarget(expansionOwner.id,budget/.15)){
+  if(expansion.strikeTarget(expansionOwner.id,budget/.15,{x,y,z})){
    cinematicFX.dustBurst(new THREE.Vector3(x,y,z),Math.min(2.5,profile.strength),{brick:true,count:12});
    emitImpact(x,y,z,40,profile.strength);sound('impact',{x});
   }
