@@ -41,6 +41,7 @@ try{
    assert.ok(d.first.after>0&&d.first.after<=.15);assert.ok(d.second.after>d.first.after&&d.second.after-d.first.after<=.1500001);
    assert.equal(d.first.healthBefore,d.first.healthAfter);assert.equal(d.first.hpBefore,d.first.hpAfter);assert.equal(d.second.healthBefore,d.second.healthAfter);
    assert.equal(d.damaged.damaged,1);assert.equal(d.repaired.damaged,0);assert.equal(d.roof.y,d.hit.y);
+   assert.ok(d.damaged.fragments.active>0);assert.equal(d.damaged.fragments.drawObjects,1);assert.equal(d.repaired.fragments.active,0);assert.equal(d.repaired.fragments.drawObjects,0);
    // Exercise a real spawned meteor through the fixed-step game loop, not
    // just the QA helper that calls the collision and damage routines directly.
    state.liveMeteor=await page.evaluate(hit=>{
@@ -70,13 +71,14 @@ try{
    assert.ok(live.spawned>0);assert.ok(live.frames>0&&live.frames<=60);
    assert.equal(live.after?.id,live.before.id);assert.ok(live.after.damage>0&&live.after.damage<=.1500001);
    assert.equal(live.damaged.damaged,1);assert.equal(live.healthBefore,live.healthAfter);
+   assert.ok(live.damaged.fragments.active>0);assert.ok(live.damaged.fragments.active<=live.damaged.fragments.capacity);
    assert.equal(live.repaired.damage,0);assert.equal(live.repaired.y,live.before.y);assert.equal(live.remaining,0);
    await page.waitForTimeout(900);
    state.afterRepairDelay=await page.evaluate(()=>{
     const q=window.__DD_QA;q.stepFrame(2,.05);
-    return {meteors:q.meteorsList().length,damaged:q.park13ExpansionStats().damaged};
+    return {meteors:q.meteorsList().length,damaged:q.park13ExpansionStats().damaged,fragments:q.park13ExpansionStats().fragments.active};
    });
-   assert.deepEqual(state.afterRepairDelay,{meteors:0,damaged:0});
+   assert.deepEqual(state.afterRepairDelay,{meteors:0,damaged:0,fragments:0});
   }
   report.runs.push({enabled,...state});await page.close();
  }
