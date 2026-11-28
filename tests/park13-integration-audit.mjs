@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../vendor/three/build/three.module.js';
-import {preparePark13Expansion,createPark13Expansion,clipContextRect,contextIntersectsExpansion} from '../src/rendering/park13-expansion.js';
+import {preparePark13Expansion,createPark13Expansion,clipContextRect,contextIntersectsExpansion,park13DamageHeight} from '../src/rendering/park13-expansion.js';
 import {viewerParcels,schoolGameEnvelope,VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../src/simulation/viewer-parcels.js';
 import {traceMeteorCollision} from '../src/simulation/meteor-collision.js';
 import {intersectionArea,AREA_TOLERANCE} from '../broad-street/park13-integration/park13-polygon-overlap.mjs';
@@ -41,6 +41,13 @@ const box=new T.Box3().setFromObject(layer.root);assert.ok([...box.min.toArray()
 const meshes=layer.root.children[0].children;
 const arrays=()=>meshes.map(m=>Array.from(m.isInstancedMesh?m.instanceMatrix.array:m.geometry.attributes.position.array));
 const original=arrays(),id=data.records[0].id,other=data.records[1].id;
+const normals=()=>meshes.filter(m=>!m.isInstancedMesh).map(m=>Array.from(m.geometry.attributes.normal.array));
+const originalNormals=normals();
+const site={x:0,y:12,z:0,radius:5,budget:.15};
+assert.equal(park13DamageHeight(3,0,0,12,.15,[site]),3);
+assert.ok(park13DamageHeight(12,0,0,12,.15,[site])<park13DamageHeight(12,8,0,12,.15,[site]));
+assert.equal(park13DamageHeight(12,8,0,12,.15,[site]),12*(1-.75*.15));
+assert.equal(park13DamageHeight(12,0,0,12,0,[site]),12);
 assert.equal(layer.setDamage('unknown',.5),false);assert.equal(layer.setDamage(id,NaN),false);
 assert.equal(layer.setDamage(id,.15),true);assert.equal(layer.damageOf(id),.15);assert.equal(layer.damageOf(other),0);
 const partial=arrays();assert.ok(partial.some((a,i)=>a.some((v,j)=>v!==original[i][j])));
@@ -50,7 +57,7 @@ layer.restore();assert.equal(layer.stats().damaged,0);assert.deepEqual(arrays(),
 assert.equal(layer.stats().architectureDrawObjects,80);
 assert.equal(layer.targetAt(NaN,0),null);assert.equal(layer.targetAt(1e6,1e6),null);
 let found=null;for(const r of expanded){const ring=r.polys[0][0];const xs=ring.map(p=>p[0]),zs=ring.map(p=>p[1]);for(let i=1;i<10&&!found;i++)for(let j=1;j<10&&!found;j++){const x=Math.min(...xs)+(Math.max(...xs)-Math.min(...xs))*i/10,z=Math.min(...zs)+(Math.max(...zs)-Math.min(...zs))*j/10;const hit=layer.targetAt(x,z);if(hit?.id===r.id)found=hit;}if(found)break;}
-assert.ok(found);assert.equal(layer.strikeTarget(found.id,1),true);assert.equal(layer.damageOf(found.id),.15);assert.ok(layer.targetAt(found.x,found.z).y<found.y);assert.equal(layer.strikeTarget(found.id,-1),false);layer.restore();assert.deepEqual(arrays(),original);
+assert.ok(found);assert.equal(layer.strikeTarget(found.id,1,{x:found.x,y:found.y,z:found.z}),true);assert.equal(layer.stats().impactSites,1);assert.ok(normals().flat().every(Number.isFinite));assert.equal(layer.damageOf(found.id),.15);assert.ok(layer.targetAt(found.x,found.z).y<found.y);assert.equal(layer.strikeTarget(found.id,-1),false);layer.restore();assert.deepEqual(arrays(),original);
 // Exercise every imported parcel, not merely the first record. Interior samples
 // must resolve to their own polygon and damage must leave every other owner intact.
 let testedTargets=0;
@@ -83,7 +90,7 @@ for(const r of expanded){
  const repaired=traceMeteorCollision({x:hit.x,y:hit.y+40,z:hit.z},{x:hit.x,y:0,z:hit.z},baseline,null,false,layer.collisionParcels);
  assert.equal(repaired.building.id,r.id);assert.ok(Math.abs(repaired.point.y-hit.y)<1e-6);testedTargets++;
 }
-assert.equal(testedTargets,165);assert.deepEqual(arrays(),original);
+assert.equal(testedTargets,165);assert.deepEqual(arrays(),original);assert.deepEqual(normals(),originalNormals);assert.equal(layer.stats().impactSites,0);
 console.log('PARK13_ALL_TARGETS '+JSON.stringify({testedTargets,restored:true}));
 // Synthetic courtyard and adjacent parcel exercise horizontal edge entry,
 // ordering independent of inventory order, and transparent footprint holes.
