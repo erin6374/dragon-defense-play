@@ -138,7 +138,9 @@ export function createPark13Expansion(T,data){
    const x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx,len=Math.hypot(x,y,z)||1;
    for(let j=0;j<9;j+=3){n[i+j]=x/len;n[i+j+1]=y/len;n[i+j+2]=z/len;}
   }
-  b.normals=n;breachNormalTriangles+=p.length/9;
+  b.normals=n;b.bounds=new T.Box3();const point=new T.Vector3();
+  for(let i=0;i<p.length;i+=3)b.bounds.expandByPoint(point.fromArray(p,i));
+  breachNormalTriangles+=p.length/9;
  }
  function syncBreaches(){
   if(breachBatchDepth){breachDirty=true;return;}
@@ -156,10 +158,10 @@ export function createPark13Expansion(T,data){
   const g=breachMesh.geometry;g.setDrawRange(0,size/3);breachMesh.visible=size>0;
   if(!size)return;
   const p=g.attributes.position,n=g.attributes.normal,c=g.attributes.color;
-  let offset=0;const bounds=new T.Box3(),point=new T.Vector3();
+  let offset=0;const bounds=new T.Box3();
   for(const b of breaches.values()){
    p.array.set(b.positions,offset);n.array.set(b.normals,offset);c.array.set(b.colors,offset);offset+=b.positions.length;
-   for(let i=0;i<b.positions.length;i+=3)bounds.expandByPoint(point.fromArray(b.positions,i));
+   bounds.union(b.bounds);
   }
   for(const attribute of [p,n,c]){attribute.clearUpdateRanges();attribute.addUpdateRange(0,size);attribute.needsUpdate=true;}
   // BufferGeometry.computeBoundingSphere would include unused capacity.
