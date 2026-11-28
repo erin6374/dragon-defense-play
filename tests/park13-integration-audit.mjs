@@ -20,6 +20,18 @@ for(let i=0;i<expanded.length;i++){
  }
  for(const [x,z] of a.polys.flat(2))assert.ok(data.zones.some(b=>x>=b.minX&&x<=b.maxX&&z>=b.minZ&&z<=b.maxZ),'Outside replacement coverage '+a.id);
 }
+// Check every imported road, sidewalk, joint, seam and pedestrian strip
+// against the exact active game footprints, not only the Viewer records.
+let surfaceChecks=0;const conflicts=[];
+for(const {items} of data.surfaces)for(const item of items){
+ const polys=item.polys.map(poly=>poly.map(ring=>ring.map(([x,z])=>[x+VIEWER_TO_GAME_X,z+VIEWER_TO_GAME_Z])));
+ for(const b of [...baseline,{id:'school',polys:schoolRing},...expanded]){
+  const area=intersectionArea(polys,b.polys);surfaceChecks++;
+  if(area>AREA_TOLERANCE)conflicts.push({surface:item.id,building:b.id,area});
+ }
+}
+console.log('PARK13_SURFACE_AUDIT '+JSON.stringify({surfaceChecks,conflicts}));
+assert.equal(conflicts.length,0,'Imported pavement overlaps active building footprints');
 const layer=createPark13Expansion(T,data),s=layer.stats();
 assert.equal(s.buildings,165);assert.equal(s.components,2893);assert.equal(s.triangles,44260);assert.equal(s.architectureDrawObjects,80);assert.equal(s.damageable,false);
 assert.equal(s.surfaceDrawObjects,3);assert.ok(!data.records.some(r=>r.bin==='1048635'));
