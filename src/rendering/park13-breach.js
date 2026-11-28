@@ -3,14 +3,18 @@
 export function buildPark13Breach(T,owner,deform){
  const positions=[],colors=[],color=new T.Color();
  const height=owner.record.height,sites=owner.impacts,damage=owner.damage;
- let removed=0,interiorTriangles=0;
+ let removed=0,interiorTriangles=0,reliefRemoved=0;
+ const clippedDetails=new Set();
  const dist=(a,p)=>Math.hypot(a[0]-p.x,(a[1]-p.y)*.8,a[2]-p.z);
  const radius=p=>p.radius*Math.min(.75,.30+Math.sqrt(p.budget)*.8);
- function emit(a,b,c,tint){
+ const deformed=v=>[v[0],deform(v[1],v[0],v[2]),v[2]];
+ function emit(a,b,c,tint,rendered=null){
   color.setHex(tint);
-  for(const v of [a,b,c]){positions.push(v[0],deform(v[1],v[0],v[2]),v[2]);colors.push(color.r,color.g,color.b);}
+  for(const v of rendered??[a,b,c].map(deformed)){positions.push(...v);colors.push(color.r,color.g,color.b);}
  }
- function cut(a,b,c,tint,depth=0){
+ function cut(a,b,c,tint,depth=0,rendered=[a,b,c].map(deformed)){
+  // Interpolate transformed vertices on original triangle planes. Adjacent
+  // triangles then share the same straight edge even with uneven subdivision.
   // Prune far triangles using conservative axis bounds before subdividing.
   const tri=[a,b,c],near=sites.filter(p=>{
    const r=radius(p);
@@ -19,16 +23,17 @@ export function buildPark13Breach(T,owner,deform){
     return v>=lo-span&&v<=hi+span;
    });
   });
-  if(!near.length){emit(a,b,c,tint);return;}
+  if(!near.length){emit(a,b,c,tint,rendered);return;}
   const length=(u,v)=>Math.hypot(...u.map((n,i)=>n-v[i]));
   const edges=[length(a,b),length(b,c),length(c,a)],i=edges.indexOf(Math.max(...edges));
   if(depth<10&&edges[i]>.95){
    const u=tri[i],v=tri[(i+1)%3],w=tri[(i+2)%3],m=u.map((n,j)=>(n+v[j])*.5);
-   cut(u,m,w,tint,depth+1);cut(m,v,w,tint,depth+1);return;
+   const ru=rendered[i],rv=rendered[(i+1)%3],rw=rendered[(i+2)%3],rm=ru.map((n,j)=>(n+rv[j])*.5);
+   cut(u,m,w,tint,depth+1,[ru,rm,rw]);cut(m,v,w,tint,depth+1,[rm,rv,rw]);return;
   }
   const center=a.map((n,j)=>(n+b[j]+c[j])/3);
   if(near.some(p=>dist(center,p)<radius(p))){removed++;return;}
-  emit(a,b,c,tint);
+  emit(a,b,c,tint,rendered);
  }
  if(damage>=1||!sites.length)return null;
  for(const volume of owner.volumes){
@@ -36,6 +41,26 @@ export function buildPark13Breach(T,owner,deform){
   for(let i=0;i<a.length;i+=9)cut(Array.from(a.subarray(i,i+3)),Array.from(a.subarray(i+3,i+6)),Array.from(a.subarray(i+6,i+9)),volume.color);
  }
  if(!removed)return null;
+ const shellRemoved=removed;
+ // Clip intersecting relief boxes in place rather than leave large cladding
+ // panels spanning a new hole. Preserve the original instanced detail if
+ // its actual triangles survive the cut; only changed pieces enter the batch.
+ for(const detail of owner.details??[]){
+  const e=detail.original.elements;
+  const corners=Array.from({length:8},(_,i)=>{
+   const x=(i&1)?.5:-.5,y=(i&2)?.5:-.5,z=(i&4)?.5:-.5;
+   return [e[0]*x+e[4]*y+e[8]*z+e[12],e[1]*x+e[5]*y+e[9]*z+e[13],e[2]*x+e[6]*y+e[10]*z+e[14]];
+  });
+  if(!sites.some(p=>[p.x,p.y,p.z].every((v,i)=>{
+   const pad=radius(p)/(i===1?.8:1);
+   return v>=Math.min(...corners.map(c=>c[i]))-pad&&v<=Math.max(...corners.map(c=>c[i]))+pad;
+  })))continue;
+  const offset=positions.length,prior=removed;
+  const faces=[[0,2,3,1],[4,5,7,6],[0,1,5,4],[2,6,7,3],[0,4,6,2],[1,3,7,5]];
+  for(const [a,b,c,d] of faces){cut(corners[a],corners[b],corners[c],detail.color);cut(corners[a],corners[c],corners[d],detail.color);}
+  if(removed===prior){positions.length=offset;colors.length=offset;continue;}
+  clippedDetails.add(detail);reliefRemoved+=removed-prior;
+ }
  // Illustrative floor decks only for residential-scale footprints. Do not
  // invent a generic residential floor stack in churches/campus/auditoria.
  const w=owner.collision.w,d=owner.collision.d;
@@ -55,7 +80,7 @@ export function buildPark13Breach(T,owner,deform){
    }
   }
  }
- return {positions,colors,removed,interiorTriangles};
+ return {positions,colors,removed:shellRemoved,reliefRemoved,clippedDetails,interiorTriangles};
 }
 
 
