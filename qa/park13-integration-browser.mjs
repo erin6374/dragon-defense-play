@@ -16,7 +16,7 @@ try{
    const q=window.__DD_QA;return {expansion:q.park13ExpansionStats(),context:q.distantNeighborhoodStats(),parcels:q.northBroadModels().result.loadedCount,school:q.snap().renderVisibility.actualSchoolOverlayReady};
   });
   assert.equal(state.parcels,122);assert.ok(state.school);
-  if(enabled){assert.equal(state.expansion.buildings,165);assert.equal(state.expansion.components,2893);assert.equal(state.expansion.triangles,44260);assert.equal(state.expansion.architectureDrawObjects,80);assert.ok(state.context.excludedByExpansion>0);}
+  if(enabled){assert.equal(state.expansion.buildings,165);assert.equal(state.expansion.components,2893);assert.equal(state.expansion.triangles,44260);assert.equal(state.expansion.architectureDrawObjects,80);assert.deepEqual(state.expansion.realmCounts,{roads:343,sidewalks:686,pedestrianPaths:51,campusSurfaces:78});assert.ok(state.context.excludedByExpansion>0);}
   else{assert.equal(state.expansion,null);assert.equal(state.context.excludedByExpansion,0);}
   const positions=[[-185,42],[110,55],[360,70]];
   for(const [i,[x,y]] of positions.entries()){

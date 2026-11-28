@@ -2,7 +2,7 @@
 import {renderPark13Record} from '../../broad-street/park13-integration/park13-background.mjs';
 import {VIEWER_TO_GAME_X,VIEWER_TO_GAME_Z} from '../simulation/viewer-parcels.js';
 export const SOURCE_COMMIT='8c101b70d6771ac50a0a9f7dc70af6696ff94f9e';
-const FILES=['park13-GIS-precise-20261127.json','park13-southern-20261127.json','park13-public-realm-20261127.json','park13-southern-realm-full-20261127.json','park13-diamond-seam-20261127.json'];
+const FILES=['park13-GIS-precise-20261127.json','park13-southern-20261127.json','park13-public-realm-20261127.json','park13-southern-realm-full-20261127.json','park13-diamond-seam-20261127.json','park13-campus-links-20261127.json'];
 export async function loadPark13Expansion(fetcher=fetch){
  const data=await Promise.all(FILES.map(async name=>{
   const r=await fetcher(new URL('../../broad-street/park13-integration/'+name,import.meta.url));
@@ -10,21 +10,25 @@ export async function loadPark13Expansion(fetcher=fetch){
  }));
  return preparePark13Expansion(...data);
 }
-export function preparePark13Expansion(pilot,south,realm,southRealm,seam){
+export function preparePark13Expansion(pilot,south,realm,southRealm,seam,campus){
  if(pilot.records.length!==163||south.records.length!==2||pilot.held.length!==1||
  pilot.held[0].bin!=='1048635'||realm.roads.length!==274||southRealm.roads.length!==58||
- realm.sidewalks.length!==548||southRealm.sidewalks.length!==116||seam.roadSeams.length!==2)throw Error('Unexpected Park13 source inventory');
+ realm.sidewalks.length!==548||southRealm.sidewalks.length!==116||seam.roadSeams.length!==2||campus.roads.length!==11||campus.sidewalks.length!==22||campus.roadJoints.length!==1||campus.sidewalkJoints.length!==2||campus.pedestrianPaths.length!==42||campus.held.length||campus.heldJoints.length||campus.pedestrianHeld.length)throw Error('Unexpected Park13 source inventory');
  const records=[...pilot.records,...south.records];
  if(new Set(records.map(r=>r.id)).size!==165||records.some(r=>!r.replaceable||r.provisionalOnly||!Number.isFinite(r.height)||r.height<=0||!r.polys.length))throw Error('Invalid expansion records');
  const shift=r=>({minX:r.minX+VIEWER_TO_GAME_X,maxX:r.maxX+VIEWER_TO_GAME_X,minZ:r.minZ+VIEWER_TO_GAME_Z,maxZ:r.maxZ+VIEWER_TO_GAME_Z});
- // Pilot and southern strip only. Keep campus links outside these zones for the later seam audit.
+ // Preserve the main replacement areas. For campus links, suppress only
+ // procedural context intersecting individual pavement envelopes rather than
+ // clearing an entire bounding rectangle across the campus.
  const zones=[shift(realm.bounds),shift(southRealm.bounds),shift({minX:realm.bounds.maxX,maxX:southRealm.bounds.minX,minZ:southRealm.bounds.minZ,maxZ:southRealm.bounds.maxZ})];
+ const campusItems=[...campus.roads,...campus.sidewalks,...campus.roadJoints,...campus.sidewalkJoints,...campus.pedestrianPaths];
+ for(const item of campusItems){const p=item.polys.flat(2);zones.push(shift({minX:Math.min(...p.map(v=>v[0])),maxX:Math.max(...p.map(v=>v[0])),minZ:Math.min(...p.map(v=>v[1])),maxZ:Math.max(...p.map(v=>v[1]))}));}
  const surfaces=[
- {items:[...realm.sidewalks,...realm.sidewalkJoints,...southRealm.sidewalks,...southRealm.sidewalkJoints,...seam.sidewalkSeams],color:0xadaaa0,y:-.215},
- {items:[...realm.roads,...realm.roadJoints,...southRealm.roads,...southRealm.roadJoints,...seam.roadSeams],color:0x454a4c,y:-.195},
- {items:southRealm.pedestrianPaths,color:0xb3a69a,y:-.21}
+ {items:[...realm.sidewalks,...realm.sidewalkJoints,...southRealm.sidewalks,...southRealm.sidewalkJoints,...seam.sidewalkSeams,...campus.sidewalks,...campus.sidewalkJoints],color:0xadaaa0,y:-.215},
+ {items:[...realm.roads,...realm.roadJoints,...southRealm.roads,...southRealm.roadJoints,...seam.roadSeams,...campus.roads,...campus.roadJoints],color:0x454a4c,y:-.195},
+ {items:[...southRealm.pedestrianPaths,...campus.pedestrianPaths],color:0xb3a69a,y:-.21}
  ];
- return {records,zones,surfaces,held:pilot.held,source:SOURCE_COMMIT};
+ return {records,zones,surfaces,held:pilot.held,source:SOURCE_COMMIT,realmCounts:{roads:343,sidewalks:686,pedestrianPaths:51,campusSurfaces:campusItems.length}};
 }
 const overlaps=(a,b)=>a.minX<b.maxX&&a.maxX>b.minX&&a.minZ<b.maxZ&&a.maxZ>b.minZ;
 export function contextIntersectsExpansion(zones,x,z,w,d){
@@ -80,11 +84,16 @@ export function createPark13Expansion(T,data){
  const publicRealm=new T.Group();publicRealm.name='Park13 provisional road widths';root.add(publicRealm);
  for(const {items,color,y} of data.surfaces){
   const pos=[];
-  for(const item of items){const ring=item.polys[0][0];for(let i=1;i<ring.length-2;i++)for(const j of [0,i+1,i])pos.push(ring[j][0],y,ring[j][1]);}
+  for(const item of items)for(const poly of item.polys){
+   const rings=poly.map(r=>{const points=r.map(([x,z])=>new T.Vector2(x,z));if(points[0].equals(points.at(-1)))points.pop();return points;});
+   const [outer,...holes]=rings,faces=T.ShapeUtils.triangulateShape(outer,holes),vertices=rings.flat();
+   if(!faces.length)throw Error('Empty pavement triangulation '+item.id);
+   for(const face of faces)for(const i of face){const p=vertices[i];pos.push(p.x,y,p.y);}
+  }
   if(!pos.length)continue;
   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.computeVertexNormals();geo.computeBoundingSphere();
   publicRealm.add(new T.Mesh(geo,new T.MeshStandardMaterial({color,roughness:1,side:T.DoubleSide})));
  }
  root.updateMatrixWorld(true);
- return {root,inventory,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,held:data.held.length,damageable:false,visible:root.visible})};
+ return {root,inventory,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,visible:root.visible})};
 }
