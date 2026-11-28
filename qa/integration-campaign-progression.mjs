@@ -8,7 +8,7 @@ const {chromium}=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href)
 const out='integration-campaign-output';
 await mkdir(out,{recursive:true});
 const base=new URL(process.argv[2]||'http://127.0.0.1:8765/');
-const report={scope:'assisted campaign progression, actual browser and production wave/settlement functions; not unassisted gameplay',waves:[],boundaries:[],errors:[]};
+const report={commit:process.env.GITHUB_SHA||null,scope:'assisted campaign progression, actual browser and production wave/settlement functions; not unassisted gameplay',waves:[],boundaries:[],errors:[]};
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -81,6 +81,24 @@ try{
  assert.ok(finale.before.bosses>0,'Finale bosses were not spawned');assert.equal(finale.after.active,false);assert.match(finale.heading,/PHILADELPHIA SAVED/);
  await page.locator('#ending-block').click();assert.match(await page.locator('#panel h2').innerText(),/ACCOUNTABILITY VICTORY/);
  await page.screenshot({path:out+'/ending.png'});
+ // Exercise the second ending and both restart paths independently of the
+ // assisted full campaign. The victory setup is explicitly assisted.
+ await page.locator('#again').click();
+ const restarted=await page.evaluate(()=>window.__DD_QA.snap());
+ assert.equal(restarted.wave,1);assert.equal(restarted.hp,100);assert.equal(restarted.dragon.lives,3);assert.ok(restarted.active&&!restarted.paused);
+ await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(15);if(!r.ok)throw Error(r.error);q.destroyAllSatellites();q.advanceProgress(2.3);});
+ await page.locator('#ending-wait').click({timeout:30000});
+ assert.match(await page.locator('#panel h2').innerText(),/ESCAPE ENDING/);
+ await page.screenshot({path:out+'/ending-escape.png'});
+ await page.evaluate(()=>{const q=window.__DD_QA,r=q.start(1);if(!r.ok)throw Error(r.error);q.hitSchool(100);});
+ assert.match(await page.locator('#panel h1').innerText(),/GAME OVER/);
+ const defeated=await page.evaluate(()=>window.__DD_QA.snap());assert.equal(defeated.active,false);assert.equal(defeated.hp,0);
+ await page.screenshot({path:out+'/defeat.png'});
+ await page.locator('#again').click();
+ const recovered=await page.evaluate(()=>window.__DD_QA.snap());
+ assert.equal(recovered.wave,1);assert.equal(recovered.hp,100);assert.equal(recovered.dragon.lives,3);assert.ok(recovered.active&&!recovered.paused);
+ report.endings={accountability:true,escape:true,defeat:true,restartAfterVictory:true,restartAfterDefeat:true};
+ console.log('CAMPAIGN_ENDINGS '+JSON.stringify(report.endings));
  report.finale=finale;assert.equal(report.waves.length,15);assert.equal(report.boundaries.length,4);assert.equal(report.errors.length,0);report.passed=true;
  console.log('CAMPAIGN_SUMMARY '+JSON.stringify({waves:report.waves.map(w=>w.wave),boundaries:report.boundaries.map(b=>b.wave),training:report.training.after,finale}));
 }catch(e){report.passed=false;report.fatal=String(e);console.error(e);}

@@ -43,6 +43,13 @@ try{
  const requireHardware=process.argv.includes('--require-hardware');
  if(requireHardware&&(software||headless))throw Error('--require-hardware requires a visible browser without --software');
  report.hardwareRequested=requireHardware;
+ // A native acceptance report must identify the exact tested tracked source.
+ if(requireHardware){
+  assert(report.commit&&/^[0-9a-f]{40}$/.test(report.commit),'Native acceptance requires a Git checkout');
+  report.trackedChanges=execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8'}).trim();
+  assert(!report.trackedChanges,'Tracked files differ from the reported Git commit: '+report.trackedChanges);
+  if(process.env.DD_QA_EXPECTED_SHA)assert(report.commit===process.env.DD_QA_EXPECTED_SHA,'Native candidate SHA mismatch');
+ }
  const executablePath=process.env.DD_QA_CHROMIUM;
  const launch={headless,executablePath,args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[]};
  const channel=process.env.QA_BROWSER_CHANNEL||'msedge';
