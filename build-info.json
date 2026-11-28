@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.9",
-  "build": "combined-preview.9-rc174-bsv21.1.33",
-  "timestamp": "2026-11-27T07:17:37Z",
+  "version": "5.5.0-integration.10",
+  "build": "combined-preview.10-rc174-bsv21.1.33",
+  "timestamp": "2026-11-28T07:28:56Z",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
@@ -31,6 +31,29 @@
       "triangles": 173317
     }
   },
-  "releaseStatus": "playable integration preview; native Windows GPU and full campaign QA pending",
-  "developmentSnapshot": "a6264192a2d3e8d18364e8e99da14d49e0a968b5"
+  "releaseStatus": "integration preview 10 candidate; native gameplay and assisted campaign verified on unchanged gameplay; extracted package and final release review pending",
+  "developmentSnapshot": "67d54a4090eb91fc35448c2cb445fb6fa88959d1",
+  "verification": {
+    "native": {
+      "commit": "24259ef62a1e6970d09eb6fe068191daccce9513",
+      "hardware": "NVIDIA GeForce RTX 3060 / Edge ANGLE D3D11",
+      "preset": "Balanced",
+      "fpsCap": 45,
+      "averageFPS": 44.97,
+      "p95FrameMs": 33.5,
+      "checks": "11/11",
+      "scope": "native full-map sandbox traversal and assisted bombardment; not full human campaign or all hardware"
+    },
+    "campaign": {
+      "commit": "e4858ea0d74d602b4d8afa5980e1d4afdcc13a16",
+      "workflowRun": 46121060446,
+      "scope": "assisted 15-wave progression, all four chapter boundaries, both endings, defeat and replay"
+    },
+    "tutorial": {
+      "commit": "fbe21c87fb31ad555cf6cd9c0d5c3640deedcc00",
+      "workflowRun": 46118978101,
+      "scope": "actual player inputs with accelerated simulation and assisted positioning"
+    },
+    "releaseCertified": false
+  }
 }

@@ -1,104 +1,66 @@
-# Dragon Defense — Integration Preview 9
+# Dragon Defense — Integration Preview 10 candidate
 
-Build `5.5.0-integration.9`.
-Antigravity RC174 and Broad Street Viewer v21.1.33 remain the source baselines.
-Exact source
-revisions, the unchanged Tech Freire FBX hash, and the development snapshot
-commit are recorded in `build-info.json`.
+Version `5.5.0-integration.10` · build `combined-preview.10-rc174-bsv21.1.33`
 
-## Play locally
+This is the combined browser-based preview of Antigravity RC174 gameplay and
+Broad Street Viewer 21.1.33 architecture. It is not a replacement for either
+independent development branch, a standalone Windows EXE, or a Unity port.
+Exact asset hashes, source provenance and earlier acceptance evidence are
+recorded in `build-info.json`. The packaged `PACKAGE-MANIFEST.json` identifies
+the exact source revision and the hash of every included runtime file.
 
-From the repository or extracted snapshot, double-click
-`PLAY-INTEGRATION-PREVIEW.cmd`. It uses Python 3 and opens an isolated local
-server. Start **Defend Philadelphia** or **Director Sandbox**. Exiting Sandbox
-now starts a clean defense session; it does not preserve a prior campaign.
+## Play on Windows
 
-## Run the Windows hardware test
+1. Extract the entire archive into a new folder, separate from your existing
+   development installations.
+2. Install Python 3 if it is not already available.
+3. Double-click **PLAY-INTEGRATION-PREVIEW.cmd** inside the extracted folder.
+4. Keep the console window open while playing. The launcher starts an isolated
+   loopback server and opens your default browser.
+5. Choose Flight Academy, Defend Philadelphia, or Director Sandbox.
 
-1. Use the current complete `integration/combined-preview` checkout. Do not
-   use the earlier Preview 9 copy or an incomplete archive missing Git LFS assets.
-2. Install Node.js 22 LTS if needed; the launcher requires at least Node.js 20.
-   Microsoft Edge must be installed and hardware acceleration enabled.
-3. Double-click **RUN-HARDWARE-TEST.cmd** in the game folder. Confirm start.
-   On the first run, approve the local Playwright dependency installation if prompted.
-4. Keep the automated Edge window in the foreground. Do not play, switch tabs,
-   minimize, record the screen, or run other demanding applications.
-5. When the console finishes, press a key as prompted. The results folder opens.
-   Send the newest timestamped folder's `report.json`, even if the test fails.
-   Screenshots are useful if the report identifies visual issues.
+The launcher does not install or overwrite other game versions. Do not open
+index.html directly as a file; the browser needs the local HTTP server for
+modules and assets. Sandbox exit starts a fresh defense session rather than
+restoring the preceding campaign.
 
-The test serves the current checkout on its own private loopback port.
-It exercises eleven functional browser checks and a sustained bombardment
-sample. The report includes Git commit (when available), runtime build ID,
-unmasked renderer, raw frame samples, settings, and provisional hardware
-performance gate. Failure is diagnostic, not a reason to repeat until it passes.
-Software WebGL, hidden or headless sessions are not eligible for hardware
-acceptance. The launcher has a 15-minute watchdog; hardware certification
-still requires independent review and matched baseline comparison.
+## What changed since Preview 9
 
-Advanced: `RUN-INTEGRATION-QA.cmd --require-hardware` runs the same gate.
-For ordinary diagnostic testing, `RUN-INTEGRATION-QA.cmd` retains its existing
-behavior. `--headless --software` is only for software smoke testing.
+- Continuous map-bound flight, responsive camera follow, and improved training
+  framing on landscape and portrait viewport sizes.
+- Original FBX-derived school mesh retained with localized, progressive
+  structural damage and repair. Integrated preview contains 122 non-school
+  mapped parcels; residential and assembly interiors retain distinct typologies.
+- Optimized scene submission and rendering without removing required source
+  geometry; bounded damage and particle effects.
+- Clearer foreground/background meteor distinction, radar warnings and pickup
+  markers; traffic lane discipline, helicopter heading correction, actual gas
+  responder immobilization/recovery, and pedestrian evacuation rather than
+  pre-impact knockdowns.
+- Actual embedded cinematic playback, natural completion, pause, skip, choice
+  endings, and campaign chapter transitions.
 
-## Development changes
+## Verification and limitations
 
-Sandbox flight uses the projected Viewer map bounds and continues past the
-southernmost surveyed buildings. The map also gains illustrative residential
-context beyond Cumberland. Swept meteor contacts retain their assigned parcel
-at façade edges, and smaller floor sections fit irregular building footprints.
-Church and auditorium interiors keep their open single-volume layout. Tech
-Freire retains its dedicated FBX-derived school path.
+Native Windows verification on the user's RTX 3060, Microsoft Edge, Balanced
+preset and a 45 FPS cap passed all 11 checks on the unchanged gameplay revision
+`24259ef62a1e6970d09eb6fe068191daccce9513`. The measured 30-second assisted
+bombardment averaged 44.97 FPS, p95 33.5 ms, and zero frames above 50 ms. Real-time
+keyboard full-map sandbox flight and vertical response passed.
 
-Camera follow and zoom recover gradually after a missed frame, and Balanced
-mode shades at most 1152 by 648 pixels. The long frame gaps reported on Windows
-still require native playtesting.
+Input-driven academy acceptance passed five checks using real input and assisted
+positioning/accelerated simulation. The assisted campaign runner verified all 15
+waves, chapter boundaries 2/5/10/14, both endings, defeat and replay. Neither is
+a complete unassisted human playthrough; difficulty balance and sustained full
+campaign feel are not certified.
 
+The integrated architecture is not a surveyed photo-accurate replica of every
+parcel; approximate non-school interiors, illustrative peripheral blocks and a
+schematic subway/basement remain. Upstream Viewer district-contact validation
+remains separate. No guarantee of 60 FPS, other graphics presets, other
+hardware, physical mobile performance, or standalone Windows executable support
+is made.
 
-Baked vehicle meshes now use their computed bounds, letting the renderer
-skip bodywork outside the camera view. Traffic simulation and vehicle
-lighting continue to use the existing game systems. See
-[Antigravity handoff](ANTIGRAVITY-HANDOFF.md) for the editable snapshot and
-the separate architecture-only exchange.
-
-
-Pedestrians retain their original meshes, pose hierarchy, and simulation.
-The renderer submits visible limbs through three shared instance batches.
-In a matched Wave 1 Chromium check with capture off and 38 pedestrians, the
-change removed 272 draw calls per frame. Frame-time and freeze improvements
-still require a sustained native Windows playtest.
-
-
-Normal play loads a 173,317-triangle mesh derived from the original Tech Freire
-FBX. Walls, floors, glazing, doors and roof geometry retain their source
-triangles. Detailed fixtures use simpler geometry and dense decorative rails
-are omitted. The source FBX remains bundled and available in the model
-inspector. The full source comparison can be loaded with
-`?qa=1&schoolSource=full`. Regenerate the play mesh with
-`node tools/build-school-play-mesh.mjs` on Node 24 or later. The neighborhood
-uses one opaque relief batch per parcel and retains parcel-local damage masks.
-The game page no longer requests the optional install manifest.
-
-
-The surveyed Broad Street parcels and the original school asset share the
-map with the RC174-style residential grid beyond Park Avenue and Liacouras
-Walk. Contextual streets continue from the Viewer endpoints. These outer blocks
-are illustrative, with fewer instances in the far distance. Distant houses
-use RC174's progressive roof, floor, debris and combustion effects. Mapped
-buildings retain parcel-owned damage and use smaller independently supported
-masonry sections. The settings panel now registers each button once, and its
-meteor dropper transfers the selected size and material into Sandbox.
-
-
-The 122 mapped building parcels and the separate original school FBX are
-retained. Work toward Preview 9 includes localized and bounded meteor damage,
-continuous roof/side collision, reconstruction optimizations, updated mapped
-traffic and responder routes, independent water-main rupture, crater and
-camera cleanup, parcel-local damage masks, function-specific interiors, original FBX interior restoration, spatial source batching, and regression tests. The repeatable source-level suite is
-`node tests/integration-preview-regressions.mjs`.
-
-## Verification limits
-
-The source-level regression suite checks all 122 parcel roof ownership cases,
-original FBX interior retention, and cleanup of damage and pooled resources.
-Native Windows GPU performance, full-campaign play and the upstream Viewer
-district contact audit remain pending.
+The candidate remains subject to extracted-package browser acceptance and final
+release review. The separate native hardware utility requires a clean Git
+checkout and is not included in the standalone playable archive.
