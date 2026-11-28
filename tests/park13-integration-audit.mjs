@@ -227,6 +227,44 @@ console.log('PARK13_FRAGMENT_POOL '+JSON.stringify({bounded:32,motion:true,expir
 const zone=[{minX:-10,maxX:10,minZ:-5,maxZ:5}],parts=clipContextRect(zone,0,0,100,20);
 assert.equal(parts.reduce((sum,p)=>sum+p.w*p.d,0),1800);assert.ok(parts.every(p=>!contextIntersectsExpansion(zone,p.x,p.z,p.w,p.d)));
 assert.equal(clipContextRect(zone,0,0,3,3).length,0);assert.equal(clipContextRect(zone,30,30,4,4).length,1);
+// Real-zone legacy street seam audit. Independent sweep-line union area
+// accounts for overlapping replacement rectangles without double counting.
+const rect=p=>({minX:p.x-p.w/2,maxX:p.x+p.w/2,minZ:p.z-p.d/2,maxZ:p.z+p.d/2});
+const overlapArea=(a,b)=>Math.max(0,Math.min(a.maxX,b.maxX)-Math.max(a.minX,b.minX))*Math.max(0,Math.min(a.maxZ,b.maxZ)-Math.max(a.minZ,b.minZ));
+function removedArea(r,zones){
+ const clipped=zones.map(q=>({minX:Math.max(q.minX,r.minX),maxX:Math.min(q.maxX,r.maxX),minZ:Math.max(q.minZ,r.minZ),maxZ:Math.min(q.maxZ,r.maxZ)})).filter(q=>q.minX<q.maxX&&q.minZ<q.maxZ);
+ const edges=[...new Set(clipped.flatMap(q=>[q.minX,q.maxX]))].sort((a,b)=>a-b);let area=0;
+ for(let i=1;i<edges.length;i++){
+  const x=(edges[i-1]+edges[i])/2,intervals=clipped.filter(q=>q.minX<x&&x<q.maxX).map(q=>[q.minZ,q.maxZ]).sort((a,b)=>a[0]-b[0]);
+  let width=0,lo=0,hi=0;
+  if(intervals.length){[lo,hi]=intervals[0];for(const [a,b] of intervals.slice(1)){if(a>hi){width+=hi-lo;lo=a;hi=b;}else hi=Math.max(hi,b);}width+=hi-lo;}
+  area+=(edges[i]-edges[i-1])*width;
+ }
+ return area;
+}
+const probes=[];
+for(const q of data.zones){
+ const x=(q.minX+q.maxX)/2,z=(q.minZ+q.maxZ)/2,w=q.maxX-q.minX,d=q.maxZ-q.minZ;
+ probes.push({x,z,w:w+20,d:7},{x,z,w:7,d:d+20},{x:q.minX,z,w:12,d:12},{x:q.maxX,z,w:12,d:12});
+}
+const minX=Math.min(...data.zones.map(q=>q.minX)),maxX=Math.max(...data.zones.map(q=>q.maxX));
+const minZ=Math.min(...data.zones.map(q=>q.minZ)),maxZ=Math.max(...data.zones.map(q=>q.maxZ));
+for(let i=0;i<=20;i++){
+ probes.push({x:(minX+maxX)/2,z:minZ+(maxZ-minZ)*i/20,w:maxX-minX+80,d:9});
+ probes.push({x:minX+(maxX-minX)*i/20,z:(minZ+maxZ)/2,w:9,d:maxZ-minZ+80});
+}
+let seamPieces=0,maxAreaError=0,maxOverlap=0;
+for(const p of probes){
+ const original=rect(p),pieces=clipContextRect(data.zones,p.x,p.z,p.w,p.d);seamPieces+=pieces.length;
+ const expected=p.w*p.d-removedArea(original,data.zones),actual=pieces.reduce((sum,q)=>sum+q.w*q.d,0),error=Math.abs(actual-expected);
+ maxAreaError=Math.max(maxAreaError,error);assert.ok(error<1e-5,'Legacy strip area mismatch '+JSON.stringify(p));
+ for(let i=0;i<pieces.length;i++){
+  const r=rect(pieces[i]);assert.ok(Math.abs(overlapArea(r,original)-pieces[i].w*pieces[i].d)<1e-5);
+  for(const q of data.zones){const a=overlapArea(r,q);maxOverlap=Math.max(maxOverlap,a);assert.ok(a<1e-5);}
+  for(let j=0;j<i;j++)assert.ok(overlapArea(r,rect(pieces[j]))<1e-5,'Duplicate retained strip');
+ }
+}
+console.log('PARK13_LEGACY_SEAMS '+JSON.stringify({probes:probes.length,pieces:seamPieces,maxAreaError,maxOverlap}));
 console.log('PARK13_SOURCE_AUDIT '+JSON.stringify({checks,baseline:baseline.length,stats:s,bounds:{min:box.min.toArray(),max:box.max.toArray()}}));
 
 
