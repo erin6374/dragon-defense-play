@@ -196,11 +196,14 @@ export function createPark13Expansion(T,data){
   if(breach||hadBreach)syncBreaches();
   if(d)changed.add(id);else changed.delete(id);return true;
  }
- function restore(){
+ // Synchronous transaction: parcel collision/damage state is updated at each
+ // strike, but visual batch publication occurs once at the outer boundary.
+ function batchDamage(fn){
   breachBatchDepth++;
-  try{for(const id of [...changed])setDamage(id,0);fragments.clear();}
+  try{return fn();}
   finally{breachBatchDepth--;if(!breachBatchDepth&&breachDirty)syncBreaches();}
  }
+ function restore(){batchDamage(()=>{for(const id of [...changed])setDamage(id,0);fragments.clear();});}
  function inside(r,x,z){let hit=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const [a,b]=r[i],[c,e]=r[j];if((b>z)!==(e>z)&&x<(c-a)*(z-b)/(e-b)+a)hit=!hit;}return hit;}
  function targetAt(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))return null;const lx=x-VIEWER_TO_GAME_X,lz=z-VIEWER_TO_GAME_Z;for(const o of owners.values()){if(o.damage>=1)continue;const r=o.record;if(r.polys.some(p=>inside(p[0],lx,lz)&&!p.slice(1).some(h=>inside(h,lx,lz))))return {id:o.id,x,z,y:o.collision.h,damage:o.damage};}return null;}
  function strikeTarget(id,strength,point=null){const o=owners.get(id);if(!o||!Number.isFinite(strength)||strength<=0||o.damage>=1)return false;
@@ -214,5 +217,5 @@ export function createPark13Expansion(T,data){
   return applied;
  }
  root.updateMatrixWorld(true);
- return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachRebuilds,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),clippedDetails:[...breaches.values()].reduce((sum,b)=>sum+b.clippedDetails.size,0),reliefRemovedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.reliefRemoved,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
+ return {root,inventory,collisionParcels,setDamage,restore,targetAt,strikeTarget,batchDamage,update:fragments.update,damageOf:id=>owners.get(id)?.damage??null,stats:()=>({source:data.source,buildings:inventory.length,volumes:volumeCount,details:detailCount,components:volumeCount+detailCount,triangles,architectureDrawObjects:architecture.children.length,surfaceDrawObjects:publicRealm.children.length,realmCounts:data.realmCounts,held:data.held.length,damageable:false,parcelDamagePrototype:true,localizedDamage:true,fragments:fragments.stats(),breached:breaches.size,breachDrawObjects:breachMesh.visible?1:0,breachRebuilds,breachTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.positions.length/9,0),removedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.removed,0),interiorTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.interiorTriangles,0),clippedDetails:[...breaches.values()].reduce((sum,b)=>sum+b.clippedDetails.size,0),reliefRemovedTriangles:[...breaches.values()].reduce((sum,b)=>sum+b.reliefRemoved,0),impactSites:[...changed].reduce((sum,id)=>sum+owners.get(id).impacts.length,0),damaged:changed.size,visible:root.visible})};
 }
