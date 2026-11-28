@@ -1,0 +1,835 @@
+{
+  "schema_version": 1,
+  "spec_version": "0.1.0",
+  "project": "Tech Freire Dragon Defense",
+  "audit_date": "2026-11-28",
+  "status": "initial_audit_not_release_certification",
+  "repo": "erin6374/dragon-defense-play",
+  "branch": "docs/master-development-spec",
+  "baselines": {
+    "primary": "9521eaec8f5fe1ee873db006d733cbb89a83e648",
+    "integration": "94d113df42cb43c93371d8a04f381996d1a8d687",
+    "pilot": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+    "main": "ebd7c09d2983af8fcbeef2bc103c136db1f53a67"
+  },
+  "status_vocabulary": {
+    "requirement": [
+      "confirmed",
+      "proposed",
+      "unresolved",
+      "superseded"
+    ],
+    "implementation": [
+      "implemented",
+      "partial",
+      "planned",
+      "unknown",
+      "not_applicable"
+    ],
+    "verification": [
+      "unverified",
+      "historical",
+      "source_checked",
+      "exact_test_pass",
+      "exact_test_fail",
+      "failed",
+      "accepted"
+    ]
+  },
+  "notes": [
+    "Implementation means source or documented candidate exists, not verified behavior. Historical verification is scoped to earlier exact refs. Failed is scoped to RC59 art for DD-023. No exact tests executed in this documentation audit.",
+    "This is a grouped index, not a substitute for the 237-record historical archive. Some evidence pointers are cataloged but not read.",
+    "Confirmed means requirement supported by owner statements or historical reconstructed archive; origin distinguishes them. Source-observed additions are implementation details, not new owner decisions."
+  ],
+  "requirements": [
+    {
+      "id": "DD-001",
+      "domain": "identity",
+      "requirement": "Protect Tech Freire (2221 N Broad, Philadelphia) and its neighborhood as heroic dragon Paulo in cinematic 2.5D arcade meteor defense.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "owner archive 01; Nov 7 migration handoff",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/game.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "index.html",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Start a new game; school and block recognizable; player has meaningful control and feedback."
+    },
+    {
+      "id": "DD-002",
+      "domain": "campaign",
+      "requirement": "15 playable waves, giant final meteor fragments; chapter settlement after 2, 5, 10, 14; preserve both endings, defeat and replay.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "historical",
+      "origin": "owner 15-wave direction; chapter boundaries observed in integration QA",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-campaign-progression.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Run all 15 waves; each chapter transition resumes input; final bosses, both endings, defeat and reset pass; separate unassisted playthrough."
+    },
+    {
+      "id": "DD-003",
+      "domain": "tutorial",
+      "requirement": "Gentle, clear opening; tutorial teaches flight, aiming/fire, meteor buster, suppression, nonlethal gas; skippable without stalled state.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "historical",
+      "origin": "Nov 19 playtest critique; training implementation",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/training-missions.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-tutorial-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Complete each objective with real inputs, skip with Tab and button, reach wave 1 without duplicate spawns; novice playtest."
+    },
+    {
+      "id": "DD-004",
+      "domain": "input",
+      "requirement": "Continuous control outside intentional pause/cinematics; WASD/arrows move, fire/wind/gas actions; no collision freeze; settings work; touch mapping.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 06,09,14; integration complaints",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/input/actions.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/game.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-camera-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Press/release all inputs; blur clears stuck state; pan to both map extremes; change sound settings; test touch, pause and resume."
+    },
+    {
+      "id": "DD-005",
+      "domain": "dragon",
+      "requirement": "Original/New toggle; C2 heroic European silhouette; four-legged perch, semi-upright hover, streamlined flight; tucked feet, eagle-like banking and ground rear-up turn.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 04; Nov 8 design decision",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/dragon/paulo-rig.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/dragon/paulo-pose-driver.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Capture actual flight, landing, turn, attack and toggle at fixed camera; human review; no muzzle offset."
+    },
+    {
+      "id": "DD-006",
+      "domain": "meteor",
+      "requirement": "All foreground meteors interceptable; background threats visually distinct and non-interceptable; enter above screen without popping; warning/radar and expanded sky.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 05",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/meteor-warning.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/defense-zone.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-threat-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Seed foreground and background tracks; assert layer membership, early warning, offscreen entry and hit eligibility; inspect video."
+    },
+    {
+      "id": "DD-007",
+      "domain": "meteor",
+      "requirement": "Size-dependent fragmentation, small rocks one-hit, large into smaller tiers, final boss splits; harmless dust cannot damage; cap 24 playable meteors in integration source.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "owner archive 05; observed source constants",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/fireball-balance.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-threat-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Boundary tests at 1.3,2.6,5.5; check cap under simultaneous splits; actual hits and boss fragments."
+    },
+    {
+      "id": "DD-008",
+      "domain": "combat",
+      "requirement": "First 3D hit owns breath effect; aim and muzzle agree; fireball AOE, short click fire and sustained hold wind per historic direction.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 06; Review Dragon Defense Build.txt historical assistant summary",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/game.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/fireball-balance.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Aligned and occluded targets at multiple depths; short vs long press; actual collision coordinate; no attack behind first obstruction."
+    },
+    {
+      "id": "DD-009",
+      "domain": "combat",
+      "requirement": "Wind strongly moves buses/trucks, flips or tips cars, knocks/slides pedestrians, deflects meteors and helicopters, moves debris and extinguishes fire.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 06",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/ground-wind.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-traffic-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Seed each target, compare wind off/on trajectories, speed, angular motion and recovery; verify fire suppression."
+    },
+    {
+      "id": "DD-010",
+      "domain": "combat",
+      "requirement": "Gas is nonlethal, temporarily immobilizes eligible responders 7 seconds; lingering plume must not reapply indefinitely; restore speed/materials.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "owner archive 13; inspected responder-freeze source",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/responder-freeze.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "7 simulation seconds; repeated same plume has no effect; independent plume rules explicit; material disposal and no stuck responders."
+    },
+    {
+      "id": "DD-011",
+      "domain": "damage",
+      "requirement": "Progressive school damage: smallest specified test meteor 5%, largest specified ordinary test meteor 15%; one hit cannot collapse intact school.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "historical",
+      "origin": "Nov 18 owner directive; integration destruction test",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-destruction-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/school-source-impact.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Actual iron meteors sizes 1.35 and 3.6: damage deltas .05 and .15 ±.002, progressive intermediate states, HP>0, inspector consistent."
+    },
+    {
+      "id": "DD-012",
+      "domain": "damage",
+      "requirement": "Meteor collision belongs to first crossed 3D parcel/roof/side; nearby houses and school do not receive unrelated direct damage.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "historical",
+      "origin": "Nov 26 integration directive; inspected collision and regression source",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/meteor-collision.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/viewer-parcels.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-destruction-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "One ordinary live iron meteor at exclusive roof point damages only target parcel, school unchanged, inspector 90%; holes/shared boundaries and fast segment tested."
+    },
+    {
+      "id": "DD-013",
+      "domain": "damage",
+      "requirement": "School components fail locally, cumulative structural failure and persistent rubble; terminal zero health means no intact standing shell; reset restores all.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "owner archive 10; qa/README historical school evidence",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/rendering/school-source-damage.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/rendering/destructible-school.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-destruction-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Local glass/masonry/structure damage, terminal collapse rubble below 1 game unit where historical contract applies, replay restores geometry, health, strikes, no stale projectiles."
+    },
+    {
+      "id": "DD-014",
+      "domain": "damage",
+      "requirement": "Neighborhood health matches bilateral structural damage and skyline catastrophe; visible fires are causal, meteor-only structural ignition baseline; no arbitrary timers.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "issue #5; PR #2; owner archive 10–11",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/skyline-ignition-contract.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-skyline-ab.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Seed both flanks, prove impact-to-fire ownership and reset; no unsolicited structural fires in idle; zero neighborhood health corresponds to widespread ruin."
+    },
+    {
+      "id": "DD-015",
+      "domain": "damage",
+      "requirement": "Ongoing fires drain neighborhood health; historical 1–2 percentage points per second target needs aggregate cap and difficulty balancing.",
+      "authority": "confirmed",
+      "implementation": "unknown",
+      "verification": "unverified",
+      "origin": "Review Dragon Defense Build.txt; archive 11-06",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/game.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Define total versus per-fire rate; compare zero, one, multiple fires and extinguishing; confirm approved cap before tuning."
+    },
+    {
+      "id": "DD-016",
+      "domain": "architecture",
+      "requirement": "Real 3D street grid; remove legacy/Burn Street overlaps; Broad to 13th expansion; preserve intersections, orientation, reachability and original school anchor.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "Nov 26–27 owner directives",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/viewer-parcels.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-architecture-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-release-gate.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Compare cadastral/source polygons, unique IDs, no old duplicate meshes, north/south traversable, roads clear, expansion A/B."
+    },
+    {
+      "id": "DD-017",
+      "domain": "architecture",
+      "requirement": "122 original damageable mapped parcels in integration; 165 records opt-in expansion, visual background only until separately accepted; 2438 N Clarion held.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "Preview 11 build-info and release gate",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "build-info.json",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-release-gate.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Baseline and expansion both preserve 122; enabled expansion 165; live hit/repair; disabled null; exact source, native, visual and package gates."
+    },
+    {
+      "id": "DD-018",
+      "domain": "architecture",
+      "requirement": "Source school original FBX immutable; correct proportions, actual source interior, original asset provenance; optimized browser derivative separately identified.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "owner directives; build-info source hash",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/rendering/school-play-mesh.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/school-source-impact.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "build-info.json",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Hash matches original; fit/source comparisons; source category coverage and interior inspection; no claim of full triangle-accurate collision."
+    },
+    {
+      "id": "DD-019",
+      "domain": "architecture",
+      "requirement": "Non-school interiors may be approximate by building use; church/auditorium open assembly, restaurant/retail/residential/dorm distinct.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "Nov 26 explicit user policy",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/interior-profiles.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Each archetype correctly chosen; no generic floor slicing church nave; furniture within footprint; school separate source verification."
+    },
+    {
+      "id": "DD-020",
+      "domain": "architecture",
+      "requirement": "Per-building dimensions and photo-backed facades, reusable rowhouse templates; no floating attachments; transparent glazing/reflections; provisional flipped Watts rear proxies labeled.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "Nov 25–27 Broad Street modeling directives",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-architecture-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-source-evidence.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Per-record evidence, roof/side/rear/front checks, geometry contact, repeated template variation and proxy tags; separate STL watertight checks later."
+    },
+    {
+      "id": "DD-021",
+      "domain": "traffic",
+      "requirement": "Two lanes each direction, diverse road vehicles, emergency service routes, crater avoidance, collision reactions and no sidewalk driving.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 10,12; integration complaints",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/road-corridors.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/traffic-dynamics.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/responder-routing.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-traffic-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "All lanes direction and route clearance; crater brake/avoid; respawn and recovery; visual orientation."
+    },
+    {
+      "id": "DD-022",
+      "domain": "campaign",
+      "requirement": "Escalate news/police/fire/military and day/night, government obstruction/collateral, preserve evacuation and orbital finale; exact thresholds need reconciliation.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 13; later integration source diverges from old wave 4/7/8 gates",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/evacuation-chapter.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/simulation/military-occupation.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/game.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Per-wave spawn table against approved schedule; no unsolicited agents in sandbox; collateral causality; verify day/dusk/night transitions."
+    },
+    {
+      "id": "DD-023",
+      "domain": "visual",
+      "requirement": "Cinematic Philadelphia skyline; visible geometry midground; realistic school and rowhouses; anchored flames, smoke, electrical shorts, windows and water-main/subway effects.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "failed",
+      "origin": "PR #2 ART FAIL applies RC59 only; owner integration visual requirements",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/CINEMATIC-REVIEW.md",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-cinematic-acceptance.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-power-sparks-ab.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-subway-ab.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Matched day/dusk/night and bilateral views, 5–30s real motion, evidence-based human art approval; water-main independent from subway."
+    },
+    {
+      "id": "DD-024",
+      "domain": "ui",
+      "requirement": "Cinematic HUD readable: health, neighborhood, score, wave, radar, powers; no overlay collision; pause/settings/audio and result layering.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "archive 14; prior RC9 HUD and campaign regression",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/ui/cinematic-hud.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/integration-campaign-progression.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Desktop 1280×720, 1024×576 and 848×480, mobile viewport; result overlay above HUD below settings/cinematic; settings persist."
+    },
+    {
+      "id": "DD-025",
+      "domain": "performance",
+      "requirement": "Bound frame work, fixed steps, pooled particles, batch/instance, LOD, pixel budget; avoid severe freezes; actual Windows performance gate.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "historical",
+      "origin": "issue #5; Preview 10 native metadata only; RC59 Windows unresolved",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/core/fixed-step.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/rendering/render-budget.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-release-gate.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "60s physical heavy scene CSV/JSON, report avg/p95/stalls CPU/RAM, renderer, resolution; Preview 11 matched baseline and expansion gate."
+    },
+    {
+      "id": "DD-026",
+      "domain": "release",
+      "requirement": "Exact source/version, browser preview and one-click Windows launcher; verify extracted package and rollback; Android browser separate; EXE/APK later.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "owner archive 02,15; Nov 26 integration",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "PLAY-PREVIEW.cmd",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "tools/windows-preview-server.py",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/windows-preview-server-test.py",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-release-gate.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Archive SHA-256 and CRC, extract clean folder, launcher loopback and build/metrics endpoints; verify actual source, no stale cache; Android on device."
+    },
+    {
+      "id": "DD-027",
+      "domain": "workflow",
+      "requirement": "One owner per bounded change; independent branches; no force-push, deployment, merge, main/production/Pages/Building Explorer or source FBX edits.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "issue #5; Nov 26 independent workstreams",
+      "evidence": [],
+      "acceptance": "Review changed-path list and exact branch heads before and after; draft PR and explicit owner acceptance before promotion."
+    },
+    {
+      "id": "DD-028",
+      "domain": "workflow",
+      "requirement": "Browser-first, later Unity HDRP Windows/RTX 3060; engine-neutral rules, stable IDs, PBR and source geometry, no duplicate work.",
+      "authority": "confirmed",
+      "implementation": "partial",
+      "verification": "unverified",
+      "origin": "Nov 25 owner directive; AI-HANDOFF first section",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/core/balance.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/input/actions.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "src/core/fixed-step.js",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Export approved source geometry and manifests; Unity fixture parity; no browser gate dependent on Unity."
+    },
+    {
+      "id": "DD-029",
+      "domain": "workflow",
+      "requirement": "Technical CI, artifact integrity, assisted play, physical hardware, human play and art approval are distinct; exact source only.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "historical",
+      "origin": "issue #5; qa/README; Preview 11 release gate",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "qa/park13-release-gate.mjs",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        },
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "tools/verify-qa-artifacts.py",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Fail closed for missing or mismatched SHA, failed gates, absent reviewer or package; never certify based on a different build."
+    },
+    {
+      "id": "DD-030",
+      "domain": "workflow",
+      "requirement": "Reuse existing tests and evidence by SHA; staged QA; minimize redundant AI work, cancellations and duplicated asset conversion.",
+      "authority": "confirmed",
+      "implementation": "planned",
+      "verification": "unverified",
+      "origin": "issue #5; current master specification directive",
+      "evidence": [],
+      "acceptance": "Record changed paths, evidence reused, runtime/token if available, CI runs/cancellations, accepted changes and regression count; no fabricated carbon estimate."
+    },
+    {
+      "id": "DD-031",
+      "domain": "asset",
+      "requirement": "Separate European Dragon animation studio; approved rigged assets only with source/license/attribution; original fallback remains.",
+      "authority": "confirmed",
+      "implementation": "planned",
+      "verification": "unverified",
+      "origin": "Nov 25 independent studio directive; archive 04",
+      "evidence": [
+        {
+          "ref": "1e50ad3133d0c06c5225f4f281fc114592415d02",
+          "path": "dragon-lab/DESIGN-SPEC.md",
+          "kind": "source_or_test_pointer",
+          "note": "Pointer; presence/test definition is not a pass. See audit for inspected subset."
+        }
+      ],
+      "acceptance": "Inspect rig, animation names, scale, original source/license and fallback; do not claim studio model imported into game."
+    },
+    {
+      "id": "DD-032",
+      "domain": "workflow",
+      "requirement": "Maintain a single versioned master with stable requirement IDs, contradictions, machine-readable state and clean-room reconstruction guide.",
+      "authority": "confirmed",
+      "implementation": "implemented",
+      "verification": "unverified",
+      "origin": "current user directive",
+      "evidence": [],
+      "acceptance": "Validate JSON schema/status vocabulary and unique IDs; references immutable, changes documented; documentation branch only."
+    }
+  ]
+}
