@@ -8332,6 +8332,17 @@ if(new URLSearchParams(location.search).get('benchmark')==='1'&&window.__DD_QA){
    maxDrawCalls:frames.length?Math.max(...frames.map(x=>x.drawCalls)):null,droppedSamples:v.droppedSampleCount,
    samples:frames,scene:window.__DD_QA.snap(),testSettings:window.__DD_BENCHMARK.state()};};
  window.__DD_BENCHMARK={start,stop,
+  // Lightweight diagnostics for paired native tests. Avoid full scene
+  // snapshots and QA logging during a measured frame sequence.
+  park13Probe:()=>({x:dragon.position.x,y:dragon.position.y,elapsed,frames:sessionStats.frames,active,paused,free:freeFlightMode,dragonEnabled,
+   focused:document.hasFocus()&&!document.hidden,contextLost:diagnosticFrames.contextLost,contextEvents:diagnosticFrames.contextEvents.length,
+   testMeteors:meteors.filter(m=>m.testMeteor&&!m.grounded).length}),
+  park13Drop:(x,z,size=4)=>{
+   if(!freeFlightMode||!active||paused||![x,z,size].every(Number.isFinite)||size<1.35||size>9)throw Error('Invalid active sandbox benchmark drop');
+   dragon.position.set(clampDragonX(x),Math.min(45,flightCeiling),15);dragonVelX=0;dragonVelY=0;diveEnergy=0;dragonLeavingRoof=true;
+   spawnTestMeteorAt(x,.7,z,size,'iron');
+   return {x:dragon.position.x,z,spawned:meteors.filter(m=>m.testMeteor&&!m.grounded).length};
+  },
   frame:(dt,sim,render,drawCalls,triangles,renderStartUTC,renderEndUTC,phases={})=>{if(!phase)return;if(phase.samples.length>=50000){phase.droppedSampleCount++;return;}
    const focused=document.hasFocus(),frameMs=+(dt*1000).toFixed(2);
    // dt measures elapsed time since the PRECEDING animation frame. A long render()
