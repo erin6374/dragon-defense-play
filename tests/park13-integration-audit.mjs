@@ -171,6 +171,28 @@ let caught=false;
 try{fixture.batchDamage(()=>{fixture.strikeTarget('park13-fixture-a',1,{x:ax,y:10,z:az});throw Error('fixture');});}catch(e){caught=e.message==='fixture';}
 assert.ok(caught);assert.equal(fixture.stats().breachRebuilds,beforeError+1);
 fixture.restore();assert.deepEqual(snapFixture(),pristine);
+// Buffer capacity is retained after repair, and only a newly changed
+// parcel contributes normal work. The active drawRange ignores stale data.
+assert.equal(shell.geometry.drawRange.count,0);
+const allocationStart=fixture.stats().breachAllocations;
+const geometryStart=shell.geometry;
+assert.ok(fixture.strikeTarget('park13-fixture-a',1,{x:ax,y:10,z:az}));
+assert.equal(fixture.stats().breachAllocations,allocationStart);
+assert.equal(shell.geometry,geometryStart);
+const firstNormalTotal=fixture.stats().breachNormalTriangles;
+const firstTriangleCount=fixture.stats().breachTriangles;
+assert.ok(fixture.strikeTarget('park13-fixture-b',1,{x:VIEWER_TO_GAME_X+8,y:5,z:az}));
+const two=fixture.stats();
+assert.equal(two.breachNormalTriangles-firstNormalTotal,two.breachTriangles-firstTriangleCount);
+assert.equal(shell.geometry.drawRange.count,two.breachTriangles*3);
+assert.ok(two.breachCapacityVertices>=shell.geometry.drawRange.count);
+const activeNormals=shell.geometry.attributes.normal.array.subarray(0,shell.geometry.drawRange.count*3);
+assert.ok(activeNormals.every(Number.isFinite));
+fixture.restore();
+assert.equal(shell.geometry.drawRange.count,0);
+assert.equal(fixture.stats().breachAllocations,allocationStart);
+assert.deepEqual(snapFixture(),pristine);
+console.log('PARK13_BREACH_BUFFER '+JSON.stringify({reused:true,activeDrawRange:true,localNormals:true,allocationStart}));
 console.log('PARK13_DAMAGE_BATCH '+JSON.stringify({sameFrameRebuilds:1,nested:true,immediateCollision:true,exceptionFlush:true}));
 // Two disjoint triangles form a roof with a gap; a lower deck catches
 // the through-gap trajectory. Offset tests catch world/local confusion.
