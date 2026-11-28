@@ -1,0 +1,70 @@
+name: Integration preview package acceptance
+on:
+  push:
+    branches:
+      - integration/combined-preview
+    paths:
+      - 'tools/package-integration-preview.py'
+      - '.github/workflows/integration-package-qa.yml'
+      - 'build-info.json'
+      - 'src/core/build-info.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integration-package-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.ref == 'refs/heads/integration/combined-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and verify extracted archive
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node qa/check-build-info.mjs
+          python3 tools/package-integration-preview.py --output "$RUNNER_TEMP/package" --extract "$RUNNER_TEMP/extracted"
+      - run: npm install --prefix "$RUNNER_TEMP/integration-qa" --no-save playwright-core@1.56.1
+      - name: Exercise extracted runtime (not source checkout)
+        shell: bash
+        run: |
+          set -euo pipefail
+          game="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/package/package-report.json"))["extractedRoot"])')"
+          python3 "$game/tools/launch-integration-preview.py" --port 8765 --no-browser > integration-package-server.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8765/build-info.json >/dev/null; then break; fi
+            sleep 1
+          done
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/integration-qa/node_modules/playwright-core/index.mjs"
+          node qa/integration-browser.mjs
+      - name: Upload verified candidate archive
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-package-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/package/
+          compression-level: 0
+          retention-days: 14
+      - name: Retain package diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-package-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/package/package-report.json
+            integration-browser-output/
+            integration-package-server.log
+          if-no-files-found: warn
+          retention-days: 14
