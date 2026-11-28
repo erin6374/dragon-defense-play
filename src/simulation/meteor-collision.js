@@ -2,7 +2,7 @@ import {containsParcel,ownsSchoolFootprint} from './viewer-parcels.js';
 
 // Continuous descending segment vs extruded parcel footprints. Entry at the
 // roof or a side face wins by travel time, not by array order or endpoint.
-export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActive=true){
+export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActive=true,expansion=[]){
  const dx=end.x-start.x,dy=end.y-start.y,dz=end.z-start.z;
  if(dy>=0||start.y<.5)return null;
  const eps=1e-7;
@@ -19,7 +19,7 @@ export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActi
   const minX=b.x-b.w/2,maxX=b.x+b.w/2,minZ=b.z-b.d/2,maxZ=b.z+b.d/2;
   if(Math.max(start.x,end.x)<minX||Math.min(start.x,end.x)>maxX||Math.max(start.z,end.z)<minZ||Math.min(start.z,end.z)>maxZ||end.y>b.h)return;
   const roof=(b.h-start.y)/dy;
-  if(roof>=0&&roof<=1){const p=point(roof);if(inside(p.x,p.z))offer(roof,kind,kind==='building'?b:null);}
+  if(roof>=0&&roof<=1){const p=point(roof);if(inside(p.x,p.z))offer(roof,kind,kind==='building'||kind==='expansion'?b:null);}
   if(Math.abs(dx)+Math.abs(dz)<eps)return;
   const rings=b.polys?.flat(1)??[[[minX,minZ],[maxX,minZ],[maxX,maxZ],[minX,maxZ]]];
   for(const ring of rings)for(let i=0,j=ring.length-1;i<ring.length;j=i++){
@@ -33,10 +33,17 @@ export function traceMeteorCollision(start,end,buildings,schoolBounds,schoolActi
    if(p.y<.7||p.y>b.h||!inside(after.x,after.z))continue;
    // Keep the reported position just inside the polygon for subsequent
    // ownership checks at shared walls.
-   offer(Math.min(1,t+eps),kind,kind==='building'?b:null);
+   offer(Math.min(1,t+eps),kind,kind==='building'||kind==='expansion'?b:null);
   }
  }
  for(const b of active)prism(b,'building',(x,z)=>containsParcel(b,x,z));
+ for(const b of expansion)if(b.damage<1){
+  if(b.traceBreach){
+   // An open roof or wall is no longer a solid collision prism.
+   const t=b.traceBreach(start,end,best?.t??1);
+   if(t!==null)offer(t,'expansion',b);
+  }else prism(b,'expansion',(x,z)=>containsParcel(b,x,z));
+ }
  if(schoolActive){
   const {min,max}=schoolBounds;
   const b={x:(min.x+max.x)/2,z:(min.z+max.z)/2,w:max.x-min.x,d:max.z-min.z,h:max.y};

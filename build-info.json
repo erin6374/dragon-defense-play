@@ -1,8 +1,8 @@
 {
   "project": "Dragon Defense — Integration Preview",
-  "version": "5.5.0-integration.10",
-  "build": "combined-preview.10-rc174-bsv21.1.33",
-  "timestamp": "2026-11-28T07:28:56Z",
+  "version": "5.5.0-integration.11",
+  "build": "combined-preview.11-rc174-bsv21.1.69-park13-pilot",
+  "timestamp": "2026-11-28T09:01:00Z",
   "sources": {
     "gameplay": {
       "version": "5.5.0-rc.174",
@@ -29,30 +29,42 @@
       "path": "assets/tech-freire-play-mesh-v1.bin",
       "sha256": "2e575c16f4361f3f57cbcdd6de7d089dd25c0546b4a994e4b17a27fd83147643",
       "triangles": 173317
+    },
+    "architectureExpansion": {
+      "repository": "erin6374/tech-freire-dragon-defense",
+      "branch": "qa-exchange/broad-street",
+      "commit": "8c101b70d6771ac50a0a9f7dc70af6696ff94f9e",
+      "version": "21.1.69",
+      "evidenceCommit": "4945b4225c01f3c7d655f4c3416bbaf511131b1b",
+      "records": 165,
+      "scope": "opt-in visual background; original 122 damageable mapped parcels retained; campus links deferred; held 2438 N Clarion unmodeled"
     }
   },
-  "releaseStatus": "integration preview 10 candidate; native gameplay and assisted campaign verified on unchanged gameplay; extracted package and final release review pending",
-  "developmentSnapshot": "67d54a4090eb91fc35448c2cb445fb6fa88959d1",
+  "releaseStatus": "unreleased opt-in expansion candidate; game acceptance pending",
+  "developmentSnapshot": "94d113df42cb43c93371d8a04f381996d1a8d687",
   "verification": {
-    "native": {
-      "commit": "24259ef62a1e6970d09eb6fe068191daccce9513",
-      "hardware": "NVIDIA GeForce RTX 3060 / Edge ANGLE D3D11",
-      "preset": "Balanced",
-      "fpsCap": 45,
-      "averageFPS": 44.97,
-      "p95FrameMs": 33.5,
-      "checks": "11/11",
-      "scope": "native full-map sandbox traversal and assisted bombardment; not full human campaign or all hardware"
-    },
-    "campaign": {
-      "commit": "e4858ea0d74d602b4d8afa5980e1d4afdcc13a16",
-      "workflowRun": 46121060446,
-      "scope": "assisted 15-wave progression, all four chapter boundaries, both endings, defeat and replay"
-    },
-    "tutorial": {
-      "commit": "fbe21c87fb31ad555cf6cd9c0d5c3640deedcc00",
-      "workflowRun": 46118978101,
-      "scope": "actual player inputs with accelerated simulation and assisted positioning"
+    "priorPreview10": {
+      "native": {
+        "commit": "24259ef62a1e6970d09eb6fe068191daccce9513",
+        "hardware": "NVIDIA GeForce RTX 3060 / Edge ANGLE D3D11",
+        "preset": "Balanced",
+        "fpsCap": 45,
+        "averageFPS": 44.97,
+        "p95FrameMs": 33.5,
+        "checks": "11/11",
+        "scope": "native full-map sandbox traversal and assisted bombardment; not full human campaign or all hardware"
+      },
+      "campaign": {
+        "commit": "e4858ea0d74d602b4d8afa5980e1d4afdcc13a16",
+        "workflowRun": 46121060446,
+        "scope": "assisted 15-wave progression, all four chapter boundaries, both endings, defeat and replay"
+      },
+      "tutorial": {
+        "commit": "fbe21c87fb31ad555cf6cd9c0d5c3640deedcc00",
+        "workflowRun": 46118978101,
+        "scope": "actual player inputs with accelerated simulation and assisted positioning"
+      },
+      "releaseCertified": false
     },
     "releaseCertified": false
   }

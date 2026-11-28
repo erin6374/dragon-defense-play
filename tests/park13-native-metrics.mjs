@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {summarizeNativeCase} from '../qa/park13-native-metrics.mjs';
+const frame=(frameMs=22)=>({frameMs,focused:true,previouslyFocused:true,visibility:'visible',contextLost:false});
+const base=()=>({durationSec:10,samples:Array.from({length:450},()=>frame()),droppedSamples:0,testSettings:{preset:'balanced',fpsCap:45},maxDrawCalls:500,stalls100:0});
+let raw=base(),r=summarizeNativeCase('traverse',true,raw,true);
+assert.equal(r.averageFPS,45);assert.equal(r.p95FrameMs,22);assert.equal(r.samples,450);assert.equal(r.completed,true);assert.equal(r.focused,true);assert.equal(r.contextLost,0);
+raw=base();for(let i=0;i<30;i++)raw.samples[i].frameMs=120;
+r=summarizeNativeCase('bombardment',true,raw,true);assert.equal(r.p95FrameMs,120);assert.equal(r.samples,450);
+raw=base();raw.samples[0].focused=false;assert.equal(summarizeNativeCase('traverse',false,raw,true).focused,false);
+raw=base();raw.samples[0].previouslyFocused=false;assert.equal(summarizeNativeCase('traverse',false,raw,true).focused,false);
+raw=base();raw.samples[0].visibility='hidden';assert.equal(summarizeNativeCase('traverse',false,raw,true).focused,false);
+raw=base();raw.samples[0].contextLost=true;assert.equal(summarizeNativeCase('traverse',false,raw,true).contextLost,1);
+raw=base();raw.samples[0].frameMs=NaN;assert.equal(summarizeNativeCase('traverse',false,raw,true).completed,false);
+raw=base();raw.droppedSamples=1;assert.equal(summarizeNativeCase('traverse',false,raw,true).completed,false);
+raw=base();raw.testSettings.fpsCap=60;assert.equal(summarizeNativeCase('traverse',false,raw,true).completed,false);
+assert.equal(summarizeNativeCase('traverse',false,base(),false).completed,false);
+assert.equal(summarizeNativeCase('traverse',false,null,true).completed,false);
+console.log('PARK13_NATIVE_METRICS '+JSON.stringify({passed:true,syntheticOnly:true,assertions:17}));

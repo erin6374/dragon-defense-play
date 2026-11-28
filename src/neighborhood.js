@@ -11,8 +11,9 @@ import { createPublicLandscape } from '../broad-street/public-landscape-review39
 import { createFrontageTransitions } from '../broad-street/public-surface-review40.mjs';
 import { groundWindStrength } from './simulation/ground-wind.js';
 import { roads } from '../broad-street/district.js';
+import {createPark13Expansion} from './rendering/park13-expansion.js';
 
-export function buildNeighborhood({scene,staticGroup,block,material,visualBank,grid}) {
+export function buildNeighborhood({scene,staticGroup,block,material,visualBank,grid,park13Data=null}) {
  const roadSurface=createBroadStreetSurface();
  const site=createBlockGround();
  const junctions=createJunctionApproaches(grid.streets);
@@ -86,10 +87,12 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
  const southEdge=Math.max(...roadXs,...buildings.map(b=>b.x+b.w/2));
  const inspectionBounds={minX:northEdge-105,maxX:southEdge+24};
  const longRange=createDistantNeighborhood({root:contextRoot,flameTexture:visualBank.images.flame,
-  context:{rearEdge,crossStreetX,northEdge}});
+  context:{rearEdge,crossStreetX,northEdge,expansionZones:park13Data?.zones}});
+ const park13=park13Data?createPark13Expansion(THREE,park13Data):null;
+ if(park13)staticGroup.add(park13.root);
  return {
   city,school,updateWindPlanting,schoolGroup:city.groups.school,targetBuildings:buildings,buildings,windowSurfaces:[],
-  foreground,longRange,activeAt,inspectionBounds,
+  foreground,longRange,park13,activeAt,inspectionBounds,
   bounds:buildings.filter(b=>!b.background).map(b=>[b.x-b.w/2,b.x+b.w/2]),
   batchStats:{mappedBuildings:buildings.length,drawBatches:city.stats().drawBatches},
   impact(x,y,z,radius=6.6,emit=()=>{},strength=1){return city.impact(activeAt(x,z),new THREE.Vector3(x,y,z),radius,strength);},
@@ -102,10 +105,10 @@ export function buildNeighborhood({scene,staticGroup,block,material,visualBank,g
   },
   levelAll(){for(const b of buildings)city.forceDamage(b,1);},
   update(dt){city.update(dt);longRange.update(dt);},
-  restore(){city.restore();longRange.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
+  restore(){city.restore();longRange.restore();park13?.restore();for(const b of buildings)b.roofBreached=false;this.syncCraterHoles();},
   setAtmosphere(phase,darkness){city.setAtmosphere(darkness);},
   setDistantHealth:longRange.setHealth,
-  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;longRange.setVisible(on);},
+  setDecorativeVisible(on){for(const key of ['backNear','backMid','backFar'])city.groups[key].visible=on;longRange.setVisible(on);if(park13)park13.root.visible=on;},
   streetOrigins(){return [nearStatic,city.groups.backNear,city.groups.backMid,city.groups.backFar,...longRange.tiers.map(tier=>tier.group)]
    .map(group=>group.getWorldPosition(new THREE.Vector3()).toArray());},
   syncCraterHoles(activeCraters=[]){

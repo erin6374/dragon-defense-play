@@ -1,5 +1,6 @@
 import {CROSS_STREETS, occupiesCrossStreet} from '../simulation/road-corridors.js';
 import * as THREE from 'three';
+import {contextIntersectsExpansion,clipContextRect} from './park13-expansion.js';
 import {createBuildingCombustion} from './building-combustion.js';
 
 // Stylized North Philadelphia blocks. Philadelphia Historical Commission
@@ -65,12 +66,19 @@ export function createDistantNeighborhood({root,flameTexture,context}){
  const groups=tiers.map(t=>{const g=new THREE.Group();g.name='DISTANT_NEIGHBORHOOD_'+t.name;root.add(g);t.group=g;return g;});
  // The underlying street mesh and its buildings share the same fixed world coordinates.
  const instances=tiers.map(t=>({main:[],roof:[],cornice:[],rooftop:[],window:[],road:[],walk:[],green:[],canopy:[],trunk:[]}));
- function add(tier,type,x,y,z,w,h,d,color=null){
+ function add(tier,type,x,y,z,w,h,d,color=null,owned=false){
   const depth=context&&!isNorthContext(x,w)?Math.min(d,rearEdge-(z-d/2)):d;
   if(depth<=0)return;
-  instances[tier][type].push({x,y,z:z+(depth-d)/2,w,h,d:depth,color});
+  const cz=z+(depth-d)/2,zones=context?.expansionZones;
+  if(!owned&&zones?.length){
+   if(type==='road'||type==='walk'){for(const p of clipContextRect(zones,x,cz,w,depth))instances[tier][type].push({...p,y,h,color});return;}
+   if(contextIntersectsExpansion(zones,x,cz,w,depth))return;
+  }
+  instances[tier][type].push({x,y,z:cz,w,h,d:depth,color});
  }
+ let excludedByExpansion=0;
  function registerBuilding(tier,x,z,w,h,d,y=0){
+  if(contextIntersectsExpansion(context?.expansionZones,x,z,w+3,d+3)){excludedByExpansion++;return null;}
   if(!isNorthContext(x,w+3)&&!fitsBehindViewer(z,d+3))return null;
   if(context&&!clearsCrossStreet(x,w+1))return null;
   const home={id:buildingDefs.length,tier,x,y,z,w,h,d,parts:[],damage:0,fall:0};
@@ -81,7 +89,7 @@ export function createDistantNeighborhood({root,flameTexture,context}){
   if(!home)return;
   const index=instances[home.tier][type].length;
   home.parts.push({type,index});
-  add(home.tier,type,x,y,z,w,h,d,color);
+  add(home.tier,type,x,y,z,w,h,d,color,true);
  }
  function slot(z){return tiers.findIndex(t=>z>=t.min&&z<t.max);}
  function street(x,z,w,d,tier,y0=0){add(tier,'road',x,y0-.44,z,w,.12,d);}
@@ -988,7 +996,7 @@ export function createDistantNeighborhood({root,flameTexture,context}){
     activeEmbers:sites.length*5,
     smoking:!!smoke,burning:!!smoke};
   },
-  stats(){return {rearEdge:context?.rearEdge??null,northHomes:buildingDefs.filter(b=>isNorthContext(b.x,b.w)&&b.z>rearEdge).length,byTier:tiers.map((_,i)=>buildingDefs.filter(b=>b.tier===i).length),rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
+  stats(){return {excludedByExpansion,rearEdge:context?.rearEdge??null,northHomes:buildingDefs.filter(b=>isNorthContext(b.x,b.w)&&b.z>rearEdge).length,byTier:tiers.map((_,i)=>buildingDefs.filter(b=>b.tier===i).length),rows:rowCenters.length,buildings:buildingDefs.length,drawCalls,tiers:tiers.map(t=>t.name),
    smoke:damageMarkers.length+impactSmoke.size,fires:impactSmoke.size,damaged:damaged.size,
    combustion:combustion.stats(),
    ambientRooftopFires:damageMarkers.length,
@@ -1014,6 +1022,10 @@ export function createDistantNeighborhood({root,flameTexture,context}){
    activeDust:collapseDust.filter(slot=>!!slot.home).length,
    treeInstances:instances.reduce((sum,t)=>sum+t.canopy.length,0),
    falling:falling.size,crossStreetNames:CROSS_STREETS.map(s=>s.name),
-   crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length}}
+   // Historical diagnostic uses Broad frontage centerlines; rear roads
+   // actually follow the mapped rear endpoint axis. Keep both visible.
+   crossStreetOverlaps:buildingDefs.filter(b=>occupiesCrossStreet(b.x,b.w)).length,
+   proceduralCrossStreetCenters:[...cross],
+   proceduralCrossStreetOverlaps:buildingDefs.filter(b=>cross.some(x=>Math.abs(b.x-x)<b.w/2+7-1e-6)).length}}
  };
 }
